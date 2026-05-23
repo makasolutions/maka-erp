@@ -21,6 +21,18 @@ i18next
     interpolation: {
       escapeValue: false,
     },
+    react: {
+      // Disable Suspense mode so language switches trigger plain re-renders
+      // instead of throwing Promises.  The shell components (Topbar, Sidebar)
+      // live outside the route-level Suspense boundaries, so Suspense mode
+      // causes the language-change event to be silently swallowed.
+      //
+      // With useSuspense:false react-i18next re-renders on both events:
+      //   - "languageChanged" — immediately when the language code changes
+      //   - "loaded"          — once all namespace JSON files have arrived
+      useSuspense: false,
+      bindI18n: "languageChanged loaded",
+    },
   });
 
 export default i18next;

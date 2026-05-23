@@ -54,7 +54,7 @@ export function LanguageSelectorButton() {
           return (
             <DropdownMenuItem
               key={lang.code}
-              onSelect={() => void i18n.changeLanguage(lang.code)}
+              onClick={() => void i18n.changeLanguage(lang.code)}
               className="!my-0 flex cursor-pointer items-center gap-2.5 rounded-md !px-2.5 !py-1.5"
             >
               <span className="text-base leading-none" aria-hidden>
