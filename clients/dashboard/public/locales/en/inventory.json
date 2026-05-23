@@ -1,0 +1,23 @@
+{
+  "title": "Inventory",
+  "stock": {
+    "title": "Stock",
+    "onHand": "On hand",
+    "reserved": "Reserved",
+    "available": "Available",
+    "minimum": "Minimum",
+    "warehouse": "Warehouse"
+  },
+  "movements": {
+    "title": "Movements",
+    "entry": "Entry",
+    "exit": "Exit",
+    "transfer": "Transfer",
+    "adjustment": "Adjustment",
+    "reason": "Reason"
+  },
+  "empty": {
+    "title": "No inventory records yet",
+    "body": "Stock movements will appear here."
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "title": "Settings",
+  "sections": {
+    "profile": "Profile",
+    "security": "Security",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "apiKeys": "API Keys",
+    "tenant": "Tenant",
+    "billing": "Billing"
+  },
+  "profile": {
+    "title": "Profile",
+    "photo": "Photo",
+    "photoDesc": "Shown in the topbar and on your activity. Square crops work best — JPG, PNG, or WebP.",
+    "identity": "Identity",
+    "identityDesc": "Your name and contact details, visible across the dashboard.",
+    "displayName": "Display name",
+    "email": "Email",
+    "emailReadOnly": "Contact your tenant admin to change your sign-in email.",
+    "phone": "Phone",
+    "timezone": "Timezone",
+    "language": "Language",
+    "avatar": "Profile photo",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "subjectId": "Subject identifier",
+    "subjectIdDesc": "The unique ID this account uses inside the platform. Read-only.",
+    "saveChanges": "Save changes",
+    "reset": "Reset",
+    "profileSaved": "Profile saved",
+    "saveFailed": "Save failed",
+    "imageUpdated": "Profile image updated"
+  },
+  "security": {
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "twoFactor": "Two-factor authentication",
+    "sessions": "Active sessions",
+    "revokeAll": "Revoke all sessions"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "density": "Density",
+    "compact": "Compact",
+    "comfortable": "Comfortable",
+    "language": "Language",
+    "languageDesc": "Choose the display language for the dashboard.",
+    "spanish": "Spanish",
+    "english": "English"
+  },
+  "notifications": {
+    "email": "Email notifications",
+    "push": "Push notifications",
+    "whatsapp": "WhatsApp notifications",
+    "orders": "New orders",
+    "stock": "Stock alerts",
+    "payments": "Payments received"
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "create": "Create API key",
+    "name": "Key name",
+    "key": "Key",
+    "created": "Created",
+    "expires": "Expires",
+    "never": "Never",
+    "deleteConfirm": "Delete API key \"{{name}}\"?",
+    "deleteDesc": "Any integrations using this key will stop working immediately.",
+    "empty": {
+      "title": "No API keys yet",
+      "body": "Create a key to authenticate external integrations."
+    },
+    "copyKey": "Copy key",
+    "keyCopied": "Key copied to clipboard",
+    "newKeyWarning": "Copy the key now — you won't be able to see it again."
+  },
+  "saved": "Settings saved"
+}

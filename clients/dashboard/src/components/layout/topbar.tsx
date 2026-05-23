@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   ChevronsUpDown,
@@ -35,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar } from "@/components/ui/avatar";
+import { LanguageSelectorButton } from "@/components/ui/language-selector";
 import { useAuth } from "@/auth/use-auth";
 import { useSseStatus } from "@/sse/sse-context";
 import { useTheme } from "@/components/theme/theme-provider";
@@ -121,6 +123,7 @@ export function Topbar() {
   const { mode, setMode } = useTheme();
   const { setOpen: setPaletteOpen } = useCommandPalette();
   const navigate = useNavigate();
+  const { t } = useTranslation("common");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const onConfirmSignOut = () => {
@@ -132,19 +135,19 @@ export function Topbar() {
     if (sseStatus === "connected") {
       return {
         color: "var(--color-success)",
-        text: `Connected · ${new Intl.NumberFormat("en-US").format(eventCount)} events`,
+        text: t("topbar.connected", { count: new Intl.NumberFormat().format(eventCount) }),
       };
     }
     if (sseStatus === "error") {
-      return { color: "var(--color-destructive)", text: "Stream offline" };
+      return { color: "var(--color-destructive)", text: t("topbar.streamOffline") };
     }
     if (sseStatus === "connecting") {
-      return { color: "var(--color-muted-foreground)", text: "Connecting…" };
+      return { color: "var(--color-muted-foreground)", text: t("topbar.connecting") };
     }
     if (sseStatus === "reconnecting") {
-      return { color: "var(--color-warning)", text: "Reconnecting…" };
+      return { color: "var(--color-warning)", text: t("topbar.reconnecting") };
     }
-    return { color: "var(--color-muted-foreground)", text: "Idle" };
+    return { color: "var(--color-muted-foreground)", text: t("topbar.idle") };
   })();
 
   return (
@@ -168,7 +171,7 @@ export function Topbar() {
       <button
         type="button"
         onClick={() => setPaletteOpen(true)}
-        aria-label="Open command palette"
+        aria-label={t("topbar.openCommandPalette")}
         className={cn(
           "grid h-9 w-9 cursor-pointer place-items-center rounded-md md:hidden",
           "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -184,7 +187,7 @@ export function Topbar() {
       <button
         type="button"
         onClick={() => setPaletteOpen(true)}
-        title="Open command palette"
+        title={t("topbar.openCommandPalette")}
         className={cn(
           "hidden h-8 cursor-pointer items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-2.5 text-xs",
           "text-[var(--color-muted-foreground)]",
@@ -194,7 +197,7 @@ export function Topbar() {
         )}
       >
         <Search className="h-3.5 w-3.5" />
-        <span>Search</span>
+        <span>{t("topbar.search")}</span>
         <kbd className="ml-2 rounded border border-[var(--color-border)] bg-[var(--color-card)] px-1.5 py-px font-mono text-[10px] font-medium tracking-tight">
           ⌘K
         </kbd>
@@ -206,6 +209,9 @@ export function Topbar() {
 
       {/* Notification bell — bell badge + dropdown inbox. */}
       <NotificationBell />
+
+      {/* Language selector — allows switching between ES and EN */}
+      <LanguageSelectorButton />
 
       {/* `modal={false}` is required because we open the sign-out
           confirmation Dialog from a DropdownMenuItem. Default modal mode
@@ -221,7 +227,7 @@ export function Topbar() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            aria-label="Open profile menu"
+            aria-label={t("topbar.openProfileMenu")}
             className={cn(
               "group flex cursor-pointer items-center gap-2.5 rounded-lg py-1 pl-1 pr-2 outline-none",
               "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
@@ -295,24 +301,24 @@ export function Topbar() {
 
           {/* Theme — three simple menu items with a check on the active one */}
           <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Theme
+            {t("topbar.theme")}
           </DropdownMenuLabel>
           <div className="px-1 pb-1">
-            <ThemeMenuItem icon={Sun} label="Light" active={mode === "light"} onSelect={() => setMode("light")} />
-            <ThemeMenuItem icon={Moon} label="Dark" active={mode === "dark"} onSelect={() => setMode("dark")} />
-            <ThemeMenuItem icon={Monitor} label="System" active={mode === "system"} onSelect={() => setMode("system")} />
+            <ThemeMenuItem icon={Sun} label={t("topbar.light")} active={mode === "light"} onSelect={() => setMode("light")} />
+            <ThemeMenuItem icon={Moon} label={t("topbar.dark")} active={mode === "dark"} onSelect={() => setMode("dark")} />
+            <ThemeMenuItem icon={Monitor} label={t("topbar.system")} active={mode === "system"} onSelect={() => setMode("system")} />
           </div>
 
           <DropdownMenuSeparator className="!my-0" />
 
           {/* Account quick actions */}
           <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Account
+            {t("topbar.account")}
           </DropdownMenuLabel>
           <div className="px-1 pb-1">
-            <SimpleMenuItem icon={UserRound} label="Profile" onSelect={() => navigate("/settings/profile")} />
-            <SimpleMenuItem icon={SettingsIcon} label="Settings" onSelect={() => navigate("/settings")} />
-            <SimpleMenuItem icon={KeyRound} label="API keys" onSelect={() => navigate("/settings/api-keys")} />
+            <SimpleMenuItem icon={UserRound} label={t("topbar.profile")} onSelect={() => navigate("/settings/profile")} />
+            <SimpleMenuItem icon={SettingsIcon} label={t("nav.settings")} onSelect={() => navigate("/settings")} />
+            <SimpleMenuItem icon={KeyRound} label={t("topbar.apiKeys")} onSelect={() => navigate("/settings/api-keys")} />
           </div>
 
           <DropdownMenuSeparator className="!my-0" />
@@ -325,7 +331,7 @@ export function Topbar() {
               className="!my-0 cursor-pointer rounded-md !px-2.5 !py-1.5"
             >
               <LogOut className="size-3.5" />
-              <span className="text-[12.5px] font-medium">Sign out</span>
+              <span className="text-[12.5px] font-medium">{t("auth.signOut")}</span>
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>
@@ -335,10 +341,9 @@ export function Topbar() {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sign out of FullStackHero?</DialogTitle>
+            <DialogTitle>{t("auth.signOutConfirmTitle")}</DialogTitle>
             <DialogDescription>
-              You'll need to sign in again to access this tenant. Any unsaved
-              work in this session will be lost.
+              {t("auth.signOutConfirmDesc")}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
@@ -365,7 +370,7 @@ export function Topbar() {
               size="sm"
               onClick={() => setConfirmOpen(false)}
             >
-              Cancel
+              {t("actions.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -374,7 +379,7 @@ export function Topbar() {
               autoFocus
             >
               <LogOut className="mr-1.5 h-3.5 w-3.5" />
-              Sign out
+              {t("auth.signOut")}
             </Button>
           </DialogFooter>
         </DialogContent>

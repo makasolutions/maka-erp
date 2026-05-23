@@ -1,0 +1,18 @@
+{
+  "title": "Live activity",
+  "description": "Real-time event stream.",
+  "emptyTitle": "Waiting for events",
+  "emptyDesc": "Backend events will appear here in real time as they happen.",
+  "eventType": "Event type",
+  "timestamp": "Time",
+  "source": "Source",
+  "actor": "Actor",
+  "payload": "Payload",
+  "severity": "Severity",
+  "connected": "Connected",
+  "disconnected": "Disconnected",
+  "eventsReceived": "{{count}} events received",
+  "clearFeed": "Clear feed",
+  "pauseFeed": "Pause",
+  "resumeFeed": "Resume"
+}

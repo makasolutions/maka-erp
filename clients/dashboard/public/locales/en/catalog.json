@@ -1,0 +1,100 @@
+{
+  "title": "Catalog",
+  "products": {
+    "title": "Products",
+    "singular": "Product",
+    "fields": {
+      "sku": "SKU",
+      "name": "Name",
+      "brand": "Brand",
+      "category": "Category",
+      "price": "Price",
+      "basePrice": "Base price",
+      "status": "Status",
+      "stock": "Stock",
+      "description": "Description",
+      "specs": "Specifications",
+      "barcode": "Barcode",
+      "weight": "Weight",
+      "dimensions": "Dimensions"
+    },
+    "actions": {
+      "create": "New product",
+      "edit": "Edit product",
+      "delete": "Delete product",
+      "duplicate": "Duplicate product",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "syncWoo": "Sync with WooCommerce",
+      "adjustStock": "Adjust stock",
+      "changePrice": "Change price"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "draft": "Draft",
+      "outOfStock": "Out of stock"
+    },
+    "empty": {
+      "title": "No products yet",
+      "body": "Create the first product to start building your catalog."
+    },
+    "lowStock": "Low stock",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "deleteConfirm": "Delete \"{{name}}\"?",
+    "deleteDesc": "This will permanently remove the product and all associated data. This action cannot be undone.",
+    "adjustStockTitle": "Adjust stock — {{name}}",
+    "currentStock": "Current stock",
+    "adjustment": "Adjustment",
+    "newStock": "New stock",
+    "changePriceTitle": "Change price — {{name}}",
+    "currentPrice": "Current price",
+    "newPrice": "New price"
+  },
+  "brands": {
+    "title": "Brands",
+    "singular": "Brand",
+    "fields": {
+      "name": "Name",
+      "slug": "Slug",
+      "description": "Description",
+      "logo": "Logo",
+      "website": "Website",
+      "country": "Country of origin"
+    },
+    "actions": {
+      "create": "New brand",
+      "edit": "Edit brand",
+      "delete": "Delete brand"
+    },
+    "empty": {
+      "title": "No brands yet",
+      "body": "Add the brands you distribute to organise your catalog."
+    },
+    "deleteConfirm": "Delete \"{{name}}\"?",
+    "deleteDesc": "This will permanently remove the brand. This action cannot be undone."
+  },
+  "categories": {
+    "title": "Categories",
+    "singular": "Category",
+    "fields": {
+      "name": "Name",
+      "slug": "Slug",
+      "parent": "Parent category",
+      "description": "Description",
+      "image": "Image"
+    },
+    "actions": {
+      "create": "New category",
+      "edit": "Edit category",
+      "delete": "Delete category"
+    },
+    "empty": {
+      "title": "No categories yet",
+      "body": "Create categories to organise your products."
+    },
+    "deleteConfirm": "Delete \"{{name}}\"?",
+    "deleteDesc": "This will permanently remove the category. This action cannot be undone."
+  }
+}

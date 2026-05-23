@@ -1,0 +1,37 @@
+{
+  "sessions": {
+    "title": "Active sessions",
+    "description": "Devices and browsers currently signed in.",
+    "fields": {
+      "device": "Device",
+      "location": "Location",
+      "ip": "IP address",
+      "lastSeen": "Last seen",
+      "current": "Current session"
+    },
+    "revoke": "Revoke session",
+    "revokeAll": "Revoke all",
+    "revokeConfirm": "Revoke this session?",
+    "revokeAllConfirm": "Revoke all sessions?",
+    "revokeAllDesc": "All devices except the current one will be signed out.",
+    "empty": {
+      "title": "No active sessions",
+      "body": "There are no other open sessions at this time."
+    }
+  },
+  "trash": {
+    "title": "Trash",
+    "description": "Recently deleted items. Permanently removed after 30 days.",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently",
+    "empty": {
+      "title": "Trash is empty",
+      "body": "Deleted items will appear here."
+    },
+    "deletedAt": "Deleted at",
+    "expiresAt": "Expires at",
+    "restoreConfirm": "Restore this item?",
+    "deleteConfirm": "Delete permanently?",
+    "deleteDesc": "This action cannot be undone."
+  }
+}

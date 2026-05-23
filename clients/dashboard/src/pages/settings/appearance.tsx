@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Monitor, Moon, Palette, Sun } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -7,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { LanguageSelectorInline } from "@/components/ui/language-selector";
 import {
   Dialog,
   DialogBody,
@@ -50,6 +52,7 @@ export function AppearanceSettings() {
     customAccent, setCustomAccent,
     density, setDensity,
   } = useTheme();
+  const { t } = useTranslation("settings");
   const [reducedMotion, setReducedMotion] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
 
@@ -62,10 +65,21 @@ export function AppearanceSettings() {
 
   return (
     <div className="space-y-6 fsh-enter">
+      {/* Language */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("appearance.language")}</CardTitle>
+          <CardDescription>{t("appearance.languageDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent className="px-6 pb-5 pt-1">
+          <LanguageSelectorInline />
+        </CardContent>
+      </Card>
+
       {/* Theme */}
       <Card>
         <CardHeader>
-          <CardTitle>Theme</CardTitle>
+          <CardTitle>{t("appearance.theme")}</CardTitle>
           <CardDescription>
             Pick a colour mode for the dashboard. System follows your OS.
           </CardDescription>

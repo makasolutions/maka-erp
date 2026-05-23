@@ -1,0 +1,21 @@
+{
+  "title": "System health",
+  "description": "Status of services and dependencies.",
+  "overall": "Overall status",
+  "healthy": "Healthy",
+  "degraded": "Degraded",
+  "unhealthy": "Unhealthy",
+  "service": "Service",
+  "status": "Status",
+  "duration": "Duration",
+  "description": "Description",
+  "lastChecked": "Last checked",
+  "checkAgain": "Check again",
+  "allHealthy": "All services are operating normally.",
+  "someIssues": "Some services are experiencing issues.",
+  "criticalIssues": "Critical services are unavailable.",
+  "database": "Database",
+  "cache": "Cache",
+  "messageBroker": "Message broker",
+  "storage": "Storage"
+}

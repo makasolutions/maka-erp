@@ -1,0 +1,18 @@
+{
+  "title": "Actividad en vivo",
+  "description": "Stream de eventos en tiempo real.",
+  "emptyTitle": "Esperando eventos",
+  "emptyDesc": "Los eventos del backend aparecerán aquí en tiempo real a medida que sucedan.",
+  "eventType": "Tipo de evento",
+  "timestamp": "Hora",
+  "source": "Fuente",
+  "actor": "Actor",
+  "payload": "Datos",
+  "severity": "Severidad",
+  "connected": "Conectado",
+  "disconnected": "Desconectado",
+  "eventsReceived": "{{count}} eventos recibidos",
+  "clearFeed": "Limpiar feed",
+  "pauseFeed": "Pausar",
+  "resumeFeed": "Reanudar"
+}

@@ -1,0 +1,48 @@
+{
+  "title": "Tickets",
+  "singular": "Ticket",
+  "fields": {
+    "subject": "Subject",
+    "description": "Description",
+    "status": "Status",
+    "priority": "Priority",
+    "assignee": "Assignee",
+    "reporter": "Reporter",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at",
+    "resolvedAt": "Resolved at",
+    "type": "Type",
+    "tags": "Tags"
+  },
+  "actions": {
+    "create": "New ticket",
+    "edit": "Edit ticket",
+    "delete": "Delete ticket",
+    "resolve": "Resolve",
+    "reopen": "Reopen",
+    "assign": "Assign",
+    "addComment": "Add comment"
+  },
+  "status": {
+    "open": "Open",
+    "inProgress": "In progress",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "pending": "Pending"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "empty": {
+    "title": "No tickets yet",
+    "body": "Create the first ticket to start managing requests."
+  },
+  "deleteConfirm": "Delete ticket #{{id}}?",
+  "deleteDesc": "This action cannot be undone.",
+  "comments": "Comments",
+  "noComments": "No comments yet.",
+  "addComment": "Write a comment…"
+}

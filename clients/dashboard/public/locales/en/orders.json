@@ -1,0 +1,27 @@
+{
+  "title": "Orders",
+  "singular": "Order",
+  "fields": {
+    "number": "Order number",
+    "customer": "Customer",
+    "status": "Status",
+    "total": "Total",
+    "items": "Items",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at"
+  },
+  "status": {
+    "draft": "Draft",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "processing": "Processing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "refunded": "Refunded"
+  },
+  "empty": {
+    "title": "No orders yet",
+    "body": "Orders will appear here once customers start purchasing."
+  }
+}

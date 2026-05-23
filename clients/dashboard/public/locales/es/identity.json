@@ -1,0 +1,80 @@
+{
+  "users": {
+    "title": "Usuarios",
+    "singular": "Usuario",
+    "invite": "Invitar usuario",
+    "fields": {
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "status": "Estado",
+      "emailConfirmed": "Correo confirmado",
+      "phone": "Teléfono",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "confirmPassword": "Confirmar contraseña"
+    },
+    "filters": {
+      "allStatus": "Todos los estados",
+      "active": "Activos",
+      "inactive": "Inactivos",
+      "allEmail": "Todos los correos",
+      "confirmed": "Confirmados",
+      "unconfirmed": "No confirmados"
+    },
+    "empty": {
+      "title": "Sin usuarios aún",
+      "body": "Invita al primer usuario para comenzar."
+    },
+    "deleteConfirm": "¿Eliminar usuario \"{{name}}\"?",
+    "deleteDesc": "Esta acción no se puede deshacer.",
+    "deactivateConfirm": "¿Desactivar usuario \"{{name}}\"?",
+    "deactivateDesc": "El usuario no podrá iniciar sesión mientras esté inactivo.",
+    "activateConfirm": "¿Activar usuario \"{{name}}\"?",
+    "roles": "Roles"
+  },
+  "roles": {
+    "title": "Roles",
+    "singular": "Rol",
+    "fields": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "permissions": "Permisos",
+      "isDefault": "Rol por defecto"
+    },
+    "actions": {
+      "create": "Nuevo rol",
+      "edit": "Editar rol",
+      "delete": "Eliminar rol"
+    },
+    "empty": {
+      "title": "Sin roles aún",
+      "body": "Crea el primer rol para gestionar permisos."
+    },
+    "deleteConfirm": "¿Eliminar rol \"{{name}}\"?",
+    "deleteDesc": "Los usuarios con este rol perderán los permisos asociados. Esta acción no se puede deshacer.",
+    "permissions": "Permisos del rol"
+  },
+  "groups": {
+    "title": "Grupos",
+    "singular": "Grupo",
+    "fields": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "members": "Miembros"
+    },
+    "actions": {
+      "create": "Nuevo grupo",
+      "edit": "Editar grupo",
+      "delete": "Eliminar grupo"
+    },
+    "empty": {
+      "title": "Sin grupos aún",
+      "body": "Crea grupos para organizar a los usuarios."
+    },
+    "deleteConfirm": "¿Eliminar grupo \"{{name}}\"?",
+    "deleteDesc": "Los usuarios del grupo no serán eliminados. Esta acción no se puede deshacer."
+  }
+}

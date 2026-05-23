@@ -1,0 +1,37 @@
+{
+  "sessions": {
+    "title": "Sesiones activas",
+    "description": "Dispositivos y navegadores con sesión iniciada actualmente.",
+    "fields": {
+      "device": "Dispositivo",
+      "location": "Ubicación",
+      "ip": "Dirección IP",
+      "lastSeen": "Última actividad",
+      "current": "Sesión actual"
+    },
+    "revoke": "Revocar sesión",
+    "revokeAll": "Revocar todas",
+    "revokeConfirm": "¿Revocar esta sesión?",
+    "revokeAllConfirm": "¿Revocar todas las sesiones?",
+    "revokeAllDesc": "Todos los dispositivos excepto el actual serán desconectados.",
+    "empty": {
+      "title": "Sin sesiones activas",
+      "body": "No hay otras sesiones abiertas actualmente."
+    }
+  },
+  "trash": {
+    "title": "Papelera",
+    "description": "Elementos eliminados recientemente. Se borran permanentemente después de 30 días.",
+    "restore": "Restaurar",
+    "deletePermanently": "Eliminar permanentemente",
+    "empty": {
+      "title": "La papelera está vacía",
+      "body": "Los elementos eliminados aparecerán aquí."
+    },
+    "deletedAt": "Eliminado el",
+    "expiresAt": "Expira el",
+    "restoreConfirm": "¿Restaurar este elemento?",
+    "deleteConfirm": "¿Eliminar permanentemente?",
+    "deleteDesc": "Esta acción no se puede deshacer."
+  }
+}

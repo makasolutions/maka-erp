@@ -3,6 +3,7 @@ import {
   type FormEvent,
 } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   ArrowRight,
@@ -81,6 +82,7 @@ export function LoginPage() {
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("common");
   const from = (location.state as LocationState | null)?.from?.pathname ?? "/";
 
   const [email, setEmail] = useState("");
@@ -107,7 +109,7 @@ export function LoginPage() {
           ? err.problem?.detail ?? err.problem?.title ?? err.message
           : err instanceof Error
             ? err.message
-            : "Login failed";
+            : t("auth.loginFailed");
       setError(message);
     } finally {
       setSubmitting(false);
@@ -130,9 +132,9 @@ export function LoginPage() {
     <>
       <AuthShell>
         <div className="mb-6 sm:mb-8">
-          <AuthHeadline lead="Welcome" accent="back" />
+          <AuthHeadline lead={t("auth.welcomeBack")} accent="back" />
           <p className="text-[13px] text-[var(--color-muted-foreground)]">
-            Sign in to continue to your tenant.
+            {t("auth.signInToContinue")}
           </p>
         </div>
 
@@ -142,7 +144,7 @@ export function LoginPage() {
               htmlFor="tenant"
               className="block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
             >
-              Tenant
+              {t("auth.tenant")}
             </Label>
             <div className="relative">
               <Building2 className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]" />
@@ -165,7 +167,7 @@ export function LoginPage() {
               htmlFor="email"
               className="block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
             >
-              Email
+              {t("auth.email")}
             </Label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]" />
@@ -190,13 +192,13 @@ export function LoginPage() {
                 htmlFor="password"
                 className="text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
               >
-                Password
+                {t("auth.password")}
               </Label>
               <Link
                 to="/forgot-password"
                 className="text-[11px] font-medium text-[var(--color-muted-foreground)] underline-offset-4 transition-colors hover:text-[var(--color-primary)] hover:underline"
               >
-                Forgot?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
             <div className="relative">
@@ -215,7 +217,7 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 className="absolute right-3.5 top-1/2 grid h-6 w-6 -translate-y-1/2 cursor-pointer place-items-center rounded text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
               >
                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -248,11 +250,11 @@ export function LoginPage() {
               {submitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  <span>Signing in…</span>
+                  <span>{t("auth.signingIn")}</span>
                 </>
               ) : (
                 <>
-                  <span>Sign in</span>
+                  <span>{t("auth.signIn")}</span>
                   <ArrowRight className="size-[14px] opacity-60 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </>
               )}
@@ -266,7 +268,7 @@ export function LoginPage() {
             <div className="mt-8 mb-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-[var(--color-border)]" />
               <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">
-                Quick access
+                {t("auth.quickAccess")}
               </span>
               <div className="h-px flex-1 bg-[var(--color-border)]" />
             </div>
@@ -282,7 +284,7 @@ export function LoginPage() {
               <span className="inline-flex items-center gap-2 text-[var(--color-muted-foreground)] group-hover:text-[var(--color-foreground)]">
                 <FlaskConical className="size-3.5" />
                 <span className="font-semibold uppercase tracking-wider text-[10.5px]">
-                  Demo accounts
+                  {t("auth.demoAccounts")}
                 </span>
               </span>
               <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[oklch(from_var(--color-saffron)_l_c_h_/_0.85)]">

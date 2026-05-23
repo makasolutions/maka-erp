@@ -1,0 +1,37 @@
+{
+  "title": "CRM",
+  "leads": {
+    "title": "Leads",
+    "singular": "Lead",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "stage": "Stage",
+      "source": "Source",
+      "value": "Value",
+      "assignee": "Assignee"
+    },
+    "stages": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    },
+    "empty": {
+      "title": "No leads yet",
+      "body": "Add the first lead to start your pipeline."
+    }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "singular": "Contact",
+    "empty": {
+      "title": "No contacts yet",
+      "body": "Add contacts to build your CRM."
+    }
+  }
+}

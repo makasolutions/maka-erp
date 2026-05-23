@@ -10,12 +10,27 @@
     "billing": "Facturación"
   },
   "profile": {
+    "title": "Perfil",
+    "photo": "Foto",
+    "photoDesc": "Se muestra en la barra superior y en tu actividad. Los recortes cuadrados funcionan mejor — JPG, PNG o WebP.",
+    "identity": "Identidad",
+    "identityDesc": "Tu nombre y datos de contacto, visibles en todo el dashboard.",
     "displayName": "Nombre visible",
     "email": "Correo electrónico",
+    "emailReadOnly": "Contacta al administrador del tenant para cambiar tu correo de inicio de sesión.",
     "phone": "Teléfono",
     "timezone": "Zona horaria",
     "language": "Idioma",
-    "avatar": "Foto de perfil"
+    "avatar": "Foto de perfil",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "subjectId": "Identificador de sujeto",
+    "subjectIdDesc": "El ID único que usa esta cuenta dentro de la plataforma. Solo lectura.",
+    "saveChanges": "Guardar cambios",
+    "reset": "Restablecer",
+    "profileSaved": "Perfil guardado",
+    "saveFailed": "Error al guardar",
+    "imageUpdated": "Imagen de perfil actualizada"
   },
   "security": {
     "changePassword": "Cambiar contraseña",
@@ -27,13 +42,18 @@
     "revokeAll": "Revocar todas las sesiones"
   },
   "appearance": {
+    "title": "Apariencia",
     "theme": "Tema",
     "light": "Claro",
     "dark": "Oscuro",
     "system": "Sistema",
     "density": "Densidad",
     "compact": "Compacto",
-    "comfortable": "Cómodo"
+    "comfortable": "Cómodo",
+    "language": "Idioma",
+    "languageDesc": "Elige el idioma de visualización del dashboard.",
+    "spanish": "Español",
+    "english": "Inglés"
   },
   "notifications": {
     "email": "Notificaciones por correo",
@@ -42,6 +62,24 @@
     "orders": "Nuevos pedidos",
     "stock": "Alertas de stock",
     "payments": "Pagos recibidos"
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "create": "Crear API key",
+    "name": "Nombre de la clave",
+    "key": "Clave",
+    "created": "Creada",
+    "expires": "Vence",
+    "never": "Nunca",
+    "deleteConfirm": "¿Eliminar API key \"{{name}}\"?",
+    "deleteDesc": "Cualquier integración que use esta clave dejará de funcionar inmediatamente.",
+    "empty": {
+      "title": "Sin API keys aún",
+      "body": "Crea una clave para autenticar integraciones externas."
+    },
+    "copyKey": "Copiar clave",
+    "keyCopied": "Clave copiada al portapapeles",
+    "newKeyWarning": "Copia la clave ahora — no podrás verla de nuevo."
   },
   "saved": "Configuración guardada"
 }

@@ -1,0 +1,42 @@
+{
+  "title": "Registro de auditoría",
+  "description": "Historial completo de acciones en el sistema.",
+  "fields": {
+    "eventType": "Tipo de evento",
+    "severity": "Severidad",
+    "source": "Fuente",
+    "actor": "Actor",
+    "occurredAt": "Ocurrido el",
+    "details": "Detalles",
+    "userId": "ID de usuario",
+    "traceId": "ID de traza"
+  },
+  "filters": {
+    "from": "Desde",
+    "to": "Hasta",
+    "severity": "Severidad",
+    "eventType": "Tipo de evento",
+    "allSeverities": "Todas las severidades",
+    "allTypes": "Todos los tipos"
+  },
+  "severity": {
+    "verbose": "Detallado",
+    "debug": "Depuración",
+    "information": "Información",
+    "warning": "Advertencia",
+    "error": "Error",
+    "fatal": "Fatal"
+  },
+  "eventType": {
+    "general": "General",
+    "security": "Seguridad",
+    "entityChange": "Cambio de entidad",
+    "exception": "Excepción",
+    "performance": "Rendimiento"
+  },
+  "empty": {
+    "title": "Sin registros de auditoría",
+    "body": "Las acciones del sistema aparecerán aquí una vez que se produzcan."
+  },
+  "ago": "hace {{time}}"
+}

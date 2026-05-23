@@ -1,0 +1,42 @@
+{
+  "title": "Audit trail",
+  "description": "Complete history of system actions.",
+  "fields": {
+    "eventType": "Event type",
+    "severity": "Severity",
+    "source": "Source",
+    "actor": "Actor",
+    "occurredAt": "Occurred at",
+    "details": "Details",
+    "userId": "User ID",
+    "traceId": "Trace ID"
+  },
+  "filters": {
+    "from": "From",
+    "to": "To",
+    "severity": "Severity",
+    "eventType": "Event type",
+    "allSeverities": "All severities",
+    "allTypes": "All types"
+  },
+  "severity": {
+    "verbose": "Verbose",
+    "debug": "Debug",
+    "information": "Information",
+    "warning": "Warning",
+    "error": "Error",
+    "fatal": "Fatal"
+  },
+  "eventType": {
+    "general": "General",
+    "security": "Security",
+    "entityChange": "Entity change",
+    "exception": "Exception",
+    "performance": "Performance"
+  },
+  "empty": {
+    "title": "No audit records",
+    "body": "System actions will appear here once they occur."
+  },
+  "ago": "{{time}} ago"
+}

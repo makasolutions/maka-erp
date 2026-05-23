@@ -1,0 +1,48 @@
+{
+  "title": "Tickets",
+  "singular": "Ticket",
+  "fields": {
+    "subject": "Asunto",
+    "description": "Descripción",
+    "status": "Estado",
+    "priority": "Prioridad",
+    "assignee": "Asignado a",
+    "reporter": "Reportado por",
+    "createdAt": "Creado el",
+    "updatedAt": "Actualizado el",
+    "resolvedAt": "Resuelto el",
+    "type": "Tipo",
+    "tags": "Etiquetas"
+  },
+  "actions": {
+    "create": "Nuevo ticket",
+    "edit": "Editar ticket",
+    "delete": "Eliminar ticket",
+    "resolve": "Resolver",
+    "reopen": "Reabrir",
+    "assign": "Asignar",
+    "addComment": "Agregar comentario"
+  },
+  "status": {
+    "open": "Abierto",
+    "inProgress": "En progreso",
+    "resolved": "Resuelto",
+    "closed": "Cerrado",
+    "pending": "Pendiente"
+  },
+  "priority": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "critical": "Crítica"
+  },
+  "empty": {
+    "title": "Sin tickets aún",
+    "body": "Crea el primer ticket para comenzar a gestionar solicitudes."
+  },
+  "deleteConfirm": "¿Eliminar ticket #{{id}}?",
+  "deleteDesc": "Esta acción no se puede deshacer.",
+  "comments": "Comentarios",
+  "noComments": "Sin comentarios aún.",
+  "addComment": "Escribe un comentario…"
+}

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Fingerprint, UserCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/auth/use-auth";
 import { getMyProfile, setProfileImage, updateMyProfile } from "@/api/identity";
 import { ApiRequestError } from "@/lib/api-client";
@@ -16,6 +17,7 @@ const PROFILE_KEY = ["identity", "me"] as const;
 export function ProfileSettings() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useTranslation("settings");
 
   const profileQuery = useQuery({
     queryKey: PROFILE_KEY,
@@ -48,15 +50,15 @@ export function ProfileSettings() {
         phoneNumber: phone.trim() || null,
       }),
     onSuccess: () => {
-      toast.success("Profile saved");
+      toast.success(t("profile.profileSaved"));
       queryClient.invalidateQueries({ queryKey: PROFILE_KEY });
     },
     onError: (err: unknown) => {
       const message =
         err instanceof ApiRequestError
           ? err.problem?.detail ?? err.problem?.title ?? err.message
-          : "Failed to save profile";
-      toast.error("Save failed", { description: message });
+          : t("profile.saveFailed");
+      toast.error(t("profile.saveFailed"), { description: message });
     },
   });
 
@@ -82,14 +84,14 @@ export function ProfileSettings() {
   const imageMutation = useMutation({
     mutationFn: (url: string | null) => setProfileImage(url),
     onSuccess: () => {
-      toast.success("Profile image updated");
+      toast.success(t("profile.imageUpdated"));
       queryClient.invalidateQueries({ queryKey: PROFILE_KEY });
     },
     onError: (e: unknown) => {
       const message =
         e instanceof ApiRequestError
           ? (e.problem?.detail ?? e.problem?.title ?? e.message)
-          : "Failed to update profile image";
+          : t("profile.saveFailed");
       toast.error(message);
     },
   });
@@ -97,9 +99,9 @@ export function ProfileSettings() {
   return (
     <form onSubmit={onSubmit} className="space-y-5 fsh-enter">
       <SettingsSection
-        title="Photo"
+        title={t("profile.photo")}
         icon={Camera}
-        description="Shown in the topbar and on your activity. Square crops work best — JPG, PNG, or WebP."
+        description={t("profile.photoDesc")}
       >
         <ImageInput
           value={profile?.imageUrl ?? ""}
@@ -111,9 +113,9 @@ export function ProfileSettings() {
       </SettingsSection>
 
       <SettingsSection
-        title="Identity"
+        title={t("profile.identity")}
         icon={UserCircle2}
-        description="Your name and contact details, visible across the dashboard."
+        description={t("profile.identityDesc")}
         footer={
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -123,16 +125,16 @@ export function ProfileSettings() {
               disabled={saving || !dirty}
               size="sm"
             >
-              Reset
+              {t("profile.reset")}
             </Button>
             <Button type="submit" disabled={saving || !dirty} size="sm">
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? t("feedback.saving", { ns: "common" }) : t("profile.saveChanges")}
             </Button>
           </div>
         }
       >
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="first-name" label="First name">
+          <Field id="first-name" label={t("profile.firstName")}>
             <Input
               id="first-name"
               value={firstName}
@@ -141,7 +143,7 @@ export function ProfileSettings() {
               className="h-10 text-[13px]"
             />
           </Field>
-          <Field id="last-name" label="Last name">
+          <Field id="last-name" label={t("profile.lastName")}>
             <Input
               id="last-name"
               value={lastName}
@@ -150,7 +152,7 @@ export function ProfileSettings() {
               className="h-10 text-[13px]"
             />
           </Field>
-          <Field id="email" label="Email">
+          <Field id="email" label={t("profile.email")}>
             <Input
               id="email"
               type="email"
@@ -160,17 +162,17 @@ export function ProfileSettings() {
               className="h-10 cursor-not-allowed bg-[var(--color-muted)] text-[13px]"
             />
             <p className="mt-1 text-[11px] text-[var(--color-muted-foreground)]">
-              Contact your tenant admin to change your sign-in email.
+              {t("profile.emailReadOnly")}
             </p>
           </Field>
-          <Field id="phone" label="Phone">
+          <Field id="phone" label={t("profile.phone")}>
             <Input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoComplete="tel"
-              placeholder="+1 (555) 123-4567"
+              placeholder="+57 (300) 123-4567"
               className="h-10 text-[13px]"
             />
           </Field>
@@ -178,9 +180,9 @@ export function ProfileSettings() {
       </SettingsSection>
 
       <SettingsSection
-        title="Subject identifier"
+        title={t("profile.subjectId")}
         icon={Fingerprint}
-        description="The unique ID this account uses inside the platform. Read-only."
+        description={t("profile.subjectIdDesc")}
       >
         <code className="block w-full overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-3 py-2 font-mono text-xs">
           {profile?.id ?? user?.id ?? "—"}

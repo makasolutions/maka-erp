@@ -25,7 +25,9 @@
       "duplicate": "Duplicar producto",
       "publish": "Publicar",
       "unpublish": "Despublicar",
-      "syncWoo": "Sincronizar con WooCommerce"
+      "syncWoo": "Sincronizar con WooCommerce",
+      "adjustStock": "Ajustar stock",
+      "changePrice": "Cambiar precio"
     },
     "status": {
       "active": "Activo",
@@ -36,7 +38,19 @@
     "empty": {
       "title": "Sin productos aún",
       "body": "Crea el primer producto para comenzar a construir tu catálogo."
-    }
+    },
+    "lowStock": "Stock bajo",
+    "inStock": "En stock",
+    "outOfStock": "Agotado",
+    "deleteConfirm": "¿Eliminar \"{{name}}\"?",
+    "deleteDesc": "Esto eliminará permanentemente el producto y todos los datos asociados. Esta acción no se puede deshacer.",
+    "adjustStockTitle": "Ajustar stock — {{name}}",
+    "currentStock": "Stock actual",
+    "adjustment": "Ajuste",
+    "newStock": "Nuevo stock",
+    "changePriceTitle": "Cambiar precio — {{name}}",
+    "currentPrice": "Precio actual",
+    "newPrice": "Nuevo precio"
   },
   "brands": {
     "title": "Marcas",
@@ -57,7 +71,9 @@
     "empty": {
       "title": "Sin marcas aún",
       "body": "Agrega las marcas que distribuyes para organizar tu catálogo."
-    }
+    },
+    "deleteConfirm": "¿Eliminar \"{{name}}\"?",
+    "deleteDesc": "Esto eliminará permanentemente la marca. Esta acción no se puede deshacer."
   },
   "categories": {
     "title": "Categorías",
@@ -77,6 +93,8 @@
     "empty": {
       "title": "Sin categorías aún",
       "body": "Crea categorías para organizar los productos."
-    }
+    },
+    "deleteConfirm": "¿Eliminar \"{{name}}\"?",
+    "deleteDesc": "Esto eliminará permanentemente la categoría. Esta acción no se puede deshacer."
   }
 }

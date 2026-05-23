@@ -1,0 +1,21 @@
+{
+  "title": "Salud del sistema",
+  "description": "Estado de los servicios y dependencias.",
+  "overall": "Estado general",
+  "healthy": "Saludable",
+  "degraded": "Degradado",
+  "unhealthy": "No disponible",
+  "service": "Servicio",
+  "status": "Estado",
+  "duration": "Duración",
+  "description": "Descripción",
+  "lastChecked": "Última verificación",
+  "checkAgain": "Verificar de nuevo",
+  "allHealthy": "Todos los servicios están operando con normalidad.",
+  "someIssues": "Algunos servicios presentan problemas.",
+  "criticalIssues": "Servicios críticos no disponibles.",
+  "database": "Base de datos",
+  "cache": "Caché",
+  "messageBroker": "Bus de mensajes",
+  "storage": "Almacenamiento"
+}

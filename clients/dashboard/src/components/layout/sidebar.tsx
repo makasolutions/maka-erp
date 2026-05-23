@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
   PanelLeftClose,
@@ -14,6 +15,36 @@ import {
   type NavSection,
   type NavSpec,
 } from "@/components/layout/nav-data";
+
+// Path → i18n key mapping for nav items (common namespace, nav.*)
+const NAV_ITEM_KEYS: Record<string, string> = {
+  "/": "nav.overview",
+  "/chat": "nav.chat",
+  "/files": "nav.myFiles",
+  "/settings": "nav.settings",
+  "/activity": "nav.liveActivity",
+  "/invoices": "nav.invoices",
+  "/catalog/products": "nav.products",
+  "/catalog/brands": "nav.brands",
+  "/catalog/categories": "nav.categories",
+  "/tickets": "nav.tickets",
+  "/identity/users": "nav.users",
+  "/identity/roles": "nav.roles",
+  "/identity/groups": "nav.groups",
+  "/system/health": "nav.health",
+  "/system/audits": "nav.auditTrail",
+  "/system/sessions": "nav.sessions",
+  "/system/trash": "nav.trash",
+};
+
+// Section id → i18n key mapping for section captions
+const NAV_SECTION_KEYS: Record<string, string> = {
+  operations: "nav.operations",
+  catalog: "nav.catalog",
+  helpdesk: "nav.helpdesk",
+  identity: "nav.identity",
+  system: "nav.system",
+};
 
 const COLLAPSED_KEY = "fsh.sidebar.collapsed";
 
@@ -278,6 +309,10 @@ function AccordionSection({
   onNavigate?: () => void;
 }) {
   const SectionIcon = section.icon;
+  const { t } = useTranslation("common");
+  const caption = NAV_SECTION_KEYS[section.id]
+    ? t(NAV_SECTION_KEYS[section.id])
+    : section.caption;
   return (
     <div
       className={cn(
@@ -316,7 +351,7 @@ function AccordionSection({
         )}
       >
         <SectionIcon className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="flex-1 truncate">{section.caption}</span>
+        <span className="flex-1 truncate">{caption}</span>
         <ChevronDown
           aria-hidden
           className={cn(
@@ -386,11 +421,13 @@ function NavItemLink({
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
+  const { t } = useTranslation("common");
+  const label = NAV_ITEM_KEYS[item.to] ? t(NAV_ITEM_KEYS[item.to]) : item.label;
   return (
     <NavLink
       to={item.to}
       end={item.to === "/"}
-      title={collapsed ? item.label : undefined}
+      title={collapsed ? label : undefined}
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
@@ -419,7 +456,7 @@ function NavItemLink({
           <Icon className="h-4 w-4 shrink-0" />
 
           {!collapsed && (
-            <span className="whitespace-nowrap">{item.label}</span>
+            <span className="whitespace-nowrap">{label}</span>
           )}
 
           {/* Tooltip in collapsed mode — surfaces on hover OR keyboard
@@ -437,7 +474,7 @@ function NavItemLink({
                 "group-hover/nav:opacity-100 group-focus-visible/nav:opacity-100",
               )}
             >
-              {item.label}
+              {label}
             </span>
           )}
         </>
