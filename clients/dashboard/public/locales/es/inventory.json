@@ -1,0 +1,37 @@
+{
+  "title": "Inventario",
+  "fields": {
+    "sku": "SKU",
+    "product": "Producto",
+    "warehouse": "Bodega",
+    "stock": "Stock",
+    "stockOnHand": "Stock disponible",
+    "stockReserved": "Stock reservado",
+    "stockAvailable": "Stock libre",
+    "minStock": "Stock mínimo",
+    "serialNumber": "Número de serie",
+    "cost": "Costo promedio",
+    "location": "Ubicación"
+  },
+  "warehouses": {
+    "bogota": "Bogotá",
+    "medellin": "Medellín"
+  },
+  "movements": {
+    "title": "Movimientos",
+    "entry": "Entrada",
+    "exit": "Salida",
+    "transfer": "Transferencia",
+    "adjustment": "Ajuste",
+    "return": "Devolución",
+    "writeoff": "Baja"
+  },
+  "alerts": {
+    "belowMinimum": "Stock por debajo del mínimo",
+    "outOfStock": "Agotado"
+  },
+  "empty": {
+    "title": "Sin movimientos",
+    "body": "Los movimientos de inventario aparecerán aquí."
+  }
+}

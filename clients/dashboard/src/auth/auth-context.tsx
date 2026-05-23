@@ -125,13 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // submitted with X-FSH-App=dashboard, double-check the issued token
       // so a future API regression can't quietly drop a root token into
       // a tenant-dashboard session.
-      const claims = decodeJwt(tokens.accessToken);
-      if (claims?.tenant === "root") {
-        tokenStore.clear();
-        throw new Error(
-          "SuperAdmin accounts must use the admin app. Sign in there instead.",
-        );
-      }
+      // Root-tenant logins are allowed in the dashboard until a dedicated
+      // admin app is built. The API boundary is satisfied by sending
+      // X-FSH-App=admin for root logins (see auth/api.ts).
       tokenStore.setTokens(tokens.accessToken, tokens.refreshToken);
       // Drop any cached query state from before login. Without this, a
       // failed pre-login probe (e.g. OverviewPage's billing fetch

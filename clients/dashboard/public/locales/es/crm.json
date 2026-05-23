@@ -1,0 +1,51 @@
+{
+  "title": "CRM",
+  "leads": {
+    "title": "Leads",
+    "singular": "Lead",
+    "fields": {
+      "name": "Nombre",
+      "email": "Correo",
+      "phone": "Teléfono",
+      "source": "Origen",
+      "stage": "Etapa",
+      "assignedTo": "Asignado a",
+      "score": "Puntuación",
+      "value": "Valor estimado"
+    },
+    "stages": {
+      "new": "Nuevo",
+      "contacted": "Contactado",
+      "qualified": "Calificado",
+      "proposal": "Propuesta",
+      "negotiation": "Negociación",
+      "won": "Ganado",
+      "lost": "Perdido"
+    }
+  },
+  "customers": {
+    "title": "Clientes",
+    "singular": "Cliente",
+    "fields": {
+      "name": "Nombre",
+      "email": "Correo",
+      "phone": "Teléfono",
+      "type": "Tipo",
+      "nit": "NIT / Cédula",
+      "city": "Ciudad",
+      "creditLimit": "Límite de crédito"
+    },
+    "types": {
+      "b2c": "Persona natural",
+      "b2b": "Empresa"
+    }
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "newDeal": "Nueva oportunidad"
+  },
+  "empty": {
+    "title": "Sin registros",
+    "body": "Los contactos y oportunidades aparecerán aquí."
+  }
+}

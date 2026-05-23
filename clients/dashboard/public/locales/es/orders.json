@@ -1,0 +1,36 @@
+{
+  "title": "Pedidos",
+  "singular": "Pedido",
+  "fields": {
+    "orderNumber": "Número",
+    "customer": "Cliente",
+    "date": "Fecha",
+    "status": "Estado",
+    "total": "Total",
+    "items": "Artículos",
+    "paymentMethod": "Método de pago",
+    "shippingAddress": "Dirección de envío",
+    "notes": "Notas"
+  },
+  "status": {
+    "quotation": "Cotización",
+    "confirmed": "Confirmado",
+    "paid": "Pagado",
+    "preparing": "En preparación",
+    "shipped": "Despachado",
+    "delivered": "Entregado",
+    "cancelled": "Cancelado",
+    "returned": "Devuelto"
+  },
+  "actions": {
+    "create": "Nuevo pedido",
+    "confirm": "Confirmar pedido",
+    "cancel": "Cancelar pedido",
+    "ship": "Marcar como despachado",
+    "deliver": "Confirmar entrega"
+  },
+  "empty": {
+    "title": "Sin pedidos aún",
+    "body": "Los pedidos de tus clientes aparecerán aquí."
+  }
+}

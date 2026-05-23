@@ -1,0 +1,72 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "search": "Search",
+    "export": "Export",
+    "filter": "Filter",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "prev": "Previous",
+    "confirm": "Confirm",
+    "add": "Add",
+    "clear": "Clear",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "refresh": "Refresh",
+    "apply": "Apply"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "hidden": "Hidden",
+    "all": "All",
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "feedback": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "deleting": "Deleting…",
+    "noResults": "No results",
+    "noData": "No data",
+    "errorLoading": "Error loading data",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "created": "Created successfully",
+    "updated": "Updated successfully",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete",
+    "createFailed": "Failed to create",
+    "updateFailed": "Failed to update",
+    "confirmDelete": "Confirm deletion?",
+    "irreversible": "This action cannot be undone."
+  },
+  "table": {
+    "pageOf": "Page {{page}} of {{total}}",
+    "rowsPerPage": "Rows per page",
+    "noData": "No records to display",
+    "showing": "Showing {{from}}–{{to}} of {{total}}"
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "body": "Add the first one to get started."
+  },
+  "nav": {
+    "overview": "Overview",
+    "catalog": "Catalog",
+    "inventory": "Inventory",
+    "orders": "Orders",
+    "crm": "CRM",
+    "settings": "Settings"
+  }
+}

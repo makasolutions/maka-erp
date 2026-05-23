@@ -1,0 +1,82 @@
+{
+  "title": "Catálogo",
+  "products": {
+    "title": "Productos",
+    "singular": "Producto",
+    "fields": {
+      "sku": "SKU",
+      "name": "Nombre",
+      "brand": "Marca",
+      "category": "Categoría",
+      "price": "Precio",
+      "basePrice": "Precio base",
+      "status": "Estado",
+      "stock": "Stock",
+      "description": "Descripción",
+      "specs": "Especificaciones",
+      "barcode": "Código de barras",
+      "weight": "Peso",
+      "dimensions": "Dimensiones"
+    },
+    "actions": {
+      "create": "Nuevo producto",
+      "edit": "Editar producto",
+      "delete": "Eliminar producto",
+      "duplicate": "Duplicar producto",
+      "publish": "Publicar",
+      "unpublish": "Despublicar",
+      "syncWoo": "Sincronizar con WooCommerce"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "draft": "Borrador",
+      "outOfStock": "Agotado"
+    },
+    "empty": {
+      "title": "Sin productos aún",
+      "body": "Crea el primer producto para comenzar a construir tu catálogo."
+    }
+  },
+  "brands": {
+    "title": "Marcas",
+    "singular": "Marca",
+    "fields": {
+      "name": "Nombre",
+      "slug": "Slug",
+      "description": "Descripción",
+      "logo": "Logo",
+      "website": "Sitio web",
+      "country": "País de origen"
+    },
+    "actions": {
+      "create": "Nueva marca",
+      "edit": "Editar marca",
+      "delete": "Eliminar marca"
+    },
+    "empty": {
+      "title": "Sin marcas aún",
+      "body": "Agrega las marcas que distribuyes para organizar tu catálogo."
+    }
+  },
+  "categories": {
+    "title": "Categorías",
+    "singular": "Categoría",
+    "fields": {
+      "name": "Nombre",
+      "slug": "Slug",
+      "parent": "Categoría padre",
+      "description": "Descripción",
+      "image": "Imagen"
+    },
+    "actions": {
+      "create": "Nueva categoría",
+      "edit": "Editar categoría",
+      "delete": "Eliminar categoría"
+    },
+    "empty": {
+      "title": "Sin categorías aún",
+      "body": "Crea categorías para organizar los productos."
+    }
+  }
+}

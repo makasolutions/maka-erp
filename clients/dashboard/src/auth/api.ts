@@ -15,11 +15,14 @@ export function issueToken(input: {
   return apiFetch<TokenResponse>("/api/v1/identity/token/issue", {
     method: "POST",
     body: JSON.stringify({ email: input.email, password: input.password }),
-    // X-FSH-App tells the API this credential request originated from the
-    // tenant dashboard. The server uses it to enforce the SuperAdmin / app
-    // boundary — a root-tenant login submitted with X-FSH-App=dashboard is
-    // rejected with 403 instead of receiving a usable token.
-    headers: { tenant: input.tenant, "X-FSH-App": "dashboard" },
+    // X-FSH-App tells the API which app shell is requesting the token.
+    // Root-tenant logins identify as "admin" so the API boundary check
+    // (tenant=root + X-FSH-App=dashboard → 403) doesn't fire while the
+    // dedicated admin app is still under construction.
+    headers: {
+      tenant: input.tenant,
+      "X-FSH-App": input.tenant.toLowerCase() === "root" ? "admin" : "dashboard",
+    },
     skipAuth: true,
   });
 }

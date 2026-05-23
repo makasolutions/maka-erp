@@ -93,6 +93,15 @@ const GroupDetailPage = lazyNamed(
 );
 const MyFilesPage = lazyNamed(() => import("@/pages/files/my-files"), "MyFilesPage");
 const ChatPage = lazyNamed(() => import("@/pages/chat/chat-page"), "ChatPage");
+const SyncfusionTestPage = lazyNamed(
+  () => import("@/pages/syncfusion-test"),
+  "SyncfusionTestPage",
+);
+// DEV ONLY - remove before production
+const MakaComponentsPage = lazyNamed(
+  () => import("@/pages/maka-components"),
+  "MakaComponentsPage",
+);
 
 /**
  * RouteFallback — what shows while a lazy chunk is downloading. Mirrors
@@ -167,6 +176,10 @@ export const router = createBrowserRouter([
           { path: "files", element: withSuspense(<MyFilesPage />) },
           { path: "chat", element: withSuspense(<ChatPage />) },
           { path: "chat/:channelId", element: withSuspense(<ChatPage />) },
+          // ── Verificación instalación Syncfusion — eliminar antes del primer release ──
+          { path: "sf-test", element: withSuspense(<SyncfusionTestPage />) },
+          // DEV ONLY - remove before production
+          { path: "maka-components", element: withSuspense(<MakaComponentsPage />) },
           { path: "tickets", element: withSuspense(<TicketsPage />) },
           { path: "tickets/:ticketId", element: withSuspense(<TicketDetailPage />) },
           { path: "identity", element: <Navigate to="/identity/users" replace /> },

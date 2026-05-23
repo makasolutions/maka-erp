@@ -1,0 +1,72 @@
+{
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "search": "Buscar",
+    "export": "Exportar",
+    "filter": "Filtrar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "prev": "Anterior",
+    "confirm": "Confirmar",
+    "add": "Agregar",
+    "clear": "Limpiar",
+    "view": "Ver",
+    "download": "Descargar",
+    "upload": "Subir",
+    "refresh": "Actualizar",
+    "apply": "Aplicar"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending": "Pendiente",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "hidden": "Oculto",
+    "all": "Todos",
+    "draft": "Borrador",
+    "published": "Publicado",
+    "archived": "Archivado"
+  },
+  "feedback": {
+    "loading": "Cargando…",
+    "saving": "Guardando…",
+    "deleting": "Eliminando…",
+    "noResults": "Sin resultados",
+    "noData": "Sin datos",
+    "errorLoading": "Error al cargar",
+    "saved": "Guardado correctamente",
+    "deleted": "Eliminado correctamente",
+    "created": "Creado correctamente",
+    "updated": "Actualizado correctamente",
+    "saveFailed": "Error al guardar",
+    "deleteFailed": "Error al eliminar",
+    "createFailed": "Error al crear",
+    "updateFailed": "Error al actualizar",
+    "confirmDelete": "¿Confirmar eliminación?",
+    "irreversible": "Esta acción no se puede deshacer."
+  },
+  "table": {
+    "pageOf": "Página {{page}} de {{total}}",
+    "rowsPerPage": "Filas por página",
+    "noData": "No hay registros para mostrar",
+    "showing": "Mostrando {{from}}–{{to}} de {{total}}"
+  },
+  "empty": {
+    "title": "Sin registros aún",
+    "body": "Agrega el primero para comenzar."
+  },
+  "nav": {
+    "overview": "Resumen",
+    "catalog": "Catálogo",
+    "inventory": "Inventario",
+    "orders": "Pedidos",
+    "crm": "CRM",
+    "settings": "Configuración"
+  }
+}

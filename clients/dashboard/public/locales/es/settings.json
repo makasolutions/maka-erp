@@ -1,0 +1,47 @@
+{
+  "title": "Configuración",
+  "sections": {
+    "profile": "Perfil",
+    "security": "Seguridad",
+    "appearance": "Apariencia",
+    "notifications": "Notificaciones",
+    "apiKeys": "API Keys",
+    "tenant": "Tenant",
+    "billing": "Facturación"
+  },
+  "profile": {
+    "displayName": "Nombre visible",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "timezone": "Zona horaria",
+    "language": "Idioma",
+    "avatar": "Foto de perfil"
+  },
+  "security": {
+    "changePassword": "Cambiar contraseña",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "twoFactor": "Verificación en dos pasos",
+    "sessions": "Sesiones activas",
+    "revokeAll": "Revocar todas las sesiones"
+  },
+  "appearance": {
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema",
+    "density": "Densidad",
+    "compact": "Compacto",
+    "comfortable": "Cómodo"
+  },
+  "notifications": {
+    "email": "Notificaciones por correo",
+    "push": "Notificaciones push",
+    "whatsapp": "Notificaciones por WhatsApp",
+    "orders": "Nuevos pedidos",
+    "stock": "Alertas de stock",
+    "payments": "Pagos recibidos"
+  },
+  "saved": "Configuración guardada"
+}

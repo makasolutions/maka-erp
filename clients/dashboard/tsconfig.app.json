@@ -17,6 +17,7 @@
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "noEmit": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
