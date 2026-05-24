@@ -28,6 +28,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   adjustProductStock,
   changeProductPrice,
@@ -95,6 +96,7 @@ type DialogState =
 // ───────────────────────────────────────────────────────────────────────
 
 export function ProductDetailPage() {
+  const { t } = useTranslation("catalog");
   const { productId = "" } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogState>({ mode: "closed" });
@@ -126,7 +128,7 @@ export function ProductDetailPage() {
 
   return (
     <div className="pb-12">
-      <EntityDetailBack to="/catalog/products" label="Back to products" />
+      <EntityDetailBack to="/catalog/products" label={t("products.backToProducts")} />
 
       {productQuery.isError && (
         <div className="mb-5">
@@ -151,21 +153,21 @@ export function ProductDetailPage() {
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[300px_1fr]">
             {/* Left: sidebar with at-a-glance numbers + audit */}
             <aside className="space-y-5">
-              <EntityDetailSection title="Pricing" icon={CircleDollarSign}>
+              <EntityDetailSection title={t("products.detail.pricingTitle")} icon={CircleDollarSign}>
                 <PricingPanel
                   product={product}
                   onPriceChange={() => setDialog({ mode: "price" })}
                 />
               </EntityDetailSection>
 
-              <EntityDetailSection title="Inventory" icon={Package}>
+              <EntityDetailSection title={t("products.detail.inventoryTitle")} icon={Package}>
                 <InventoryPanel
                   product={product}
                   onStockAdjust={() => setDialog({ mode: "stock" })}
                 />
               </EntityDetailSection>
 
-              <EntityDetailSection title="Identifiers" icon={Hash}>
+              <EntityDetailSection title={t("products.detail.identifiersTitle")} icon={Hash}>
                 <IdentifiersPanel
                   product={product}
                   brand={brand}
@@ -177,9 +179,9 @@ export function ProductDetailPage() {
             {/* Right: masonry-ish content area */}
             <div className="space-y-5">
               <EntityDetailSection
-                title="Description"
+                title={t("products.fields.description")}
                 icon={FileText}
-                description="Customer-facing copy shown on the product page."
+                description={t("products.detail.descSectionDesc")}
                 action={
                   <Button
                     variant="outline"
@@ -188,7 +190,7 @@ export function ProductDetailPage() {
                     className="gap-1.5"
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                    Edit
+                    {t("common:actions.edit")}
                   </Button>
                 }
               >
@@ -196,9 +198,9 @@ export function ProductDetailPage() {
               </EntityDetailSection>
 
               <EntityDetailSection
-                title="Images"
+                title={t("products.detail.imagesTitle")}
                 icon={ImageIcon}
-                description="Drop more to add. Star one to make it the cover."
+                description={t("products.detail.imagesSectionDesc")}
               >
                 <ProductImageManager
                   productId={product.id}
@@ -207,7 +209,7 @@ export function ProductDetailPage() {
                 />
               </EntityDetailSection>
 
-              <EntityDetailSection title="Audit" icon={Info}>
+              <EntityDetailSection title={t("products.detail.auditTitle")} icon={Info}>
                 <AuditPanel product={product} />
               </EntityDetailSection>
             </div>
@@ -263,6 +265,8 @@ function ProductHero({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation("catalog");
+
   const stockTone: "default" | "warning" | "danger" =
     product.stock === 0 ? "danger" : product.stock < LOW_STOCK ? "warning" : "default";
 
@@ -305,9 +309,9 @@ function ProductHero({
       badges={
         <>
           {product.isActive ? (
-            <EntityStatusBadge tone="success">Active</EntityStatusBadge>
+            <EntityStatusBadge tone="success">{t("products.status.active")}</EntityStatusBadge>
           ) : (
-            <EntityStatusBadge tone="danger">Hidden</EntityStatusBadge>
+            <EntityStatusBadge tone="danger">{t("products.hiddenBadge")}</EntityStatusBadge>
           )}
         </>
       }
@@ -322,11 +326,11 @@ function ProductHero({
             className="gap-1.5"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">{t("common:actions.refresh")}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={onEdit} className="gap-1.5">
             <Pencil className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Edit</span>
+            <span className="hidden sm:inline">{t("common:actions.edit")}</span>
           </Button>
           <Button
             variant="outline"
@@ -335,7 +339,7 @@ function ProductHero({
             className="gap-1.5 hover:!border-[var(--color-destructive)] hover:!text-[var(--color-destructive)]"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Delete</span>
+            <span className="hidden sm:inline">{t("common:actions.delete")}</span>
           </Button>
         </>
       }
@@ -344,7 +348,7 @@ function ProductHero({
           <EntityDetailStat
             icon={CircleDollarSign}
             value={formatMoney(product.price.amount, product.price.currency)}
-            label="price"
+            label={t("products.fields.price")}
             tone="primary"
           />
           <EntityDetailStat
@@ -352,17 +356,17 @@ function ProductHero({
             value={product.stock}
             label={
               stockTone === "danger"
-                ? "out of stock"
+                ? t("products.outOfStock")
                 : stockTone === "warning"
-                  ? `low (< ${LOW_STOCK})`
-                  : "in stock"
+                  ? t("products.lowStockDetail", { threshold: LOW_STOCK })
+                  : t("products.inStock")
             }
             tone={stockTone}
           />
           <EntityDetailStat
             icon={Layers}
             value={product.images?.length ?? 0}
-            label="images"
+            label={t("products.imagesLabel")}
           />
         </>
       }
@@ -389,11 +393,11 @@ function ProductHero({
             </EntityDetailMeta>
           )}
           <EntityDetailMeta icon={Info} hideOnMobile>
-            Created {formatRelative(product.createdAtUtc)}
+            {t("products.detail.createdWhen", { when: formatRelative(product.createdAtUtc) })}
           </EntityDetailMeta>
           {product.updatedAtUtc && (
             <EntityDetailMeta icon={Info} hideOnTablet>
-              Updated {formatRelative(product.updatedAtUtc)}
+              {t("products.detail.updatedWhen", { when: formatRelative(product.updatedAtUtc) })}
             </EntityDetailMeta>
           )}
         </>
@@ -413,6 +417,8 @@ function PricingPanel({
   product: ProductDto;
   onPriceChange: () => void;
 }) {
+  const { t } = useTranslation("catalog");
+
   return (
     <div className="space-y-3">
       <div>
@@ -420,7 +426,7 @@ function PricingPanel({
           {formatMoney(product.price.amount, product.price.currency)}
         </div>
         <div className="mt-1 text-[11.5px] text-[var(--color-muted-foreground)]">
-          Listed price · {product.price.currency}
+          {t("products.detail.listedPrice", { currency: product.price.currency })}
         </div>
       </div>
       <Button
@@ -430,7 +436,7 @@ function PricingPanel({
         className="w-full gap-1.5"
       >
         <CircleDollarSign className="h-3.5 w-3.5" />
-        Change price
+        {t("products.actions.changePrice")}
       </Button>
     </div>
   );
@@ -443,8 +449,11 @@ function InventoryPanel({
   product: ProductDto;
   onStockAdjust: () => void;
 }) {
+  const { t } = useTranslation("catalog");
+
   const tone: "default" | "warning" | "danger" =
     product.stock === 0 ? "danger" : product.stock < LOW_STOCK ? "warning" : "default";
+
   return (
     <div className="space-y-3">
       <div>
@@ -462,17 +471,17 @@ function InventoryPanel({
           {tone === "danger" ? (
             <>
               <AlertTriangle className="h-3 w-3 text-[var(--color-destructive)]" />
-              <span className="text-[var(--color-destructive)]">Out of stock</span>
+              <span className="text-[var(--color-destructive)]">{t("products.outOfStock")}</span>
             </>
           ) : tone === "warning" ? (
             <>
               <AlertTriangle className="h-3 w-3 text-[var(--color-warning)]" />
               <span className="text-[var(--color-warning)]">
-                Below {LOW_STOCK} units
+                {t("products.detail.belowUnits", { threshold: LOW_STOCK })}
               </span>
             </>
           ) : (
-            <span>Units on hand</span>
+            <span>{t("products.detail.unitsOnHand")}</span>
           )}
         </div>
       </div>
@@ -483,7 +492,7 @@ function InventoryPanel({
         className="w-full gap-1.5"
       >
         <Package className="h-3.5 w-3.5" />
-        Adjust stock
+        {t("products.actions.adjustStock")}
       </Button>
     </div>
   );
@@ -498,17 +507,19 @@ function IdentifiersPanel({
   brand: BrandDto | undefined;
   category: CategoryDto | undefined;
 }) {
+  const { t } = useTranslation("catalog");
+
   return (
     <dl className="space-y-3 text-[13px]">
-      <MetaRow label="SKU" value={<IdCode value={product.sku} />} />
-      <MetaRow label="Slug" value={<IdCode value={product.slug} />} />
-      <MetaRow label="Product ID" value={<IdCode value={product.id} />} />
+      <MetaRow label={t("products.fields.sku")} value={<IdCode value={product.sku} />} />
+      <MetaRow label={t("categories.fields.slug")} value={<IdCode value={product.slug} />} />
+      <MetaRow label={t("products.detail.productId")} value={<IdCode value={product.id} />} />
       <MetaRow
-        label="Brand ID"
+        label={t("products.detail.brandId")}
         value={<IdCode value={brand?.id ?? product.brandId} />}
       />
       <MetaRow
-        label="Category ID"
+        label={t("products.detail.categoryId")}
         value={<IdCode value={category?.id ?? product.categoryId} />}
       />
     </dl>
@@ -516,25 +527,31 @@ function IdentifiersPanel({
 }
 
 function AuditPanel({ product }: { product: ProductDto }) {
+  const { t } = useTranslation("catalog");
+
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-2">
       <MetaRow
-        label="Created"
+        label={t("products.fields.created")}
         value={formatDateMono(product.createdAtUtc)}
         hint={formatRelative(product.createdAtUtc)}
       />
       {product.updatedAtUtc ? (
         <MetaRow
-          label="Revised"
+          label={t("products.detail.revised")}
           value={formatDateMono(product.updatedAtUtc)}
           hint={formatRelative(product.updatedAtUtc)}
         />
       ) : (
-        <MetaRow label="Revised" value="Never" hint="no edits since creation" />
+        <MetaRow
+          label={t("products.detail.revised")}
+          value={t("products.detail.never")}
+          hint={t("products.detail.noEdits")}
+        />
       )}
       <MetaRow
-        label="Status"
-        value={product.isActive ? "Active" : "Hidden"}
+        label={t("products.fields.status")}
+        value={product.isActive ? t("products.status.active") : t("products.hiddenBadge")}
         tone={product.isActive ? "success" : "muted"}
       />
     </dl>
@@ -542,6 +559,8 @@ function AuditPanel({ product }: { product: ProductDto }) {
 }
 
 function DescriptionBody({ product }: { product: ProductDto }) {
+  const { t } = useTranslation("catalog");
+
   if (product.description) {
     return (
       <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[var(--color-foreground)]/90">
@@ -551,8 +570,7 @@ function DescriptionBody({ product }: { product: ProductDto }) {
   }
   return (
     <p className="text-[13px] italic leading-relaxed text-[var(--color-muted-foreground)]">
-      No description on file. Customers will see a blank description on the
-      product page until you add one.
+      {t("products.detail.noDescOnFile")}
     </p>
   );
 }
@@ -644,19 +662,21 @@ function DetailSkeleton() {
 }
 
 function NotFoundPanel() {
+  const { t } = useTranslation("catalog");
+
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-8 py-16 text-center">
       <div className="mb-5 grid size-16 place-items-center rounded-2xl bg-[oklch(from_var(--color-primary)_l_c_h_/_0.08)]">
         <PackageX className="size-7 text-[var(--color-primary)]" />
       </div>
       <h3 className="mb-1.5 text-[17px] font-semibold text-[var(--color-foreground)]">
-        Product not found
+        {t("products.detail.notFound")}
       </h3>
       <p className="mb-6 text-[13px] text-[var(--color-muted-foreground)]">
-        It may have been deleted, or the link may be wrong.
+        {t("products.detail.notFoundDesc")}
       </p>
       <Button asChild variant="outline" size="sm">
-        <Link to="/catalog/products">Back to products</Link>
+        <Link to="/catalog/products">{t("products.backToProducts")}</Link>
       </Button>
     </div>
   );
@@ -664,9 +684,6 @@ function NotFoundPanel() {
 
 // ───────────────────────────────────────────────────────────────────────
 //  Edit / Delete / Price / Stock dialogs
-//  (Self-contained, take open + product + onClose. The product list page
-//  has its own copies; if a third consumer appears, lift to a shared
-//  module.)
 // ───────────────────────────────────────────────────────────────────────
 
 function ProductEditorDialog({
@@ -678,6 +695,7 @@ function ProductEditorDialog({
   product: ProductDto;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
 
   const brandsQuery = useQuery({
@@ -712,11 +730,12 @@ function ProductEditorDialog({
   const updateMutation = useMutation({
     mutationFn: (input: UpdateProductInput) => updateProduct(input),
     onSuccess: () => {
-      toast.success("Product updated");
+      toast.success(t("products.updated"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: (err: unknown) => toast.error("Update failed", { description: describe(err) }),
+    onError: (err: unknown) =>
+      toast.error(t("products.updateFailed"), { description: describe(err) }),
   });
 
   const trimmedName = name.trim();
@@ -743,16 +762,15 @@ function ProductEditorDialog({
       <DialogContent className="!max-w-xl">
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit product</DialogTitle>
+            <DialogTitle>{t("products.editTitle")}</DialogTitle>
             <DialogDescription>
-              Update details for {product.name}. Use the price/stock actions in
-              the sidebar to change those — they emit domain events.
+              {t("products.editDetailsDesc", { name: product.name })}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody className="space-y-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field id="edit-name" label="Name" required>
+              <Field id="edit-name" label={t("products.fields.name")} required>
                 <Input
                   id="edit-name"
                   value={name}
@@ -762,7 +780,11 @@ function ProductEditorDialog({
                   autoFocus
                 />
               </Field>
-              <Field id="edit-sku" label="SKU" hint="SKU is fixed after creation.">
+              <Field
+                id="edit-sku"
+                label={t("products.fields.sku")}
+                hint={t("products.fields.skuFixedHint")}
+              >
                 <Input
                   id="edit-sku"
                   value={product.sku}
@@ -773,10 +795,10 @@ function ProductEditorDialog({
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field id="edit-brand" label="Brand" required>
+              <Field id="edit-brand" label={t("products.fields.brand")} required>
                 <Combobox
                   id="edit-brand"
-                  label="Brand"
+                  label={t("products.fields.brand")}
                   value={brandId || null}
                   onChange={(v) => setBrandId(v ?? "")}
                   options={brands.map((b) => ({ value: b.id, label: b.name }))}
@@ -784,10 +806,10 @@ function ProductEditorDialog({
                   required
                 />
               </Field>
-              <Field id="edit-category" label="Category" required>
+              <Field id="edit-category" label={t("products.fields.category")} required>
                 <Combobox
                   id="edit-category"
-                  label="Category"
+                  label={t("products.fields.category")}
                   value={categoryId || null}
                   onChange={(v) => setCategoryId(v ?? "")}
                   options={categories.map((c) => ({ value: c.id, label: c.name }))}
@@ -797,7 +819,11 @@ function ProductEditorDialog({
               </Field>
             </div>
 
-            <Field id="edit-description" label="Description" hint="Shown on listing and product detail pages.">
+            <Field
+              id="edit-description"
+              label={t("products.fields.description")}
+              hint={t("products.fields.descHint")}
+            >
               <textarea
                 id="edit-description"
                 value={description}
@@ -815,24 +841,30 @@ function ProductEditorDialog({
             <div className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
               <div>
                 <div className="text-[12px] font-medium text-[var(--color-foreground)]">
-                  Visibility
+                  {t("products.visibility")}
                 </div>
                 <div className="mt-0.5 text-[12px] text-[var(--color-muted-foreground)]">
-                  {isActive ? "Listed for customers." : "Hidden from listings."}
+                  {isActive ? t("products.visibleDesc") : t("products.hiddenVisibilityDesc")}
                 </div>
               </div>
-              <Switch checked={isActive} onCheckedChange={setIsActive} aria-label="Active" />
+              <Switch
+                checked={isActive}
+                onCheckedChange={setIsActive}
+                aria-label={t("products.visibility")}
+              />
             </div>
           </DialogBody>
 
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={updateMutation.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={updateMutation.isPending || !valid}>
-              {updateMutation.isPending ? "Saving…" : "Save changes"}
+              {updateMutation.isPending
+                ? t("common:feedback.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
@@ -852,34 +884,37 @@ function DeleteDialog({
   onClose: () => void;
   onDeleted: () => void;
 }) {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
+
   const mutation = useMutation({
     mutationFn: () => deleteProduct(product.id),
     onSuccess: () => {
-      toast.success("Product deleted");
+      toast.success(t("products.deleted"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
       onDeleted();
     },
-    onError: (err: unknown) => toast.error("Delete failed", { description: describe(err) }),
+    onError: (err: unknown) =>
+      toast.error(t("products.deleteFailed"), { description: describe(err) }),
   });
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete product</DialogTitle>
+          <DialogTitle>{t("products.actions.delete")}</DialogTitle>
           <DialogDescription>
-            This permanently removes{" "}
-            <span className="font-medium text-[var(--color-foreground)]">{product.name}</span>{" "}
-            <span className="opacity-70">({formatDate(product.createdAtUtc)})</span>. The product
-            will no longer appear in any listing or report.
+            {t("products.deleteFullDesc", {
+              name: product.name,
+              date: formatDate(product.createdAtUtc),
+            })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={mutation.isPending}>
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -887,7 +922,9 @@ function DeleteDialog({
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
           >
-            {mutation.isPending ? "Deleting…" : "Delete product"}
+            {mutation.isPending
+              ? t("common:feedback.deleting")
+              : t("products.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -904,6 +941,7 @@ function PriceDialog({
   product: ProductDto;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState(String(product.price.amount));
   const [currency, setCurrency] = useState(product.price.currency);
@@ -918,11 +956,12 @@ function PriceDialog({
   const mutation = useMutation({
     mutationFn: (input: ChangeProductPriceInput) => changeProductPrice(input),
     onSuccess: () => {
-      toast.success("Price updated");
+      toast.success(t("products.priceChanged"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: (err: unknown) => toast.error("Price change failed", { description: describe(err) }),
+    onError: (err: unknown) =>
+      toast.error(t("products.changePriceFailed"), { description: describe(err) }),
   });
 
   const newAmount = Number.parseFloat(amount);
@@ -940,17 +979,16 @@ function PriceDialog({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Change price</DialogTitle>
+            <DialogTitle>{t("products.changePriceRowTitle")}</DialogTitle>
             <DialogDescription>
-              {product.name} — emits a{" "}
-              <code className="font-mono text-[11px]">ProductPriceChanged</code> domain event.
+              {t("products.changePriceDomainDesc", { name: product.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  was
+                  {t("products.priceWas")}
                 </div>
                 <div className="font-display mt-1 text-[18px] font-semibold tabular-nums">
                   {formatMoney(product.price.amount, product.price.currency)}
@@ -959,7 +997,7 @@ function PriceDialog({
               <ArrowDown className="h-4 w-4 -rotate-90 text-[var(--color-muted-foreground)]" />
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-[var(--color-primary)]">
-                  becomes
+                  {t("products.priceBecomes")}
                 </div>
                 <div
                   className={cn(
@@ -976,7 +1014,7 @@ function PriceDialog({
               </div>
             </div>
             <div className="grid grid-cols-[1fr_auto] gap-3">
-              <Field id="pd-price-amount" label="New amount" required>
+              <Field id="pd-price-amount" label={t("products.priceNewAmount")} required>
                 <Input
                   id="pd-price-amount"
                   type="number"
@@ -989,7 +1027,7 @@ function PriceDialog({
                   autoFocus
                 />
               </Field>
-              <Field id="pd-price-currency" label="Currency" required>
+              <Field id="pd-price-currency" label={t("products.fields.currency")} required>
                 <Input
                   id="pd-price-currency"
                   value={currency}
@@ -1004,11 +1042,13 @@ function PriceDialog({
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={mutation.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={mutation.isPending || !valid}>
-              {mutation.isPending ? "Saving…" : "Change price"}
+              {mutation.isPending
+                ? t("common:feedback.saving")
+                : t("products.changePriceRowTitle")}
             </Button>
           </DialogFooter>
         </form>
@@ -1026,6 +1066,7 @@ function StockDialog({
   product: ProductDto;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
   const [delta, setDelta] = useState("0");
 
@@ -1036,11 +1077,12 @@ function StockDialog({
   const mutation = useMutation({
     mutationFn: (input: AdjustProductStockInput) => adjustProductStock(input),
     onSuccess: () => {
-      toast.success("Stock adjusted");
+      toast.success(t("products.stockAdjusted"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: (err: unknown) => toast.error("Adjustment failed", { description: describe(err) }),
+    onError: (err: unknown) =>
+      toast.error(t("products.adjustmentFailed"), { description: describe(err) }),
   });
 
   const deltaNum = Number.parseInt(delta, 10);
@@ -1059,24 +1101,23 @@ function StockDialog({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Adjust stock</DialogTitle>
+            <DialogTitle>{t("products.adjustStockRowTitle")}</DialogTitle>
             <DialogDescription>
-              {product.name} — add or remove units. Emits a{" "}
-              <code className="font-mono text-[11px]">ProductStockAdjusted</code> event.
+              {t("products.adjustStockDomainDesc", { name: product.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3 tabular-nums">
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  current
+                  {t("products.stockCurrentLabel")}
                 </div>
                 <div className="font-display mt-1 text-[18px] font-semibold">{product.stock}</div>
               </div>
               <ArrowDown className="h-4 w-4 -rotate-90 text-[var(--color-muted-foreground)]" />
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-[var(--color-primary)]">
-                  becomes
+                  {t("products.priceBecomes")}
                 </div>
                 <div
                   className={cn(
@@ -1110,7 +1151,7 @@ function StockDialog({
                 type="number"
                 step="1"
                 className="text-center font-mono text-[15px] tabular-nums"
-                aria-label="Delta"
+                aria-label={t("products.adjustDeltaAria")}
               />
               <Button
                 type="button"
@@ -1126,8 +1167,7 @@ function StockDialog({
               <div className="flex items-start gap-2 rounded-md bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.08)] px-3 py-2 text-[12.5px] text-[var(--color-destructive)]">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  Stock cannot go negative. The maximum decrement here is{" "}
-                  <span className="font-mono">{product.stock}</span>.
+                  {t("products.stockNegativeWarning", { max: product.stock })}
                 </span>
               </div>
             )}
@@ -1135,14 +1175,16 @@ function StockDialog({
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={mutation.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
               type="submit"
               disabled={mutation.isPending || !valid || willGoNegative}
             >
-              {mutation.isPending ? "Adjusting…" : "Adjust stock"}
+              {mutation.isPending
+                ? t("products.adjusting")
+                : t("products.adjustStockRowTitle")}
             </Button>
           </DialogFooter>
         </form>

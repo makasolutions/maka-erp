@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Receipt } from "lucide-react";
 import {
@@ -65,6 +66,7 @@ const DESKTOP_GRID =
 // ────────────────────────────────────────────────────────────────────
 
 export function InvoicesPage() {
+  const { t } = useTranslation("common");
   const { user } = useAuth();
   const query = useQuery({
     queryKey: ["billing", "invoices", "me"],
@@ -105,7 +107,7 @@ export function InvoicesPage() {
     query.error instanceof ApiRequestError
       ? query.error.problem?.detail ?? query.error.message
       : query.error
-        ? "Failed to load invoices."
+        ? t("feedback.failedToLoad", { resource: t("invoices.title") })
         : null;
 
   const searchActive = search.trim().length > 0;
@@ -114,16 +116,16 @@ export function InvoicesPage() {
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Receipt}
-        title="Invoices"
+        title={t("invoices.title")}
         total={query.data?.length ?? null}
-        unit="invoice"
-        description="Your tenant's billing history, newest first."
+        unit={t("invoices.invoice")}
+        description={t("invoices.description")}
       />
 
       <EntitySearch
         value={search}
         onChange={setSearch}
-        placeholder="Search by invoice number, status, or period…"
+        placeholder={t("invoices.searchPlaceholder")}
       />
 
       {errorMessage && <ErrorBand message={errorMessage} />}
@@ -133,11 +135,11 @@ export function InvoicesPage() {
       ) : filtered.length === 0 ? (
         <EntityEmpty
           icon={Receipt}
-          title={searchActive ? "No invoices found" : "No invoices yet"}
+          title={searchActive ? t("invoices.empty.searchTitle") : t("invoices.empty.title")}
           body={
             searchActive
-              ? `Nothing matches "${search.trim()}". Try a different term or clear the search.`
-              : "Once your tenant has been billed for a period, invoices will appear here."
+              ? t("feedback.noResultsFor", { term: search.trim() })
+              : t("invoices.empty.body")
           }
           action={
             searchActive ? (
@@ -146,7 +148,7 @@ export function InvoicesPage() {
                 onClick={() => setSearch("")}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                Clear search
+                {t("invoices.empty.clearSearch")}
               </Button>
             ) : undefined
           }
@@ -155,8 +157,8 @@ export function InvoicesPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {filtered.length} invoice{filtered.length === 1 ? "" : "s"}{" "}
-              {searchActive ? "matched" : "found"}
+              {filtered.length} {filtered.length === 1 ? t("invoices.invoice") : t("invoices.invoices")}{" "}
+              {searchActive ? t("invoices.matched") : t("invoices.found")}
             </p>
           </div>
 
@@ -170,11 +172,11 @@ export function InvoicesPage() {
           {/* Desktop: table */}
           <EntityListCard className="hidden md:block">
             <EntityListHeader className={DESKTOP_GRID}>
-              <span>Invoice #</span>
-              <span>Customer</span>
-              <span className="text-right">Amount</span>
-              <span>Status</span>
-              <span>Due date</span>
+              <span>{t("invoices.columns.invoiceNumber")}</span>
+              <span>{t("invoices.columns.customer")}</span>
+              <span className="text-right">{t("invoices.columns.amount")}</span>
+              <span>{t("invoices.columns.status")}</span>
+              <span>{t("invoices.columns.dueDate")}</span>
             </EntityListHeader>
             {filtered.map((invoice, i) => (
               <DesktopRow
@@ -195,6 +197,7 @@ export function InvoicesPage() {
 // ────────────────────────────────────────────────────────────────────
 
 function MobileCard({ invoice }: { invoice: InvoiceDto }) {
+  const { t } = useTranslation("common");
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-xs">
       <div className="flex items-start justify-between gap-3">
@@ -210,7 +213,7 @@ function MobileCard({ invoice }: { invoice: InvoiceDto }) {
               </EntityStatusBadge>
             </div>
             <p className="mt-0.5 font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              period {formatPeriod(invoice.periodYear, invoice.periodMonth)}
+              {t("invoices.period")} {formatPeriod(invoice.periodYear, invoice.periodMonth)}
             </p>
           </div>
         </div>
@@ -220,7 +223,7 @@ function MobileCard({ invoice }: { invoice: InvoiceDto }) {
           </div>
           {invoice.dueAtUtc && invoice.status === "Issued" && (
             <div className="mt-0.5 font-mono text-[10.5px] text-[var(--color-warning)]">
-              due {formatDate(invoice.dueAtUtc)}
+              {t("invoices.due")} {formatDate(invoice.dueAtUtc)}
             </div>
           )}
         </div>
@@ -236,6 +239,7 @@ function DesktopRow({
   invoice: InvoiceDto;
   isLast: boolean;
 }) {
+  const { t } = useTranslation("common");
   return (
     <EntityListRow className={DESKTOP_GRID} isLast={isLast}>
       {/* Invoice number + icon */}
@@ -246,7 +250,7 @@ function DesktopRow({
             {invoice.invoiceNumber}
           </code>
           <span className="mt-0.5 block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-            period {formatPeriod(invoice.periodYear, invoice.periodMonth)}
+            {t("invoices.period")} {formatPeriod(invoice.periodYear, invoice.periodMonth)}
           </span>
         </div>
       </div>
@@ -280,7 +284,7 @@ function DesktopRow({
             formatDate(invoice.dueAtUtc)
           )
         ) : invoice.paidAtUtc && invoice.status === "Paid" ? (
-          <span className="text-[var(--color-success)]">paid {formatDate(invoice.paidAtUtc)}</span>
+          <span className="text-[var(--color-success)]">{t("invoices.paid")} {formatDate(invoice.paidAtUtc)}</span>
         ) : (
           "—"
         )}

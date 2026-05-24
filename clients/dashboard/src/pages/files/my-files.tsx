@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/auth/use-auth";
 import {
   Visibility,
@@ -121,6 +122,7 @@ const DESKTOP_GRID_SHARED = "grid-cols-[1fr_160px_120px_160px]";
 
 export function MyFilesPage() {
   void useAuth();
+  const { t } = useTranslation("files");
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabId>("mine");
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,9 +148,6 @@ export function MyFilesPage() {
   const allFiles = tab === "mine" ? myFilesQuery.data ?? [] : sharedFilesQuery.data ?? [];
   const activeQuery = tab === "mine" ? myFilesQuery : sharedFilesQuery;
 
-  // Type-bucket counts run against the unfiltered list so the chips show
-  // "Images 12" even when a search has narrowed the visible rows. Search
-  // matches across filename + uploader id substring.
   const kindCounts = useMemo(() => {
     const counts: Record<FileKind, number> = { image: 0, document: 0, archive: 0, other: 0 };
     for (const f of allFiles) counts[fileKind(f.contentType)] += 1;
@@ -184,16 +183,16 @@ export function MyFilesPage() {
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Files}
-        title="Files"
+        title={t("title")}
         total={allFiles.length}
-        unit="file"
-        description="Drop images, documents, or archives. Uploads are private to you by default; flip a file to public from its preview to make it visible to the rest of the tenant under Shared."
+        unit={t("unit")}
+        description={t("description")}
       />
 
       {/* Tab strip */}
       <div
         role="tablist"
-        aria-label="File scopes"
+        aria-label={t("tabsAriaLabel")}
         className="inline-flex h-9 items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] p-0.5"
       >
         <TabButton
@@ -203,7 +202,7 @@ export function MyFilesPage() {
             clearFilters();
           }}
           icon={Files}
-          label="My files"
+          label={t("tabs.mine")}
           count={myFilesQuery.data?.length}
         />
         <TabButton
@@ -213,7 +212,7 @@ export function MyFilesPage() {
             clearFilters();
           }}
           icon={Share2}
-          label="Shared in tenant"
+          label={t("tabs.shared")}
           count={sharedFilesQuery.data?.length}
         />
       </div>
@@ -233,8 +232,6 @@ export function MyFilesPage() {
         />
       )}
 
-      {/* Search + filter chips. Only render once we have at least one file in
-          this scope — otherwise the empty state below is what the user needs. */}
       {allFiles.length > 0 && (
         <FilterBar
           searchQuery={searchQuery}
@@ -252,8 +249,8 @@ export function MyFilesPage() {
             activeQuery.error instanceof Error
               ? activeQuery.error.message
               : tab === "mine"
-                ? "Couldn't load your files."
-                : "Couldn't load shared files."
+                ? t("error.mine")
+                : t("error.shared")
           }
         />
       ) : activeQuery.isLoading ? (
@@ -265,30 +262,30 @@ export function MyFilesPage() {
         tab === "mine" ? (
           <EntityEmpty
             icon={FolderOpen}
-            title="No files yet"
-            body="Drop a file above to get started. Your uploads are private by default."
+            title={t("empty.myTitle")}
+            body={t("empty.myBody")}
             action={
               <Button
                 variant="outline"
                 onClick={() => void myFilesQuery.refetch()}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                Refresh
+                {t("actions.refresh")}
               </Button>
             }
           />
         ) : (
           <EntityEmpty
             icon={Share2}
-            title="Nothing shared yet"
-            body="When a teammate flips one of their files to public, it shows up here for everyone in the tenant."
+            title={t("empty.sharedTitle")}
+            body={t("empty.sharedBody")}
             action={
               <Button
                 variant="outline"
                 onClick={() => void sharedFilesQuery.refetch()}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                Refresh
+                {t("actions.refresh")}
               </Button>
             }
           />
@@ -296,15 +293,15 @@ export function MyFilesPage() {
       ) : filteredFiles.length === 0 ? (
         <EntityEmpty
           icon={Search}
-          title="No matches"
-          body={`Nothing matches the current filter${searchQuery ? ` "${searchQuery}"` : ""}.`}
+          title={t("empty.searchTitle")}
+          body={t("empty.searchBody")}
           action={
             <Button
               variant="outline"
               onClick={clearFilters}
               className="h-9 rounded-lg px-4 text-[13px]"
             >
-              <X className="size-3.5" /> Reset filters
+              <X className="size-3.5" /> {t("resetFilters")}
             </Button>
           }
         />
@@ -378,10 +375,7 @@ function TabButton({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  FilterBar — search input + type filter chips. Search matches against
-//  filename (case-insensitive substring); type chips bucket by content-
-//  type. Both compose; counts shown on the chips are scope-wide so the
-//  user can see how many of each bucket exist before narrowing.
+//  FilterBar — search input + type filter chips
 // ─────────────────────────────────────────────────────────────────────
 
 function FilterBar({
@@ -399,6 +393,7 @@ function FilterBar({
   counts: Record<FileKind, number>;
   totalCount: number;
 }) {
+  const { t } = useTranslation("files");
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="relative min-w-0 flex-1">
@@ -407,8 +402,8 @@ function FilterBar({
           type="search"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search by filename…"
-          aria-label="Search files"
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchAriaLabel")}
           className={cn(
             "h-9 w-full rounded-md border border-[var(--color-input)] bg-transparent pl-9 pr-9",
             "text-[13px] outline-none transition-colors",
@@ -420,7 +415,7 @@ function FilterBar({
           <button
             type="button"
             onClick={() => onSearchChange("")}
-            aria-label="Clear search"
+            aria-label={t("clearSearch")}
             className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 cursor-pointer place-items-center rounded text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
           >
             <X className="size-3" />
@@ -433,7 +428,7 @@ function FilterBar({
           count={totalCount}
           onClick={() => onKindChange("all")}
         >
-          All
+          {t("filter.all")}
         </KindChip>
         <KindChip
           active={kindFilter === "image"}
@@ -442,7 +437,7 @@ function FilterBar({
           disabled={counts.image === 0}
           icon={FileImage}
         >
-          Images
+          {t("filter.images")}
         </KindChip>
         <KindChip
           active={kindFilter === "document"}
@@ -451,7 +446,7 @@ function FilterBar({
           disabled={counts.document === 0}
           icon={FileText}
         >
-          Documents
+          {t("filter.documents")}
         </KindChip>
         <KindChip
           active={kindFilter === "archive"}
@@ -460,7 +455,7 @@ function FilterBar({
           disabled={counts.archive === 0}
           icon={FileArchive}
         >
-          Archives
+          {t("filter.archives")}
         </KindChip>
         {counts.other > 0 && (
           <KindChip
@@ -469,7 +464,7 @@ function FilterBar({
             onClick={() => onKindChange("other")}
             icon={FileIcon}
           >
-            Other
+            {t("filter.other")}
           </KindChip>
         )}
       </div>
@@ -541,6 +536,7 @@ function FileList({
   tab: TabId;
   onOpen: (id: string) => void;
 }) {
+  const { t } = useTranslation("files");
   const isShared = tab === "shared";
   const desktopGrid = isShared ? DESKTOP_GRID_SHARED : DESKTOP_GRID_MINE;
   return (
@@ -548,8 +544,8 @@ function FileList({
       <div className="mb-3 flex items-center justify-between">
         <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
           {filtered
-            ? `Showing ${files.length} of ${totalCount} file${totalCount === 1 ? "" : "s"}`
-            : `${files.length} file${files.length === 1 ? "" : "s"}`}
+            ? t("showing", { shown: files.length, total: totalCount })
+            : t("count", { count: files.length })}
         </p>
       </div>
 
@@ -569,10 +565,10 @@ function FileList({
       {/* Desktop: table */}
       <EntityListCard className="hidden md:block">
         <EntityListHeader className={desktopGrid}>
-          <span>Filename</span>
-          <span>{isShared ? "Uploaded by" : "Visibility"}</span>
-          <span>Size</span>
-          <span>Uploaded</span>
+          <span>{t("cols.filename")}</span>
+          <span>{isShared ? t("cols.uploadedBy") : t("cols.visibility")}</span>
+          <span>{t("cols.size")}</span>
+          <span>{t("cols.uploaded")}</span>
         </EntityListHeader>
         {files.map((file, i) => (
           <DesktopRow
@@ -591,10 +587,11 @@ function FileList({
 }
 
 function VisibilityChip({ visibility }: { visibility: number }) {
+  const { t } = useTranslation("files");
   const isPublic = visibility === Visibility.Public;
   return (
     <EntityStatusBadge tone={isPublic ? "info" : "default"}>
-      {isPublic ? "Public" : "Private"}
+      {isPublic ? t("visibility.public") : t("visibility.private")}
     </EntityStatusBadge>
   );
 }
@@ -610,6 +607,7 @@ function MobileCard({
   showVisibility: boolean;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation("files");
   const uploader = useUserDisplay(showUploader ? file.createdByUserId : null);
   const Icon = mimeIcon(file.contentType);
   return (
@@ -637,7 +635,7 @@ function MobileCard({
           </p>
           {showUploader && file.createdByUserId && (
             <p className="mt-0.5 truncate text-[11px] text-[var(--color-muted-foreground)]">
-              by{" "}
+              {t("byPrefix")}{" "}
               <span className="text-[var(--color-foreground)]">
                 {uploader.loading ? "…" : uploader.name}
               </span>

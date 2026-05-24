@@ -19,6 +19,7 @@
     "title": "Create a channel",
     "description": "Channels are where your team communicates. They're best when organized around a topic — #marketing, #engineering, #general.",
     "nameLabel": "Name",
+    "namePlaceholder": "engineering, design-feedback…",
     "descLabel": "Description (optional)",
     "privateLabel": "Private",
     "privateHint": "Only invited members can find or join.",
@@ -122,7 +123,8 @@
   "mention": {
     "header": "Mention",
     "hint": "↑↓ navigate · Enter select · Esc cancel",
-    "searching": "Searching…"
+    "searching": "Searching…",
+    "suggestionsAriaLabel": "Mention suggestions"
   },
   "composer": {
     "placeholderReply": "Type your reply…",

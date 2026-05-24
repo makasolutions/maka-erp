@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Activity, Inbox } from "lucide-react";
 import { useSseEvents, useSseStatus, type SseEvent } from "@/sse/sse-context";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import {
   type EntityStatusTone,
 } from "@/components/list";
 
-const timeFmt = new Intl.DateTimeFormat("en-US", {
+const timeFmt = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
   minute: "2-digit",
   second: "2-digit",
@@ -69,6 +70,7 @@ const DESKTOP_GRID = "grid-cols-[1fr_240px_120px]";
 export function ActivityPage() {
   const { status, eventCount } = useSseStatus();
   const { events } = useSseEvents();
+  const { t } = useTranslation("common");
 
   const items = useMemo(() => events.slice(0, 200), [events]);
   const isLive = status === "connected";
@@ -77,10 +79,10 @@ export function ActivityPage() {
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Activity}
-        title="Live activity"
+        title={t("activity.title")}
         total={eventCount}
         unit="event"
-        description="Full event log streamed from the API over Server-Sent Events."
+        description={t("activity.description")}
       >
         {isLive ? (
           <Badge variant="success">streaming</Badge>
@@ -94,11 +96,11 @@ export function ActivityPage() {
       {items.length === 0 ? (
         <EntityEmpty
           icon={Inbox}
-          title={isLive ? "Listening for activity" : "No events yet"}
+          title={isLive ? t("activity.listeningTitle") : t("activity.noEventsTitle")}
           body={
             isLive
-              ? "The stream is open. Events will appear here as the backend publishes them."
-              : "The activity stream is not connected. Events will queue once the connection comes online."
+              ? t("activity.listeningDesc")
+              : t("activity.noEventsDesc")
           }
         />
       ) : (
@@ -107,7 +109,7 @@ export function ActivityPage() {
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
               {items.length} event{items.length === 1 ? "" : "s"} shown
               <span className="ml-2 opacity-60">
-                · {new Intl.NumberFormat("en-US").format(eventCount)} total
+                · {new Intl.NumberFormat(undefined).format(eventCount)} total
               </span>
             </p>
           </div>
@@ -118,7 +120,7 @@ export function ActivityPage() {
             role="log"
             aria-live="polite"
             aria-relevant="additions"
-            aria-label="Activity events"
+            aria-label={t("activity.ariaLabel")}
           >
             {items.map((ev) => (
               <MobileCard key={ev.id} ev={ev} />
@@ -131,12 +133,12 @@ export function ActivityPage() {
             role="log"
             aria-live="polite"
             aria-relevant="additions"
-            aria-label="Activity events"
+            aria-label={t("activity.ariaLabel")}
           >
             <EntityListHeader className={DESKTOP_GRID}>
-              <span>Action</span>
-              <span>Entity</span>
-              <span className="text-right">Time</span>
+              <span>{t("activity.columns.action")}</span>
+              <span>{t("activity.columns.entity")}</span>
+              <span className="text-right">{t("activity.columns.time")}</span>
             </EntityListHeader>
             {items.map((ev, i) => (
               <DesktopRow

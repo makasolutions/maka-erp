@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { ImpersonationBanner } from "@/components/layout/impersonation-banner";
@@ -13,6 +14,7 @@ import { CommandPaletteRoot } from "@/components/command-palette/command-palette
 import { cn } from "@/lib/cn";
 
 export function AppShell() {
+  const { t } = useTranslation("common");
   return (
     <SseProvider>
       <RealtimeProvider>
@@ -30,7 +32,7 @@ export function AppShell() {
             "focus:ring-[var(--color-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-background)]",
           )}
         >
-          Skip to main content
+          {t("layout.skipToMain")}
         </a>
 
         <div className="flex h-screen flex-col overflow-hidden bg-[var(--color-background)] text-[var(--color-foreground)]">

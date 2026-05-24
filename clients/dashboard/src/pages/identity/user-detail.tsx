@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useMutation,
   useQuery,
@@ -70,10 +71,10 @@ type DialogState =
   | { mode: "impersonate" }
   | { mode: "revoke-all-sessions" };
 
-function fullName(u: { firstName?: string; lastName?: string; userName?: string; email?: string }): string {
+function fullName(u: { firstName?: string; lastName?: string; userName?: string; email?: string }, fallback: string): string {
   const parts = [u.firstName, u.lastName].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
-  return u.userName ?? u.email ?? "Unnamed user";
+  return u.userName ?? u.email ?? fallback;
 }
 
 // ───────────────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ function fullName(u: { firstName?: string; lastName?: string; userName?: string;
 // ───────────────────────────────────────────────────────────────────────
 
 export function UserDetailPage() {
+  const { t, i18n } = useTranslation("identity");
   const { userId = "" } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -152,14 +154,14 @@ export function UserDetailPage() {
       return assignUserRoles(userId, payload);
     },
     onSuccess: () => {
-      toast.success("Roles updated", {
-        description: `${dirtyIds.length} role${dirtyIds.length === 1 ? "" : "s"} changed.`,
+      toast.success(t("users.detail.rolesUpdated"), {
+        description: t("users.detail.rolesChangedCount", { count: dirtyIds.length }),
       });
       void queryClient.invalidateQueries({
         queryKey: ["identity", "users", userId, "roles"],
       });
     },
-    onError: (err) => toast.error("Update failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("users.detail.updateFailed"), { description: describe(err) }),
   });
 
   const toggleStatus = useMutation({
@@ -168,12 +170,12 @@ export function UserDetailPage() {
       return toggleUserStatus(user.id, !user.isActive);
     },
     onSuccess: () => {
-      toast.success(user?.isActive ? "User deactivated" : "User reactivated");
+      toast.success(user?.isActive ? t("users.detail.deactivated") : t("users.detail.reactivated"));
       void queryClient.invalidateQueries({ queryKey: ["identity", "users", userId] });
       void queryClient.invalidateQueries({ queryKey: ["identity", "users"] });
       setDialog({ mode: "closed" });
     },
-    onError: (err) => toast.error("Status change failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("users.detail.statusChangeFailed"), { description: describe(err) }),
   });
 
   const removeUser = useMutation({
@@ -182,12 +184,12 @@ export function UserDetailPage() {
       return deleteUser(user.id);
     },
     onSuccess: () => {
-      toast.success("User deleted");
+      toast.success(t("users.detail.deleted"));
       void queryClient.invalidateQueries({ queryKey: ["identity", "users"] });
       navigate("/identity/users");
     },
     onError: (err) => {
-      toast.error("Delete failed", { description: describe(err) });
+      toast.error(t("users.detail.deleteFailed"), { description: describe(err) });
       setDialog({ mode: "closed" });
     },
   });
@@ -203,26 +205,26 @@ export function UserDetailPage() {
   const revokeOne = useMutation({
     mutationFn: (sessionId: string) => adminRevokeUserSession(userId, sessionId),
     onSuccess: () => {
-      toast.success("Session revoked");
+      toast.success(t("common:actions.revoke"));
       void queryClient.invalidateQueries({
         queryKey: ["identity", "users", userId, "sessions"],
       });
     },
-    onError: (err) => toast.error("Revoke failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("users.detail.updateFailed"), { description: describe(err) }),
   });
 
   const revokeAll = useMutation({
     mutationFn: () => adminRevokeAllUserSessions(userId),
     onSuccess: (data) => {
       toast.success(
-        `Revoked ${data.revokedCount} session${data.revokedCount === 1 ? "" : "s"}`,
+        t("users.sessionsCount", { count: data.revokedCount }) + " " + t("users.detail.revoking"),
       );
       void queryClient.invalidateQueries({
         queryKey: ["identity", "users", userId, "sessions"],
       });
       setDialog({ mode: "closed" });
     },
-    onError: (err) => toast.error("Revoke-all failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("users.detail.updateFailed"), { description: describe(err) }),
   });
 
   // Impersonation
@@ -237,22 +239,24 @@ export function UserDetailPage() {
       });
     },
     onSuccess: () => {
-      toast.success("Impersonation started", {
-        description: "You're now acting as this user. Use the banner to end.",
+      toast.success(t("users.detail.impersonateStarted"), {
+        description: t("users.detail.impersonateStartedDesc"),
       });
       setDialog({ mode: "closed" });
       setImpersonationReason("");
       navigate("/", { replace: true });
     },
     onError: (err) => {
-      toast.error("Impersonation failed", { description: describe(err) });
+      toast.error(t("users.detail.impersonateFailed"), { description: describe(err) });
     },
   });
+
+  const locale = i18n.resolvedLanguage ?? "en";
 
   if (userQuery.isLoading) {
     return (
       <div className="space-y-6">
-        <EntityDetailBack to="/identity/users" label="Back to users" />
+        <EntityDetailBack to="/identity/users" label={t("users.backToUsers")} />
         <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -262,19 +266,19 @@ export function UserDetailPage() {
   if (userQuery.isError || !user) {
     return (
       <div className="space-y-4">
-        <EntityDetailBack to="/identity/users" label="Back to users" />
+        <EntityDetailBack to="/identity/users" label={t("users.backToUsers")} />
         <ErrorBand
           message={
             userQuery.error
               ? describe(userQuery.error)
-              : "User not found."
+              : t("users.notFound")
           }
         />
       </div>
     );
   }
 
-  const display = fullName(user);
+  const display = fullName(user, t("users.noName"));
   const activeRolesCount = roles.filter((r) => effective(r)).length;
   const sessions = sessionsQuery.data ?? [];
   const activeSessionsCount = sessions.filter((s) => s.isActive).length;
@@ -285,7 +289,7 @@ export function UserDetailPage() {
 
   return (
     <div className="space-y-5 pb-12">
-      <EntityDetailBack to="/identity/users" label="Back to users" />
+      <EntityDetailBack to="/identity/users" label={t("users.backToUsers")} />
 
       <EntityDetailHero
         avatar={
@@ -299,25 +303,25 @@ export function UserDetailPage() {
           <>
             {user.isActive ? (
               <Badge variant="success">
-                <ShieldCheck className="h-3 w-3" /> Active
+                <ShieldCheck className="h-3 w-3" /> {t("users.filters.active")}
               </Badge>
             ) : (
               <Badge variant="outline">
-                <CircleSlash2 className="h-3 w-3" /> Inactive
+                <CircleSlash2 className="h-3 w-3" /> {t("users.filters.inactive")}
               </Badge>
             )}
             {user.emailConfirmed ? (
               <Badge variant="brand">
-                <CheckCircle2 className="h-3 w-3" /> Email confirmed
+                <CheckCircle2 className="h-3 w-3" /> {t("users.emailConfirmedBadge")}
               </Badge>
             ) : (
               <Badge variant="warning">
-                <Mail className="h-3 w-3" /> Email pending
+                <Mail className="h-3 w-3" /> {t("users.emailPendingBadge")}
               </Badge>
             )}
           </>
         }
-        subtitle={subtitleParts.join(" · ") || "Member"}
+        subtitle={subtitleParts.join(" · ") || t("users.member")}
         actions={
           <>
             {canImpersonate && user.id !== actor?.id && (
@@ -326,10 +330,10 @@ export function UserDetailPage() {
                 size="sm"
                 onClick={() => setDialog({ mode: "impersonate" })}
                 disabled={!user.isActive}
-                title={!user.isActive ? "Cannot impersonate an inactive user" : undefined}
+                title={!user.isActive ? t("users.cannotImpersonateInactive") : undefined}
                 className="gap-1.5"
               >
-                <UserCog className="h-3.5 w-3.5" /> Impersonate
+                <UserCog className="h-3.5 w-3.5" /> {t("users.impersonate")}
               </Button>
             )}
             <Button
@@ -339,11 +343,11 @@ export function UserDetailPage() {
             >
               {user.isActive ? (
                 <>
-                  <PowerOff className="mr-1 h-3.5 w-3.5" /> Deactivate
+                  <PowerOff className="mr-1 h-3.5 w-3.5" /> {t("common:actions.deactivate")}
                 </>
               ) : (
                 <>
-                  <Power className="mr-1 h-3.5 w-3.5" /> Reactivate
+                  <Power className="mr-1 h-3.5 w-3.5" /> {t("common:actions.reactivate")}
                 </>
               )}
             </Button>
@@ -352,7 +356,7 @@ export function UserDetailPage() {
               size="sm"
               onClick={() => setDialog({ mode: "delete" })}
             >
-              <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> {t("common:actions.delete")}
             </Button>
           </>
         }
@@ -361,14 +365,14 @@ export function UserDetailPage() {
             <EntityDetailStat
               icon={ShieldCheck}
               value={activeRolesCount}
-              label={activeRolesCount === 1 ? "role" : "roles"}
+              label={t("users.rolesCount", { count: activeRolesCount })}
               tone="primary"
             />
             {canViewSessions && (
               <EntityDetailStat
                 icon={MonitorSmartphone}
                 value={activeSessionsCount}
-                label={activeSessionsCount === 1 ? "session" : "sessions"}
+                label={t("users.sessionsCount", { count: activeSessionsCount })}
                 tone={activeSessionsCount > 0 ? "success" : "default"}
               />
             )}
@@ -393,16 +397,16 @@ export function UserDetailPage() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         {/* Profile */}
         <EntityDetailSection
-          title="Identity card"
+          title={t("users.detail.identityCard")}
           icon={UserIcon}
-          description="Read-only here. Members update their own profile from settings."
+          description={t("users.detail.identityCardDesc")}
         >
           <div className="space-y-3">
-            <ProfileRow label="Username" value={user.userName ?? "—"} />
-            <ProfileRow label="Email" value={user.email ?? "—"} />
-            <ProfileRow label="First name" value={user.firstName ?? "—"} />
-            <ProfileRow label="Last name" value={user.lastName ?? "—"} />
-            <ProfileRow label="Phone" value={user.phoneNumber ?? "—"} />
+            <ProfileRow label={t("users.fields.username")} value={user.userName ?? "—"} />
+            <ProfileRow label={t("users.fields.email")} value={user.email ?? "—"} />
+            <ProfileRow label={t("users.fields.firstName")} value={user.firstName ?? "—"} />
+            <ProfileRow label={t("users.fields.lastName")} value={user.lastName ?? "—"} />
+            <ProfileRow label={t("users.fields.phone")} value={user.phoneNumber ?? "—"} />
             <ProfileRow
               label="ID"
               value={<span className="font-mono text-[11px]">{user.id}</span>}
@@ -412,12 +416,12 @@ export function UserDetailPage() {
 
         {/* Roles */}
         <EntityDetailSection
-          title="Role assignment"
+          title={t("users.detail.roleAssignment")}
           icon={ShieldCheck}
-          description="Toggle which roles apply. Changes are staged until saved."
+          description={t("users.detail.roleAssignmentDesc")}
           action={
             isDirty ? (
-              <Badge variant="warning">{dirtyIds.length} pending</Badge>
+              <Badge variant="warning">{t("users.detail.pendingChanges", { count: dirtyIds.length })}</Badge>
             ) : undefined
           }
           padded={false}
@@ -430,14 +434,14 @@ export function UserDetailPage() {
                   onClick={() => setPending(new Map())}
                   disabled={!isDirty || saveRoles.isPending}
                 >
-                  Discard
+                  {t("common:actions.discard")}
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => saveRoles.mutate()}
                   disabled={!isDirty || saveRoles.isPending}
                 >
-                  {saveRoles.isPending ? "Saving…" : "Save changes"}
+                  {saveRoles.isPending ? t("common:feedback.saving") : t("users.detail.saveChanges")}
                 </Button>
               </div>
             ) : undefined
@@ -455,11 +459,11 @@ export function UserDetailPage() {
             </div>
           ) : roles.length === 0 ? (
             <div className="p-5 text-sm text-[var(--color-muted-foreground)]">
-              No roles defined.{" "}
+              {t("users.detail.noRoles")}{" "}
               <Link to="/identity/roles" className="underline hover:text-[var(--color-foreground)]">
-                Create one
+                {t("users.detail.createRole")}
               </Link>{" "}
-              to start assigning access.
+              {t("users.detail.toGrantAccess")}
             </div>
           ) : (
             <ul>
@@ -477,7 +481,7 @@ export function UserDetailPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium tracking-tight">
-                          {role.roleName ?? "Untitled role"}
+                          {role.roleName ?? t("users.detail.untitledRole")}
                         </span>
                         {dirty && (
                           <span
@@ -495,7 +499,7 @@ export function UserDetailPage() {
                     <Switch
                       checked={isOn}
                       onCheckedChange={() => toggle(role)}
-                      aria-label={`Toggle ${role.roleName ?? "role"}`}
+                      aria-label={t("users.detail.toggleRoleAria", { name: role.roleName ?? "" })}
                     />
                   </li>
                 );
@@ -516,6 +520,7 @@ export function UserDetailPage() {
           onRevoke={(id) => revokeOne.mutate(id)}
           onRevokeAll={() => setDialog({ mode: "revoke-all-sessions" })}
           revokingId={revokeOne.isPending ? revokeOne.variables : null}
+          locale={locale}
         />
       )}
 
@@ -526,17 +531,15 @@ export function UserDetailPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete this member</DialogTitle>
+            <DialogTitle>{t("users.detail.deleteTitle")}</DialogTitle>
             <DialogDescription>
-              This permanently removes{" "}
-              <span className="font-medium text-[var(--color-foreground)]">{display}</span>. They
-              will lose access immediately. This cannot be undone.
+              {t("users.detail.deleteDesc", { name: display })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={removeUser.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -544,7 +547,7 @@ export function UserDetailPage() {
               onClick={() => removeUser.mutate()}
               disabled={removeUser.isPending}
             >
-              {removeUser.isPending ? "Deleting…" : "Delete user"}
+              {removeUser.isPending ? t("common:feedback.deleting") : t("users.detail.deleteAction")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -557,25 +560,27 @@ export function UserDetailPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{user.isActive ? "Deactivate user?" : "Reactivate user?"}</DialogTitle>
+            <DialogTitle>
+              {user.isActive ? t("users.deactivateConfirm", { name: display }) : t("users.activateConfirm", { name: display })}
+            </DialogTitle>
             <DialogDescription>
               {user.isActive
-                ? `${display} will not be able to sign in until reactivated. Existing sessions remain unless revoked.`
-                : `${display} will regain sign-in access immediately.`}
+                ? t("users.detail.deactivateDesc", { name: display })
+                : t("users.detail.reactivateDesc", { name: display })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={toggleStatus.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button onClick={() => toggleStatus.mutate()} disabled={toggleStatus.isPending}>
               {toggleStatus.isPending
-                ? "Working…"
+                ? t("users.detail.working")
                 : user.isActive
-                  ? "Deactivate"
-                  : "Reactivate"}
+                  ? t("common:actions.deactivate")
+                  : t("common:actions.reactivate")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -588,23 +593,19 @@ export function UserDetailPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Impersonate {display}?</DialogTitle>
-            <DialogDescription>
-              You'll act as this user across the dashboard. Every action you take will be
-              attributed to them in audit logs (with your operator id preserved as the actor).
-              End impersonation from the banner at the top of the page when you're done.
-            </DialogDescription>
+            <DialogTitle>{t("users.detail.impersonateTitle", { name: display })}</DialogTitle>
+            <DialogDescription>{t("users.detail.impersonateDesc")}</DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-2">
             <label className="block">
               <span className="text-[11.5px] font-medium text-[var(--color-muted-foreground)]">
-                Reason (optional, recorded in the audit log)
+                {t("users.detail.reasonLabel")}
               </span>
               <input
                 type="text"
                 value={impersonationReason}
                 onChange={(e) => setImpersonationReason(e.target.value)}
-                placeholder="Investigating a bug report from this user…"
+                placeholder={t("users.detail.reasonPlaceholder")}
                 maxLength={256}
                 className={cn(
                   "mt-1.5 flex h-9 w-full rounded-md border border-[var(--color-input)]",
@@ -618,7 +619,7 @@ export function UserDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={impersonate.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -630,7 +631,7 @@ export function UserDetailPage() {
               )}
             >
               <ShieldAlert className="h-3.5 w-3.5" />
-              {impersonate.isPending ? "Starting…" : "Start impersonation"}
+              {impersonate.isPending ? t("users.detail.startingImpersonation") : t("users.detail.startImpersonation")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -643,16 +644,13 @@ export function UserDetailPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Revoke all sessions for {display}?</DialogTitle>
-            <DialogDescription>
-              Every active session — desktop, mobile, browser tab — will be ended immediately.
-              The user will need to sign in again on each device.
-            </DialogDescription>
+            <DialogTitle>{t("users.detail.revokeAllTitle", { name: display })}</DialogTitle>
+            <DialogDescription>{t("users.detail.revokeAllDesc")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={revokeAll.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -660,7 +658,7 @@ export function UserDetailPage() {
               onClick={() => revokeAll.mutate()}
               disabled={revokeAll.isPending}
             >
-              {revokeAll.isPending ? "Revoking…" : "Revoke all"}
+              {revokeAll.isPending ? t("users.detail.revoking") : t("users.detail.revokeAll")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -692,17 +690,10 @@ function ProfileRow({
 //  Sessions card
 // ───────────────────────────────────────────────────────────────────────
 
-const sessionDateFmt = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function describeDevice(s: AdminUserSessionDto): string {
-  const browser = s.browser ?? "Unknown browser";
+function describeDevice(s: AdminUserSessionDto, unknownBrowser: string, unknownOs: string): string {
+  const browser = s.browser ?? unknownBrowser;
   const version = s.browserVersion ? ` ${s.browserVersion}` : "";
-  const os = s.operatingSystem ?? "Unknown OS";
+  const os = s.operatingSystem ?? unknownOs;
   return `${browser}${version} · ${os}`;
 }
 
@@ -720,6 +711,7 @@ function SessionsCard({
   onRevoke,
   onRevokeAll,
   revokingId,
+  locale,
 }: {
   sessions: AdminUserSessionDto[];
   isLoading: boolean;
@@ -729,7 +721,17 @@ function SessionsCard({
   onRevoke: (sessionId: string) => void;
   onRevokeAll: () => void;
   revokingId: string | null | undefined;
+  locale: string;
 }) {
+  const { t } = useTranslation("identity");
+
+  const sessionDateFmt = new Intl.DateTimeFormat(locale === "es" ? "es-CO" : "en-US", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   const ordered = [...sessions].sort(
     (a, b) =>
       new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime(),
@@ -738,17 +740,17 @@ function SessionsCard({
 
   return (
     <EntityDetailSection
-      title="Active sessions"
+      title={t("users.detail.activeSessions")}
       icon={MonitorSmartphone}
       description={
         isLoading
-          ? "Loading sessions…"
-          : `${activeCount} active · ${ordered.length} total recorded`
+          ? t("common:feedback.loading")
+          : t("users.detail.activeSessionsDesc", { active: activeCount, total: ordered.length })
       }
       action={
         canRevoke && activeCount > 0 ? (
           <Button variant="outline" size="sm" onClick={onRevokeAll} className="gap-1.5">
-            <XCircle className="h-3.5 w-3.5" /> Revoke all
+            <XCircle className="h-3.5 w-3.5" /> {t("users.detail.revokeAll")}
           </Button>
         ) : undefined
       }
@@ -765,7 +767,7 @@ function SessionsCard({
         </div>
       ) : ordered.length === 0 ? (
         <div className="p-5 text-sm text-[var(--color-muted-foreground)]">
-          No sessions on file. The user hasn't signed in recently.
+          {t("users.detail.noSessions")}
         </div>
       ) : (
         <ul>
@@ -795,12 +797,12 @@ function SessionsCard({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-sm font-medium tracking-tight">
-                      {describeDevice(session)}
+                      {describeDevice(session, t("users.detail.unknownBrowser"), t("users.detail.unknownOs"))}
                     </span>
                     {session.isActive ? (
-                      <Badge variant="success">Active</Badge>
+                      <Badge variant="success">{t("common:status.active")}</Badge>
                     ) : (
-                      <Badge variant="outline">Ended</Badge>
+                      <Badge variant="outline">{t("users.detail.ended")}</Badge>
                     )}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-[var(--color-muted-foreground)]">
@@ -810,11 +812,11 @@ function SessionsCard({
                       </span>
                     )}
                     <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> last seen{" "}
+                      <Clock className="h-3 w-3" /> {t("users.detail.lastSeen")}{" "}
                       {sessionDateFmt.format(new Date(session.lastActivityAt))}
                     </span>
                     <span className="opacity-70">
-                      started {sessionDateFmt.format(new Date(session.createdAt))}
+                      {t("users.detail.sessionStarted")} {sessionDateFmt.format(new Date(session.createdAt))}
                     </span>
                   </div>
                 </div>
@@ -827,7 +829,7 @@ function SessionsCard({
                     className="shrink-0 text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]"
                   >
                     <XCircle className="mr-1 h-3.5 w-3.5" />
-                    {isRevoking ? "Revoking…" : "Revoke"}
+                    {isRevoking ? t("users.detail.revoking") : t("users.detail.revoke")}
                   </Button>
                 )}
               </li>

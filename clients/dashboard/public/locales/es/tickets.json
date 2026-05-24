@@ -1,6 +1,21 @@
 {
   "title": "Tickets",
   "singular": "Ticket",
+  "unit": "ticket",
+  "description": "Trabajo abierto, ordenado por prioridad. El escritorio donde los problemas aterrizan, se atienden y se resuelven.",
+  "searchPlaceholder": "Buscar por número, título o descripción…",
+  "newTicket": "Nuevo ticket",
+  "openTicket": "Abrir ticket",
+  "clearFilters": "Limpiar filtros",
+  "filter": {
+    "status": "Filtro de estado",
+    "priority": "Filtro de prioridad",
+    "allStatuses": "Todos",
+    "anyPriority": "Cualquiera"
+  },
+  "found_one": "{{count}} ticket encontrado",
+  "found_other": "{{count}} tickets encontrados",
+  "unassigned": "Sin asignar",
   "fields": {
     "subject": "Asunto",
     "description": "Descripción",
@@ -14,14 +29,29 @@
     "type": "Tipo",
     "tags": "Etiquetas"
   },
+  "cols": {
+    "subject": "Asunto",
+    "priority": "Prioridad",
+    "status": "Estado",
+    "assignee": "Asignado",
+    "updated": "Actualizado"
+  },
   "actions": {
     "create": "Nuevo ticket",
     "edit": "Editar ticket",
     "delete": "Eliminar ticket",
     "resolve": "Resolver",
+    "resolving": "Resolviendo…",
+    "markResolved": "Marcar resuelto",
     "reopen": "Reabrir",
     "assign": "Asignar",
-    "addComment": "Agregar comentario"
+    "reassign": "Reasignar",
+    "saveAssignment": "Guardar asignación",
+    "saving": "Guardando…",
+    "addComment": "Agregar comentario",
+    "postComment": "Publicar comentario",
+    "posting": "Publicando…",
+    "refresh": "Actualizar"
   },
   "status": {
     "open": "Abierto",
@@ -38,10 +68,66 @@
   },
   "empty": {
     "title": "Sin tickets aún",
-    "body": "Crea el primer ticket para comenzar a gestionar solicitudes."
+    "body": "Abre el primer ticket para comenzar a gestionar el trabajo. Los tickets llevan estado, prioridad, un asignado opcional y un hilo de comentarios.",
+    "searchTitle": "Sin tickets encontrados",
+    "searchBody": "Nada coincide con \"{{term}}\". Prueba otro término o limpia los filtros.",
+    "filterBody": "Ningún ticket coincide con los filtros actuales."
   },
   "deleteConfirm": "¿Eliminar ticket #{{id}}?",
   "deleteDesc": "Esta acción no se puede deshacer.",
+  "dialog": {
+    "openTitle": "Abrir un ticket",
+    "openDesc": "Los tickets llegan al escritorio como Abiertos. Asigna uno para iniciarlo; resuélvelo con una nota cuando el trabajo esté listo.",
+    "titleLabel": "Título",
+    "titlePlaceholder": "Describe brevemente el problema o solicitud",
+    "descLabel": "Descripción",
+    "descPlaceholder": "Pasos para reproducir, comportamiento esperado, cualquier otra información útil",
+    "priorityLabel": "Prioridad",
+    "opening": "Abriendo…"
+  },
+  "detail": {
+    "backToTickets": "Volver a tickets",
+    "descSection": "Descripción",
+    "noDesc": "Sin descripción registrada. Los comentarios a continuación llevan la conversación.",
+    "resolution": "Resolución",
+    "conversation": "Conversación",
+    "commentCount_one": "{{count}} comentario",
+    "commentCount_other": "{{count}} comentarios",
+    "noCommentsLabel": "Sin comentarios aún",
+    "noComments": "Sin comentarios aún. Agrega la primera nota abajo — visible para cualquiera con acceso.",
+    "commentPlaceholder": "Agrega un comentario al hilo…",
+    "commentPlaceholderDisabled": "Reabre el ticket para agregar un nuevo comentario.",
+    "properties": "Propiedades",
+    "openedBy": "abierto {{when}} por {{name}}",
+    "updatedStat": "actualizado",
+    "resolvedStat": "resuelto",
+    "comment_one": "comentario",
+    "comment_other": "comentarios",
+    "you": "Tú",
+    "ticketsDesk": "Escritorio de tickets",
+    "notFound": "Este ticket ya no existe.",
+    "notFoundBody": "Es posible que haya sido eliminado. Revisa la papelera o vuelve al escritorio de tickets.",
+    "resolve": {
+      "noteLabel": "Nota de resolución",
+      "noteHint": "Opcional — deja en blanco si no hay nada que agregar.",
+      "notePlaceholder": "¿Qué cambió? ¿Causa raíz? Cualquier cosa que los revisores deban saber.",
+      "desc": "Las notas de resolución se guardan en el ticket y se muestran en el panel de descripción. Deja en blanco si no hay nada que agregar."
+    },
+    "assign": {
+      "desc": "Elige un miembro del equipo. Asignar el ticket lo mueve a En progreso; limpiar el asignado en un ticket en progreso lo devuelve a Abierto.",
+      "label": "Asignado a",
+      "hint": "Busca por nombre o correo. Limpia la selección para desasignar.",
+      "clearWarning": "Limpiar el asignado dejará el ticket sin asignar."
+    }
+  },
+  "toast": {
+    "opened": "Ticket abierto",
+    "resolved": "Ticket resuelto",
+    "reopened": "Ticket reabierto",
+    "assigned": "Ticket asignado",
+    "unassigned": "Ticket sin asignar",
+    "commented": "Comentario publicado"
+  },
   "comments": "Comentarios",
   "noComments": "Sin comentarios aún.",
   "addComment": "Escribe un comentario…"

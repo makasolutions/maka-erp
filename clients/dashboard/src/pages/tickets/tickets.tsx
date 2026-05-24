@@ -17,6 +17,7 @@ import {
   Plus,
   Ticket as TicketIcon,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   createTicket,
@@ -64,14 +65,7 @@ const PAGE_SIZE = 20;
 
 type EditorState = { mode: "closed" } | { mode: "create" };
 
-// ─── Status / Priority labels + tones ────────────────────────────────────
-
-const STATUS_LABEL: Record<TicketStatus, string> = {
-  Open: "Open",
-  InProgress: "In progress",
-  Resolved: "Resolved",
-  Closed: "Closed",
-};
+// ─── Tone tables — no strings, safe at module level ──────────────────────
 
 const STATUS_TONE: Record<TicketStatus, EntityStatusTone> = {
   Open: "info",
@@ -80,18 +74,27 @@ const STATUS_TONE: Record<TicketStatus, EntityStatusTone> = {
   Closed: "default",
 };
 
-const PRIORITY_LABEL: Record<TicketPriority, string> = {
-  Low: "Low",
-  Medium: "Medium",
-  High: "High",
-  Critical: "Critical",
-};
-
 const PRIORITY_TONE: Record<TicketPriority, EntityStatusTone> = {
   Low: "default",
   Medium: "info",
   High: "warning",
   Critical: "danger",
+};
+
+// ─── Locale key maps — translated by each component via t() ──────────────
+
+const STATUS_KEY: Record<TicketStatus, string> = {
+  Open: "status.open",
+  InProgress: "status.inProgress",
+  Resolved: "status.resolved",
+  Closed: "status.closed",
+};
+
+const PRIORITY_KEY: Record<TicketPriority, string> = {
+  Low: "priority.low",
+  Medium: "priority.medium",
+  High: "priority.high",
+  Critical: "priority.critical",
 };
 
 // ─── Grid template — used by header, rows, and the loading skeleton ──────
@@ -104,6 +107,7 @@ const DESKTOP_GRID =
 // ───────────────────────────────────────────────────────────────────────
 
 export function TicketsPage() {
+  const { t } = useTranslation("tickets");
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -146,55 +150,60 @@ export function TicketsPage() {
   const filtersApplied = statusFilter !== null || priorityFilter !== null;
   const searchActive = debouncedSearch.length > 0 || filtersApplied;
 
+  // Built inside component so labels react to language change
+  const statusOptions = useMemo(
+    () => [
+      { value: null as TicketStatus | null, label: t("filter.allStatuses") },
+      ...TICKET_STATUSES.map((s) => ({ value: s as TicketStatus | null, label: t(STATUS_KEY[s]) })),
+    ],
+    [t],
+  );
+
+  const priorityOptions = useMemo(
+    () => [
+      { value: null as TicketPriority | null, label: t("filter.anyPriority") },
+      ...TICKET_PRIORITIES.map((p) => ({ value: p as TicketPriority | null, label: t(PRIORITY_KEY[p]) })),
+    ],
+    [t],
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={TicketIcon}
-        title="Tickets"
+        title={t("title")}
         total={data?.totalCount ?? null}
-        unit="ticket"
-        description="Open work, ranked by priority. The desk where issues land, get owned, and ship."
+        unit={t("unit")}
+        description={t("description")}
       >
         <Button
           onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
           <Plus className="size-4" />
-          New ticket
+          {t("newTicket")}
         </Button>
       </EntityPageHeader>
 
       <EntitySearch
         value={search}
         onChange={setSearch}
-        placeholder="Find by number, title, or description…"
+        placeholder={t("searchPlaceholder")}
       />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <EntityFilterPill<TicketStatus | null>
-          label="Status filter"
+          label={t("filter.status")}
           value={statusFilter}
           onChange={setStatusFilter}
-          options={[
-            { value: null, label: "All" },
-            ...TICKET_STATUSES.map((s) => ({
-              value: s,
-              label: STATUS_LABEL[s],
-            })),
-          ]}
+          options={statusOptions}
         />
         <EntityFilterPill<TicketPriority | null>
-          label="Priority filter"
+          label={t("filter.priority")}
           value={priorityFilter}
           onChange={setPriorityFilter}
-          options={[
-            { value: null, label: "Any" },
-            ...TICKET_PRIORITIES.map((p) => ({
-              value: p,
-              label: PRIORITY_LABEL[p],
-            })),
-          ]}
+          options={priorityOptions}
         />
       </div>
 
@@ -204,13 +213,13 @@ export function TicketsPage() {
       ) : items.length === 0 ? (
         <EntityEmpty
           icon={TicketIcon}
-          title={searchActive ? "No tickets found" : "No tickets yet"}
+          title={searchActive ? t("empty.searchTitle") : t("empty.title")}
           body={
             searchActive
               ? debouncedSearch
-                ? `Nothing matches "${debouncedSearch}". Try a different term or clear the filters.`
-                : "No tickets match the current filters."
-              : "Open the first ticket to start tracking work. Tickets carry a status, priority, an optional assignee, and a comment thread."
+                ? t("empty.searchBody", { term: debouncedSearch })
+                : t("empty.filterBody")
+              : t("empty.body")
           }
           action={
             searchActive ? (
@@ -223,7 +232,7 @@ export function TicketsPage() {
                 }}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                Clear filters
+                {t("clearFilters")}
               </Button>
             ) : (
               <Button
@@ -231,7 +240,7 @@ export function TicketsPage() {
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
                 <Plus className="mr-1.5 size-4" />
-                Open ticket
+                {t("openTicket")}
               </Button>
             )
           }
@@ -240,7 +249,7 @@ export function TicketsPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {data?.totalCount ?? 0} ticket{(data?.totalCount ?? 0) !== 1 ? "s" : ""} found
+              {t("found", { count: data?.totalCount ?? 0 })}
             </p>
           </div>
 
@@ -254,11 +263,11 @@ export function TicketsPage() {
           {/* Desktop: table */}
           <EntityListCard className="hidden md:block">
             <EntityListHeader className={DESKTOP_GRID}>
-              <span>Subject</span>
-              <span>Priority</span>
-              <span>Status</span>
-              <span>Assignee</span>
-              <span>Updated</span>
+              <span>{t("cols.subject")}</span>
+              <span>{t("cols.priority")}</span>
+              <span>{t("cols.status")}</span>
+              <span>{t("cols.assignee")}</span>
+              <span>{t("cols.updated")}</span>
               <span />
             </EntityListHeader>
             {items.map((ticket, i) => (
@@ -307,10 +316,11 @@ export function TicketsPage() {
 // ───────────────────────────────────────────────────────────────────────
 
 function MobileCard({ ticket }: { ticket: TicketDto }) {
+  const { t } = useTranslation("tickets");
   return (
     <Link
       to={`/tickets/${ticket.id}`}
-      aria-label={`Open ticket ${ticket.title}`}
+      aria-label={t("openTicket")}
       className={cn(
         "block rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-left",
         "shadow-xs",
@@ -338,10 +348,10 @@ function MobileCard({ ticket }: { ticket: TicketDto }) {
       </div>
       <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-2">
         <EntityStatusBadge tone={PRIORITY_TONE[ticket.priority]}>
-          {PRIORITY_LABEL[ticket.priority]}
+          {t(PRIORITY_KEY[ticket.priority])}
         </EntityStatusBadge>
         <EntityStatusBadge tone={STATUS_TONE[ticket.status]}>
-          {STATUS_LABEL[ticket.status]}
+          {t(STATUS_KEY[ticket.status])}
         </EntityStatusBadge>
         <span className="ml-auto font-mono text-[11px] text-[var(--color-muted-foreground)]">
           {formatRelative(ticket.updatedAtUtc ?? ticket.createdAtUtc)}
@@ -362,6 +372,7 @@ function DesktopRow({
   ticket: TicketDto;
   isLast: boolean;
 }) {
+  const { t } = useTranslation("tickets");
   const assignee = useUserDisplay(ticket.assignedToUserId);
   return (
     <EntityListRow className={DESKTOP_GRID} isLast={isLast}>
@@ -384,14 +395,14 @@ function DesktopRow({
       {/* Priority */}
       <span>
         <EntityStatusBadge tone={PRIORITY_TONE[ticket.priority]}>
-          {PRIORITY_LABEL[ticket.priority]}
+          {t(PRIORITY_KEY[ticket.priority])}
         </EntityStatusBadge>
       </span>
 
       {/* Status */}
       <span>
         <EntityStatusBadge tone={STATUS_TONE[ticket.status]}>
-          {STATUS_LABEL[ticket.status]}
+          {t(STATUS_KEY[ticket.status])}
         </EntityStatusBadge>
       </span>
 
@@ -409,7 +420,7 @@ function DesktopRow({
           </>
         ) : (
           <span className="font-mono text-[11px] uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">
-            Unassigned
+            {t("unassigned")}
           </span>
         )}
       </div>
@@ -438,6 +449,7 @@ function CreateTicketDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useTranslation("tickets");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("Medium");
@@ -453,7 +465,7 @@ function CreateTicketDialog({
   const mutation = useMutation({
     mutationFn: (input: CreateTicketInput) => createTicket(input),
     onSuccess: () => {
-      toast.success("Ticket opened");
+      toast.success(t("toast.opened"));
       onCreated();
       onClose();
     },
@@ -476,9 +488,9 @@ function CreateTicketDialog({
     () =>
       TICKET_PRIORITIES.map((p) => ({
         value: p,
-        label: PRIORITY_LABEL[p],
+        label: t(PRIORITY_KEY[p]),
       })),
-    [],
+    [t],
   );
 
   return (
@@ -488,31 +500,30 @@ function CreateTicketDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TicketIcon className="size-4 text-[var(--color-primary)]" />
-              Open a ticket
+              {t("dialog.openTitle")}
             </DialogTitle>
             <DialogDescription>
-              Tickets land on the desk as <code className="font-mono text-[11px]">Open</code>.
-              Assign one to start it; resolve it with a note when work is done.
+              {t("dialog.openDesc")}
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            <Field id="ticket-title" label="Title" required>
+            <Field id="ticket-title" label={t("dialog.titleLabel")} required>
               <Input
                 id="ticket-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Briefly describe the issue or request"
+                placeholder={t("dialog.titlePlaceholder")}
                 maxLength={160}
                 autoFocus
                 required
               />
             </Field>
-            <Field id="ticket-description" label="Description">
+            <Field id="ticket-description" label={t("dialog.descLabel")}>
               <textarea
                 id="ticket-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Steps to reproduce, expected behavior, anything else useful"
+                placeholder={t("dialog.descPlaceholder")}
                 rows={4}
                 className={cn(
                   "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
@@ -522,11 +533,11 @@ function CreateTicketDialog({
                 maxLength={4096}
               />
             </Field>
-            <Field id="ticket-priority" label="Priority">
+            <Field id="ticket-priority" label={t("dialog.priorityLabel")}>
               <Combobox
                 id="ticket-priority"
                 variant="field"
-                label="Priority"
+                label={t("dialog.priorityLabel")}
                 value={priority}
                 onChange={(v) => setPriority((v as TicketPriority) ?? "Medium")}
                 options={priorityOptions}
@@ -536,11 +547,11 @@ function CreateTicketDialog({
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={mutation.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={!title.trim() || mutation.isPending}>
-              {mutation.isPending ? "Opening…" : "Open ticket"}
+              {mutation.isPending ? t("dialog.opening") : t("openTicket")}
             </Button>
           </DialogFooter>
         </form>

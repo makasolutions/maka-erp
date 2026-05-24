@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, MessageCircle } from "lucide-react";
 import {
@@ -26,6 +27,7 @@ import { cn } from "@/lib/cn";
  * without a refetch.
  */
 export function NotificationBell() {
+  const { t, i18n } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -84,13 +86,19 @@ export function NotificationBell() {
     }
   };
 
+  const ariaLabel =
+    unread > 0
+      ? t("notifications.ariaLabelUnread", { count: unread })
+      : t("notifications.ariaLabel");
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}
-          title="Notifications"
+          data-notification-bell
+          aria-label={ariaLabel}
+          title={t("notifications.title")}
           className={cn(
             "relative grid h-9 w-9 cursor-pointer place-items-center rounded-md",
             "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -120,12 +128,12 @@ export function NotificationBell() {
         <div className="flex items-start justify-between gap-3 border-b border-border bg-card px-4 pb-3 pt-4">
           <div className="min-w-0">
             <div className="font-display text-sm font-semibold tracking-tight">
-              Notifications
+              {t("notifications.title")}
             </div>
             <div className="text-[12px] text-[var(--color-muted-foreground)]">
               {unread === 0
-                ? "All caught up"
-                : `${unread} unread · ${inbox.length} loaded`}
+                ? t("notifications.allCaughtUp")
+                : t("notifications.unreadCount", { unread, total: inbox.length })}
             </div>
           </div>
           {unread > 0 && (
@@ -143,27 +151,31 @@ export function NotificationBell() {
               )}
             >
               <Check className="h-3 w-3" aria-hidden />
-              Mark all read
+              {t("notifications.markAllReadBtn")}
             </button>
           )}
         </div>
 
-        <DropdownMenuLabel className="!my-0">Recent</DropdownMenuLabel>
+        <DropdownMenuLabel className="!my-0">{t("notifications.recent")}</DropdownMenuLabel>
 
         <div className="max-h-[400px] overflow-y-auto">
           {inboxQuery.isLoading ? (
             <p className="px-4 py-6 text-center text-[12px] text-[var(--color-muted-foreground)]">
-              Loading…
+              {t("notifications.loadingInbox")}
             </p>
           ) : inbox.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-[var(--color-muted-foreground)]">
-              Nothing yet. Mentions and channel updates will appear here.
+              {t("notifications.emptyDesc")}
             </p>
           ) : (
             <ul className="px-1.5 pb-2">
               {inbox.map((n) => (
                 <li key={n.id}>
-                  <NotificationRow notification={n} onSelect={() => onItemSelect(n)} />
+                  <NotificationRow
+                    notification={n}
+                    onSelect={() => onItemSelect(n)}
+                    locale={i18n.resolvedLanguage ?? "en"}
+                  />
                 </li>
               ))}
             </ul>
@@ -180,7 +192,7 @@ export function NotificationBell() {
             }}
             className="text-[11px] text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)]"
           >
-            Settings ↗
+            {t("notifications.settingsLink")}
           </button>
         </div>
       </DropdownMenuContent>
@@ -191,12 +203,18 @@ export function NotificationBell() {
 function NotificationRow({
   notification,
   onSelect,
+  locale,
 }: {
   notification: NotificationDto;
   onSelect: () => void;
+  locale: string;
 }) {
+  const { t } = useTranslation("common");
   const isUnread = notification.readAtUtc === null || notification.readAtUtc === undefined;
-  const time = useMemo(() => relativeTime(notification.createdAtUtc), [notification.createdAtUtc]);
+  const time = useMemo(
+    () => relativeTime(notification.createdAtUtc, locale, t("notifications.relativeTime.justNow")),
+    [notification.createdAtUtc, locale, t],
+  );
   return (
     <button
       type="button"
@@ -254,10 +272,10 @@ function NotificationRow({
   );
 }
 
-function relativeTime(iso: string): string {
+function relativeTime(iso: string, locale: string, justNowLabel: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const seconds = Math.max(0, Math.round(diffMs / 1000));
-  if (seconds < 60) return "just now";
+  if (seconds < 60) return justNowLabel;
   const minutes = Math.round(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.round(minutes / 60);
@@ -266,5 +284,8 @@ function relativeTime(iso: string): string {
   if (days < 7) return `${days}d`;
   const weeks = Math.round(days / 7);
   if (weeks < 5) return `${weeks}w`;
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString(locale === "es" ? "es-CO" : "en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }

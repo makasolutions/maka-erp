@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useRealtimeEvent } from "@/realtime/realtime-context";
 import { useUserDisplay } from "@/lib/use-user-display";
 
@@ -20,6 +21,11 @@ export function TypingIndicator({
   selfUserId?: string;
 }) {
   const [markers, setMarkers] = useState<Marker[]>([]);
+  const { t } = useTranslation("chat");
+
+  // Always call hooks unconditionally — pass undefined when the slot is empty.
+  const user1Display = useUserDisplay(markers[0]?.userId);
+  const user2Display = useUserDisplay(markers[1]?.userId);
 
   useRealtimeEvent<{ channelId: string; userId: string }>(
     "ChatTypingStarted",
@@ -66,31 +72,12 @@ export function TypingIndicator({
         <span className="chat-typing-dot inline-block h-1 w-1 rounded-full bg-[var(--color-primary)]" />
       </span>
       <span>
-        {markers.length === 1 ? (
-          <>
-            <UserName userId={markers[0].userId} /> is typing…
-          </>
-        ) : markers.length === 2 ? (
-          <>
-            <UserName userId={markers[0].userId} /> and <UserName userId={markers[1].userId} /> are
-            typing…
-          </>
-        ) : (
-          <>
-            <UserName userId={markers[0].userId} /> and {markers.length - 1} others are typing…
-          </>
-        )}
+        {markers.length === 1
+          ? t("typing.one", { user: user1Display.name })
+          : markers.length === 2
+            ? t("typing.two", { user1: user1Display.name, user2: user2Display.name })
+            : t("typing.many", { user: user1Display.name, count: markers.length - 1 })}
       </span>
     </div>
   );
-}
-
-/**
- * Inline name resolver — extracted so each marker can have its own
- * useUserDisplay hook (you can't call hooks inside an array .map). Renders
- * just the resolved name as a fragment.
- */
-function UserName({ userId }: { userId: string }) {
-  const u = useUserDisplay(userId);
-  return <>{u.name}</>;
 }

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/dialog";
 import { SidebarNavBody } from "@/components/layout/sidebar";
@@ -57,6 +58,7 @@ export function MobileNavProvider({ children }: { children: ReactNode }) {
  */
 export function MobileNavRoot() {
   const { open, setOpen } = useMobileNav();
+  const { t } = useTranslation("common");
   const location = useLocation();
 
   // Single-select accordion state — local to the drawer so opening it
@@ -81,7 +83,7 @@ export function MobileNavRoot() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
         side="left"
-        aria-label="Primary navigation"
+        aria-label={t("mobileNav.primaryNav")}
         className="flex flex-col p-0"
       >
         {/* Brand row — matches Topbar height so the drawer top aligns
@@ -123,11 +125,12 @@ export function MobileNavRoot() {
  */
 export function MobileNavTrigger({ className }: { className?: string }) {
   const { setOpen } = useMobileNav();
+  const { t } = useTranslation("common");
   const onClick = useCallback(() => setOpen(true), [setOpen]);
   return (
     <button
       type="button"
-      aria-label="Open navigation menu"
+      aria-label={t("mobileNav.openMenu")}
       onClick={onClick}
       className={cn(
         "grid h-9 w-9 cursor-pointer place-items-center rounded-md md:hidden",

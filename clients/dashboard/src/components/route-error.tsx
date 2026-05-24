@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,6 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export function RouteError() {
   const error = useRouteError();
   const navigate = useNavigate();
+  const { t } = useTranslation("common");
 
   const { title, detail } = describe(error);
   const showDetail = import.meta.env.DEV && detail;
@@ -22,7 +24,7 @@ export function RouteError() {
     <div className="flex min-h-[60vh] items-center justify-center p-6">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Something went wrong</CardTitle>
+          <CardTitle>{t("error.somethingWentWrong")}</CardTitle>
           <CardDescription>{title}</CardDescription>
         </CardHeader>
         {showDetail && (
@@ -33,8 +35,8 @@ export function RouteError() {
           </CardContent>
         )}
         <CardFooter className="gap-2">
-          <Button onClick={() => navigate(0)}>Reload</Button>
-          <Button variant="outline" onClick={() => navigate("/")}>Go home</Button>
+          <Button onClick={() => navigate(0)}>{t("actions.refresh")}</Button>
+          <Button variant="outline" onClick={() => navigate("/")}>{t("error.goHome")}</Button>
         </CardFooter>
       </Card>
     </div>

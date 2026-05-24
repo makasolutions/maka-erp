@@ -73,6 +73,7 @@ function useCollapsedSidebar() {
 }
 
 export function Sidebar() {
+  const { t } = useTranslation("common");
   const { collapsed, toggle } = useCollapsedSidebar();
   const location = useLocation();
 
@@ -102,7 +103,7 @@ export function Sidebar() {
   return (
     <aside
       data-collapsed={collapsed || undefined}
-      aria-label="Primary navigation"
+      aria-label={t("nav.primaryNavAriaLabel")}
       className={cn(
         "hidden shrink-0 flex-col border-r border-[var(--color-border)]",
         "bg-[oklch(from_var(--color-card)_l_c_h_/_0.85)] backdrop-blur-xl backdrop-saturate-150 md:flex",
@@ -143,9 +144,9 @@ export function Sidebar() {
           <button
             type="button"
             onClick={toggle}
-            aria-label="Collapse sidebar"
+            aria-label={t("nav.collapseSidebar")}
             aria-expanded={!collapsed}
-            title="Collapse sidebar"
+            title={t("nav.collapseSidebar")}
             className={cn(
               "grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md",
               "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -175,9 +176,9 @@ export function Sidebar() {
           <button
             type="button"
             onClick={toggle}
-            aria-label="Expand sidebar"
+            aria-label={t("nav.expandSidebar")}
             aria-expanded={false}
-            title="Expand sidebar"
+            title={t("nav.expandSidebar")}
             className={cn(
               "grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md",
               "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",

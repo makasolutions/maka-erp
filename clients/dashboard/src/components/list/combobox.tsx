@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,6 +64,7 @@ export function Combobox({
   id?: string;
   className?: string;
 }) {
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,11 +99,12 @@ export function Combobox({
             onClear={() => onChange(null)}
             disabled={disabled}
             className={className}
+            allLabel={t("status.all")}
           />
         ) : (
           <FieldTrigger
             id={id}
-            placeholder={placeholder ?? `Select ${label.toLowerCase()}…`}
+            placeholder={placeholder ?? `${t("actions.open")} ${label.toLowerCase()}…`}
             selected={selected}
             hasValue={hasValue}
             clearable={clearable}
@@ -109,6 +112,7 @@ export function Combobox({
             disabled={disabled}
             required={required}
             className={className}
+            clearLabel={t("actions.clear")}
           />
         )}
       </DropdownMenuTrigger>
@@ -129,7 +133,7 @@ export function Combobox({
               ref={inputRef}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder={`Filter ${label.toLowerCase()}…`}
+              placeholder={`${t("actions.filter")} ${label.toLowerCase()}…`}
               // Stop Radix's typeahead from swallowing the user's input.
               onKeyDown={(e) => {
                 if (e.key !== "Escape") e.stopPropagation();
@@ -152,7 +156,7 @@ export function Combobox({
                   inputRef.current?.focus();
                 }}
                 className="grid h-5 w-5 cursor-pointer place-items-center rounded text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-                aria-label="Clear filter"
+                aria-label={t("actions.clear")}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -177,7 +181,7 @@ export function Combobox({
 
           {filtered.length === 0 ? (
             <li className="px-3 py-3 text-center text-[12px] text-[var(--color-muted-foreground)]">
-              No matches.
+              {t("feedback.noResults")}
             </li>
           ) : (
             filtered.map((opt) => (
@@ -253,6 +257,7 @@ const FilterTrigger = ({
   onClear,
   disabled,
   className,
+  allLabel,
   ...props
 }: {
   label: string;
@@ -262,6 +267,7 @@ const FilterTrigger = ({
   onClear: () => void;
   disabled?: boolean;
   className?: string;
+  allLabel?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
   return (
     <span className={cn("relative inline-flex items-center", className)}>
@@ -283,7 +289,7 @@ const FilterTrigger = ({
         {...props}
       >
         <span className="opacity-70">{label.toUpperCase()}:</span>
-        <span className="truncate">{selected?.label.toUpperCase() ?? "ALL"}</span>
+        <span className="truncate">{selected?.label.toUpperCase() ?? (allLabel ?? "ALL").toUpperCase()}</span>
         <ChevronDown
           aria-hidden
           className="h-3 w-3 transition-transform duration-[var(--duration-fast)] data-[state=open]:rotate-180"
@@ -314,6 +320,7 @@ const FieldTrigger = ({
   disabled,
   required,
   className,
+  clearLabel,
   ...props
 }: {
   id?: string;
@@ -325,6 +332,7 @@ const FieldTrigger = ({
   disabled?: boolean;
   required?: boolean;
   className?: string;
+  clearLabel?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
   return (
     <button
@@ -369,7 +377,7 @@ const FieldTrigger = ({
           <span
             role="button"
             tabIndex={0}
-            aria-label="Clear"
+            aria-label={clearLabel ?? "Clear"}
             onClick={(e) => {
               e.stopPropagation();
               onClear();

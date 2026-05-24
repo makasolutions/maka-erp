@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Image as ImageIcon, Loader2, Upload, X, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export function ImageInput({
   shape = "square",
   className,
 }: Props) {
+  const { t } = useTranslation("files");
   const [mode, setMode] = useState<"upload" | "url">("upload");
   const { upload, progress, isUploading, reset } = useFileUpload({
     ownerType,
@@ -77,7 +79,7 @@ export function ImageInput({
         const asset = await upload(file);
         const url = await resolveUrl.mutateAsync(asset.id);
         onChange(url);
-        toast.success("Image uploaded");
+        toast.success(t("imageInput.toast"));
         // Clear progress so the dropzone re-arms for another upload.
         setTimeout(reset, 1500);
       } catch (e) {
@@ -102,10 +104,10 @@ export function ImageInput({
       {/* Mode toggle */}
       <div className="flex gap-1">
         <ModeChip active={mode === "upload"} onClick={() => setMode("upload")} icon={<Upload className="h-3.5 w-3.5" />}>
-          Upload
+          {t("imageInput.modeUpload")}
         </ModeChip>
         <ModeChip active={mode === "url"} onClick={() => setMode("url")} icon={<LinkIcon className="h-3.5 w-3.5" />}>
-          Paste URL
+          {t("imageInput.modeUrl")}
         </ModeChip>
       </div>
 
@@ -133,12 +135,12 @@ export function ImageInput({
                 {isWorking
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <Upload className="h-3.5 w-3.5" />}
-                {hasImage ? "Replace image" : "Choose image"}
+                {hasImage ? t("imageInput.replace") : t("imageInput.choose")}
               </Button>
               {hasImage && !isWorking && (
                 <Button type="button" size="sm" variant="outline" onClick={() => onChange("")}>
                   <X className="h-3.5 w-3.5" />
-                  Remove
+                  {t("imageInput.remove")}
                 </Button>
               )}
               {isUploading && progress && (
@@ -152,15 +154,15 @@ export function ImageInput({
               type="url"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              placeholder="https://…"
+              placeholder={t("imageInput.urlPlaceholder")}
               maxLength={512}
             />
           )}
 
           <p className="text-xs text-[var(--color-muted-foreground)]">
             {mode === "upload"
-              ? `JPG/PNG/WebP/GIF · up to ${formatBytes(maxBytes)}`
-              : "Direct link to an image you host elsewhere."}
+              ? t("imageInput.uploadHint", { size: formatBytes(maxBytes) })
+              : t("imageInput.urlHint")}
           </p>
         </div>
       </div>

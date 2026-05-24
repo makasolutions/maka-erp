@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { ImageIcon, Loader2, Paperclip, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { sendMessage, type ChannelTypeValue, type MessageDto } from "@/api/chat";
@@ -51,6 +52,7 @@ export function Composer({
   replyTo?: MessageDto | null;
   onClearReply?: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const parentMessageId = replyTo?.id;
   const [body, setBody] = useState("");
   const [focused, setFocused] = useState(false);
@@ -78,7 +80,7 @@ export function Composer({
     e.target.value = ""; // allow re-picking the same file
     if (!file) return;
     if (pendingAttachment) {
-      toast.info("Replace the existing attachment first.");
+      toast.info(t("toast.attachReplacePending"));
       return;
     }
     try {
@@ -108,7 +110,7 @@ export function Composer({
     } catch {
       // useFileUpload already reflects the error in `progress.status`;
       // surface a toast so the user notices when scrolled away.
-      toast.error("Couldn't attach that file.");
+      toast.error(t("toast.attachFailed"));
     }
   };
 
@@ -125,8 +127,8 @@ export function Composer({
       setDebouncedQuery("");
       return;
     }
-    const t = setTimeout(() => setDebouncedQuery(mention.query), 200);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedQuery(mention.query), 200);
+    return () => clearTimeout(timer);
   }, [mention]);
 
   const mentionUsersQuery = useQuery({
@@ -242,7 +244,7 @@ export function Composer({
       // Restore the text + attachment so the user can retry.
       setBody(text);
       if (attachment) setPendingAttachment(attachment);
-      toast.error("Message failed to send — try again.");
+      toast.error(t("toast.sendFailed"));
     },
   });
 
@@ -405,17 +407,17 @@ export function Composer({
           onKeyDown={onKeyDown}
           placeholder={
             replyTo
-              ? "Type your reply…"
+              ? t("composer.placeholderReply")
               : channelType === 2
-                ? `Message #${channelTitle}`
-                : `Message ${channelTitle}`
+                ? t("composer.placeholderChannel", { channel: channelTitle })
+                : t("composer.placeholderDm", { name: channelTitle })
           }
           aria-label={
             replyTo
-              ? "Type your reply"
+              ? t("composer.ariaReply")
               : channelType === 2
-                ? `Message channel ${channelTitle}`
-                : `Message ${channelTitle}`
+                ? t("composer.ariaChannel", { channel: channelTitle })
+                : t("composer.ariaDm", { name: channelTitle })
           }
           rows={1}
           className={cn(
@@ -439,8 +441,8 @@ export function Composer({
         {/* Paperclip — bottom-left of the plinth, mirrors the send button on the right. */}
         <button
           type="button"
-          aria-label="Attach a file"
-          title="Attach a file"
+          aria-label={t("composer.attachFile")}
+          title={t("composer.attachFile")}
           disabled={fileUpload.isUploading || mutation.isPending}
           onClick={() => fileInputRef.current?.click()}
           className={cn(
@@ -457,7 +459,7 @@ export function Composer({
 
         <button
           type="button"
-          aria-label="Send message"
+          aria-label={t("composer.sendMessage")}
           disabled={(!body.trim() && !pendingAttachment) || mutation.isPending}
           onClick={send}
           className={cn(
@@ -476,12 +478,12 @@ export function Composer({
       <div className="mt-1.5 flex items-center justify-between px-1">
         <span className="text-[11px] text-[var(--color-muted-foreground)]">
           {replyTo
-            ? "Enter to send · Shift+Enter for newline · Esc to clear"
-            : "Enter to send · Shift+Enter for newline · @ + 2 chars to mention"}
+            ? t("composer.hintBasic")
+            : t("composer.hintMention")}
         </span>
         {mutation.isError && (
           <span className="text-[11px] font-medium text-[var(--color-destructive)]">
-            Send failed — retry?
+            {t("composer.sendFailed")}
           </span>
         )}
       </div>
@@ -502,8 +504,9 @@ function ReplyQuote({
   replyTo: MessageDto;
   onClear: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const author = useUserDisplay(replyTo.authorUserId);
-  const body = (replyTo.body ?? "").trim() || "(no text — attachment or empty)";
+  const body = (replyTo.body ?? "").trim() || t("composer.noTextFallback");
 
   return (
     <div
@@ -515,7 +518,7 @@ function ReplyQuote({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Replying to
+            {t("composer.replyingTo")}
           </span>
           <span className="truncate text-[11px] font-semibold tracking-tight text-[var(--color-foreground)]">
             {author.name}
@@ -531,8 +534,8 @@ function ReplyQuote({
       <button
         type="button"
         onClick={onClear}
-        aria-label="Clear reply context"
-        title="Clear reply"
+        aria-label={t("composer.clearReplyAriaLabel")}
+        title={t("composer.clearReplyTitle")}
         className={cn(
           "grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded",
           "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -564,17 +567,18 @@ function UploadingChip({
   error?: string;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const isError = status === "error";
   const label =
     status === "preparing"
-      ? "Preparing…"
+      ? t("composer.preparing")
       : status === "uploading"
-        ? `Uploading… ${percent}%`
+        ? t("composer.uploading", { percent })
         : status === "finalizing"
-          ? "Finalizing…"
+          ? t("composer.finalizing")
           : isError
-            ? error ?? "Upload failed"
-            : "Done";
+            ? error ?? t("composer.uploadFailed")
+            : t("common:feedback.loading");
   return (
     <div
       className={cn(
@@ -617,8 +621,8 @@ function UploadingChip({
       <button
         type="button"
         onClick={onCancel}
-        aria-label="Cancel upload"
-        title="Cancel"
+        aria-label={t("composer.cancelUpload")}
+        title={t("composer.cancelTitle")}
         className={cn(
           "grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
           "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -642,6 +646,7 @@ function PendingAttachmentChip({
   attachment: PendingAttachment;
   onClear: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const isImage = attachment.contentType.startsWith("image/");
   return (
     <div
@@ -679,14 +684,14 @@ function PendingAttachmentChip({
           {attachment.fileName}
         </p>
         <p className="text-[11px] tabular-nums text-[var(--color-muted-foreground)]">
-          {formatBytes(attachment.sizeBytes)} · ready to send
+          {t("composer.readyToSend", { size: formatBytes(attachment.sizeBytes) })}
         </p>
       </div>
       <button
         type="button"
         onClick={onClear}
-        aria-label="Remove attachment"
-        title="Remove attachment"
+        aria-label={t("composer.removeAttachment")}
+        title={t("composer.removeAttachment")}
         className={cn(
           "grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
           "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",

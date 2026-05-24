@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 // Per-route chat chrome — Vite extracts this into the chat-page CSS chunk
 // so other pages stop shipping the unread divider / day rule / reaction
 // chip / jump-pill / mention pill / typing dot rules they'll never use.
@@ -105,6 +106,7 @@ export function ChatPage() {
 }
 
 function EmptyState() {
+  const { t } = useTranslation("chat");
   return (
     <div className="flex h-full items-center justify-center px-6">
       <div className="flex flex-col items-center text-center">
@@ -112,17 +114,15 @@ function EmptyState() {
           <MessageCircle className="size-6 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]" />
         </div>
         <h3 className="mb-1.5 font-display text-[17px] font-semibold text-[var(--color-foreground)]">
-          Pick a conversation
+          {t("page.emptyTitle")}
         </h3>
         <p className="mb-6 max-w-[360px] text-[13px] text-[var(--color-muted-foreground)]">
-          Choose a channel on the left to jump in. Channels are public to your
-          tenant; DMs are private to the people in them. Mentions land in the
-          notification bell, top right.
+          {t("page.emptyBody")}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <KeyHint label="Send" combo="↵" />
-          <KeyHint label="Newline" combo="⇧↵" />
-          <KeyHint label="Mention" combo="@" />
+          <KeyHint label={t("page.keyHintSend")} combo="↵" />
+          <KeyHint label={t("page.keyHintNewline")} combo="⇧↵" />
+          <KeyHint label={t("page.keyHintMention")} combo="@" />
         </div>
       </div>
     </div>
@@ -151,6 +151,7 @@ function ActiveChannel({
   const [searching, setSearching] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const messageListRef = useRef<MessageListHandle | null>(null);
+  const { t } = useTranslation("chat");
 
   // Clear ephemeral state when the user switches channels.
   useEffect(() => {
@@ -206,7 +207,7 @@ function ActiveChannel({
     return (
       <div className="flex h-full items-center justify-center px-6 text-center">
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          That channel isn't reachable. It may have been archived or you're no longer a member.
+          {t("page.unreachable")}
         </p>
       </div>
     );
@@ -216,7 +217,7 @@ function ActiveChannel({
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-[12px] text-[var(--color-muted-foreground)]">
-          Loading channel…
+          {t("page.loadingChannel")}
         </p>
       </div>
     );
@@ -236,7 +237,7 @@ function ActiveChannel({
           onJump={(id) => {
             const ok = messageListRef.current?.jumpToMessage(id) ?? false;
             if (!ok) {
-              toast.info("That message is older than the loaded window.");
+              toast.info(t("page.oldMessage"));
             }
           }}
         />
@@ -250,8 +251,8 @@ function ActiveChannel({
           <button
             type="button"
             onClick={() => navigate("/chat")}
-            aria-label="Back to channels"
-            title="Back to channels"
+            aria-label={t("page.backToChannels")}
+            title={t("page.backToChannels")}
             className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)] md:hidden"
           >
             <ArrowLeft className="size-4" />
@@ -273,14 +274,13 @@ function ActiveChannel({
             )}
           </div>
           <span className="hidden text-[11px] tabular-nums text-[var(--color-muted-foreground)] md:inline">
-            {channel.members.length}{" "}
-            {channel.members.length === 1 ? "member" : "members"}
+            {t("page.memberCount", { count: channel.members.length })}
           </span>
           <button
             type="button"
             onClick={() => setSearching(true)}
-            aria-label="Search messages"
-            title="Search messages"
+            aria-label={t("page.searchMessages")}
+            title={t("page.searchMessages")}
             className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]"
           >
             <Search className="size-3.5" />
@@ -290,7 +290,7 @@ function ActiveChannel({
             onJump={(id) => {
               const ok = messageListRef.current?.jumpToMessage(id) ?? false;
               if (!ok) {
-                toast.info("That message is older than the loaded window.");
+                toast.info(t("page.oldMessage"));
               }
             }}
           />
@@ -298,8 +298,8 @@ function ActiveChannel({
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              aria-label="Channel settings"
-              title="Channel settings"
+              aria-label={t("page.channelSettings")}
+              title={t("page.channelSettings")}
               className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]"
             >
               <Settings className="size-3.5" />

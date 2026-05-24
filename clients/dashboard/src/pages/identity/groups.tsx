@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useMutation,
   useQuery,
@@ -50,13 +51,14 @@ import { describe } from "@/lib/list-helpers";
 const DESKTOP_COLUMNS = "grid-cols-[1fr_160px_120px_24px]";
 
 export function GroupsPage() {
+  const { t } = useTranslation("identity");
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim()), 250);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const query = useQuery({
@@ -72,24 +74,24 @@ export function GroupsPage() {
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={UsersRound}
-        title="Groups"
+        title={t("groups.title")}
         total={query.data ? groups.length : null}
-        unit="group"
-        description="Groups bundle members and roles into reusable cohorts. Add a user to a group to grant every role attached to that group."
+        unit={t("groups.singular")}
+        description={t("groups.description")}
       >
         <Button
           onClick={() => setCreateOpen(true)}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
           <Plus className="size-4" />
-          New group
+          {t("groups.actions.create")}
         </Button>
       </EntityPageHeader>
 
       <EntitySearch
         value={search}
         onChange={setSearch}
-        placeholder="Search by name or description…"
+        placeholder={t("groups.searchPlaceholder")}
       />
 
       {query.isLoading ? (
@@ -97,23 +99,21 @@ export function GroupsPage() {
       ) : groups.length === 0 ? (
         <EntityEmpty
           icon={searchActive ? Search : UsersRound}
-          title={searchActive ? "No groups found" : "No groups yet"}
+          title={searchActive ? t("groups.emptySearch") : t("groups.empty.title")}
           body={
             searchActive
-              ? debounced
-                ? `Nothing matches "${debounced}". Try a different term.`
-                : "No groups match the current filters."
-              : "Create the first group to bundle members and roles. Useful for teams, departments, or feature cohorts."
+              ? t("groups.emptySearchBody", { term: debounced })
+              : t("groups.empty.body")
           }
           action={
             searchActive ? (
               <Button variant="outline" onClick={() => setSearch("")} className="h-9 rounded-lg px-4 text-[13px]">
-                Clear search
+                {t("groups.clearSearch")}
               </Button>
             ) : (
               <Button onClick={() => setCreateOpen(true)} className="h-9 rounded-lg px-4 text-[13px]">
                 <Plus className="mr-1.5 size-4" />
-                Add group
+                {t("groups.addGroup")}
               </Button>
             )
           }
@@ -122,7 +122,7 @@ export function GroupsPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {groups.length} group{groups.length === 1 ? "" : "s"} found
+              {t("groups.groupsFound", { count: groups.length })}
             </p>
           </div>
 
@@ -136,9 +136,9 @@ export function GroupsPage() {
           {/* Desktop table */}
           <EntityListCard className="hidden md:block">
             <EntityListHeader className={DESKTOP_COLUMNS}>
-              <span>Group</span>
-              <span>Composition</span>
-              <span>Flags</span>
+              <span>{t("groups.columns.group")}</span>
+              <span>{t("groups.columns.composition")}</span>
+              <span>{t("groups.columns.flags")}</span>
               <span />
             </EntityListHeader>
             {groups.map((group, i) => (
@@ -167,10 +167,12 @@ export function GroupsPage() {
 }
 
 function MobileGroupCard({ group }: { group: GroupDto }) {
+  const { t } = useTranslation("identity");
+  const roleCount = group.roleNames?.length ?? 0;
   return (
     <EntityMobileCard
       href={`/identity/groups/${group.id}`}
-      aria-label={`Open group ${group.name}`}
+      aria-label={t("groups.openGroupAria", { name: group.name })}
     >
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-3">
@@ -183,11 +185,11 @@ function MobileGroupCard({ group }: { group: GroupDto }) {
               {group.isDefault && (
                 <EntityStatusBadge tone="info">
                   <Star className="mr-0.5 size-2.5" />
-                  Default
+                  {t("groups.defaultRoleLabel")}
                 </EntityStatusBadge>
               )}
               {group.isSystemGroup && (
-                <EntityStatusBadge tone="default">System</EntityStatusBadge>
+                <EntityStatusBadge tone="default">{t("groups.systemBadge")}</EntityStatusBadge>
               )}
             </div>
             <p
@@ -196,21 +198,16 @@ function MobileGroupCard({ group }: { group: GroupDto }) {
                 !group.description && "italic opacity-70",
               )}
             >
-              {group.description ?? "No description on file."}
+              {group.description ?? t("groups.noDescriptionOnFile")}
             </p>
           </div>
         </div>
         <ChevronRight className="size-4 shrink-0 text-[var(--color-border)]" />
       </div>
       <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-muted-foreground)]">
-        <span>
-          {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
-        </span>
+        <span>{t("groups.membersCount", { count: group.memberCount })}</span>
         <span className="opacity-40">·</span>
-        <span>
-          {group.roleNames?.length ?? 0}{" "}
-          {(group.roleNames?.length ?? 0) === 1 ? "role" : "roles"}
-        </span>
+        <span>{t("groups.rolesCount", { count: roleCount })}</span>
       </div>
     </EntityMobileCard>
   );
@@ -223,7 +220,10 @@ function DesktopGroupRow({
   group: GroupDto;
   isLast: boolean;
 }) {
+  const { t } = useTranslation("identity");
   const navigate = useNavigate();
+  const roleCount = group.roleNames?.length ?? 0;
+
   return (
     <EntityListRow
       className={DESKTOP_COLUMNS}
@@ -249,7 +249,7 @@ function DesktopGroupRow({
               !group.description && "italic opacity-70",
             )}
           >
-            {group.description ?? "No description on file."}
+            {group.description ?? t("groups.noDescriptionOnFile")}
           </p>
         </div>
       </Link>
@@ -257,11 +257,10 @@ function DesktopGroupRow({
       {/* Composition */}
       <div className="flex flex-col text-[12px] text-[var(--color-muted-foreground)]">
         <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-foreground)]">
-          {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
+          {t("groups.membersCount", { count: group.memberCount })}
         </span>
         <span className="font-mono text-[11px] uppercase tracking-wider">
-          {group.roleNames?.length ?? 0}{" "}
-          {(group.roleNames?.length ?? 0) === 1 ? "role" : "roles"}
+          {t("groups.rolesCount", { count: roleCount })}
         </span>
       </div>
 
@@ -270,11 +269,11 @@ function DesktopGroupRow({
         {group.isDefault && (
           <EntityStatusBadge tone="info">
             <Star className="mr-0.5 size-2.5" />
-            Default
+            {t("groups.defaultRoleLabel")}
           </EntityStatusBadge>
         )}
         {group.isSystemGroup && (
-          <EntityStatusBadge tone="default">System</EntityStatusBadge>
+          <EntityStatusBadge tone="default">{t("groups.systemBadge")}</EntityStatusBadge>
         )}
         {!group.isDefault && !group.isSystemGroup && (
           <span className="text-[12px] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]">
@@ -290,6 +289,7 @@ function DesktopGroupRow({
 }
 
 function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation("identity");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -313,12 +313,12 @@ function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => vo
         roleIds: [],
       }),
     onSuccess: (group) => {
-      toast.success("Group created", { description: "Add members and roles next." });
+      toast.success(t("groups.groupCreated"), { description: t("groups.groupCreatedDesc") });
       void queryClient.invalidateQueries({ queryKey: ["identity", "groups"] });
       onClose();
       navigate(`/identity/groups/${group.id}`);
     },
-    onError: (err) => toast.error("Create failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("groups.createFailed"), { description: describe(err) }),
   });
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -332,19 +332,16 @@ function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => vo
       <DialogContent>
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle>Create a group</DialogTitle>
-            <DialogDescription>
-              Groups bundle members and roles. After creating, you'll be taken
-              to the editor to attach roles and add members.
-            </DialogDescription>
+            <DialogTitle>{t("groups.createTitle")}</DialogTitle>
+            <DialogDescription>{t("groups.createDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            <Field id="group-name" label="Name" required>
+            <Field id="group-name" label={t("groups.fields.name")} required>
               <Input
                 id="group-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Engineering"
+                placeholder={t("groups.groupNamePlaceholder")}
                 required
                 autoFocus
                 maxLength={128}
@@ -352,41 +349,41 @@ function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => vo
             </Field>
             <Field
               id="group-description"
-              label="Description"
-              hint="Helps admins understand what this cohort represents."
+              label={t("groups.fields.description")}
+              hint={t("groups.descriptionHint")}
             >
               <Input
                 id="group-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Engineers across web, mobile, and platform."
+                placeholder={t("groups.groupDescPlaceholder")}
                 maxLength={512}
               />
             </Field>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
               <div className="min-w-0">
                 <span className="block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  Default group
+                  {t("groups.defaultGroupLabel")}
                 </span>
                 <span className="mt-0.5 block text-[12.5px] text-[var(--color-muted-foreground)]">
-                  Newly registered users join automatically.
+                  {t("groups.isDefaultDesc")}
                 </span>
               </div>
               <Switch
                 checked={isDefault}
                 onCheckedChange={setIsDefault}
-                aria-label="Default group"
+                aria-label={t("groups.defaultGroupLabel")}
               />
             </div>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={mutation.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={mutation.isPending || !name.trim()}>
-              {mutation.isPending ? "Creating…" : "Create group"}
+              {mutation.isPending ? t("groups.creating") : t("groups.create")}
             </Button>
           </DialogFooter>
         </form>

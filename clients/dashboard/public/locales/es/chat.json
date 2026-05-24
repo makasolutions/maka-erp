@@ -19,6 +19,7 @@
     "title": "Crear un canal",
     "description": "Los canales son donde tu equipo se comunica. Funcionan mejor cuando están organizados por tema — #marketing, #ingeniería, #general.",
     "nameLabel": "Nombre",
+    "namePlaceholder": "ingeniería, feedback-diseño…",
     "descLabel": "Descripción (opcional)",
     "privateLabel": "Privado",
     "privateHint": "Solo los miembros invitados pueden encontrarlo o unirse.",
@@ -122,7 +123,8 @@
   "mention": {
     "header": "Mención",
     "hint": "↑↓ navegar · Enter seleccionar · Esc cancelar",
-    "searching": "Buscando…"
+    "searching": "Buscando…",
+    "suggestionsAriaLabel": "Sugerencias de mención"
   },
   "composer": {
     "placeholderReply": "Escribe tu respuesta…",

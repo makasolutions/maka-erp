@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -50,25 +51,8 @@ function scorePassword(value: string): Strength | null {
   return "strong";
 }
 
-const STRENGTH_META: Record<Strength, { label: string; fill: string; bar: string }> = {
-  weak: {
-    label: "Weak",
-    fill: "bg-[var(--color-destructive)]",
-    bar: "w-1/3",
-  },
-  fair: {
-    label: "Fair",
-    fill: "bg-[var(--color-warning)]",
-    bar: "w-2/3",
-  },
-  strong: {
-    label: "Strong",
-    fill: "bg-[var(--color-success)]",
-    bar: "w-full",
-  },
-};
-
 export function ResetPasswordPage() {
+  const { t } = useTranslation("common");
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -89,11 +73,29 @@ export function ResetPasswordPage() {
   const strength = useMemo(() => scorePassword(password), [password]);
   const matches = password.length > 0 && password === confirm;
 
+  const STRENGTH_META: Record<Strength, { label: string; fill: string; bar: string }> = {
+    weak: {
+      label: t("auth.resetPasswordForm.strength.weak"),
+      fill: "bg-[var(--color-destructive)]",
+      bar: "w-1/3",
+    },
+    fair: {
+      label: t("auth.resetPasswordForm.strength.fair"),
+      fill: "bg-[var(--color-warning)]",
+      bar: "w-2/3",
+    },
+    strong: {
+      label: t("auth.resetPasswordForm.strength.strong"),
+      fill: "bg-[var(--color-success)]",
+      bar: "w-full",
+    },
+  };
+
   const mutation = useMutation({
     mutationFn: () => resetPassword({ email, password, token, tenant }),
     onSuccess: () => {
-      toast.success("Password updated", {
-        description: "Sign in with your new password to continue.",
+      toast.success(t("auth.resetPasswordForm.passwordUpdated"), {
+        description: t("auth.resetPasswordForm.passwordUpdatedDesc"),
       });
       navigate("/login", { replace: true });
     },
@@ -121,11 +123,11 @@ export function ResetPasswordPage() {
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!matches) {
-      setError("Passwords don't match.");
+      setError(t("auth.resetPasswordForm.passwordsDontMatch"));
       return;
     }
     if (password.length < 8) {
-      setError("Use at least 8 characters.");
+      setError(t("auth.resetPasswordForm.minLength"));
       return;
     }
     mutation.mutate();
@@ -135,12 +137,12 @@ export function ResetPasswordPage() {
     <AuthShell
       footer={
         <span>
-          Changed your mind?{" "}
+          {t("auth.resetPasswordForm.changedMind")}{" "}
           <Link
             to="/login"
             className="text-[var(--color-foreground)] underline-offset-4 hover:underline"
           >
-            Sign in
+            {t("auth.signIn")}
           </Link>
         </span>
       }
@@ -148,25 +150,20 @@ export function ResetPasswordPage() {
       {malformed ? (
         <div className="space-y-4">
           <div className="mb-2">
-            <AuthHeadline lead="This link is" accent="incomplete" />
+            <AuthHeadline lead={t("auth.resetPasswordForm.incompleteTitle")} accent={t("auth.resetPasswordForm.incompleteAccent")} />
             <p className="text-[13px] leading-relaxed text-[var(--color-muted-foreground)]">
-              The reset link is missing one of{" "}
-              <span className="text-[var(--color-foreground)]">token</span>,{" "}
-              <span className="text-[var(--color-foreground)]">email</span>, or{" "}
-              <span className="text-[var(--color-foreground)]">tenant</span>.
-              Some email clients clip long URLs — try copy-pasting the full
-              link from the original email into your browser's address bar.
+              {t("auth.resetPasswordForm.incompleteDesc")}
             </p>
           </div>
           <div className="flex gap-2 pt-1">
             <Link to="/forgot-password">
               <Button type="button" variant="outline">
-                Request a new link
+                {t("auth.resetPasswordForm.requestNewLink")}
               </Button>
             </Link>
             <Link to="/login">
               <Button type="button" variant="ghost">
-                Back to sign in
+                {t("auth.forgotPasswordForm.backToSignIn")}
               </Button>
             </Link>
           </div>
@@ -174,7 +171,7 @@ export function ResetPasswordPage() {
       ) : (
         <>
           <div className="mb-6 sm:mb-8">
-            <AuthHeadline lead="Set a new" accent="password" />
+            <AuthHeadline lead={t("auth.resetPasswordForm.title")} accent={t("auth.resetPasswordForm.accent")} />
             <p className="text-[13px] text-[var(--color-muted-foreground)]">
               Resetting password for{" "}
               <span className="text-[var(--color-foreground)]">{email}</span> on{" "}
@@ -188,7 +185,7 @@ export function ResetPasswordPage() {
                 htmlFor="new-password"
                 className="block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
               >
-                New password
+                {t("auth.resetPasswordForm.newPassword")}
               </Label>
               <div className="relative">
                 <Input
@@ -196,7 +193,7 @@ export function ResetPasswordPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder={t("auth.resetPasswordForm.placeholder")}
                   required
                   autoComplete="new-password"
                   autoFocus
@@ -208,7 +205,7 @@ export function ResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   className="absolute right-3.5 top-1/2 grid h-6 w-6 -translate-y-1/2 cursor-pointer place-items-center rounded text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -238,7 +235,7 @@ export function ResetPasswordPage() {
                 htmlFor="confirm-password"
                 className="block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
               >
-                Confirm password
+                {t("auth.resetPasswordForm.confirmPassword")}
               </Label>
               <div className="relative">
                 <Input
@@ -246,7 +243,7 @@ export function ResetPasswordPage() {
                   type={showConfirm ? "text" : "password"}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="Re-enter password"
+                  placeholder={t("auth.resetPasswordForm.confirmPlaceholder")}
                   required
                   autoComplete="new-password"
                   minLength={8}
@@ -257,7 +254,7 @@ export function ResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm((v) => !v)}
-                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                  aria-label={showConfirm ? t("auth.hidePassword") : t("auth.showPassword")}
                   className="absolute right-3.5 top-1/2 grid h-6 w-6 -translate-y-1/2 cursor-pointer place-items-center rounded text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
                 >
                   {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -279,7 +276,7 @@ export function ResetPasswordPage() {
                       matches ? "opacity-100" : "opacity-40",
                     )}
                   />
-                  <span>{matches ? "Passwords match" : "Doesn't match yet"}</span>
+                  <span>{matches ? t("auth.resetPasswordForm.matches") : t("auth.resetPasswordForm.noMatch")}</span>
                 </div>
               )}
             </div>
@@ -309,12 +306,12 @@ export function ResetPasswordPage() {
                 {mutation.isPending ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    <span>Updating password…</span>
+                    <span>{t("auth.resetPasswordForm.updating")}</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="size-4" />
-                    <span>Set new password</span>
+                    <span>{t("auth.resetPasswordForm.setPassword")}</span>
                     <ArrowRight className="size-[14px] opacity-60 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
                   </>
                 )}

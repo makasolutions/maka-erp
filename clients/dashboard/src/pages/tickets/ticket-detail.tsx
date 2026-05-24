@@ -26,6 +26,7 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/use-auth";
 import {
@@ -78,27 +79,13 @@ type DialogState =
   | { mode: "resolve" }
   | { mode: "assign" };
 
-// ─── Tone tables (mirror tickets.tsx) ─────────────────────────────────
-
-const STATUS_LABEL: Record<TicketStatus, string> = {
-  Open: "Open",
-  InProgress: "In progress",
-  Resolved: "Resolved",
-  Closed: "Closed",
-};
+// ─── Tone tables — no strings, safe at module level ───────────────────
 
 const STATUS_TONE: Record<TicketStatus, EntityStatusTone> = {
   Open: "info",
   InProgress: "warning",
   Resolved: "success",
   Closed: "default",
-};
-
-const PRIORITY_LABEL: Record<TicketPriority, string> = {
-  Low: "Low",
-  Medium: "Medium",
-  High: "High",
-  Critical: "Critical",
 };
 
 const PRIORITY_TONE: Record<TicketPriority, EntityStatusTone> = {
@@ -108,11 +95,28 @@ const PRIORITY_TONE: Record<TicketPriority, EntityStatusTone> = {
   Critical: "danger",
 };
 
+// ─── Locale key maps — translated by each component via t() ──────────
+
+const STATUS_KEY: Record<TicketStatus, string> = {
+  Open: "status.open",
+  InProgress: "status.inProgress",
+  Resolved: "status.resolved",
+  Closed: "status.closed",
+};
+
+const PRIORITY_KEY: Record<TicketPriority, string> = {
+  Low: "priority.low",
+  Medium: "priority.medium",
+  High: "priority.high",
+  Critical: "priority.critical",
+};
+
 // ───────────────────────────────────────────────────────────────────────
 //  Page
 // ───────────────────────────────────────────────────────────────────────
 
 export function TicketDetailPage() {
+  const { t } = useTranslation("tickets");
   const { ticketId = "" } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -134,7 +138,7 @@ export function TicketDetailPage() {
 
   return (
     <div className="space-y-5 pb-12">
-      <EntityDetailBack to="/tickets" label="Back to tickets" />
+      <EntityDetailBack to="/tickets" label={t("detail.backToTickets")} />
 
       {ticketQuery.isError && <ErrorBand message={describe(ticketQuery.error)} />}
 
@@ -152,7 +156,7 @@ export function TicketDetailPage() {
               void (async () => {
                 try {
                   await reopenTicket(ticket.id);
-                  toast.success("Ticket reopened");
+                  toast.success(t("toast.reopened"));
                   await queryClient.invalidateQueries({ queryKey: ["tickets"] });
                 } catch (e) {
                   toast.error(describe(e));
@@ -218,6 +222,7 @@ function Hero({
   onReopen: () => void;
   onAssign: () => void;
 }) {
+  const { t } = useTranslation("tickets");
   const canResolve = ticket.status !== "Resolved" && ticket.status !== "Closed";
   const canReopen = ticket.status === "Resolved" || ticket.status === "Closed";
 
@@ -231,7 +236,7 @@ function Hero({
       badges={
         <>
           <EntityStatusBadge tone={STATUS_TONE[ticket.status]}>
-            {STATUS_LABEL[ticket.status]}
+            {t(STATUS_KEY[ticket.status])}
           </EntityStatusBadge>
           <EntityStatusBadge tone={PRIORITY_TONE[ticket.priority]}>
             {ticket.priority === "Critical" && (
@@ -240,7 +245,7 @@ function Hero({
             {ticket.priority === "High" && (
               <AlertTriangle className="mr-1 size-2.5" />
             )}
-            {PRIORITY_LABEL[ticket.priority]}
+            {t(PRIORITY_KEY[ticket.priority])}
           </EntityStatusBadge>
         </>
       }
@@ -248,7 +253,10 @@ function Hero({
         <>
           <span className="font-mono tabular-nums">{ticket.number}</span>
           <span className="mx-1.5 text-[var(--color-border)]">·</span>
-          opened {formatRelative(ticket.createdAtUtc)} by {reporter.name}
+          {t("detail.openedBy", {
+            when: formatRelative(ticket.createdAtUtc),
+            name: reporter.name,
+          })}
         </>
       }
       actions={
@@ -261,7 +269,7 @@ function Hero({
             className="gap-1.5"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">{t("actions.refresh")}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={onAssign} className="gap-1.5">
             {ticket.assignedToUserId ? (
@@ -270,19 +278,19 @@ function Hero({
               <UserX className="h-3.5 w-3.5" />
             )}
             <span className="hidden sm:inline">
-              {ticket.assignedToUserId ? "Reassign" : "Assign"}
+              {ticket.assignedToUserId ? t("actions.reassign") : t("actions.assign")}
             </span>
           </Button>
           {canResolve && (
             <Button onClick={onResolve} size="sm" className="gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              Resolve
+              {t("actions.resolve")}
             </Button>
           )}
           {canReopen && (
             <Button onClick={onReopen} size="sm" variant="outline" className="gap-1.5">
               <RotateCcw className="h-3.5 w-3.5" />
-              Reopen
+              {t("actions.reopen")}
             </Button>
           )}
         </>
@@ -293,14 +301,14 @@ function Hero({
             icon={MessageCircle}
             tone="primary"
             value={commentCount}
-            label={commentCount === 1 ? "comment" : "comments"}
+            label={t("detail.comment", { count: commentCount })}
           />
           {ticket.updatedAtUtc && (
             <EntityDetailStat
               icon={Clock}
               tone="default"
               value={formatRelative(ticket.updatedAtUtc)}
-              label="updated"
+              label={t("detail.updatedStat")}
             />
           )}
           {ticket.resolvedAtUtc && (
@@ -308,7 +316,7 @@ function Hero({
               icon={CheckCircle2}
               tone="success"
               value={formatRelative(ticket.resolvedAtUtc)}
-              label="resolved"
+              label={t("detail.resolvedStat")}
             />
           )}
         </>
@@ -316,19 +324,19 @@ function Hero({
       meta={
         <>
           <EntityDetailMeta icon={User}>
-            Assignee:&nbsp;
+            {t("fields.assignee")}:&nbsp;
             <span className="font-medium text-[var(--color-foreground)]">
-              {ticket.assignedToUserId ? assignee.name : "Unassigned"}
+              {ticket.assignedToUserId ? assignee.name : t("unassigned")}
             </span>
           </EntityDetailMeta>
           <EntityDetailMeta icon={UserCheck}>
-            Reporter:&nbsp;
+            {t("fields.reporter")}:&nbsp;
             <span className="font-medium text-[var(--color-foreground)]">
               {reporter.name}
             </span>
           </EntityDetailMeta>
           <EntityDetailMeta icon={CalendarDays}>
-            Created:&nbsp;
+            {t("fields.createdAt")}:&nbsp;
             <span className="font-medium text-[var(--color-foreground)]">
               {formatDate(ticket.createdAtUtc)}
             </span>
@@ -344,15 +352,16 @@ function Hero({
 // ───────────────────────────────────────────────────────────────────────
 
 function DescriptionSection({ ticket }: { ticket: TicketDto }) {
+  const { t } = useTranslation("tickets");
   return (
-    <EntityDetailSection title="Description" icon={Info}>
+    <EntityDetailSection title={t("detail.descSection")} icon={Info}>
       {ticket.description ? (
         <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[var(--color-foreground)]/90">
           {ticket.description}
         </p>
       ) : (
         <p className="italic text-[13px] leading-relaxed text-[var(--color-muted-foreground)]">
-          No description on file. Comments below carry the conversation.
+          {t("detail.noDesc")}
         </p>
       )}
 
@@ -366,7 +375,7 @@ function DescriptionSection({ ticket }: { ticket: TicketDto }) {
         >
           <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-success)]">
             <CheckCircle2 className="h-3 w-3" />
-            Resolution
+            {t("detail.resolution")}
           </div>
           <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-[var(--color-foreground)]/90">
             {ticket.resolutionNote}
@@ -394,6 +403,7 @@ function CommentsSection({
   onPosted: () => void;
   disabled: boolean;
 }) {
+  const { t } = useTranslation("tickets");
   const { user } = useAuth();
   const [body, setBody] = useState("");
 
@@ -401,7 +411,7 @@ function CommentsSection({
     mutationFn: () => addTicketComment(ticketId, body.trim()),
     onSuccess: () => {
       setBody("");
-      toast.success("Comment posted");
+      toast.success(t("toast.commented"));
       onPosted();
     },
     onError: (e) => toast.error(describe(e)),
@@ -409,11 +419,11 @@ function CommentsSection({
 
   const countLabel =
     comments.length === 0
-      ? "No comments yet"
-      : `${comments.length} ${comments.length === 1 ? "comment" : "comments"}`;
+      ? t("detail.noCommentsLabel")
+      : t("detail.commentCount", { count: comments.length });
 
   return (
-    <EntityDetailSection title="Conversation" icon={MessageCircle} description={countLabel}>
+    <EntityDetailSection title={t("detail.conversation")} icon={MessageCircle} description={countLabel}>
       <div className="space-y-4">
         {isLoading ? (
           <div className="space-y-3">
@@ -422,7 +432,7 @@ function CommentsSection({
           </div>
         ) : comments.length === 0 ? (
           <p className="italic text-[13px] leading-relaxed text-[var(--color-muted-foreground)]">
-            No comments yet. Add the first note below — visible to anyone with View access.
+            {t("detail.noComments")}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -455,8 +465,8 @@ function CommentsSection({
           onChange={(e) => setBody(e.target.value)}
           placeholder={
             disabled
-              ? "Reopen the ticket to add a new comment."
-              : "Add a comment to the thread…"
+              ? t("detail.commentPlaceholderDisabled")
+              : t("detail.commentPlaceholder")
           }
           disabled={disabled}
           rows={3}
@@ -478,7 +488,7 @@ function CommentsSection({
             className="gap-1.5"
           >
             <Send className="h-3.5 w-3.5" />
-            {mutation.isPending ? "Posting…" : "Post comment"}
+            {mutation.isPending ? t("actions.posting") : t("actions.postComment")}
           </Button>
         </div>
       </form>
@@ -493,6 +503,7 @@ function CommentItem({
   comment: { authorUserId: string; body: string; createdAtUtc: string };
   isSelf: boolean;
 }) {
+  const { t } = useTranslation("tickets");
   const initial =
     comment.authorUserId.replace(/[^a-z0-9]/gi, "").charAt(0).toUpperCase() || "?";
 
@@ -524,7 +535,7 @@ function CommentItem({
               title={comment.authorUserId}
               className="text-[11.5px] font-semibold text-[var(--color-foreground)]"
             >
-              {isSelf ? "You" : `${comment.authorUserId.slice(0, 8)}…`}
+              {isSelf ? t("detail.you") : `${comment.authorUserId.slice(0, 8)}…`}
             </span>
             <span className="text-[10.5px] text-[var(--color-muted-foreground)]">
               {formatRelative(comment.createdAtUtc)}
@@ -544,12 +555,13 @@ function CommentItem({
 // ───────────────────────────────────────────────────────────────────────
 
 function PropertiesSection({ ticket }: { ticket: TicketDto }) {
+  const { t } = useTranslation("tickets");
   const reporter = useUserDisplay(ticket.reporterUserId);
   const assignee = useUserDisplay(ticket.assignedToUserId);
   return (
-    <EntityDetailSection title="Properties" icon={Info}>
+    <EntityDetailSection title={t("detail.properties")} icon={Info}>
       <dl className="space-y-3 text-[13px]">
-        <Prop label="Reporter">
+        <Prop label={t("fields.reporter")}>
           <span
             title={reporter.handle ?? ticket.reporterUserId}
             className="font-medium text-[var(--color-foreground)]"
@@ -557,7 +569,7 @@ function PropertiesSection({ ticket }: { ticket: TicketDto }) {
             {reporter.name}
           </span>
         </Prop>
-        <Prop label="Assignee">
+        <Prop label={t("fields.assignee")}>
           {ticket.assignedToUserId ? (
             <span
               title={assignee.handle ?? ticket.assignedToUserId}
@@ -566,34 +578,34 @@ function PropertiesSection({ ticket }: { ticket: TicketDto }) {
               {assignee.name}
             </span>
           ) : (
-            <span className="text-[var(--color-muted-foreground)]">Unassigned</span>
+            <span className="text-[var(--color-muted-foreground)]">{t("unassigned")}</span>
           )}
         </Prop>
-        <Prop label="Status">
+        <Prop label={t("fields.status")}>
           <EntityStatusBadge tone={STATUS_TONE[ticket.status]}>
-            {STATUS_LABEL[ticket.status]}
+            {t(STATUS_KEY[ticket.status])}
           </EntityStatusBadge>
         </Prop>
-        <Prop label="Priority">
+        <Prop label={t("fields.priority")}>
           <EntityStatusBadge tone={PRIORITY_TONE[ticket.priority]}>
-            {PRIORITY_LABEL[ticket.priority]}
+            {t(PRIORITY_KEY[ticket.priority])}
           </EntityStatusBadge>
         </Prop>
         <Prop
-          label="Created"
+          label={t("fields.createdAt")}
           value={formatDate(ticket.createdAtUtc)}
           hint={formatRelative(ticket.createdAtUtc)}
         />
         {ticket.updatedAtUtc && (
           <Prop
-            label="Updated"
+            label={t("fields.updatedAt")}
             value={formatDate(ticket.updatedAtUtc)}
             hint={formatRelative(ticket.updatedAtUtc)}
           />
         )}
         {ticket.resolvedAtUtc && (
           <Prop
-            label="Resolved"
+            label={t("fields.resolvedAt")}
             value={formatDate(ticket.resolvedAtUtc)}
             hint={formatRelative(ticket.resolvedAtUtc)}
           />
@@ -648,6 +660,7 @@ function ResolveDialog({
   ticket: TicketDto;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("tickets");
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
 
@@ -658,7 +671,7 @@ function ResolveDialog({
   const mutation = useMutation({
     mutationFn: () => resolveTicket(ticket.id, note.trim() || null),
     onSuccess: () => {
-      toast.success("Ticket resolved");
+      toast.success(t("toast.resolved"));
       void queryClient.invalidateQueries({ queryKey: ["tickets"] });
       onClose();
     },
@@ -679,8 +692,7 @@ function ResolveDialog({
             {ticket.number} — {ticket.title}
           </DialogTitle>
           <DialogDescription>
-            Resolution notes are kept on the ticket and shown in the description panel.
-            Leave blank if there's nothing to add.
+            {t("detail.resolve.desc")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -690,12 +702,16 @@ function ResolveDialog({
           }}
         >
           <DialogBody className="space-y-4">
-            <Field id="resolve-note" label="Resolution note" hint="Optional — leave blank if there's nothing to add.">
+            <Field
+              id="resolve-note"
+              label={t("detail.resolve.noteLabel")}
+              hint={t("detail.resolve.noteHint")}
+            >
               <textarea
                 id="resolve-note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="What changed? Root cause? Anything reviewers should know."
+                placeholder={t("detail.resolve.notePlaceholder")}
                 rows={4}
                 className={cn(
                   "block w-full rounded-md border border-[var(--color-input)] bg-[var(--color-card)]",
@@ -708,7 +724,7 @@ function ResolveDialog({
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline">{t("common:actions.cancel")}</Button>
             </DialogClose>
             <Button
               type="submit"
@@ -716,7 +732,7 @@ function ResolveDialog({
               className="gap-1.5"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              {mutation.isPending ? "Resolving…" : "Mark resolved"}
+              {mutation.isPending ? t("actions.resolving") : t("actions.markResolved")}
             </Button>
           </DialogFooter>
         </form>
@@ -738,6 +754,7 @@ function AssignDialog({
   ticket: TicketDto;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("tickets");
   const queryClient = useQueryClient();
   const [assignee, setAssignee] = useState(ticket.assignedToUserId ?? "");
   const [touched, setTouched] = useState(false);
@@ -752,7 +769,7 @@ function AssignDialog({
   const mutation = useMutation({
     mutationFn: () => assignTicket(ticket.id, assignee.trim() || null),
     onSuccess: () => {
-      toast.success(assignee.trim() ? "Ticket assigned" : "Ticket unassigned");
+      toast.success(assignee.trim() ? t("toast.assigned") : t("toast.unassigned"));
       void queryClient.invalidateQueries({ queryKey: ["tickets"] });
       onClose();
     },
@@ -779,17 +796,15 @@ function AssignDialog({
             {ticket.number} — {ticket.title}
           </DialogTitle>
           <DialogDescription>
-            Paste a user ID. Picking up the ticket transitions it to{" "}
-            <code className="font-mono">In progress</code>; clearing the assignee on an
-            in-progress ticket sends it back to <code className="font-mono">Open</code>.
+            {t("detail.assign.desc")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit}>
           <DialogBody className="space-y-4">
             <Field
               id="assignee"
-              label="Assignee"
-              hint="Search by name or email. Clear the selection to unassign."
+              label={t("detail.assign.label")}
+              hint={t("detail.assign.hint")}
             >
               <UserPicker
                 value={assignee || null}
@@ -801,13 +816,13 @@ function AssignDialog({
             </Field>
             {touched && assignee.trim() === "" && (
               <p className="text-[12px] text-[var(--color-muted-foreground)]">
-                Clearing the assignee will <span className="font-medium text-[var(--color-foreground)]">unassign</span> the ticket.
+                {t("detail.assign.clearWarning")}
               </p>
             )}
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline">{t("common:actions.cancel")}</Button>
             </DialogClose>
             <Button
               type="submit"
@@ -815,7 +830,7 @@ function AssignDialog({
               className="gap-1.5"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {mutation.isPending ? "Saving…" : "Save assignment"}
+              {mutation.isPending ? t("actions.saving") : t("actions.saveAssignment")}
             </Button>
           </DialogFooter>
         </form>
@@ -856,6 +871,7 @@ function DetailSkeleton() {
 }
 
 function NotFoundPanel({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation("tickets");
   return (
     <div
       className={cn(
@@ -875,15 +891,15 @@ function NotFoundPanel({ onBack }: { onBack: () => void }) {
         <TicketIcon className="h-6 w-6 text-[var(--color-primary)]" />
       </span>
       <h3 className="font-display text-xl font-semibold tracking-tight text-[var(--color-foreground)]">
-        This ticket no longer exists.
+        {t("detail.notFound")}
       </h3>
       <p className="max-w-md text-sm leading-relaxed text-[var(--color-muted-foreground)]">
-        It may have been deleted. Check the trash, or head back to the tickets desk.
+        {t("detail.notFoundBody")}
       </p>
       <div className="flex items-center gap-2">
-        <Button onClick={onBack} variant="outline">Back to tickets</Button>
+        <Button onClick={onBack} variant="outline">{t("detail.backToTickets")}</Button>
         <Link to="/tickets">
-          <Button>Tickets desk</Button>
+          <Button>{t("detail.ticketsDesk")}</Button>
         </Link>
       </div>
     </div>

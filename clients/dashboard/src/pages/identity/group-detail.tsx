@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   keepPreviousData,
   useMutation,
@@ -59,22 +60,23 @@ import {
 import { describe, pad2 } from "@/lib/list-helpers";
 import { cn } from "@/lib/cn";
 
-function memberDisplay(m: GroupMemberDto): string {
+function memberDisplay(m: GroupMemberDto, fallback: string): string {
   const parts = [m.firstName, m.lastName].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
-  return m.userName ?? m.email ?? "Unknown user";
+  return m.userName ?? m.email ?? fallback;
 }
 
-function userDisplay(u: UserDto): string {
+function userDisplay(u: UserDto, fallback: string): string {
   const parts = [u.firstName, u.lastName].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
-  return u.userName ?? u.email ?? "Unknown user";
+  return u.userName ?? u.email ?? fallback;
 }
 
 export function GroupDetailPage() {
   const { groupId = "" } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useTranslation("identity");
 
   const groupQuery = useQuery({
     queryKey: ["identity", "groups", groupId],
@@ -152,22 +154,22 @@ export function GroupDetailPage() {
         roleIds: Array.from(selectedRoleIds),
       }),
     onSuccess: () => {
-      toast.success("Group updated");
+      toast.success(t("groups.detail.updated"));
       void queryClient.invalidateQueries({ queryKey: ["identity", "groups"] });
       void queryClient.invalidateQueries({ queryKey: ["identity", "groups", groupId] });
     },
-    onError: (err) => toast.error("Update failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("groups.detail.updateFailed"), { description: describe(err) }),
   });
 
   const remove = useMutation({
     mutationFn: () => deleteGroup(groupId),
     onSuccess: () => {
-      toast.success("Group deleted");
+      toast.success(t("groups.detail.deleted"));
       void queryClient.invalidateQueries({ queryKey: ["identity", "groups"] });
       navigate("/identity/groups");
     },
     onError: (err) => {
-      toast.error("Delete failed", { description: describe(err) });
+      toast.error(t("groups.detail.deleteFailed"), { description: describe(err) });
       setConfirmDelete(false);
     },
   });
@@ -175,13 +177,14 @@ export function GroupDetailPage() {
   const removeMember = useMutation({
     mutationFn: (userId: string) => removeUserFromGroup(groupId, userId),
     onSuccess: () => {
-      toast.success("Member removed");
+      toast.success(t("groups.detail.memberRemoved"));
       void queryClient.invalidateQueries({
         queryKey: ["identity", "groups", groupId, "members"],
       });
       void queryClient.invalidateQueries({ queryKey: ["identity", "groups", groupId] });
     },
-    onError: (err) => toast.error("Remove failed", { description: describe(err) }),
+    onError: (err) =>
+      toast.error(t("groups.detail.memberRemoveFailed"), { description: describe(err) }),
   });
 
   const reset = () => {
@@ -195,7 +198,7 @@ export function GroupDetailPage() {
   if (groupQuery.isLoading) {
     return (
       <div className="space-y-6">
-        <EntityDetailBack to="/identity/groups" label="Back to groups" />
+        <EntityDetailBack to="/identity/groups" label={t("groups.detail.backToGroups")} />
         <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -205,15 +208,17 @@ export function GroupDetailPage() {
   if (groupQuery.isError || !group) {
     return (
       <div className="space-y-4">
-        <EntityDetailBack to="/identity/groups" label="Back to groups" />
-        <ErrorBand message={groupQuery.error ? describe(groupQuery.error) : "Group not found."} />
+        <EntityDetailBack to="/identity/groups" label={t("groups.detail.backToGroups")} />
+        <ErrorBand
+          message={groupQuery.error ? describe(groupQuery.error) : t("groups.detail.notFound")}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-5 pb-12">
-      <EntityDetailBack to="/identity/groups" label="Back to groups" />
+      <EntityDetailBack to="/identity/groups" label={t("groups.detail.backToGroups")} />
 
       <EntityDetailHero
         avatar={<EntityDetailAvatar name={group.name} icon={UsersIcon} />}
@@ -222,21 +227,21 @@ export function GroupDetailPage() {
           <>
             {group.isDefault && (
               <Badge variant="brand">
-                <Star className="h-3 w-3" /> Default
+                <Star className="h-3 w-3" /> {t("groups.defaultRoleLabel")}
               </Badge>
             )}
             {group.isSystemGroup && (
               <Badge variant="outline">
-                <Lock className="h-3 w-3" /> System
+                <Lock className="h-3 w-3" /> {t("groups.systemBadge")}
               </Badge>
             )}
           </>
         }
-        subtitle={group.description || "Group cohort."}
+        subtitle={group.description || t("groups.detail.cohortSubtitle")}
         actions={
           !group.isSystemGroup ? (
             <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
-              <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete group
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> {t("groups.detail.deleteGroupBtn")}
             </Button>
           ) : undefined
         }
@@ -245,13 +250,13 @@ export function GroupDetailPage() {
             <EntityDetailStat
               icon={UsersIcon}
               value={group.memberCount}
-              label={group.memberCount === 1 ? "member" : "members"}
+              label={t("groups.detail.memberUnit", { count: group.memberCount })}
               tone="primary"
             />
             <EntityDetailStat
               icon={ShieldCheck}
               value={group.roleNames?.length ?? 0}
-              label={group.roleNames?.length === 1 ? "role" : "roles"}
+              label={t("groups.detail.roleUnit", { count: group.roleNames?.length ?? 0 })}
             />
           </>
         }
@@ -260,9 +265,9 @@ export function GroupDetailPage() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         {/* Metadata + roles */}
         <EntityDetailSection
-          title="Group details"
+          title={t("groups.detail.detailsTitle")}
           icon={UsersIcon}
-          description="Name, description, and the roles attached to this group."
+          description={t("groups.detail.detailsDesc")}
           footer={
             <div className="flex items-center justify-end gap-2">
               <Button
@@ -271,20 +276,20 @@ export function GroupDetailPage() {
                 onClick={reset}
                 disabled={!isDirty || save.isPending}
               >
-                Discard
+                {t("common:actions.discard")}
               </Button>
               <Button
                 size="sm"
                 onClick={() => save.mutate()}
                 disabled={!isDirty || save.isPending}
               >
-                {save.isPending ? "Saving…" : "Save changes"}
+                {save.isPending ? t("common:feedback.saving") : t("common:actions.saveChanges")}
               </Button>
             </div>
           }
         >
           <div className="space-y-4">
-            <Field id="g-name" label="Name" required>
+            <Field id="g-name" label={t("groups.fields.name")} required>
               <Input
                 id="g-name"
                 value={name}
@@ -293,26 +298,28 @@ export function GroupDetailPage() {
                 maxLength={128}
               />
             </Field>
-            <Field id="g-desc" label="Description">
+            <Field id="g-desc" label={t("groups.fields.description")}>
               <Input
                 id="g-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Short summary of who or what this group represents"
+                placeholder={t("groups.detail.descPlaceholder")}
                 maxLength={512}
               />
             </Field>
             <div className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3 py-2.5">
               <div className="min-w-0">
-                <span className="block text-sm font-medium tracking-tight">Default group</span>
+                <span className="block text-sm font-medium tracking-tight">
+                  {t("groups.defaultGroupLabel")}
+                </span>
                 <span className="mt-0.5 block text-[12px] text-[var(--color-muted-foreground)]">
-                  Auto-assign to newly registered users.
+                  {t("groups.isDefaultDesc")}
                 </span>
               </div>
               <Switch
                 checked={isDefault}
                 onCheckedChange={setIsDefault}
-                aria-label="Default group"
+                aria-label={t("groups.defaultGroupLabel")}
               />
             </div>
 
@@ -320,7 +327,7 @@ export function GroupDetailPage() {
             <div className="pt-2">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[11.5px] font-medium text-[var(--color-muted-foreground)]">
-                  Roles attached
+                  {t("groups.detail.rolesAttached")}
                 </span>
                 <span className="text-[11px] text-[var(--color-muted-foreground)]">
                   {pad2(selectedRoleIds.size)} / {pad2(roles.length)}
@@ -330,14 +337,14 @@ export function GroupDetailPage() {
                 <Skeleton className="h-20 w-full rounded-md" />
               ) : roles.length === 0 ? (
                 <p className="text-sm text-[var(--color-muted-foreground)]">
-                  No roles defined.{" "}
+                  {t("groups.detail.noRoles")}{" "}
                   <Link
                     to="/identity/roles"
                     className="underline hover:text-[var(--color-foreground)]"
                   >
-                    Create one
+                    {t("groups.detail.createRoleLink")}
                   </Link>{" "}
-                  first.
+                  {t("groups.detail.createRoleFirst")}
                 </p>
               ) : (
                 <ul className="grid gap-1.5">
@@ -357,12 +364,12 @@ export function GroupDetailPage() {
 
         {/* Members */}
         <EntityDetailSection
-          title="Members"
+          title={t("groups.detail.membersTitle")}
           icon={UsersIcon}
-          description="Users who belong to this group inherit every role attached above."
+          description={t("groups.detail.membersDesc")}
           action={
             <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
-              <UserPlus className="h-3.5 w-3.5" /> Add members
+              <UserPlus className="h-3.5 w-3.5" /> {t("groups.detail.addMembersBtn")}
             </Button>
           }
           padded={false}
@@ -379,7 +386,7 @@ export function GroupDetailPage() {
             </div>
           ) : members.length === 0 ? (
             <div className="p-5 text-sm text-[var(--color-muted-foreground)]">
-              No one in this group yet. Click <strong>Add members</strong> to attach users.
+              {t("groups.detail.noMembersYet")}
             </div>
           ) : (
             <ul>
@@ -392,10 +399,13 @@ export function GroupDetailPage() {
                     to={`/identity/users/${member.userId}`}
                     className="flex min-w-0 flex-1 items-center gap-3"
                   >
-                    <Avatar name={memberDisplay(member)} size="sm" />
+                    <Avatar
+                      name={memberDisplay(member, t("groups.detail.unknownUser"))}
+                      size="sm"
+                    />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium tracking-tight">
-                        {memberDisplay(member)}
+                        {memberDisplay(member, t("groups.detail.unknownUser"))}
                       </div>
                       {member.email && (
                         <div className="truncate text-[12px] text-[var(--color-muted-foreground)]">
@@ -411,7 +421,7 @@ export function GroupDetailPage() {
                     disabled={removeMember.isPending}
                     className="shrink-0 text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]"
                   >
-                    <UserMinus className="mr-1 h-3.5 w-3.5" /> Remove
+                    <UserMinus className="mr-1 h-3.5 w-3.5" /> {t("common:actions.remove")}
                   </Button>
                 </li>
               ))}
@@ -424,16 +434,16 @@ export function GroupDetailPage() {
       <Dialog open={confirmDelete} onOpenChange={(o) => (!o ? setConfirmDelete(false) : undefined)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete group</DialogTitle>
+            <DialogTitle>{t("groups.detail.deleteTitle")}</DialogTitle>
             <DialogDescription>
               <span className="font-medium text-[var(--color-foreground)]">{group.name}</span>{" "}
-              will be removed. Members will lose any permissions inherited through this group.
+              {t("groups.detail.deleteDesc")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={remove.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -441,7 +451,7 @@ export function GroupDetailPage() {
               onClick={() => remove.mutate()}
               disabled={remove.isPending}
             >
-              {remove.isPending ? "Deleting…" : "Delete group"}
+              {remove.isPending ? t("common:feedback.deleting") : t("groups.detail.deleteGroupBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -466,6 +476,7 @@ function RoleToggleRow({
   selected: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useTranslation("identity");
   return (
     <li
       className={cn(
@@ -495,7 +506,7 @@ function RoleToggleRow({
       <Switch
         checked={selected}
         onCheckedChange={onToggle}
-        aria-label={`Attach ${role.name}`}
+        aria-label={t("groups.detail.attachRoleAria", { name: role.name })}
       />
     </li>
   );
@@ -517,6 +528,7 @@ function AddMembersDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation("identity");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -530,8 +542,8 @@ function AddMembersDialog({
   }, [open]);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim()), 250);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const usersQuery = useQuery({
@@ -565,27 +577,25 @@ function AddMembersDialog({
     onSuccess: (data) => {
       const dupes = data.alreadyMemberUserIds.length;
       const added = data.addedCount;
-      toast.success(
-        `Added ${added} member${added === 1 ? "" : "s"}` +
-          (dupes > 0 ? ` · ${dupes} already present` : ""),
-      );
+      const msg =
+        t("groups.detail.addedCount", { count: added }) +
+        (dupes > 0 ? " " + t("groups.detail.dupesPresent", { count: dupes }) : "");
+      toast.success(msg);
       void queryClient.invalidateQueries({
         queryKey: ["identity", "groups", groupId, "members"],
       });
       void queryClient.invalidateQueries({ queryKey: ["identity", "groups", groupId] });
       onClose();
     },
-    onError: (err) => toast.error("Add failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("groups.detail.addFailed"), { description: describe(err) }),
   });
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent className="!max-w-lg">
         <DialogHeader>
-          <DialogTitle>Pick members to add</DialogTitle>
-          <DialogDescription>
-            Search active users and select one or more to attach to this group.
-          </DialogDescription>
+          <DialogTitle>{t("groups.detail.addMembersTitle")}</DialogTitle>
+          <DialogDescription>{t("groups.detail.addMembersDesc")}</DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-3">
           <div className="relative">
@@ -594,14 +604,14 @@ function AddMembersDialog({
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, username, or email…"
+              placeholder={t("users.searchPlaceholder")}
               className="pl-9"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                aria-label="Clear search"
+                aria-label={t("common:actions.clear")}
                 className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]"
               >
                 <X className="h-3 w-3" />
@@ -617,13 +627,16 @@ function AddMembersDialog({
               </div>
             ) : candidates.length === 0 ? (
               <div className="p-6 text-center text-sm text-[var(--color-muted-foreground)]">
-                {debounced ? `No users match "${debounced}".` : "No users available."}
+                {debounced
+                  ? t("groups.detail.noUsersMatch", { term: debounced })
+                  : t("groups.detail.noUsersAvailable")}
               </div>
             ) : (
               <ul>
                 {candidates.map((user) => {
                   const already = existingMemberIds.has(user.id);
                   const isPicked = picked.has(user.id);
+                  const displayName = userDisplay(user, t("groups.detail.unknownUser"));
                   return (
                     <li key={user.id}>
                       <button
@@ -650,16 +663,16 @@ function AddMembersDialog({
                         >
                           {isPicked && <span className="text-[10px] leading-none">✓</span>}
                         </span>
-                        <Avatar name={userDisplay(user)} size="sm" />
+                        <Avatar name={displayName} size="sm" />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{userDisplay(user)}</div>
+                          <div className="truncate text-sm font-medium">{displayName}</div>
                           <div className="truncate text-[11.5px] text-[var(--color-muted-foreground)]">
                             {user.email ?? user.userName}
                           </div>
                         </div>
                         {already && (
                           <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">
-                            already in
+                            {t("groups.detail.alreadyIn")}
                           </span>
                         )}
                       </button>
@@ -670,13 +683,13 @@ function AddMembersDialog({
             )}
           </div>
           <div className="text-[12px] text-[var(--color-muted-foreground)]">
-            {picked.size} selected
+            {t("groups.detail.selectedCount", { count: picked.size })}
           </div>
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={add.isPending}>
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -685,7 +698,9 @@ function AddMembersDialog({
             className="gap-1.5"
           >
             <UserPlus className="h-4 w-4" />
-            {add.isPending ? "Adding…" : `Add ${picked.size}`}
+            {add.isPending
+              ? t("groups.detail.adding")
+              : t("groups.detail.addCount", { count: picked.size })}
           </Button>
         </DialogFooter>
       </DialogContent>

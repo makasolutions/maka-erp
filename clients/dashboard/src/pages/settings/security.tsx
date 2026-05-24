@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -52,22 +53,24 @@ import { cn } from "@/lib/cn";
 
 const PROFILE_KEY = ["identity", "me"] as const;
 
-const dateTimeFmt = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function formatTimestamp(iso?: string | null) {
+function formatTimestamp(iso: string | null | undefined, locale: string): string {
   if (!iso) return "—";
-  return dateTimeFmt.format(new Date(iso));
+  return new Intl.DateTimeFormat(locale === "es" ? "es-CO" : "en-US", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
 }
 
-function describeDevice(s: UserSessionDto): string {
-  const browser = s.browser ?? "Unknown browser";
+function describeDevice(
+  s: UserSessionDto,
+  unknownBrowser: string,
+  unknownOs: string,
+): string {
+  const browser = s.browser ?? unknownBrowser;
   const version = s.browserVersion ? ` ${s.browserVersion}` : "";
-  const os = s.operatingSystem ?? "Unknown OS";
+  const os = s.operatingSystem ?? unknownOs;
   return `${browser}${version} · ${os}`;
 }
 
@@ -89,6 +92,7 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 // ─────────────────────────────────────────────────────────────────────────
 
 export function SecuritySettings() {
+  const { t, i18n } = useTranslation("settings");
   const queryClient = useQueryClient();
 
   const profileQuery = useQuery({ queryKey: PROFILE_KEY, queryFn: getMyProfile });
@@ -115,10 +119,10 @@ export function SecuritySettings() {
     mutationFn: (id: string) => revokeSession(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["identity", "sessions", "me"] });
-      toast.success("Session revoked");
+      toast.success(t("security.sessionsSection.revokeSuccess"));
     },
     onError: (err) =>
-      toast.error(apiErrorMessage(err, "Could not revoke session.")),
+      toast.error(apiErrorMessage(err, t("security.sessionsSection.revokeErrorFallback"))),
   });
 
   const revokeAll = useMutation({
@@ -126,11 +130,11 @@ export function SecuritySettings() {
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ["identity", "sessions", "me"] });
       toast.success(
-        `Revoked ${data.revokedCount} ${data.revokedCount === 1 ? "session" : "sessions"}`,
+        t("security.sessionsSection.revokeAllSuccess", { count: data.revokedCount }),
       );
     },
     onError: (err) =>
-      toast.error(apiErrorMessage(err, "Could not revoke sessions.")),
+      toast.error(apiErrorMessage(err, t("security.sessionsSection.revokeAllErrorFallback"))),
   });
 
   const otherActiveCount = useMemo(
@@ -142,7 +146,7 @@ export function SecuritySettings() {
     sessionsQuery.error instanceof ApiRequestError
       ? sessionsQuery.error.problem?.detail ?? sessionsQuery.error.message
       : sessionsQuery.error
-        ? "Failed to load sessions."
+        ? t("security.sessionsSection.loadErrorFallback")
         : null;
 
   return (
@@ -156,15 +160,17 @@ export function SecuritySettings() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                Active sessions
+                {t("security.sessionsSection.title")}
                 {!sessionsQuery.isLoading && (
                   <Badge variant="default">
-                    {sessions.filter((s) => s.isActive).length} active
+                    {t("security.sessionsSection.active", {
+                      count: sessions.filter((s) => s.isActive).length,
+                    })}
                   </Badge>
                 )}
               </CardTitle>
               <CardDescription>
-                Browsers and devices currently signed in to your account.
+                {t("security.sessionsSection.description")}
               </CardDescription>
             </div>
             <Button
@@ -174,7 +180,7 @@ export function SecuritySettings() {
               onClick={() => revokeAll.mutate()}
             >
               <LogOut className="mr-1.5 h-3.5 w-3.5" />
-              Sign out everywhere else
+              {t("security.sessionsSection.signOutEverywhere")}
             </Button>
           </div>
         </CardHeader>
@@ -190,9 +196,11 @@ export function SecuritySettings() {
             <SessionsSkeleton />
           ) : sessions.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <p className="text-sm font-medium tracking-tight">No sessions tracked</p>
+              <p className="text-sm font-medium tracking-tight">
+                {t("security.sessionsSection.noSessions")}
+              </p>
               <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-                Session activity will appear here once you sign in from any device.
+                {t("security.sessionsSection.noSessionsDescription")}
               </p>
             </div>
           ) : (
@@ -201,6 +209,7 @@ export function SecuritySettings() {
                 const Icon = deviceIcon(s);
                 const isRevoking =
                   revokeOne.isPending && revokeOne.variables === s.id;
+                const locale = i18n.resolvedLanguage ?? "en";
                 return (
                   <li
                     key={s.id}
@@ -226,13 +235,30 @@ export function SecuritySettings() {
                       </span>
                       <div className="space-y-0.5">
                         <div className="flex flex-wrap items-center gap-2 text-sm font-medium tracking-tight">
-                          {describeDevice(s)}
-                          {s.isCurrentSession && <Badge variant="brand">this device</Badge>}
-                          {!s.isActive && <Badge variant="outline">revoked</Badge>}
+                          {describeDevice(
+                            s,
+                            t("security.sessionsSection.unknownBrowser"),
+                            t("security.sessionsSection.unknownOs"),
+                          )}
+                          {s.isCurrentSession && (
+                            <Badge variant="brand">
+                              {t("security.sessionsSection.thisDevice")}
+                            </Badge>
+                          )}
+                          {!s.isActive && (
+                            <Badge variant="outline">
+                              {t("security.sessionsSection.revoked")}
+                            </Badge>
+                          )}
                         </div>
                         <div className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
-                          {s.ipAddress ?? "unknown ip"} · last activity {formatTimestamp(s.lastActivityAt)}
-                          {" · expires "}{formatTimestamp(s.expiresAt)}
+                          {s.ipAddress ?? t("security.sessionsSection.unknownIp")}
+                          {" · "}
+                          {t("security.sessionsSection.lastActivity")}{" "}
+                          {formatTimestamp(s.lastActivityAt, locale)}
+                          {" · "}
+                          {t("security.sessionsSection.expires")}{" "}
+                          {formatTimestamp(s.expiresAt, locale)}
                         </div>
                       </div>
                     </div>
@@ -244,7 +270,9 @@ export function SecuritySettings() {
                         onClick={() => revokeOne.mutate(s.id)}
                       >
                         <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                        {isRevoking ? "Revoking…" : "Revoke"}
+                        {isRevoking
+                          ? t("security.sessionsSection.revoking")
+                          : t("security.sessionsSection.revoke")}
                       </Button>
                     )}
                   </li>
@@ -263,23 +291,22 @@ export function SecuritySettings() {
 // ─────────────────────────────────────────────────────────────────────────
 
 function PasswordCard() {
+  const { t } = useTranslation("settings");
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>
-            Used to sign in to this tenant. Choose a strong, unique password.
-          </CardDescription>
+          <CardTitle>{t("security.password.title")}</CardTitle>
+          <CardDescription>{t("security.password.description")}</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4 px-6 pb-5 pt-1">
           <div className="text-sm text-[var(--color-muted-foreground)]">
-            We recommend a passphrase of 16+ characters with no reuse from other services.
+            {t("security.password.hint")}
           </div>
           <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-            Change password
+            {t("security.password.change")}
           </Button>
         </CardContent>
       </Card>
@@ -296,6 +323,7 @@ function ChangePasswordDialog({
   open: boolean;
   onOpenChange: (next: boolean) => void;
 }) {
+  const { t } = useTranslation("settings");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -319,12 +347,13 @@ function ChangePasswordDialog({
         confirmNewPassword: confirm,
       }),
     onSuccess: () => {
-      toast.success("Password changed", {
-        description: "Other active sessions remain valid until you revoke them.",
+      toast.success(t("security.password.changed"), {
+        description: t("security.password.changedDescription"),
       });
       onOpenChange(false);
     },
-    onError: (err) => setLocalError(apiErrorMessage(err, "Could not change password.")),
+    onError: (err) =>
+      setLocalError(apiErrorMessage(err, t("security.password.errorFallback"))),
   });
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -332,15 +361,15 @@ function ChangePasswordDialog({
     setLocalError(null);
 
     if (next.length < 8) {
-      setLocalError("New password must be at least 8 characters.");
+      setLocalError(t("security.password.errorMinLength"));
       return;
     }
     if (next !== confirm) {
-      setLocalError("Passwords don't match.");
+      setLocalError(t("security.password.errorMismatch"));
       return;
     }
     if (next === current) {
-      setLocalError("New password must differ from the current one.");
+      setLocalError(t("security.password.errorSameAsCurrent"));
       return;
     }
     mutation.mutate();
@@ -350,16 +379,15 @@ function ChangePasswordDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change password</DialogTitle>
+          <DialogTitle>{t("security.password.change")}</DialogTitle>
           <DialogDescription>
-            Sign-out events for other devices aren't fired automatically —
-            visit the Sessions list below to end them after rotating your password.
+            {t("security.password.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-3" noValidate>
           <div className="space-y-1.5">
-            <Label htmlFor="cp-current">Current password</Label>
+            <Label htmlFor="cp-current">{t("security.currentPassword")}</Label>
             <Input
               id="cp-current"
               type="password"
@@ -371,7 +399,7 @@ function ChangePasswordDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="cp-next">New password</Label>
+            <Label htmlFor="cp-next">{t("security.newPassword")}</Label>
             <Input
               id="cp-next"
               type="password"
@@ -383,7 +411,7 @@ function ChangePasswordDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="cp-confirm">Confirm new password</Label>
+            <Label htmlFor="cp-confirm">{t("security.confirmPassword")}</Label>
             <Input
               id="cp-confirm"
               type="password"
@@ -412,14 +440,16 @@ function ChangePasswordDialog({
               onClick={() => onOpenChange(false)}
               disabled={mutation.isPending}
             >
-              Cancel
+              {t("common:actions.cancel", "Cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || !current || !next || !confirm}
             >
               <KeyRound className="mr-1 h-3.5 w-3.5" />
-              {mutation.isPending ? "Updating…" : "Update password"}
+              {mutation.isPending
+                ? t("security.password.updating")
+                : t("security.password.update")}
             </Button>
           </DialogFooter>
         </form>
@@ -433,21 +463,22 @@ function ChangePasswordDialog({
 // ─────────────────────────────────────────────────────────────────────────
 
 function TwoFactorCard({ enabled, loading }: { enabled: boolean; loading: boolean }) {
+  const { t } = useTranslation("settings");
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Two-factor authentication
+          {t("security.twoFactor")}
           {loading ? (
             <Skeleton className="h-5 w-16 rounded-full" />
           ) : enabled ? (
-            <Badge variant="success">enabled</Badge>
+            <Badge variant="success">{t("security.twoFactorSection.enabled")}</Badge>
           ) : (
-            <Badge variant="warning">disabled</Badge>
+            <Badge variant="warning">{t("security.twoFactorSection.disabled")}</Badge>
           )}
         </CardTitle>
         <CardDescription>
-          Require a one-time code from an authenticator app on every sign-in.
+          {t("security.twoFactorSection.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-5 pt-1">
@@ -464,6 +495,7 @@ function TwoFactorCard({ enabled, loading }: { enabled: boolean; loading: boolea
 }
 
 function TwoFactorEnroll() {
+  const { t } = useTranslation("settings");
   const queryClient = useQueryClient();
   const [enrollment, setEnrollment] = useState<TwoFactorEnrollmentResponse | null>(null);
   const [code, setCode] = useState("");
@@ -474,8 +506,8 @@ function TwoFactorEnroll() {
     mutationFn: enrollTwoFactor,
     onSuccess: (data) => setEnrollment(data),
     onError: (err) =>
-      toast.error("Enrollment failed", {
-        description: apiErrorMessage(err, "Could not start enrollment."),
+      toast.error(t("security.twoFactorSection.enrollFailed"), {
+        description: apiErrorMessage(err, t("security.twoFactorSection.enrollFailedFallback")),
       }),
   });
 
@@ -483,22 +515,22 @@ function TwoFactorEnroll() {
     mutationFn: (otp: string) => verifyEnrollTwoFactor(otp),
     onSuccess: (data) => {
       if (data.success) {
-        toast.success("Two-factor enabled", {
-          description: "Future logins require a 6-digit code from your authenticator.",
+        toast.success(t("security.twoFactorSection.enabledSuccess"), {
+          description: t("security.twoFactorSection.enabledDescription"),
         });
         setEnrollment(null);
         setCode("");
         setQrSvg(null);
         void queryClient.invalidateQueries({ queryKey: PROFILE_KEY });
       } else {
-        toast.error("Verification failed", {
-          description: "That code didn't match. Try again.",
+        toast.error(t("security.twoFactorSection.verifyFailed"), {
+          description: t("security.twoFactorSection.verifyMismatch"),
         });
       }
     },
     onError: (err) =>
-      toast.error("Verification failed", {
-        description: apiErrorMessage(err, "Could not verify code."),
+      toast.error(t("security.twoFactorSection.verifyFailed"), {
+        description: apiErrorMessage(err, t("security.twoFactorSection.verifyFailedFallback")),
       }),
   });
 
@@ -549,11 +581,12 @@ function TwoFactorEnroll() {
           disabled={beginMutation.isPending}
         >
           <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-          {beginMutation.isPending ? "Generating…" : "Enable two-factor"}
+          {beginMutation.isPending
+            ? t("security.twoFactorSection.generating")
+            : t("security.twoFactorSection.enable")}
         </Button>
         <span className="text-xs text-[var(--color-muted-foreground)]">
-          You'll scan a QR code in your authenticator app
-          (1Password, Google Authenticator, Authy, …).
+          {t("security.twoFactorSection.enableHint")}
         </span>
       </div>
     );
@@ -565,21 +598,21 @@ function TwoFactorEnroll() {
         <div className="grid h-52 w-52 place-items-center rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-2 text-[var(--color-foreground)]">
           {qrSvg ? (
             <div
-              aria-label="Two-factor QR code"
+              aria-label={t("security.twoFactorSection.qrCodeLabel")}
               role="img"
               className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
           ) : (
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-              Rendering…
+              {t("security.twoFactorSection.rendering")}
             </span>
           )}
         </div>
         <div className="space-y-3">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-              can't scan? enter manually
+              {t("security.twoFactorSection.cantScan")}
             </div>
             <div className="mt-1 flex items-center gap-2">
               <code className="break-all rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-2 py-1 font-mono text-[11px]">
@@ -592,11 +625,13 @@ function TwoFactorEnroll() {
               >
                 {copiedKey ? (
                   <>
-                    <ClipboardCheck className="h-3 w-3" /> copied
+                    <ClipboardCheck className="h-3 w-3" />
+                    {" "}{t("security.twoFactorSection.copied")}
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3 w-3" /> copy
+                    <Copy className="h-3 w-3" />
+                    {" "}{t("security.twoFactorSection.copy")}
                   </>
                 )}
               </button>
@@ -604,7 +639,7 @@ function TwoFactorEnroll() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="totp-code">6-digit code from your app</Label>
+            <Label htmlFor="totp-code">{t("security.twoFactorSection.codeLabel")}</Label>
             <Input
               id="totp-code"
               inputMode="numeric"
@@ -625,7 +660,9 @@ function TwoFactorEnroll() {
               onClick={() => verifyMutation.mutate(code)}
               disabled={code.length < 6 || verifyMutation.isPending}
             >
-              {verifyMutation.isPending ? "Verifying…" : "Confirm & enable"}
+              {verifyMutation.isPending
+                ? t("security.twoFactorSection.verifying")
+                : t("security.twoFactorSection.confirmEnable")}
             </Button>
             <Button
               variant="ghost"
@@ -635,7 +672,7 @@ function TwoFactorEnroll() {
               }}
               disabled={verifyMutation.isPending}
             >
-              Cancel
+              {t("common:actions.cancel", "Cancel")}
             </Button>
           </div>
         </div>
@@ -645,6 +682,7 @@ function TwoFactorEnroll() {
 }
 
 function TwoFactorDisable() {
+  const { t } = useTranslation("settings");
   const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
 
@@ -652,31 +690,32 @@ function TwoFactorDisable() {
     mutationFn: (pw: string) => disableTwoFactor(pw),
     onSuccess: (data) => {
       if (data.success) {
-        toast.success("Two-factor disabled");
+        toast.success(t("security.twoFactorSection.disabledSuccess"));
         setPassword("");
         void queryClient.invalidateQueries({ queryKey: PROFILE_KEY });
       } else {
-        toast.error("Disable failed", {
-          description: "Password verification failed.",
+        toast.error(t("security.twoFactorSection.disableFailed"), {
+          description: t("security.twoFactorSection.disableVerifyFailed"),
         });
       }
     },
     onError: (err) =>
-      toast.error("Disable failed", {
-        description: apiErrorMessage(err, "Could not disable two-factor."),
+      toast.error(t("security.twoFactorSection.disableFailed"), {
+        description: apiErrorMessage(
+          err,
+          t("security.twoFactorSection.disableFailedFallback"),
+        ),
       }),
   });
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-[var(--color-muted-foreground)]">
-        Two-factor is currently enabled. Confirm your password to disable —
-        this rotates the authenticator secret, so a fresh enroll will generate
-        a new QR code.
+        {t("security.twoFactorSection.disableTitle")}
       </p>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
         <div className="space-y-1.5">
-          <Label htmlFor="disable-pw">Current password</Label>
+          <Label htmlFor="disable-pw">{t("security.currentPassword")}</Label>
           <Input
             id="disable-pw"
             type="password"
@@ -693,7 +732,9 @@ function TwoFactorDisable() {
           disabled={password.length === 0 || mutation.isPending}
         >
           <ShieldOff className="mr-1 h-3.5 w-3.5" />
-          {mutation.isPending ? "Disabling…" : "Disable two-factor"}
+          {mutation.isPending
+            ? t("security.twoFactorSection.disabling")
+            : t("security.twoFactorSection.disable")}
         </Button>
       </div>
     </div>

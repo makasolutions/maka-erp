@@ -50,12 +50,13 @@ function DemoDialog({
   current: { email: string; tenant: string };
   onSelect: (account: DemoAccount) => void;
 }) {
+  const { t } = useTranslation("common");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[520px] !p-0">
-        <DialogTitle className="sr-only">Demo accounts</DialogTitle>
+        <DialogTitle className="sr-only">{t("demo.title")}</DialogTitle>
         <DialogDescription className="sr-only">
-          Pick a seeded demo account to prefill the login form. DEV only.
+          {t("demo.pickAccount")}
         </DialogDescription>
         <div className="rounded-[inherit] overflow-hidden">
           <LoginDemoPanel
@@ -207,7 +208,7 @@ export function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder={t("auth.enterPassword")}
                 autoComplete="current-password"
                 required
                 aria-invalid={error ? true : undefined}

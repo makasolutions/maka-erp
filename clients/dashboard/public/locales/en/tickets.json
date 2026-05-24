@@ -1,6 +1,21 @@
 {
   "title": "Tickets",
   "singular": "Ticket",
+  "unit": "ticket",
+  "description": "Open work, ranked by priority. The desk where issues land, get owned, and ship.",
+  "searchPlaceholder": "Find by number, title, or description…",
+  "newTicket": "New ticket",
+  "openTicket": "Open ticket",
+  "clearFilters": "Clear filters",
+  "filter": {
+    "status": "Status filter",
+    "priority": "Priority filter",
+    "allStatuses": "All",
+    "anyPriority": "Any"
+  },
+  "found_one": "{{count}} ticket found",
+  "found_other": "{{count}} tickets found",
+  "unassigned": "Unassigned",
   "fields": {
     "subject": "Subject",
     "description": "Description",
@@ -14,14 +29,29 @@
     "type": "Type",
     "tags": "Tags"
   },
+  "cols": {
+    "subject": "Subject",
+    "priority": "Priority",
+    "status": "Status",
+    "assignee": "Assignee",
+    "updated": "Updated"
+  },
   "actions": {
     "create": "New ticket",
     "edit": "Edit ticket",
     "delete": "Delete ticket",
     "resolve": "Resolve",
+    "resolving": "Resolving…",
+    "markResolved": "Mark resolved",
     "reopen": "Reopen",
     "assign": "Assign",
-    "addComment": "Add comment"
+    "reassign": "Reassign",
+    "saveAssignment": "Save assignment",
+    "saving": "Saving…",
+    "addComment": "Add comment",
+    "postComment": "Post comment",
+    "posting": "Posting…",
+    "refresh": "Refresh"
   },
   "status": {
     "open": "Open",
@@ -38,10 +68,66 @@
   },
   "empty": {
     "title": "No tickets yet",
-    "body": "Create the first ticket to start managing requests."
+    "body": "Open the first ticket to start tracking work. Tickets carry a status, priority, an optional assignee, and a comment thread.",
+    "searchTitle": "No tickets found",
+    "searchBody": "Nothing matches \"{{term}}\". Try a different term or clear the filters.",
+    "filterBody": "No tickets match the current filters."
   },
   "deleteConfirm": "Delete ticket #{{id}}?",
   "deleteDesc": "This action cannot be undone.",
+  "dialog": {
+    "openTitle": "Open a ticket",
+    "openDesc": "Tickets land on the desk as Open. Assign one to start it; resolve it with a note when work is done.",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Briefly describe the issue or request",
+    "descLabel": "Description",
+    "descPlaceholder": "Steps to reproduce, expected behavior, anything else useful",
+    "priorityLabel": "Priority",
+    "opening": "Opening…"
+  },
+  "detail": {
+    "backToTickets": "Back to tickets",
+    "descSection": "Description",
+    "noDesc": "No description on file. Comments below carry the conversation.",
+    "resolution": "Resolution",
+    "conversation": "Conversation",
+    "commentCount_one": "{{count}} comment",
+    "commentCount_other": "{{count}} comments",
+    "noCommentsLabel": "No comments yet",
+    "noComments": "No comments yet. Add the first note below — visible to anyone with View access.",
+    "commentPlaceholder": "Add a comment to the thread…",
+    "commentPlaceholderDisabled": "Reopen the ticket to add a new comment.",
+    "properties": "Properties",
+    "openedBy": "opened {{when}} by {{name}}",
+    "updatedStat": "updated",
+    "resolvedStat": "resolved",
+    "comment_one": "comment",
+    "comment_other": "comments",
+    "you": "You",
+    "ticketsDesk": "Tickets desk",
+    "notFound": "This ticket no longer exists.",
+    "notFoundBody": "It may have been deleted. Check the trash, or head back to the tickets desk.",
+    "resolve": {
+      "noteLabel": "Resolution note",
+      "noteHint": "Optional — leave blank if there's nothing to add.",
+      "notePlaceholder": "What changed? Root cause? Anything reviewers should know.",
+      "desc": "Resolution notes are kept on the ticket and shown in the description panel. Leave blank if nothing to add."
+    },
+    "assign": {
+      "desc": "Pick a team member. Assigning the ticket moves it to In progress; clearing the assignee on an in-progress ticket sends it back to Open.",
+      "label": "Assignee",
+      "hint": "Search by name or email. Clear the selection to unassign.",
+      "clearWarning": "Clearing the assignee will unassign the ticket."
+    }
+  },
+  "toast": {
+    "opened": "Ticket opened",
+    "resolved": "Ticket resolved",
+    "reopened": "Ticket reopened",
+    "assigned": "Ticket assigned",
+    "unassigned": "Ticket unassigned",
+    "commented": "Comment posted"
+  },
   "comments": "Comments",
   "noComments": "No comments yet.",
   "addComment": "Write a comment…"

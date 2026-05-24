@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { searchMessages, type MessageDto } from "@/api/chat";
 import { Avatar } from "@/components/ui/avatar";
@@ -53,6 +54,7 @@ export function ChatSearchOverlay({
   });
 
   const results = resultsQuery.data ?? [];
+  const { t } = useTranslation("chat");
 
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Escape") {
@@ -67,8 +69,8 @@ export function ChatSearchOverlay({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close search"
-          title="Close search"
+          aria-label={t("search.close")}
+          title={t("search.close")}
           className={cn(
             "grid h-8 w-8 cursor-pointer place-items-center rounded-md",
             "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -89,7 +91,7 @@ export function ChatSearchOverlay({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search messages in this channel"
+            placeholder={t("search.placeholder")}
             spellCheck={false}
             autoComplete="off"
             className={cn(
@@ -108,7 +110,7 @@ export function ChatSearchOverlay({
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              aria-label="Clear search"
+              aria-label={t("search.clear")}
               className={cn(
                 "absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 cursor-pointer place-items-center rounded",
                 "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -132,9 +134,9 @@ export function ChatSearchOverlay({
           )}
         >
           {resultsQuery.isLoading ? (
-            <ResultPlaceholder label="Searching…" />
+            <ResultPlaceholder label={t("search.searching")} />
           ) : results.length === 0 ? (
-            <ResultPlaceholder label={`No matches for "${debounced}".`} />
+            <ResultPlaceholder label={t("search.noMatches", { term: debounced })} />
           ) : (
             <ul className="divide-y divide-[var(--color-border)]">
               {results.map((m) => (
@@ -153,8 +155,8 @@ export function ChatSearchOverlay({
           <div className="border-t border-[var(--color-border)] bg-[var(--color-muted)] px-3 py-1.5">
             <span className="text-[11px] text-[var(--color-muted-foreground)]">
               {results.length > 0
-                ? `${results.length} match${results.length === 1 ? "" : "es"} · click to jump · Esc to close`
-                : "Esc to close"}
+                ? t("search.results", { count: results.length })
+                : t("search.escToClose")}
             </span>
           </div>
         </div>

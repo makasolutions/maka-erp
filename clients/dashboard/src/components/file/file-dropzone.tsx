@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertCircle, CheckCircle2, CloudUpload, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ type Props = {
  * the user can keep dropping files without leaving the surface.
  */
 export function FileDropzone({ options, onUploaded, disabled, accept, className }: Props) {
+  const { t } = useTranslation("files");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const { upload, progress, isUploading, reset, cancel } = useFileUpload(options);
@@ -42,11 +44,7 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
       try {
         const asset = await upload(file);
         onUploaded?.(asset);
-        // Toast first (the confirmation that survives the dropzone re-arming),
-        // then reset so the surface is immediately ready for the next file.
-        // The user explicitly chose this continuous-flow over the "Upload
-        // another" success card — they were finding the extra click friction.
-        toast.success("File uploaded", {
+        toast.success(t("dropzone.toast"), {
           description: `${asset.originalFileName} · ${formatBytes(asset.sizeBytes)}`,
         });
         reset();
@@ -57,7 +55,7 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
         if (inputRef.current) inputRef.current.value = "";
       }
     },
-    [upload, onUploaded, reset],
+    [upload, onUploaded, reset, t],
   );
 
   const onDrop = useCallback(
@@ -72,10 +70,6 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
 
   const status = progress?.status;
   const isError = status === "error";
-  // `done` is no longer reachable in the UI — handleFiles resets the dropzone
-  // synchronously after a successful upload (the toast carries confirmation),
-  // so the success card never paints. Kept as the success branch in the icon /
-  // caption helpers for resilience if that flow ever changes.
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -121,10 +115,10 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
 
         <div className="space-y-1">
           <p className="text-sm font-medium tracking-tight text-[var(--color-foreground)]">
-            {captionFor(status, progress?.fileName)}
+            {captionFor(status, progress?.fileName, t)}
           </p>
           <p className="text-xs text-[var(--color-muted-foreground)]">
-            {detailFor(status, progress, options)}
+            {detailFor(status, progress, options, t)}
           </p>
         </div>
 
@@ -143,7 +137,7 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
               }}
             >
               <X className="h-3.5 w-3.5" />
-              Dismiss
+              {t("dropzone.dismiss")}
             </Button>
           </div>
         )}
@@ -159,7 +153,7 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
               reset();
             }}
           >
-            Cancel
+            {t("dropzone.cancel")}
           </Button>
         )}
       </div>
@@ -196,20 +190,22 @@ function DropzoneIcon({ status }: { status: string | undefined }) {
   );
 }
 
-function captionFor(status: string | undefined, fileName?: string): string {
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function captionFor(status: string | undefined, fileName: string | undefined, t: TFn): string {
   switch (status) {
     case "preparing":
-      return "Preparing upload…";
+      return t("dropzone.preparing");
     case "uploading":
-      return `Uploading ${fileName ?? "…"}`;
+      return t("dropzone.uploading", { fileName: fileName ?? "…" });
     case "finalizing":
-      return "Finalizing…";
+      return t("dropzone.finalizing");
     case "done":
-      return `Uploaded ${fileName ?? "file"}`;
+      return t("dropzone.uploaded", { fileName: fileName ?? t("unit") });
     case "error":
-      return "Upload failed";
+      return t("dropzone.failed");
     default:
-      return "Drop a file or click to browse";
+      return t("dropzone.idle");
   }
 }
 
@@ -217,20 +213,26 @@ function detailFor(
   status: string | undefined,
   progress: ReturnType<typeof useFileUpload>["progress"],
   options: UploadOptions,
+  t: TFn,
 ): string {
   if (status === "error" && progress?.error) return progress.error;
   if (status === "done" && progress?.fileAsset) {
     return `${progress.fileAsset.contentType} · ${formatBytes(progress.fileAsset.sizeBytes)}`;
   }
   if (status === "uploading" && progress) {
-    return `${formatBytes(progress.loaded)} of ${formatBytes(progress.totalBytes)}`;
+    return t("dropzone.loadedOf", {
+      loaded: formatBytes(progress.loaded),
+      total: formatBytes(progress.totalBytes),
+    });
   }
   if (options.allowedExtensions && options.allowedExtensions.length > 0) {
     const ext = options.allowedExtensions.join(", ");
-    const cap = options.maxBytes ? ` · up to ${formatBytes(options.maxBytes)}` : "";
-    return `Allowed: ${ext}${cap}`;
+    const cap = options.maxBytes
+      ? t("dropzone.capSuffix", { size: formatBytes(options.maxBytes) })
+      : "";
+    return t("dropzone.allowed", { ext, cap });
   }
-  return typeof options.category === "string" ? options.category : "Drop a file";
+  return typeof options.category === "string" ? options.category : t("dropzone.drop");
 }
 
 function ProgressBar({ percent, loaded, total }: { percent: number; loaded: number; total: number }) {

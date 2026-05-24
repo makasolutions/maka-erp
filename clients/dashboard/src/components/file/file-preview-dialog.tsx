@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Download,
@@ -64,6 +65,7 @@ type Props = {
  * durable publicUrl shipped on the metadata DTO.
  */
 export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: Props) {
+  const { t } = useTranslation("files");
   const open = fileAssetId !== null;
   const { user } = useAuth();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -77,7 +79,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
   const deleteMutation = useMutation({
     mutationFn: () => deleteFile(fileAssetId!),
     onSuccess: () => {
-      toast.success("File deleted");
+      toast.success(t("preview.toastDeleted"));
       onDeleted?.(fileAssetId!);
     },
     onError: (err) => {
@@ -85,7 +87,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
         err instanceof ApiRequestError
           ? (err.problem?.detail ?? err.problem?.title ?? err.message)
           : (err as Error).message;
-      toast.error("Delete failed", { description: detail });
+      toast.error(t("preview.toastDeleteFailed"), { description: detail });
       setConfirmingDelete(false);
     },
   });
@@ -106,8 +108,8 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
       metaQuery.refetch();
       toast.success(
         dto.visibility === Visibility.Public
-          ? "File is now public to your tenant"
-          : "File is now private",
+          ? t("preview.toastMadePublic")
+          : t("preview.toastMadePrivate"),
       );
     },
     onError: (err) => {
@@ -115,7 +117,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
         err instanceof ApiRequestError
           ? (err.problem?.detail ?? err.problem?.title ?? err.message)
           : (err as Error).message;
-      toast.error("Visibility change failed", { description: detail });
+      toast.error(t("preview.toastVisibilityFailed"), { description: detail });
     },
   });
 
@@ -148,7 +150,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 truncate">
             <MimeIcon contentType={metaQuery.data?.contentType ?? "application/octet-stream"} />
-            <span className="truncate">{metaQuery.data?.originalFileName ?? "File"}</span>
+            <span className="truncate">{metaQuery.data?.originalFileName ?? t("preview.defaultTitle")}</span>
           </DialogTitle>
           {metaQuery.data && (
             <DialogDescription>
@@ -163,7 +165,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
               message={
                 metaQuery.error instanceof ApiRequestError
                   ? (metaQuery.error.problem?.detail ?? metaQuery.error.message)
-                  : "Couldn't load file metadata."
+                  : t("preview.loadError")
               }
             />
           ) : !metaQuery.data ? (
@@ -174,12 +176,14 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
                 file={metaQuery.data}
                 downloadUrl={downloadQuery.data?.url}
                 onUrlError={() => void downloadQuery.refetch()}
+                t={t}
               />
               <MetadataPanel
                 file={metaQuery.data}
                 isUploader={isUploader}
                 onChangeVisibility={(next) => visibilityMutation.mutate(next)}
                 visibilityPending={visibilityMutation.isPending}
+                t={t}
               />
             </>
           )}
@@ -195,7 +199,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
             confirmingDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-[12px] text-[var(--color-muted-foreground)]">
-                  Delete this file?
+                  {t("preview.deleteConfirm")}
                 </span>
                 <Button
                   size="sm"
@@ -203,7 +207,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
                   onClick={() => setConfirmingDelete(false)}
                   disabled={deleteMutation.isPending}
                 >
-                  Cancel
+                  {t("common:actions.cancel")}
                 </Button>
                 <Button
                   size="sm"
@@ -216,7 +220,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
                   ) : (
                     <Trash2 className="size-3.5" />
                   )}
-                  {deleteMutation.isPending ? "Deleting…" : "Confirm delete"}
+                  {deleteMutation.isPending ? t("preview.deleting") : t("preview.confirmDelete")}
                 </Button>
               </div>
             ) : (
@@ -227,7 +231,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
                 className="text-[var(--color-destructive)] hover:bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.08)] hover:text-[var(--color-destructive)]"
               >
                 <Trash2 className="size-3.5" />
-                Delete
+                {t("preview.delete")}
               </Button>
             )
           ) : (
@@ -237,10 +241,10 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
           {/* Right cluster — primary actions */}
           <div className="flex items-center gap-2">
             {metaQuery.data && metaQuery.data.status === FileAssetStatus.Available && (
-              <DownloadButton file={metaQuery.data} />
+              <DownloadButton file={metaQuery.data} t={t} />
             )}
             <DialogClose asChild>
-              <Button size="sm">Close</Button>
+              <Button size="sm">{t("preview.close")}</Button>
             </DialogClose>
           </div>
         </DialogFooter>
@@ -249,14 +253,18 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
   );
 }
 
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
 function Preview({
   file,
   downloadUrl,
   onUrlError,
+  t,
 }: {
   file: FileAssetDto;
   downloadUrl?: string;
   onUrlError: () => void;
+  t: TFn;
 }) {
   // For private files we need the presigned URL; for public we use the durable URL.
   const url = file.publicUrl ?? downloadUrl ?? null;
@@ -268,8 +276,8 @@ function Preview({
       <div className="rounded-xl border border-border bg-[var(--color-muted)] px-4 py-8 text-center">
         <p className="text-sm text-[var(--color-muted-foreground)]">
           {file.status === FileAssetStatus.PendingUpload
-            ? "Upload not yet finalized."
-            : "This file is quarantined and cannot be previewed."}
+            ? t("preview.pendingUpload")
+            : t("preview.quarantined")}
         </p>
       </div>
     );
@@ -283,7 +291,7 @@ function Preview({
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-[var(--color-muted)] px-4 py-10 text-center">
         <p className="text-sm text-[var(--color-muted-foreground)]">
-          Preview link expired or unreachable.
+          {t("preview.linkExpired")}
         </p>
         <Button
           size="sm"
@@ -293,7 +301,7 @@ function Preview({
             onUrlError();
           }}
         >
-          Retry
+          {t("preview.retry")}
         </Button>
       </div>
     );
@@ -323,26 +331,26 @@ function Preview({
   }
 
   if (file.contentType.startsWith("text/")) {
-    return <TextPreview url={url} />;
+    return <TextPreview url={url} t={t} />;
   }
 
   return (
     <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-[var(--color-muted)] px-4 py-10 text-center">
       <FileIcon className="h-8 w-8 text-[var(--color-muted-foreground)]" />
       <p className="text-sm text-[var(--color-muted-foreground)]">
-        Preview not available for this file type.
+        {t("preview.noPreview")}
       </p>
       <a href={url} target="_blank" rel="noopener noreferrer" download={file.originalFileName}>
         <Button size="sm" variant="outline">
           <ExternalLink className="h-3.5 w-3.5" />
-          Open in new tab
+          {t("preview.openInTab")}
         </Button>
       </a>
     </div>
   );
 }
 
-function TextPreview({ url }: { url: string }) {
+function TextPreview({ url, t }: { url: string; t: TFn }) {
   const [text, setText] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -364,7 +372,7 @@ function TextPreview({ url }: { url: string }) {
   }, [url]);
 
   if (err) {
-    return <ErrorBand message={`Couldn't fetch text body: ${err}`} />;
+    return <ErrorBand message={t("preview.fetchError", { err })} />;
   }
   if (text === null) {
     return <PreviewSkeleton />;
@@ -381,11 +389,13 @@ function MetadataPanel({
   isUploader,
   onChangeVisibility,
   visibilityPending,
+  t,
 }: {
   file: FileAssetDto;
   isUploader: boolean;
   onChangeVisibility: (next: typeof Visibility[keyof typeof Visibility]) => void;
   visibilityPending: boolean;
+  t: TFn;
 }) {
   // Uploader name resolved via the existing identity cache. For files older than
   // the createdByUserId rollout this comes back empty — fall back to a hyphen so
@@ -393,18 +403,18 @@ function MetadataPanel({
   const uploader = useUserDisplay(file.createdByUserId || null);
   const uploaderLabel = file.createdByUserId
     ? uploader.loading
-      ? "Loading…"
+      ? t("preview.loading")
       : uploader.name
     : "—";
 
   const rows: Array<[string, React.ReactNode, string?]> = [
-    ["File ID", <code className="font-mono text-[11px]">{file.id}</code>, file.id],
-    ["Owner type", file.ownerType, file.ownerType],
-    ["Uploaded by", uploaderLabel, uploaderLabel],
-    ["Content type", file.contentType, file.contentType],
-    ["Size", formatBytes(file.sizeBytes), undefined],
-    ["Status", statusLabel(file.status), undefined],
-    ["Created", new Date(file.createdAtUtc).toLocaleString(), undefined],
+    [t("preview.fieldId"), <code className="font-mono text-[11px]">{file.id}</code>, file.id],
+    [t("preview.fieldOwnerType"), file.ownerType, file.ownerType],
+    [t("preview.fieldUploadedBy"), uploaderLabel, uploaderLabel],
+    [t("preview.fieldContentType"), file.contentType, file.contentType],
+    [t("preview.fieldSize"), formatBytes(file.sizeBytes), undefined],
+    [t("preview.fieldStatus"), statusLabel(file.status, t), undefined],
+    [t("preview.fieldCreated"), new Date(file.createdAtUtc).toLocaleString(), undefined],
   ];
 
   const isPublic = file.visibility === Visibility.Public;
@@ -417,7 +427,7 @@ function MetadataPanel({
       <div className="flex items-start justify-between gap-3 border-b border-[oklch(from_var(--color-border)_l_c_h_/_0.5)] pb-3">
         <div>
           <dt className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Visibility
+            {t("preview.visibilityLabel")}
           </dt>
           <dd
             className={cn(
@@ -425,12 +435,12 @@ function MetadataPanel({
               isPublic ? "text-[var(--color-primary)]" : "text-[var(--color-foreground)]",
             )}
           >
-            {isPublic ? "Public" : "Private"}
+            {isPublic ? t("preview.public") : t("preview.private")}
           </dd>
           <p className="mt-0.5 text-[11px] text-[var(--color-muted-foreground)]">
             {isPublic
-              ? "Everyone in your tenant can find this file under Shared."
-              : "Only you can preview or download this file."}
+              ? t("preview.publicHint")
+              : t("preview.privateHint")}
           </p>
         </div>
         {isUploader ? (
@@ -440,11 +450,11 @@ function MetadataPanel({
               onChangeVisibility(checked ? Visibility.Public : Visibility.Private)
             }
             disabled={visibilityPending}
-            aria-label="Toggle public visibility"
+            aria-label={t("preview.toggleAria")}
           />
         ) : (
           <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Read-only
+            {t("preview.readOnly")}
           </span>
         )}
       </div>
@@ -468,7 +478,7 @@ function MetadataPanel({
 // Click-to-download. Mints a fresh attachment-disposition presigned URL each click for
 // private files so we don't reuse the inline URL the iframe is consuming. For public
 // files there's no inline/attachment distinction — both buttons use the same publicUrl.
-function DownloadButton({ file }: { file: FileAssetDto }) {
+function DownloadButton({ file, t }: { file: FileAssetDto; t: TFn }) {
   const [busy, setBusy] = useState(false);
   const handle = async () => {
     if (busy) return;
@@ -488,21 +498,21 @@ function DownloadButton({ file }: { file: FileAssetDto }) {
   return (
     <Button size="sm" variant="outline" onClick={handle} disabled={busy}>
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-      Download
+      {t("preview.download")}
     </Button>
   );
 }
 
-function statusLabel(status: number): string {
+function statusLabel(status: number, t: TFn): string {
   switch (status) {
     case FileAssetStatus.PendingUpload:
-      return "Pending upload";
+      return t("preview.statusPending");
     case FileAssetStatus.Available:
-      return "Available";
+      return t("preview.statusAvailable");
     case FileAssetStatus.Quarantined:
-      return "Quarantined";
+      return t("preview.statusQuarantined");
     default:
-      return `Unknown (${status})`;
+      return t("preview.statusUnknown", { code: status });
   }
 }
 

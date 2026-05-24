@@ -26,7 +26,7 @@ const LANGUAGES: Lang[] = [
  * Shows the Languages icon; opens a dropdown with ES/EN choices.
  */
 export function LanguageSelectorButton() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation("settings");
   const current = i18n.resolvedLanguage ?? i18n.language ?? "es";
   const shortLang = current.split("-")[0];
 
@@ -35,8 +35,8 @@ export function LanguageSelectorButton() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="Change language"
-          title="Change language"
+          aria-label={t("appearance.changeLanguage")}
+          title={t("appearance.changeLanguage")}
           className={cn(
             "grid h-9 w-9 cursor-pointer place-items-center rounded-md",
             "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",

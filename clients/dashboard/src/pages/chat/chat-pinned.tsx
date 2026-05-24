@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Pin } from "lucide-react";
 import { listPinnedMessages, type MessageDto } from "@/api/chat";
 import {
@@ -26,6 +27,7 @@ export function ChatPinnedDropdown({
   onJump: (messageId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation("chat");
 
   const pinnedQuery = useQuery({
     queryKey: ["chat", "pinned", channelId],
@@ -41,8 +43,8 @@ export function ChatPinnedDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="Pinned messages"
-          title="Pinned messages"
+          aria-label={t("pinned.title")}
+          title={t("pinned.title")}
           className={cn(
             "grid h-8 w-8 cursor-pointer place-items-center rounded-md",
             "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
@@ -55,20 +57,21 @@ export function ChatPinnedDropdown({
       <DropdownMenuContent align="end" className="w-[320px] p-0">
         <div className="border-b border-[var(--color-border)] px-3 py-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-            Pinned messages
+            {t("pinned.title")}
           </p>
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
           {pinnedQuery.isLoading ? (
-            <Placeholder label="Loading…" />
+            <Placeholder label={t("pinned.loading")} />
           ) : pinned.length === 0 ? (
-            <Placeholder label="Nothing pinned in this channel yet." />
+            <Placeholder label={t("pinned.empty")} />
           ) : (
             <ul className="divide-y divide-[var(--color-border)]">
               {pinned.map((m) => (
                 <PinnedRow
                   key={m.id}
                   message={m}
+                  noTextLabel={t("pinned.noText")}
                   onPick={() => {
                     onJump(m.id);
                     setOpen(false);
@@ -85,9 +88,11 @@ export function ChatPinnedDropdown({
 
 function PinnedRow({
   message,
+  noTextLabel,
   onPick,
 }: {
   message: MessageDto;
+  noTextLabel: string;
   onPick: () => void;
 }) {
   const author = useUserDisplay(message.authorUserId);
@@ -97,7 +102,7 @@ function PinnedRow({
       ? `📎 ${message.attachments[0].originalFileName}${
           message.attachments.length > 1 ? ` (+${message.attachments.length - 1})` : ""
         }`
-      : "(no text)");
+      : noTextLabel);
   return (
     <li>
       <button

@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Bell,
   ChevronRight,
@@ -12,19 +13,19 @@ import type { LucideIcon } from "lucide-react";
 import { EntityPageHeader } from "@/components/list";
 import { cn } from "@/lib/cn";
 
-type Tab = {
+type TabDef = {
   to: string;
-  label: string;
-  hint: string;
+  labelKey: string;
+  hintKey: string;
   icon: LucideIcon;
 };
 
-const TABS: Tab[] = [
-  { to: "/settings/profile", label: "Profile", hint: "Your identity across the tenant", icon: UserRound },
-  { to: "/settings/security", label: "Security", hint: "Password and active sessions", icon: Shield },
-  { to: "/settings/appearance", label: "Appearance", hint: "Theme and visual preferences", icon: Palette },
-  { to: "/settings/notifications", label: "Notifications", hint: "How we reach you", icon: Bell },
-  { to: "/settings/api-keys", label: "API keys", hint: "Personal access tokens", icon: KeyRound },
+const TAB_DEFS: TabDef[] = [
+  { to: "/settings/profile", labelKey: "sections.profile", hintKey: "tabs.profileHint", icon: UserRound },
+  { to: "/settings/security", labelKey: "sections.security", hintKey: "tabs.securityHint", icon: Shield },
+  { to: "/settings/appearance", labelKey: "sections.appearance", hintKey: "tabs.appearanceHint", icon: Palette },
+  { to: "/settings/notifications", labelKey: "sections.notifications", hintKey: "tabs.notificationsHint", icon: Bell },
+  { to: "/settings/api-keys", labelKey: "sections.apiKeys", hintKey: "tabs.apiKeysHint", icon: KeyRound },
 ];
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");
@@ -36,10 +37,18 @@ const pad2 = (n: number) => n.toString().padStart(2, "0");
  * masthead at the top of the content, sections rendered as warm-paper cards.
  */
 export function SettingsLayout() {
+  const { t } = useTranslation("settings");
   const location = useLocation();
+
+  const TABS = TAB_DEFS.map((def) => ({
+    ...def,
+    label: t(def.labelKey),
+    hint: t(def.hintKey),
+  }));
+
   const activeIndex = Math.max(
     0,
-    TABS.findIndex((t) => location.pathname.startsWith(t.to)),
+    TABS.findIndex((tab) => location.pathname.startsWith(tab.to)),
   );
   const active = TABS[activeIndex] ?? TABS[0];
 
@@ -52,7 +61,7 @@ export function SettingsLayout() {
         icon={SettingsIcon}
         title={
           <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-            <span>Settings</span>
+            <span>{t("title")}</span>
             <span
               aria-hidden
               className="text-[oklch(from_var(--color-border-strong)_l_c_h_/_0.7)]"
@@ -69,11 +78,11 @@ export function SettingsLayout() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr] lg:gap-10">
         {/* ─── Editorial left nav ─── */}
-        <nav aria-label="Settings sections">
+        <nav aria-label={t("nav")}>
           {/* Desktop: vertical numbered list */}
           <div className="sticky top-6 hidden lg:block">
             <p className="mb-4 pl-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">
-              Sections
+              {t("sectionHeader")}
             </p>
             <ul className="relative space-y-px">
               {/* Faint vertical rail tying the numbers together */}

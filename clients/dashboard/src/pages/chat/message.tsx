@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Download, Eye, Paperclip, Pencil, Pin, PinOff, SmilePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -79,6 +80,7 @@ export function Message({
   /** Anchors the read receipt to this message (the latest own top-level). */
   isLatestOwn?: boolean;
 }) {
+  const { t } = useTranslation("chat");
   const isOwn = selfUserId === message.authorUserId;
   const isDeleted = message.deletedAtUtc !== null && message.deletedAtUtc !== undefined;
   const isPending = message.id.startsWith("temp:");
@@ -194,7 +196,7 @@ export function Message({
             </span>
             {message.editedAtUtc && (
               <span className="text-[10px] text-[var(--color-muted-foreground)]">
-                · edited
+                {t("message.edited")}
               </span>
             )}
           </div>
@@ -208,10 +210,10 @@ export function Message({
               "text-[10px] font-semibold uppercase tracking-wider",
               "text-[var(--color-primary)]",
             )}
-            aria-label="Pinned"
+            aria-label={t("message.pinnedAriaLabel")}
           >
             <Pin className="h-2.5 w-2.5" aria-hidden />
-            Pinned
+            {t("message.pinnedAriaLabel")}
           </span>
         )}
 
@@ -247,7 +249,7 @@ export function Message({
 
           {isDeleted ? (
             <span className="text-sm italic text-[var(--color-muted-foreground)]">
-              [message deleted]
+              {t("message.deleted")}
             </span>
           ) : (
             <>
@@ -314,9 +316,10 @@ function ReplyContextPreview({
   parent: MessageDto | null;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const author = useUserDisplay(parent?.authorUserId);
   const body = parent ? (parent.body ?? "").trim() : "";
-  const preview = body || "(no text — attachment or empty)";
+  const preview = body || t("composer.noTextFallback");
 
   const className = cn(
     "mb-1.5 -mt-0.5 block w-full border-l-2 pl-2 text-left",
@@ -331,10 +334,10 @@ function ReplyContextPreview({
     <>
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          Replying to
+          {t("message.replyingTo")}
         </span>
         <span className="truncate text-[11px] font-semibold tracking-tight text-[var(--color-foreground)]">
-          {parent ? author.name : "a message"}
+          {parent ? author.name : t("message.aMessage")}
         </span>
       </div>
       <p
@@ -380,6 +383,7 @@ function ReadReceipt({
   members: ChannelMemberDto[];
   selfUserId?: string;
 }) {
+  const { t } = useTranslation("chat");
   const readers = useMemo(
     () =>
       members.filter(
@@ -394,10 +398,10 @@ function ReadReceipt({
   const totalOthers = members.filter((m) => m.userId !== selfUserId).length;
   const label =
     totalOthers === 1
-      ? "Seen"
+      ? t("message.seen")
       : readers.length === totalOthers
-        ? "Seen by everyone"
-        : `Seen by ${readers.length}`;
+        ? t("message.seenByAll")
+        : t("message.seenByCount", { count: readers.length });
   return (
     <span
       className={cn(
@@ -541,6 +545,7 @@ function MessageBody({ body }: { body: string }) {
 }
 
 function MentionPill({ username }: { username: string }) {
+  const { t } = useTranslation("chat");
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const { resolved, loading, error } = useUserByUsername(username, open);
@@ -553,8 +558,8 @@ function MentionPill({ username }: { username: string }) {
     const text = `@${username}`;
     void navigator.clipboard
       ?.writeText(text)
-      .then(() => toast.success(`Copied ${text}`))
-      .catch(() => toast.error("Couldn't copy to clipboard"));
+      .then(() => toast.success(t("toast.copied", { username })))
+      .catch(() => toast.error(t("toast.copyFailed")));
   };
 
   const dmMutation = useMutation({
@@ -567,7 +572,7 @@ function MentionPill({ username }: { username: string }) {
       setOpen(false);
       navigate(`/chat/${channelId}`);
     },
-    onError: () => toast.error("Couldn't open DM"),
+    onError: () => toast.error(t("toast.dmFailed")),
   });
 
   const displayName =
@@ -582,8 +587,8 @@ function MentionPill({ username }: { username: string }) {
         <button
           type="button"
           className="chat-mention"
-          title={`Mention of ${username}`}
-          aria-label={`Mention of ${username}, click to open profile`}
+          title={t("message.mentionTitle", { username })}
+          aria-label={t("message.mentionAriaLabel", { username })}
         >
           @{username}
         </button>
@@ -603,7 +608,7 @@ function MentionPill({ username }: { username: string }) {
               </span>
               {isSelf && (
                 <span className="rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  you
+                  {t("message.youBadge")}
                 </span>
               )}
             </div>
@@ -617,17 +622,17 @@ function MentionPill({ username }: { username: string }) {
             )}
             {loading && (
               <div className="mt-1 text-[11px] text-[var(--color-muted-foreground)]">
-                Looking up…
+                {t("message.lookingUp")}
               </div>
             )}
             {!loading && !resolved && !error && (
               <div className="mt-1 text-xs italic text-[var(--color-muted-foreground)]">
-                User not found.
+                {t("message.userNotFound")}
               </div>
             )}
             {error && (
               <div className="mt-1 text-xs italic text-[var(--color-destructive)]">
-                Couldn&apos;t load this user.
+                {t("message.couldntLoadUser")}
               </div>
             )}
           </div>
@@ -639,15 +644,15 @@ function MentionPill({ username }: { username: string }) {
             onClick={copy}
             disabled={dmMutation.isPending}
           >
-            Copy @{resolved?.userName ?? username}
+            {t("message.copyHandle", { username: resolved?.userName ?? username })}
           </Button>
           <Button
             size="sm"
             disabled={!resolved?.id || isSelf || dmMutation.isPending}
             onClick={() => dmMutation.mutate()}
-            title={isSelf ? "That's you" : undefined}
+            title={isSelf ? t("message.thatsYou") : undefined}
           >
-            {dmMutation.isPending ? "Opening…" : "Open DM"}
+            {dmMutation.isPending ? t("message.opening") : t("message.openDm")}
           </Button>
         </div>
       </DropdownMenuContent>
@@ -696,6 +701,7 @@ function MessageActions({
   isOwn: boolean;
   onReply?: (parent: MessageDto) => void;
 }) {
+  const { t } = useTranslation("chat");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -714,9 +720,9 @@ function MessageActions({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["chat", "messages"] });
       setConfirmingDelete(false);
-      toast.success("Message deleted");
+      toast.success(t("toast.messageDeleted"));
     },
-    onError: () => toast.error("Couldn't delete the message"),
+    onError: () => toast.error(t("toast.messageDeleteFailed")),
   });
 
   const pinMutation = useMutation({
@@ -728,9 +734,9 @@ function MessageActions({
       // pinned-panel cache.
       void queryClient.invalidateQueries({ queryKey: ["chat", "messages"] });
       void queryClient.invalidateQueries({ queryKey: ["chat", "pinned", message.channelId] });
-      toast.success(message.isPinned ? "Unpinned" : "Pinned");
+      toast.success(message.isPinned ? t("toast.unpinned") : t("toast.pinned"));
     },
-    onError: () => toast.error("Couldn't update the pin."),
+    onError: () => toast.error(t("toast.pinFailed")),
   });
 
   if (isDeleted) return null;
@@ -747,16 +753,16 @@ function MessageActions({
           isOwn ? "left-3" : "right-3",
         )}
       >
-        <ActionButton title="React" onClick={() => setPickerOpen((v) => !v)}>
+        <ActionButton title={t("message.react")} onClick={() => setPickerOpen((v) => !v)}>
           <SmilePlus className="h-3.5 w-3.5" />
         </ActionButton>
         {!message.parentMessageId && onReply && (
-          <ActionButton title="Reply" onClick={() => onReply(message)}>
+          <ActionButton title={t("message.reply")} onClick={() => onReply(message)}>
             <span className="text-[12px] font-semibold leading-none">↪</span>
           </ActionButton>
         )}
         <ActionButton
-          title={message.isPinned ? "Unpin" : "Pin"}
+          title={message.isPinned ? t("message.unpin") : t("message.pin")}
           onClick={() => pinMutation.mutate()}
         >
           {message.isPinned ? (
@@ -766,13 +772,13 @@ function MessageActions({
           )}
         </ActionButton>
         {isOwn && (
-          <ActionButton title="Edit" onClick={() => setEditing(true)}>
+          <ActionButton title={t("message.edit")} onClick={() => setEditing(true)}>
             <Pencil className="h-3.5 w-3.5" />
           </ActionButton>
         )}
         {isOwn && (
           <ActionButton
-            title="Delete"
+            title={t("message.delete")}
             onClick={() => setConfirmingDelete(true)}
             destructive
           >
@@ -844,16 +850,16 @@ function DeleteMessageDialog({
   onConfirm: () => void;
   pending: boolean;
 }) {
+  const { t } = useTranslation("chat");
   const preview = (message.body ?? "").trim();
   const display = preview.length > 140 ? `${preview.slice(0, 140)}…` : preview;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete this message?</DialogTitle>
+          <DialogTitle>{t("deleteDialog.title")}</DialogTitle>
           <DialogDescription>
-            This can&apos;t be undone. Everyone in the channel will see the
-            message disappear in real time.
+            {t("deleteDialog.body")}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -868,16 +874,16 @@ function DeleteMessageDialog({
             </blockquote>
           ) : (
             <p className="text-[12px] italic text-[var(--color-muted-foreground)]">
-              No text preview — attachments or empty body.
+              {t("deleteDialog.noPreview")}
             </p>
           )}
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={pending}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button variant="destructive" size="sm" onClick={onConfirm} disabled={pending}>
-            {pending ? "Deleting…" : "Delete message"}
+            {pending ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -924,6 +930,7 @@ function EditMessageInline({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const [body, setBody] = useState(message.body ?? "");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const mutation = useMutation({
@@ -978,7 +985,7 @@ function EditMessageInline({
           onKeyDown={onKeyDown}
           autoFocus
           rows={1}
-          aria-label="Edit message"
+          aria-label={t("editInline.ariaLabel")}
           className={cn(
             "block w-full resize-none border-0 bg-transparent px-3 py-2 text-sm",
             "leading-relaxed text-[var(--color-foreground)] focus:outline-none",
@@ -987,18 +994,18 @@ function EditMessageInline({
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] text-[var(--color-muted-foreground)]">
-          Enter to save · Shift+Enter for newline · Esc to cancel
+          {t("editInline.hint")}
         </span>
         <div className="flex items-center gap-1.5">
           <Button size="sm" variant="ghost" onClick={onClose} disabled={mutation.isPending}>
-            Cancel
+            {t("common:actions.cancel")}
           </Button>
           <Button
             size="sm"
             disabled={!body.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Saving…" : "Save"}
+            {mutation.isPending ? t("editInline.saving") : t("editInline.save")}
           </Button>
         </div>
       </div>
