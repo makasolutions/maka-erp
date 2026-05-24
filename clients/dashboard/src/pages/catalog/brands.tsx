@@ -4,6 +4,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   keepPreviousData,
   useMutation,
@@ -74,6 +75,7 @@ type EditorState =
 // ───────────────────────────────────────────────────────────────────────
 
 export function BrandsPage() {
+  const { t } = useTranslation("catalog");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
@@ -113,24 +115,24 @@ export function BrandsPage() {
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Tag}
-        title="Brands"
+        title={t("brands.title")}
         total={data?.totalCount ?? null}
-        unit="brand"
-        description="Curate the maker imprints behind every product. Each brand carries its own slug, story, and logo."
+        unit={t("brands.singular")}
+        description={t("brands.description")}
       >
         <Button
           onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
           <Plus className="size-4" />
-          New brand
+          {t("brands.actions.create")}
         </Button>
       </EntityPageHeader>
 
       <EntitySearch
         value={search}
         onChange={setSearch}
-        placeholder="Search by name or slug…"
+        placeholder={t("brands.searchPlaceholder")}
       />
 
       {query.isLoading && items.length === 0 ? (
@@ -138,13 +140,13 @@ export function BrandsPage() {
       ) : items.length === 0 ? (
         <EntityEmpty
           icon={searchActive ? Search : Tag}
-          title={searchActive ? "No brands found" : "No brands yet"}
+          title={searchActive ? t("brands.empty.searchTitle") : t("brands.empty.title")}
           body={
             searchActive
               ? debouncedSearch
-                ? `Nothing matches "${debouncedSearch}". Try a different term or clear the search.`
-                : "No brands match the current filters."
-              : "Add your first brand to start building the catalog. Each brand carries its own slug, description, and logo."
+                ? t("brands.empty.searchBody", { term: debouncedSearch })
+                : t("brands.empty.filterBody")
+              : t("brands.empty.body")
           }
           action={
             searchActive ? (
@@ -153,7 +155,7 @@ export function BrandsPage() {
                 onClick={() => setSearch("")}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                Clear search
+                {t("brands.empty.clearSearch")}
               </Button>
             ) : (
               <Button
@@ -161,7 +163,7 @@ export function BrandsPage() {
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
                 <Plus className="mr-1.5 size-4" />
-                Add brand
+                {t("brands.actions.add")}
               </Button>
             )
           }
@@ -170,8 +172,7 @@ export function BrandsPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {data?.totalCount ?? 0} brand
-              {(data?.totalCount ?? 0) !== 1 ? "s" : ""} found
+              {t("brands.found", { count: data?.totalCount ?? 0 })}
             </p>
           </div>
 
@@ -189,9 +190,9 @@ export function BrandsPage() {
           {/* Desktop: list card */}
           <EntityListCard className="hidden md:block">
             <EntityListHeader className="grid-cols-[1fr_180px_140px_24px]">
-              <span>Brand</span>
-              <span>Slug</span>
-              <span>Created</span>
+              <span>{t("brands.singular")}</span>
+              <span>{t("brands.fields.slug")}</span>
+              <span>{t("brands.fields.created")}</span>
               <span />
             </EntityListHeader>
 
@@ -413,6 +414,8 @@ function BrandEditorDialog({
   state: EditorState;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "create" || state.mode === "edit";
   const brand = state.mode === "edit" ? state.brand : undefined;
   const queryClient = useQueryClient();
@@ -443,21 +446,21 @@ function BrandEditorDialog({
   const createMutation = useMutation({
     mutationFn: (input: CreateBrandInput) => createBrand(input),
     onSuccess: () => {
-      toast.success("Brand created");
+      toast.success(tc("feedback.created"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
       onClose();
     },
-    onError: (err) => toast.error("Create failed", { description: describe(err) }),
+    onError: (err) => toast.error(tc("feedback.createFailed"), { description: describe(err) }),
   });
 
   const updateMutation = useMutation({
     mutationFn: (input: UpdateBrandInput) => updateBrand(input),
     onSuccess: () => {
-      toast.success("Brand updated");
+      toast.success(tc("feedback.updated"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
       onClose();
     },
-    onError: (err) => toast.error("Update failed", { description: describe(err) }),
+    onError: (err) => toast.error(tc("feedback.updateFailed"), { description: describe(err) }),
   });
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -483,21 +486,21 @@ function BrandEditorDialog({
       <DialogContent className="!max-w-lg">
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle>{brand ? "Edit brand" : "Add a brand"}</DialogTitle>
+            <DialogTitle>{brand ? t("brands.actions.edit") : t("brands.actions.add")}</DialogTitle>
             <DialogDescription>
               {brand
-                ? `Update details for ${brand.name}. The slug is re-derived from the name.`
-                : "Add a brand to your catalog. The slug is generated automatically from the name."}
+                ? t("brands.editDesc", { name: brand.name })
+                : t("brands.createDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody className="space-y-5">
-            <Field id="brand-name" label="Name" required>
+            <Field id="brand-name" label={t("brands.fields.name")} required>
               <Input
                 id="brand-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Acme Goods"
+                placeholder={t("brands.namePlaceholder")}
                 autoFocus
                 required
                 maxLength={128}
@@ -506,8 +509,8 @@ function BrandEditorDialog({
 
             <Field
               id="brand-slug"
-              label="Slug"
-              hint="Auto-derived from the name. Used in URLs."
+              label={t("brands.fields.slug")}
+              hint={t("brands.slugHint")}
             >
               <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
                 <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
@@ -518,8 +521,8 @@ function BrandEditorDialog({
 
             <Field
               id="brand-description"
-              label="Description"
-              hint="Shown on listing and product detail pages."
+              label={t("brands.fields.description")}
+              hint={t("brands.descriptionHint")}
             >
               <textarea
                 id="brand-description"
@@ -532,14 +535,14 @@ function BrandEditorDialog({
                   "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
                   "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
                 )}
-                placeholder="Quality essentials for the modern home."
+                placeholder={t("brands.descPlaceholder")}
               />
             </Field>
 
             <Field
               id="brand-logo"
-              label="Logo URL"
-              hint="Optional. Public URL to the brand's logo image."
+              label={t("brands.fields.logoUrl")}
+              hint={t("brands.logoHint")}
             >
               <Input
                 id="brand-logo"
@@ -555,11 +558,11 @@ function BrandEditorDialog({
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isPending}>
-                Cancel
+                {tc("actions.cancel")}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending || !trimmedName}>
-              {isPending ? "Saving…" : brand ? "Save changes" : "Add brand"}
+              {isPending ? tc("feedback.saving") : brand ? tc("actions.saveChanges") : t("brands.actions.add")}
             </Button>
           </DialogFooter>
         </form>
@@ -579,6 +582,8 @@ function DeleteBrandDialog({
   state: EditorState;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "delete";
   const brand = state.mode === "delete" ? state.brand : undefined;
   const queryClient = useQueryClient();
@@ -586,11 +591,11 @@ function DeleteBrandDialog({
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteBrand(id),
     onSuccess: () => {
-      toast.success("Brand deleted");
+      toast.success(tc("feedback.deleted"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
       onClose();
     },
-    onError: (err) => toast.error("Delete failed", { description: describe(err) }),
+    onError: (err) => toast.error(tc("feedback.deleteFailed"), { description: describe(err) }),
   });
 
   return (
@@ -598,23 +603,16 @@ function DeleteBrandDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-[var(--color-destructive)]">
-            Delete brand
+            {t("brands.actions.delete")}
           </DialogTitle>
           <DialogDescription>
-            This permanently removes{" "}
-            <span className="font-medium text-[var(--color-foreground)]">
-              {brand?.name}
-            </span>{" "}
-            <span className="opacity-70">
-              (created {brand && formatDate(brand.createdAtUtc)})
-            </span>
-            . Products referencing this brand will need to be reassigned.
+            {t("brands.deleteDesc", { name: brand?.name ?? "" })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={deleteMutation.isPending}>
-              Cancel
+              {tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -622,7 +620,7 @@ function DeleteBrandDialog({
             onClick={() => brand && deleteMutation.mutate(brand.id)}
             disabled={deleteMutation.isPending || !brand}
           >
-            {deleteMutation.isPending ? "Deleting…" : "Delete brand"}
+            {deleteMutation.isPending ? tc("feedback.deleting") : t("brands.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

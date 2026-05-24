@@ -419,9 +419,13 @@
     "type": "Type",
     "severity": "Severity",
     "source": "Source",
+    "sourcePlaceholder": "api.identity.RegisterUser",
     "userId": "User ID",
+    "userIdPlaceholder": "00000000-0000-…",
     "correlation": "Correlation",
+    "correlationPlaceholder": "0HMxxxx…",
     "trace": "Trace",
+    "tracePlaceholder": "hex traceparent",
     "tags": "Tags",
     "columns": {
       "actor": "Actor",

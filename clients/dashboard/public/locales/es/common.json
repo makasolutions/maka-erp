@@ -419,9 +419,13 @@
     "type": "Tipo",
     "severity": "Severidad",
     "source": "Fuente",
+    "sourcePlaceholder": "api.identity.RegisterUser",
     "userId": "ID de usuario",
+    "userIdPlaceholder": "00000000-0000-…",
     "correlation": "Correlación",
+    "correlationPlaceholder": "0HMxxxx…",
     "trace": "Traza",
+    "tracePlaceholder": "trazaparent hexadecimal",
     "tags": "Etiquetas",
     "columns": {
       "actor": "Actor",
