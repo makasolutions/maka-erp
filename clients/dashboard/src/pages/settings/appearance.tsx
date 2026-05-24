@@ -298,7 +298,7 @@ function AccentCard({
         <SwatchTitle active={active}>{option.label}</SwatchTitle>
         {active && <ActiveTag />}
       </div>
-      <SwatchSubtitle>{option.description}</SwatchSubtitle>
+      <SwatchSubtitle>{t(`appearance.accentDescriptions.${option.id}`)}</SwatchSubtitle>
     </SwatchButton>
   );
 }
@@ -340,7 +340,7 @@ function FontCard({
         <SwatchTitle active={active}>{option.label}</SwatchTitle>
         {active && <ActiveTag />}
       </div>
-      <SwatchSubtitle>{option.description}</SwatchSubtitle>
+      <SwatchSubtitle>{t(`appearance.fontDescriptions.${option.id}`)}</SwatchSubtitle>
     </SwatchButton>
   );
 }

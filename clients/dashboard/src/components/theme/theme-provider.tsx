@@ -230,13 +230,50 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   // Apply font / accent / density — covers initial render and any
-  // subsequent change. The dark class is owned by withThemeTransition
-  // and the index.html bootstrap script; no useEffect for `resolved`.
-  // Custom-accent application also re-runs whenever `customAccent`
-  // changes so a hue tweak previews live.
+  // subsequent change. Custom-accent application also re-runs whenever
+  // `customAccent` changes so a hue tweak previews live.
   useEffect(() => applyFont(font), [font]);
   useEffect(() => applyAccent(accent, customAccent), [accent, customAccent]);
   useEffect(() => applyDensity(density), [density]);
+
+  // Re-enforce the dark/light class on mount and whenever `resolved` changes.
+  // The index.html bootstrap script applies it synchronously before React mounts
+  // to avoid FOUC, but browser extensions or other agents can strip or replace
+  // the class between bootstrap and React hydration. This effect makes the
+  // ThemeProvider the authoritative source of truth at runtime.
+  //
+  // A MutationObserver watches for external class mutations on <html> (e.g. from
+  // browser extensions that inject a "light" class or reset className entirely)
+  // and corrects the state immediately after, without causing React re-renders.
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const enforce = () => {
+      const shouldBeDark = resolved === "dark";
+      const hasDark = root.classList.contains("dark");
+      const hasLight = root.classList.contains("light");
+      if (hasLight || hasDark !== shouldBeDark) {
+        root.classList.remove("light");
+        applyDarkClass(resolved);
+      }
+    };
+
+    // Apply immediately on mount / resolved change
+    enforce();
+
+    // Guard against re-entrant callbacks triggered by our own classList mutations
+    let correcting = false;
+    const observer = new MutationObserver(() => {
+      if (correcting) return;
+      correcting = true;
+      enforce();
+      correcting = false;
+    });
+
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, [resolved]);
 
   // Subscribe to system preference while in "system" mode. Future OS
   // changes route through withThemeTransition so they crossfade too.
