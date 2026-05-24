@@ -359,6 +359,8 @@
     "dependencies": "Dependencias",
     "checksCount": "{{count}} verificaciones · total {{total}}",
     "recentPolls": "Sondeos recientes",
+    "recentPollHistory": "Historial de sondeos recientes",
+    "pollNoData": "sin datos",
     "latencyBudget": "Presupuesto de latencia",
     "latencyBudgetDesc": "Escalado contra un presupuesto blando de 500 ms. Barras en el tercio superior son zona de alerta temprana.",
     "detail": "Detalle",

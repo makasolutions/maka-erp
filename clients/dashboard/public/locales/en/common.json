@@ -359,6 +359,8 @@
     "dependencies": "Dependencies",
     "checksCount": "{{count}} checks · total {{total}}",
     "recentPolls": "Recent polls",
+    "recentPollHistory": "Recent poll history",
+    "pollNoData": "no data",
     "latencyBudget": "Latency budget",
     "latencyBudgetDesc": "Scaled against a soft 500 ms readiness budget. Bars in the upper third are early-warning territory.",
     "detail": "Detail",
