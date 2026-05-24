@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ClipboardCheck,
   Copy,
@@ -36,6 +37,7 @@ export function LoginDemoPanel({
   current: { email: string; tenant: string };
   onSelect: (account: DemoAccount) => void;
 }) {
+  const { t } = useTranslation("common");
   const [filter, setFilter] = useState("");
 
   const filteredGroups = useMemo(() => {
@@ -55,7 +57,7 @@ export function LoginDemoPanel({
   return (
     <div
       role="region"
-      aria-label="Development demo accounts"
+      aria-label={t("demo.panelAriaLabel")}
       className="fsh-enter flex flex-col"
     >
       {/* Header — Outfit title + small saffron DEV chip. No long blurb. */}
@@ -65,7 +67,7 @@ export function LoginDemoPanel({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h2 className="font-display text-[16px] font-semibold tracking-tight text-[var(--color-foreground)]">
-                Demo accounts
+                {t("demo.title")}
               </h2>
               <span
                 className={cn(
@@ -77,7 +79,7 @@ export function LoginDemoPanel({
               </span>
             </div>
             <p className="mt-0.5 text-[11.5px] text-[var(--color-muted-foreground)]">
-              Pick a seeded account to prefill the login form.
+              {t("demo.pickAccount")}
             </p>
           </div>
         </div>
@@ -98,8 +100,8 @@ export function LoginDemoPanel({
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter by name, email, persona…"
-            aria-label="Filter demo accounts"
+            placeholder={t("demo.filterPlaceholder")}
+            aria-label={t("demo.filterPlaceholder")}
             className={cn(
               "h-full flex-1 border-0 bg-transparent px-2 text-[12.5px]",
               "outline-none placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.65)]",
@@ -109,7 +111,7 @@ export function LoginDemoPanel({
             <button
               type="button"
               onClick={() => setFilter("")}
-              aria-label="Clear filter"
+              aria-label={t("actions.clearFilter")}
               className={cn(
                 "mr-1 grid size-6 cursor-pointer place-items-center rounded",
                 "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
@@ -125,7 +127,7 @@ export function LoginDemoPanel({
       <ul className="max-h-[60vh] overflow-y-auto px-3 pt-2 pb-3">
         {filteredGroups.length === 0 ? (
           <li className="px-3 py-8 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
-            No demo accounts match "{filter}".
+            {t("demo.noMatches", { filter })}
           </li>
         ) : (
           filteredGroups.map((group) => (
@@ -172,6 +174,7 @@ function DemoRow({
   active: boolean;
   onSelect: (account: DemoAccount) => void;
 }) {
+  const { t } = useTranslation("common");
   const fullName = `${account.firstName} ${account.lastName}`;
   return (
     <li>
@@ -215,7 +218,7 @@ function DemoRow({
               : "text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0)] group-hover/row:text-[var(--color-muted-foreground)]",
           )}
         >
-          {active ? "loaded" : "use →"}
+          {active ? t("demo.loaded") : t("demo.use")}
         </span>
       </button>
     </li>
@@ -247,6 +250,7 @@ function TierBadge({ tier }: { tier: DemoTier }) {
 }
 
 function PasswordFooter() {
+  const { t } = useTranslation("common");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -274,7 +278,7 @@ function PasswordFooter() {
       <div className="flex items-center gap-2 text-[11px]">
         <Sprout className="size-3 text-[var(--color-saffron)]" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          Shared password
+          {t("demo.sharedPassword")}
         </span>
         <code className="rounded bg-[var(--color-primary-soft)] px-1.5 py-0.5 font-mono text-[11px] font-semibold tracking-tight text-[var(--color-primary)]">
           {DEMO_PASSWORD}
@@ -283,8 +287,8 @@ function PasswordFooter() {
       <button
         type="button"
         onClick={onCopy}
-        title={copied ? "Copied!" : "Copy password"}
-        aria-label="Copy password"
+        title={copied ? t("demo.copied") : t("actions.copy")}
+        aria-label={t("actions.copy")}
         className={cn(
           "inline-flex h-7 cursor-pointer items-center gap-1 rounded-md px-2",
           "text-[11px] font-semibold uppercase tracking-wider",
@@ -296,11 +300,11 @@ function PasswordFooter() {
       >
         {copied ? (
           <>
-            <ClipboardCheck className="size-3" /> copied
+            <ClipboardCheck className="size-3" /> {t("demo.copied")}
           </>
         ) : (
           <>
-            <Copy className="size-3" /> copy
+            <Copy className="size-3" /> {t("demo.copy")}
           </>
         )}
       </button>

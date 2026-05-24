@@ -24,7 +24,20 @@
     "open": "Open",
     "duplicate": "Duplicate",
     "deactivate": "Deactivate",
-    "activate": "Activate"
+    "activate": "Activate",
+    "saveChanges": "Save changes",
+    "copy": "Copy",
+    "remove": "Remove",
+    "revoke": "Revoke",
+    "generate": "Generate",
+    "invite": "Invite",
+    "assign": "Assign",
+    "unassign": "Unassign",
+    "discard": "Discard",
+    "reactivate": "Reactivate",
+    "deactivate": "Deactivate",
+    "clearSearch": "Clear search",
+    "clearFilter": "Clear filter"
   },
   "status": {
     "active": "Active",
@@ -54,7 +67,9 @@
     "createFailed": "Failed to create",
     "updateFailed": "Failed to update",
     "confirmDelete": "Confirm deletion?",
-    "irreversible": "This action cannot be undone."
+    "irreversible": "This action cannot be undone.",
+    "failedToLoad": "Failed to load {{resource}}.",
+    "noResultsFor": "Nothing matches \"{{term}}\". Try a different term or clear the search."
   },
   "table": {
     "pageOf": "Page {{page}} of {{total}}",
@@ -88,7 +103,10 @@
     "health": "Health",
     "auditTrail": "Audit trail",
     "sessions": "Sessions",
-    "trash": "Trash"
+    "trash": "Trash",
+    "primaryNavAriaLabel": "Primary navigation",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "auth": {
     "welcomeBack": "Welcome",
@@ -110,8 +128,64 @@
     "signOutConfirmDesc": "You'll need to sign in again to access this tenant. Any unsaved work in this session will be lost.",
     "forgotPasswordTitle": "Forgot your password?",
     "forgotPasswordDesc": "Enter your email and we'll send you a link to reset your password.",
-    "resetPassword": "Reset password",
-    "confirmEmail": "Confirm email"
+    "resetPasswordLabel": "Reset password",
+    "confirmEmailLabel": "Confirm email",
+    "confirmEmail": {
+      "verifyingTitle": "Verifying your",
+      "verifyingAccent": "email…",
+      "verifyingDesc": "One moment — checking the confirmation token with the server.",
+      "confirmedTitle": "Email",
+      "confirmedAccent": "confirmed",
+      "defaultSuccess": "Your email is confirmed. You can now sign in.",
+      "continueSignIn": "Continue to sign in",
+      "couldntTitle": "Couldn't",
+      "couldntAccent": "confirm",
+      "couldntTrail": " your email",
+      "expiredDesc": "The link may have expired or been used already. If you've signed in since this email was sent, you can ignore it.",
+      "backToSignIn": "Back to sign in",
+      "resetInstead": "Reset password instead",
+      "malformedDesc": "This confirmation link is missing required parameters. It may have been clipped by your email client."
+    },
+    "forgotPasswordForm": {
+      "rememberedIt": "Remembered it?",
+      "title": "Reset your",
+      "accent": "password",
+      "desc": "Enter the email you sign in with. We'll send a one-time link.",
+      "sendLink": "Send reset link",
+      "sendingLink": "Sending link…",
+      "checkInboxTitle": "Check your",
+      "checkInboxAccent": "inbox",
+      "tryDifferent": "Try a different address",
+      "backToSignIn": "Back to sign in",
+      "didntGetIt": "Didn't get it? Wait a minute, then check spam.",
+      "stillNothing": "Still nothing? Confirm the email + tenant and try again."
+    },
+    "resetPasswordForm": {
+      "changedMind": "Changed your mind?",
+      "title": "Set a new",
+      "accent": "password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "placeholder": "At least 8 characters",
+      "confirmPlaceholder": "Re-enter password",
+      "strength": {
+        "weak": "Weak",
+        "fair": "Fair",
+        "strong": "Strong"
+      },
+      "matches": "Passwords match",
+      "noMatch": "Doesn't match yet",
+      "setPassword": "Set new password",
+      "updating": "Updating password…",
+      "incompleteTitle": "This link is",
+      "incompleteAccent": "incomplete",
+      "incompleteDesc": "The reset link is missing one of token, email, or tenant. Some email clients clip long URLs — try copy-pasting the full link from the original email into your browser's address bar.",
+      "requestNewLink": "Request a new link",
+      "passwordsDontMatch": "Passwords don't match.",
+      "minLength": "Use at least 8 characters.",
+      "passwordUpdated": "Password updated",
+      "passwordUpdatedDesc": "Sign in with your new password to continue."
+    }
   },
   "topbar": {
     "openCommandPalette": "Open command palette",
@@ -130,6 +204,397 @@
     "reconnecting": "Reconnecting…",
     "idle": "Idle",
     "language": "Language"
+  },
+  "error": {
+    "somethingWentWrong": "Something went wrong",
+    "goHome": "Go home",
+    "pageNotFound": "Page not found",
+    "pageNotFoundDesc": "We couldn't find anything at that address. It may be a stale link, a renamed route, or a path that never existed.",
+    "requested": "Requested",
+    "backToPrevious": "Go back to the previous page",
+    "openCommandPalette": "Open command palette",
+    "backHome": "Back home",
+    "healthEndpointUnreachable": "Health endpoint unreachable",
+    "healthEndpointDesc": "The browser couldn't reach /health/ready. The API may be down, or a network policy is blocking the request.",
+    "noChecksRegistered": "No checks registered",
+    "noChecksRegisteredDesc": "Modules can register dependency checks via AddHealthChecks(). None are reporting yet.",
+    "couldNotLoadAudit": "Could not load audit",
+    "couldNotLoadAuditDesc": "The server returned an error fetching this audit. The record may have been purged by the retention job.",
+    "noOtherEvents": "No other events share this correlation. The full lifecycle of this request is contained in the payload above.",
+    "failedLoadAudits": "Failed to load audits"
+  },
+  "commandPalette": {
+    "title": "Command palette",
+    "description": "Search across pages, account actions, theme and accent. Use arrow keys to navigate; Enter to select.",
+    "placeholder": "Type a command or search…",
+    "noMatches": "No matches",
+    "noMatchesDesc": "Try a different keyword — page name, entity, theme, accent, or sign-out.",
+    "navigate": "navigate",
+    "select": "select",
+    "groups": {
+      "navigate": "Navigate",
+      "create": "Create",
+      "account": "Account",
+      "theme": "Theme",
+      "accent": "Accent",
+      "session": "Session"
+    },
+    "items": {
+      "overview": "Overview",
+      "overviewHint": "Tenant telemetry & usage",
+      "liveActivity": "Live activity",
+      "liveActivityHint": "Real-time event stream",
+      "chat": "Chat",
+      "chatHint": "Channels & direct messages",
+      "files": "Files",
+      "filesHint": "My uploaded assets",
+      "users": "Users",
+      "usersHint": "Identity directory",
+      "roles": "Roles",
+      "rolesHint": "Permissions & role assignment",
+      "groups": "Groups",
+      "groupsHint": "Org groups & membership",
+      "products": "Products",
+      "productsHint": "Catalog inventory",
+      "brands": "Brands",
+      "brandsHint": "Catalog brands",
+      "categories": "Categories",
+      "categoriesHint": "Catalog categories",
+      "tickets": "Tickets",
+      "ticketsHint": "Support requests",
+      "invoices": "Invoices",
+      "invoicesHint": "Billing history",
+      "health": "Health",
+      "healthHint": "Readiness probe & dependencies",
+      "auditTrail": "Audit trail",
+      "auditTrailHint": "Activity, security, entity-change events",
+      "trash": "Trash",
+      "trashHint": "Soft-deleted records",
+      "sessions": "Sessions",
+      "sessionsHint": "Active user sessions",
+      "settings": "Settings",
+      "createUser": "Create user",
+      "createUserHint": "Register a new account",
+      "createRole": "Create role",
+      "createRoleHint": "Define a new permission set",
+      "createGroup": "Create group",
+      "createGroupHint": "Organize members",
+      "createProduct": "Create product",
+      "createProductHint": "Add to catalog",
+      "createBrand": "Create brand",
+      "createBrandHint": "Add a catalog brand",
+      "createCategory": "Create category",
+      "createCategoryHint": "Add a catalog category",
+      "createTicket": "Create ticket",
+      "createTicketHint": "File a support request",
+      "createChannel": "Create chat channel",
+      "createChannelHint": "Start a new conversation space",
+      "uploadFile": "Upload file",
+      "uploadFileHint": "Add to your storage",
+      "profile": "Profile",
+      "profileHint": "Name, email, contact",
+      "security": "Security",
+      "securityHint": "Password, 2FA, sessions",
+      "apiKeys": "API keys",
+      "apiKeysHint": "Generate & rotate",
+      "notifications": "Notifications",
+      "notificationsHint": "Email preferences",
+      "appearance": "Appearance",
+      "appearanceHint": "Theme, accent, font, density",
+      "switchLight": "Switch to light",
+      "switchDark": "Switch to dark",
+      "followSystem": "Follow system theme",
+      "setAccent": "Set accent: {{label}}",
+      "signOut": "Sign out",
+      "signOutHint": "End this session"
+    }
+  },
+  "files": {
+    "title": "My files",
+    "upload": "Upload",
+    "dropzone": "Drop files here or click to upload",
+    "dropzoneDesc": "Supports images and documents up to 10 MB",
+    "empty": {
+      "title": "No files yet",
+      "body": "Upload your first file to get started."
+    },
+    "deleteConfirm": "Delete this file?",
+    "deleteDesc": "This action cannot be undone."
+  },
+  "chat": {
+    "title": "Chat",
+    "newMessage": "New message",
+    "noChannels": "No channels",
+    "noMessages": "No messages yet",
+    "typeMessage": "Type a message…",
+    "send": "Send",
+    "mentions": "Mentions",
+    "pinned": "Pinned messages",
+    "search": "Search messages",
+    "members": "Members",
+    "settings": "Channel settings",
+    "leave": "Leave channel",
+    "delete": "Delete channel",
+    "create": "Create channel",
+    "channelName": "Channel name",
+    "typing": "{{name}} is typing…",
+    "typingMultiple": "{{names}} are typing…"
+  },
+  "layout": {
+    "skipToMain": "Skip to main content"
+  },
+  "authShell": {
+    "securityNote": "Encrypted in transit · JWT-secured session",
+    "adminLabel": "FullStackHero Administration",
+    "consoleBadge": "Console · Multi-tenant"
+  },
+  "health": {
+    "title": "Health",
+    "eyebrow": "System · Health",
+    "subtitle": "Live readiness probe across every registered dependency. Polled every {{interval}}s.",
+    "live": "Live",
+    "paused": "Paused",
+    "pauseAutoRefresh": "Pause auto-refresh",
+    "resumeAutoRefresh": "Resume auto-refresh",
+    "dependencies": "Dependencies",
+    "checksCount": "{{count}} checks · total {{total}}",
+    "recentPolls": "Recent polls",
+    "latencyBudget": "Latency budget",
+    "latencyBudgetDesc": "Scaled against a soft 500 ms readiness budget. Bars in the upper third are early-warning territory.",
+    "detail": "Detail",
+    "noAdditionalDetails": "No additional details reported.",
+    "noDescriptionRegistered": "No description registered.",
+    "topSources": "Top sources",
+    "windowLabel": "Window {{range}}",
+    "events": "events",
+    "vitals": {
+      "checks": "Checks",
+      "roundTrip": "Round-trip",
+      "endToEnd": "end-to-end",
+      "slowest": "Slowest",
+      "singleCheck": "single check",
+      "lastPoll": "Last poll",
+      "passing": "passing"
+    },
+    "status": {
+      "Healthy": {
+        "headline": "All systems operational",
+        "subline": "Every dependency is responding within tolerance."
+      },
+      "Degraded": {
+        "headline": "Partial degradation",
+        "subline": "One or more checks are reporting elevated latency or warnings."
+      },
+      "Unhealthy": {
+        "headline": "Disruption detected",
+        "subline": "At least one critical dependency is unreachable. Investigate the failing checks below."
+      }
+    }
+  },
+  "activity": {
+    "title": "Live activity",
+    "description": "Full event log streamed from the API over Server-Sent Events.",
+    "columns": {
+      "action": "Action",
+      "entity": "Entity",
+      "time": "Time"
+    },
+    "listeningTitle": "Listening for activity",
+    "listeningDesc": "The stream is open. Events will appear here as the backend publishes them.",
+    "noEventsTitle": "No events yet",
+    "noEventsDesc": "The activity stream is not connected. Events will queue once the connection comes online.",
+    "eventsShown": "{{count}} event shown",
+    "eventsShown_plural": "{{count}} events shown",
+    "totalEvents": "{{count}} total",
+    "ariaLabel": "Activity events"
+  },
+  "audits": {
+    "title": "Audit trail",
+    "description": "Activity, security, entity-change, and exception events across the platform. Window enforced server-side; max 90 days.",
+    "searchPlaceholder": "Search payload, source, user…",
+    "advanced": "Advanced",
+    "reset": "Reset",
+    "type": "Type",
+    "severity": "Severity",
+    "source": "Source",
+    "userId": "User ID",
+    "correlation": "Correlation",
+    "trace": "Trace",
+    "tags": "Tags",
+    "columns": {
+      "actor": "Actor",
+      "action": "Action",
+      "entity": "Entity",
+      "timestamp": "Timestamp"
+    },
+    "empty": {
+      "title": "No audits in this window",
+      "body": "Try widening the time range or relaxing the filters. Activity events arrive as soon as the platform handles a request.",
+      "resetFilters": "Reset filters"
+    },
+    "eventsFound": "{{count}} event found",
+    "eventsFound_plural": "{{count}} events found",
+    "drawer": {
+      "title": "Audit detail",
+      "description": "Full payload, identifiers, and related actions for the selected audit event.",
+      "identity": "Identity",
+      "trace": "Trace",
+      "payload": "Payload",
+      "pipeline": "Pipeline",
+      "relatedEvents": "Related events",
+      "onCorrelation": "{{count}} on this correlation",
+      "allByCorrelation": "All by correlation",
+      "allByTrace": "All by trace",
+      "occurred": "Occurred",
+      "received": "Received",
+      "sinkDelay": "Sink delay",
+      "auditId": "Audit ID",
+      "tenant": "Tenant",
+      "user": "User",
+      "traceId": "Trace ID",
+      "spanId": "Span ID",
+      "correlationId": "Correlation ID",
+      "requestId": "Request ID",
+      "copy": "Copy",
+      "copied": "Copied",
+      "thisEvent": "this event",
+      "auditEvent": "Audit event",
+      "noOtherEvents": "No other events share this correlation. The full lifecycle of this request is contained in the payload above."
+    },
+    "summary": {
+      "activity": "Activity",
+      "entity": "Entity",
+      "security": "Security",
+      "exception": "Exception",
+      "warn": "Warn",
+      "err": "Err",
+      "topSources": "Top sources"
+    }
+  },
+  "invoices": {
+    "title": "Invoices",
+    "description": "Your tenant's billing history, newest first.",
+    "searchPlaceholder": "Search by invoice number, status, or period…",
+    "columns": {
+      "invoiceNumber": "Invoice #",
+      "customer": "Customer",
+      "amount": "Amount",
+      "status": "Status",
+      "dueDate": "Due date"
+    },
+    "empty": {
+      "title": "No invoices yet",
+      "body": "Once your tenant has been billed for a period, invoices will appear here.",
+      "searchTitle": "No invoices found",
+      "clearSearch": "Clear search"
+    },
+    "period": "period",
+    "paid": "paid",
+    "due": "due",
+    "found": "found",
+    "matched": "matched",
+    "invoice": "invoice",
+    "invoices": "invoices"
+  },
+  "demo": {
+    "title": "Demo accounts",
+    "panelAriaLabel": "Development demo accounts",
+    "pickAccount": "Pick a seeded account to prefill the login form.",
+    "filterPlaceholder": "Filter by name, email, persona…",
+    "noMatches": "No demo accounts match \"{{filter}}\".",
+    "sharedPassword": "Shared password",
+    "copy": "copy",
+    "copied": "copied",
+    "loaded": "loaded",
+    "use": "use →"
+  },
+  "fields": {
+    "required": "required",
+    "optional": "optional"
+  },
+  "errorBand": {
+    "failure": "Failure ·"
+  },
+  "mobileNav": {
+    "openMenu": "Open navigation menu",
+    "primaryNav": "Primary navigation"
+  },
+  "impersonation": {
+    "banner": "You are viewing as {{name}}",
+    "exit": "Exit",
+    "returned": "Returned to your session",
+    "couldNotEnd": "Could not end impersonation cleanly",
+    "restoredLocal": "Restored local session.",
+    "crossTenant": "Cross-tenant impersonation",
+    "active": "Impersonating",
+    "operator": "operator",
+    "ending": "Ending…",
+    "end": "End impersonation"
+  },
+  "notifications": {
+    "noNotifications": "No notifications",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all",
+    "title": "Notifications",
+    "allCaughtUp": "All caught up",
+    "unreadCount": "{{unread}} unread · {{total}} loaded",
+    "markAllReadBtn": "Mark all read",
+    "recent": "Recent",
+    "loadingInbox": "Loading…",
+    "emptyDesc": "Nothing yet. Mentions and channel updates will appear here.",
+    "settingsLink": "Settings ↗",
+    "ariaLabel": "Notifications",
+    "ariaLabelUnread": "Notifications, {{count}} unread",
+    "relativeTime": {
+      "justNow": "just now"
+    }
+  },
+  "userPicker": {
+    "placeholder": "Search users…",
+    "noResults": "No users found",
+    "clearSelection": "Clear selection",
+    "clear": "Clear",
+    "reassign": "Search to reassign…",
+    "searching": "Searching for \"{{query}}\"…",
+    "noMatch": "No users match \"{{query}}\".",
+    "searchResults": "Search results"
+  },
+  "realtime": {
+    "offline": "Offline",
+    "connecting": "Connecting",
+    "connected": "Live",
+    "reconnecting": "Reconnecting",
+    "statusTitle": "Realtime: {{status}}"
+  },
+  "settings": {
+    "apiKeys": {
+      "comingSoon": "API keys aren't available yet.",
+      "comingSoonDesc": "Personal access tokens are on the v1.1 roadmap. For now, your access flows through the user-bound JWT issued at sign-in.",
+      "viewRoadmap": "View roadmap"
+    },
+    "notifications": {
+      "comingSoon": "Notifications aren't configured yet.",
+      "comingSoonDesc": "Email, push, and WhatsApp notification preferences will be available soon."
+    },
+    "security": {
+      "title": "Security",
+      "changePassword": "Change password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "changePwBtn": "Change password",
+      "changingPw": "Changing password…",
+      "activeSessions": "Active sessions",
+      "activeSessionsDesc": "Devices with an active session in this tenant.",
+      "revokeAll": "Revoke all",
+      "revokeAllConfirm": "Revoke all sessions?",
+      "revokeAllDesc": "All devices except the current one will be signed out.",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke this session?",
+      "current": "Current",
+      "noOtherSessions": "No other active sessions",
+      "noOtherSessionsDesc": "You only have one active session on this device."
+    }
   },
   "overview": {
     "greeting": {

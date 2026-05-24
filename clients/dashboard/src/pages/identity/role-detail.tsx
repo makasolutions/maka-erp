@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useMutation,
   useQuery,
@@ -64,6 +65,7 @@ const isSystemRoleName = (name?: string | null): boolean =>
   !!name && SYSTEM_ROLE_NAMES.includes(name);
 
 export function RoleDetailPage() {
+  const { t } = useTranslation("identity");
   const { roleId = "" } = useParams<{ roleId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -154,8 +156,6 @@ export function RoleDetailPage() {
   const presetClear = () => setSelected(new Set());
 
   // ── Editor filter pipeline ──────────────────────────────────────────────
-  // Counts for the filter chips — they read against the *current* selection,
-  // not the catalog, so "Modified · 3" updates live as the user toggles.
   const modifiedCount = useMemo(() => {
     let n = 0;
     for (const p of catalog) {
@@ -192,15 +192,12 @@ export function RoleDetailPage() {
   };
 
   // Visible groups: each group keeps only the perms that pass both filters.
-  // Groups with zero matches drop out entirely so the accordion stays tight.
   const visibleGroups = useMemo(() => {
     const q = searchQuery.trim();
     return catalogGroups.map((g) => ({
       resource: g.resource,
       permissions: g.permissions.filter((p) => matchesSearch(p, q) && matchesFilter(p)),
     })).filter((g) => g.permissions.length > 0);
-    // matchesFilter / matchesSearch use selected/initial/filter/searchQuery;
-    // explicit deps so eslint is happy and re-renders only when needed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, filter, selected, initial, catalogGroups]);
 
@@ -230,7 +227,7 @@ export function RoleDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["identity", "roles"] });
       void queryClient.invalidateQueries({ queryKey: ["identity", "roles", roleId] });
     },
-    onError: (err) => toast.error("Update failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("roles.detail.updateFailed"), { description: describe(err) }),
   });
 
   const savePerms = useMutation({
@@ -238,18 +235,18 @@ export function RoleDetailPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["identity", "roles", roleId] });
     },
-    onError: (err) => toast.error("Permissions update failed", { description: describe(err) }),
+    onError: (err) => toast.error(t("roles.detail.permissionsUpdateFailed"), { description: describe(err) }),
   });
 
   const removeRole = useMutation({
     mutationFn: () => deleteRole(roleId),
     onSuccess: () => {
-      toast.success("Role deleted");
+      toast.success(t("roles.detail.deleted"));
       void queryClient.invalidateQueries({ queryKey: ["identity", "roles"] });
       navigate("/identity/roles");
     },
     onError: (err) => {
-      toast.error("Delete failed", { description: describe(err) });
+      toast.error(t("roles.detail.deleteFailed"), { description: describe(err) });
       setConfirmDelete(false);
     },
   });
@@ -258,7 +255,7 @@ export function RoleDetailPage() {
     try {
       if (dirtyMeta) await saveMeta.mutateAsync();
       if (dirtyPerms) await savePerms.mutateAsync();
-      toast.success("Role saved");
+      toast.success(t("roles.saved"));
     } catch {
       // mutations report their own errors via toast
     }
@@ -278,7 +275,7 @@ export function RoleDetailPage() {
   if (roleQuery.isLoading || catalogQuery.isLoading) {
     return (
       <div className="space-y-6">
-        <EntityDetailBack to="/identity/roles" label="Back to roles" />
+        <EntityDetailBack to="/identity/roles" label={t("roles.detail.backToRoles")} />
         <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-96 rounded-xl" />
       </div>
@@ -288,8 +285,8 @@ export function RoleDetailPage() {
   if (roleQuery.isError || !role) {
     return (
       <div className="space-y-4">
-        <EntityDetailBack to="/identity/roles" label="Back to roles" />
-        <ErrorBand message={roleQuery.error ? describe(roleQuery.error) : "Role not found."} />
+        <EntityDetailBack to="/identity/roles" label={t("roles.detail.backToRoles")} />
+        <ErrorBand message={roleQuery.error ? describe(roleQuery.error) : t("roles.detail.notFound")} />
       </div>
     );
   }
@@ -297,9 +294,9 @@ export function RoleDetailPage() {
   if (catalogQuery.isError) {
     return (
       <div className="space-y-4">
-        <EntityDetailBack to="/identity/roles" label="Back to roles" />
+        <EntityDetailBack to="/identity/roles" label={t("roles.detail.backToRoles")} />
         <ErrorBand
-          message={`Couldn't load the permission catalog: ${describe(catalogQuery.error)}`}
+          message={t("roles.detail.catalogError", { error: describe(catalogQuery.error) })}
         />
       </div>
     );
@@ -311,7 +308,7 @@ export function RoleDetailPage() {
 
   return (
     <div className="space-y-5 pb-12">
-      <EntityDetailBack to="/identity/roles" label="Back to roles" />
+      <EntityDetailBack to="/identity/roles" label={t("roles.detail.backToRoles")} />
 
       <EntityDetailHero
         avatar={<EntityDetailAvatar name={role.name} icon={ShieldCheck} />}
@@ -320,21 +317,21 @@ export function RoleDetailPage() {
           <>
             {isSystem && (
               <Badge variant="outline">
-                <Lock className="h-3 w-3" /> System
+                <Lock className="h-3 w-3" /> {t("roles.systemBadge")}
               </Badge>
             )}
           </>
         }
-        subtitle={role.description || (isSystem ? "Built-in role managed by the framework." : "Custom role.")}
+        subtitle={role.description || (isSystem ? t("roles.detail.systemSubtitle") : t("roles.detail.customSubtitle"))}
         actions={
           <Button
             variant="destructive"
             size="sm"
             onClick={() => setConfirmDelete(true)}
             disabled={isSystem}
-            title={isSystem ? "System roles cannot be deleted." : undefined}
+            title={isSystem ? t("roles.detail.systemCannotDelete") : undefined}
           >
-            <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete role
+            <Trash2 className="mr-1 h-3.5 w-3.5" /> {t("roles.detail.deleteTitle")}
           </Button>
         }
         stats={
@@ -342,7 +339,7 @@ export function RoleDetailPage() {
             <EntityDetailStat
               icon={KeyRound}
               value={`${pad2(totalSelected)} / ${pad2(totalCatalog)}`}
-              label="permissions"
+              label={t("roles.detail.permissionsLabel")}
               tone="primary"
             />
           </>
@@ -363,13 +360,10 @@ export function RoleDetailPage() {
           </span>
           <div className="min-w-0 text-sm leading-relaxed">
             <p className="font-medium text-[var(--color-foreground)]">
-              Built-in role — read only
+              {t("roles.detail.systemRoleReadOnly")}
             </p>
             <p className="mt-0.5 text-[12.5px] text-[var(--color-muted-foreground)]">
-              <span className="font-mono font-medium">{role.name}</span> ships with the framework.
-              Its name, description, and permissions are managed centrally so the seed contract
-              and the runtime permission syncer stay in agreement. Create a custom role if you
-              need a different set of grants.
+              {t("roles.detail.systemRoleDesc", { name: role.name })}
             </p>
           </div>
         </div>
@@ -377,12 +371,12 @@ export function RoleDetailPage() {
 
       {/* Metadata */}
       <EntityDetailSection
-        title="Role details"
+        title={t("roles.detail.detailsTitle")}
         icon={ShieldCheck}
-        description="The display label and a one-line summary admins will see at assignment time."
+        description={t("roles.detail.detailsDesc")}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field id="role-name" label="Name" required>
+          <Field id="role-name" label={t("roles.fields.name")} required>
             <Input
               id="role-name"
               value={name}
@@ -393,12 +387,12 @@ export function RoleDetailPage() {
               className={cn(isSystem && "cursor-not-allowed opacity-70")}
             />
           </Field>
-          <Field id="role-desc" label="Description">
+          <Field id="role-desc" label={t("roles.fields.description")}>
             <Input
               id="role-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Short description for this role"
+              placeholder={t("roles.detail.descPlaceholder")}
               maxLength={512}
               readOnly={isSystem}
               aria-readonly={isSystem || undefined}
@@ -410,19 +404,19 @@ export function RoleDetailPage() {
 
       {/* Permission editor */}
       <EntityDetailSection
-        title="Permissions"
+        title={t("roles.detail.permissionsTitle")}
         icon={KeyRound}
-        description="Search, filter, and toggle individual permissions — or seed a sensible default from a preset. Some root-level permissions may be filtered server-side."
+        description={t("roles.detail.permissionsDesc")}
         action={
           <div className="flex flex-wrap gap-1.5">
             <PresetButton
               onClick={presetBasic}
               icon={<Sparkles className="h-3 w-3" />}
-              label="Basic"
+              label={t("roles.detail.presetBasic")}
               disabled={isSystem}
             />
-            <PresetButton onClick={presetAll} label="All" disabled={isSystem} />
-            <PresetButton onClick={presetClear} label="Clear" disabled={isSystem} />
+            <PresetButton onClick={presetAll} label={t("roles.detail.filterAll")} disabled={isSystem} />
+            <PresetButton onClick={presetClear} label={t("roles.detail.presetClear")} disabled={isSystem} />
           </div>
         }
         padded={false}
@@ -433,31 +427,29 @@ export function RoleDetailPage() {
                 {isDirty ? (
                   <span className="inline-flex items-center gap-1.5 text-[var(--color-warning)]">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]" />
-                    Unsaved changes
+                    {t("roles.detail.unsavedChanges")}
                   </span>
                 ) : (
-                  "All changes saved"
+                  t("roles.detail.allChangesSaved")
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={reset} disabled={!isDirty || isSaving}>
-                  Discard
+                  {t("common:actions.discard")}
                 </Button>
                 <Button
                   size="sm"
                   onClick={saveAll}
                   disabled={!isDirty || isSaving}
                 >
-                  {isSaving ? "Saving…" : "Save changes"}
+                  {isSaving ? t("common:feedback.saving") : t("common:actions.saveChanges")}
                 </Button>
               </div>
             </div>
           ) : undefined
         }
       >
-        {/* Toolbar — search + filter chips. Sticky-ish at the top of the
-            editor card so it stays in reach as the user scrolls long
-            group lists. */}
+        {/* Toolbar — search + filter chips */}
         <div className="border-b border-[var(--color-border)] px-5 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
@@ -467,8 +459,8 @@ export function RoleDetailPage() {
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by resource, action, or description…"
-                aria-label="Search permissions"
+                placeholder={t("roles.detail.searchPlaceholder")}
+                aria-label={t("roles.detail.searchAriaLabel")}
                 className={cn(
                   "h-9 w-full rounded-md border border-[var(--color-input)] bg-transparent pl-9 pr-9",
                   "text-[13px] outline-none transition-colors",
@@ -483,7 +475,7 @@ export function RoleDetailPage() {
                     setSearchQuery("");
                     searchInputRef.current?.focus();
                   }}
-                  aria-label="Clear search"
+                  aria-label={t("roles.clearSearch")}
                   className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 cursor-pointer place-items-center rounded text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
                 >
                   <X className="size-3" />
@@ -492,7 +484,7 @@ export function RoleDetailPage() {
             </div>
             <div className="flex items-center gap-1 overflow-x-auto">
               <FilterChip active={filter === "all"} count={totalCatalog} onClick={() => setFilter("all")}>
-                All
+                {t("roles.detail.filterAll")}
               </FilterChip>
               <FilterChip
                 active={filter === "enabled"}
@@ -500,7 +492,7 @@ export function RoleDetailPage() {
                 onClick={() => setFilter("enabled")}
                 disabled={totalSelected === 0}
               >
-                Enabled
+                {t("roles.detail.filterEnabled")}
               </FilterChip>
               <FilterChip
                 active={filter === "modified"}
@@ -509,14 +501,14 @@ export function RoleDetailPage() {
                 onClick={() => setFilter("modified")}
                 disabled={modifiedCount === 0}
               >
-                Modified
+                {t("roles.detail.filterModified")}
               </FilterChip>
               <FilterChip
                 active={filter === "basic"}
                 count={basicCount}
                 onClick={() => setFilter("basic")}
               >
-                Basic
+                {t("roles.detail.filterBasic")}
               </FilterChip>
             </div>
           </div>
@@ -528,19 +520,18 @@ export function RoleDetailPage() {
             <span className="font-mono font-semibold tabular-nums text-[var(--color-foreground)]">
               {pad2(totalSelected)} / {pad2(totalCatalog)}
             </span>
-            <span className="text-[var(--color-muted-foreground)]">enabled</span>
+            <span className="text-[var(--color-muted-foreground)]">{t("roles.detail.enabledLabel")}</span>
             {modifiedCount > 0 && (
               <span className="inline-flex items-center gap-1 text-[var(--color-warning)]">
                 <span aria-hidden className="text-[var(--color-muted-foreground)]">·</span>
                 <span aria-hidden className="inline-block size-1.5 rounded-full bg-[var(--color-warning)]" />
-                {modifiedCount} modified
+                {modifiedCount} {t("roles.detail.modifiedLabel")}
               </span>
             )}
             {forceExpand && visibleGroups.length > 0 && (
               <span className="text-[var(--color-muted-foreground)]">
                 <span aria-hidden className="mr-1">·</span>
-                showing {visibleGroups.reduce((n, g) => n + g.permissions.length, 0)} match
-                {visibleGroups.reduce((n, g) => n + g.permissions.length, 0) === 1 ? "" : "es"}
+                {t("roles.detail.matchCount", { count: visibleGroups.reduce((n, g) => n + g.permissions.length, 0) })}
               </span>
             )}
           </div>
@@ -554,7 +545,7 @@ export function RoleDetailPage() {
                 forceExpand && "cursor-not-allowed opacity-40 hover:text-[var(--color-muted-foreground)]",
               )}
             >
-              Expand all
+              {t("roles.detail.expandAll")}
             </button>
             <span aria-hidden className="text-[var(--color-border-strong)]">·</span>
             <button
@@ -566,7 +557,7 @@ export function RoleDetailPage() {
                 forceExpand && "cursor-not-allowed opacity-40 hover:text-[var(--color-muted-foreground)]",
               )}
             >
-              Collapse all
+              {t("roles.detail.collapseAll")}
             </button>
           </div>
         </div>
@@ -582,10 +573,10 @@ export function RoleDetailPage() {
             </span>
             <div>
               <p className="text-[13px] font-medium text-[var(--color-foreground)]">
-                No permissions match
+                {t("roles.detail.noPermissionsMatch")}
               </p>
               <p className="mt-0.5 text-[11.5px] text-[var(--color-muted-foreground)]">
-                Try a different term or clear the current filter.
+                {t("roles.detail.noPermissionsMatchDesc")}
               </p>
             </div>
             {(searchQuery || filter !== "all") && (
@@ -602,7 +593,7 @@ export function RoleDetailPage() {
                   "text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
                 )}
               >
-                <X className="size-3" /> Reset filters
+                <X className="size-3" /> {t("roles.detail.resetFilters")}
               </button>
             )}
           </div>
@@ -652,17 +643,15 @@ export function RoleDetailPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete role</DialogTitle>
+            <DialogTitle>{t("roles.detail.deleteTitle")}</DialogTitle>
             <DialogDescription>
-              This permanently removes{" "}
-              <span className="font-medium text-[var(--color-foreground)]">{role.name}</span>.
-              Members currently assigned will lose its permissions immediately.
+              {t("roles.detail.deleteDesc", { name: role.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={removeRole.isPending}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -670,7 +659,7 @@ export function RoleDetailPage() {
               onClick={() => removeRole.mutate()}
               disabled={removeRole.isPending}
             >
-              {removeRole.isPending ? "Deleting…" : "Delete role"}
+              {removeRole.isPending ? t("common:feedback.deleting") : t("roles.detail.deleteTitle")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -764,17 +753,7 @@ function FilterChip({
 }
 
 /**
- * PermissionGroupCard — collapsible accordion row for one resource. Header
- * carries a tri-state group checkbox, the resource name, on-count + mini
- * pip bar, "all/none" chip actions, and a chevron. Body lists each perm
- * as a single horizontal row (no 3-col grid — much denser at 200+ scale).
- *
- * When the editor is in search/filter mode, the parent forces `isExpanded`
- * so matches are never hiding behind a closed accordion. In that case the
- * "all/none" actions still toggle the FULL group (not just the visible
- * subset), which is the conventionally safer behaviour — the visible-only
- * count is shown next to the bar so the user can confirm what they're
- * about to do.
+ * PermissionGroupCard — collapsible accordion row for one resource.
  */
 function PermissionGroupCard({
   resource,
@@ -811,10 +790,9 @@ function PermissionGroupCard({
   initial: Set<string>;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("identity");
   return (
     <div>
-      {/* Header — clickable to toggle expand. The group checkbox + chip
-          buttons stopPropagation so they don't double-fire. */}
       <div
         role="button"
         tabIndex={0}
@@ -841,7 +819,7 @@ function PermissionGroupCard({
             onSetGroupAll(!allOn);
           }}
           disabled={disabled}
-          aria-label={`Toggle all ${resource}`}
+          aria-label={t("roles.detail.toggleAllAria", { resource })}
           className={cn(
             "grid size-5 shrink-0 cursor-pointer place-items-center rounded border transition-colors",
             allOn
@@ -863,28 +841,25 @@ function PermissionGroupCard({
           <span className="font-mono text-[11px] tabular-nums text-[var(--color-muted-foreground)]">
             {pad2(onCount)} / {pad2(totalInGroup)}
           </span>
-          {/* Mini pip bar — one pip per perm in the group, filled if on.
-              Visually conveys density at a glance for groups with many
-              actions. */}
+          {/* Mini pip bar */}
           <PipBar onCount={onCount} total={totalInGroup} />
           {groupModified > 0 && (
             <span
               className="inline-flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-warning)]"
-              title={`${groupModified} unsaved change${groupModified === 1 ? "" : "s"}`}
+              title={t("roles.detail.unsavedChangeCount", { count: groupModified })}
             >
               <span aria-hidden className="size-1.5 rounded-full bg-[var(--color-warning)]" />
-              {groupModified} changed
+              {groupModified} {t("roles.detail.changedLabel")}
             </span>
           )}
           {showingPartial && (
             <span className="text-[10.5px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-              · {visibleCount} match{visibleCount === 1 ? "" : "es"}
+              · {t("roles.detail.matchCount", { count: visibleCount })}
             </span>
           )}
         </div>
 
-        {/* All / none chip actions. Each button stops the click from
-            bubbling up to the row's expand-toggle handler. */}
+        {/* All / none chip actions */}
         <div className="hidden items-center gap-1 sm:flex">
           <button
             type="button"
@@ -900,7 +875,7 @@ function PermissionGroupCard({
               (disabled || allOn) && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--color-muted-foreground)]",
             )}
           >
-            All
+            {t("roles.detail.all")}
           </button>
           <button
             type="button"
@@ -916,7 +891,7 @@ function PermissionGroupCard({
               (disabled || onCount === 0) && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--color-muted-foreground)]",
             )}
           >
-            None
+            {t("roles.detail.none")}
           </button>
         </div>
 
@@ -954,9 +929,7 @@ function PermissionGroupCard({
 }
 
 /**
- * PipBar — n discrete pips, filled left-to-right. Caps at 12 visible pips
- * so wider groups still render at a sensible width; overflow is conveyed
- * by the numeric count to the left of the bar.
+ * PipBar — n discrete pips, filled left-to-right.
  */
 function PipBar({ onCount, total }: { onCount: number; total: number }) {
   const cap = Math.min(total, 12);
@@ -979,13 +952,7 @@ function PipBar({ onCount, total }: { onCount: number; total: number }) {
 }
 
 /**
- * PermissionRow — one permission as a horizontal scan-line. Click anywhere
- * on the row toggles. The mono action name carries the technical handle,
- * the description carries the human label; basic and modified states get
- * small chips/dots on the right.
- *
- * Indent matches the group header chevron column so the visual hierarchy
- * reads as parent → child without a tree-line.
+ * PermissionRow — one permission as a horizontal scan-line.
  */
 function PermissionRow({
   perm,
@@ -1000,6 +967,7 @@ function PermissionRow({
   onToggle: () => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("identity");
   return (
     <label
       className={cn(
@@ -1055,7 +1023,7 @@ function PermissionRow({
         {perm.description}
       </span>
 
-      {/* Badges */}
+      {/* Badges — these are technical tags, kept as-is */}
       <span className="flex shrink-0 items-center gap-1.5">
         {perm.isRoot && (
           <span
@@ -1063,7 +1031,7 @@ function PermissionRow({
               "rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]",
               "bg-[oklch(from_var(--color-saffron)_l_c_h_/_0.16)] text-[var(--color-saffron)]",
             )}
-            title="Root-level permission. May be filtered server-side."
+            title={t("roles.rootPermissionTitle")}
           >
             root
           </span>

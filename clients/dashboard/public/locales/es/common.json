@@ -24,7 +24,20 @@
     "open": "Abrir",
     "duplicate": "Duplicar",
     "deactivate": "Desactivar",
-    "activate": "Activar"
+    "activate": "Activar",
+    "saveChanges": "Guardar cambios",
+    "copy": "Copiar",
+    "remove": "Quitar",
+    "revoke": "Revocar",
+    "generate": "Generar",
+    "invite": "Invitar",
+    "assign": "Asignar",
+    "unassign": "Desasignar",
+    "discard": "Descartar",
+    "reactivate": "Reactivar",
+    "deactivate": "Desactivar",
+    "clearSearch": "Limpiar búsqueda",
+    "clearFilter": "Limpiar filtro"
   },
   "status": {
     "active": "Activo",
@@ -54,7 +67,9 @@
     "createFailed": "Error al crear",
     "updateFailed": "Error al actualizar",
     "confirmDelete": "¿Confirmar eliminación?",
-    "irreversible": "Esta acción no se puede deshacer."
+    "irreversible": "Esta acción no se puede deshacer.",
+    "failedToLoad": "Error al cargar {{resource}}.",
+    "noResultsFor": "Nada coincide con \"{{term}}\". Prueba otro término o limpia la búsqueda."
   },
   "table": {
     "pageOf": "Página {{page}} de {{total}}",
@@ -88,7 +103,10 @@
     "health": "Salud",
     "auditTrail": "Registro de auditoría",
     "sessions": "Sesiones",
-    "trash": "Papelera"
+    "trash": "Papelera",
+    "primaryNavAriaLabel": "Navegación principal",
+    "collapseSidebar": "Colapsar barra lateral",
+    "expandSidebar": "Expandir barra lateral"
   },
   "auth": {
     "welcomeBack": "Bienvenido",
@@ -96,7 +114,7 @@
     "tenant": "Tenant",
     "email": "Correo electrónico",
     "password": "Contraseña",
-    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "forgotPassword": "¿Olvidaste?",
     "signIn": "Iniciar sesión",
     "signingIn": "Iniciando sesión…",
     "showPassword": "Mostrar contraseña",
@@ -107,11 +125,67 @@
     "loginFailed": "Error al iniciar sesión",
     "signOut": "Cerrar sesión",
     "signOutConfirmTitle": "¿Cerrar sesión?",
-    "signOutConfirmDesc": "Deberás iniciar sesión nuevamente para acceder a este tenant. Se perderá cualquier trabajo no guardado en esta sesión.",
+    "signOutConfirmDesc": "Deberás iniciar sesión nuevamente. Se perderá cualquier trabajo no guardado en esta sesión.",
     "forgotPasswordTitle": "¿Olvidaste tu contraseña?",
     "forgotPasswordDesc": "Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.",
-    "resetPassword": "Restablecer contraseña",
-    "confirmEmail": "Confirmar correo"
+    "resetPasswordLabel": "Restablecer contraseña",
+    "confirmEmailLabel": "Confirmar correo",
+    "confirmEmail": {
+      "verifyingTitle": "Verificando tu",
+      "verifyingAccent": "correo…",
+      "verifyingDesc": "Un momento — verificando el token de confirmación con el servidor.",
+      "confirmedTitle": "Correo",
+      "confirmedAccent": "confirmado",
+      "defaultSuccess": "Tu correo está confirmado. Ahora puedes iniciar sesión.",
+      "continueSignIn": "Continuar al inicio de sesión",
+      "couldntTitle": "No se pudo",
+      "couldntAccent": "confirmar",
+      "couldntTrail": " tu correo",
+      "expiredDesc": "El enlace puede haber expirado o ya fue usado. Si iniciaste sesión desde que se envió este correo, puedes ignorarlo.",
+      "backToSignIn": "Volver al inicio de sesión",
+      "resetInstead": "Restablecer contraseña",
+      "malformedDesc": "Este enlace de confirmación no tiene los parámetros requeridos. Puede haber sido recortado por tu cliente de correo."
+    },
+    "forgotPasswordForm": {
+      "rememberedIt": "¿Lo recordaste?",
+      "title": "Restablecer tu",
+      "accent": "contraseña",
+      "desc": "Ingresa el correo con el que inicias sesión. Te enviaremos un enlace de un solo uso.",
+      "sendLink": "Enviar enlace",
+      "sendingLink": "Enviando enlace…",
+      "checkInboxTitle": "Revisa tu",
+      "checkInboxAccent": "bandeja de entrada",
+      "tryDifferent": "Probar otra dirección",
+      "backToSignIn": "Volver al inicio de sesión",
+      "didntGetIt": "¿No llegó? Espera un minuto y revisa el spam.",
+      "stillNothing": "¿Sigue sin llegar? Confirma el correo y tenant, e intenta de nuevo."
+    },
+    "resetPasswordForm": {
+      "changedMind": "¿Cambiaste de opinión?",
+      "title": "Establecer nueva",
+      "accent": "contraseña",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "placeholder": "Mínimo 8 caracteres",
+      "confirmPlaceholder": "Reingresa la contraseña",
+      "strength": {
+        "weak": "Débil",
+        "fair": "Aceptable",
+        "strong": "Fuerte"
+      },
+      "matches": "Las contraseñas coinciden",
+      "noMatch": "Aún no coinciden",
+      "setPassword": "Establecer nueva contraseña",
+      "updating": "Actualizando contraseña…",
+      "incompleteTitle": "Este enlace está",
+      "incompleteAccent": "incompleto",
+      "incompleteDesc": "El enlace de restablecimiento no tiene token, correo o tenant. Algunos clientes de correo recortan URLs largas — copia y pega el enlace completo desde el correo original.",
+      "requestNewLink": "Solicitar nuevo enlace",
+      "passwordsDontMatch": "Las contraseñas no coinciden.",
+      "minLength": "Usa al menos 8 caracteres.",
+      "passwordUpdated": "Contraseña actualizada",
+      "passwordUpdatedDesc": "Inicia sesión con tu nueva contraseña para continuar."
+    }
   },
   "topbar": {
     "openCommandPalette": "Abrir paleta de comandos",
@@ -130,6 +204,309 @@
     "reconnecting": "Reconectando…",
     "idle": "Inactivo",
     "language": "Idioma"
+  },
+  "error": {
+    "somethingWentWrong": "Algo salió mal",
+    "goHome": "Ir al inicio",
+    "pageNotFound": "Página no encontrada",
+    "pageNotFoundDesc": "No encontramos nada en esa dirección. Puede ser un enlace antiguo, una ruta renombrada o una ruta que nunca existió.",
+    "requested": "Solicitada",
+    "backToPrevious": "Volver a la página anterior",
+    "openCommandPalette": "Abrir paleta de comandos",
+    "backHome": "Volver al inicio",
+    "healthEndpointUnreachable": "Endpoint de salud no accesible",
+    "healthEndpointDesc": "El navegador no pudo llegar a /health/ready. La API puede estar caída o una política de red bloquea la solicitud.",
+    "noChecksRegistered": "Sin verificaciones registradas",
+    "noChecksRegisteredDesc": "Los módulos pueden registrar verificaciones de dependencias vía AddHealthChecks(). Ninguna está reportando aún.",
+    "couldNotLoadAudit": "No se pudo cargar la auditoría",
+    "couldNotLoadAuditDesc": "El servidor devolvió un error al obtener esta auditoría. El registro puede haber sido eliminado por el trabajo de retención.",
+    "noOtherEvents": "Ningún otro evento comparte esta correlación. El ciclo completo de esta solicitud está contenido en el payload anterior.",
+    "failedLoadAudits": "Error al cargar auditorías"
+  },
+  "commandPalette": {
+    "title": "Paleta de comandos",
+    "description": "Busca páginas, acciones de cuenta, tema y acento. Usa las flechas para navegar; Enter para seleccionar.",
+    "placeholder": "Escribe un comando o busca…",
+    "noMatches": "Sin coincidencias",
+    "noMatchesDesc": "Prueba otra palabra — nombre de página, entidad, tema, acento o cerrar sesión.",
+    "navigate": "navegar",
+    "select": "seleccionar",
+    "groups": {
+      "navigate": "Navegar",
+      "create": "Crear",
+      "account": "Cuenta",
+      "theme": "Tema",
+      "accent": "Acento",
+      "session": "Sesión"
+    },
+    "items": {
+      "overview": "Resumen",
+      "overviewHint": "Telemetría y uso del tenant",
+      "liveActivity": "Actividad en vivo",
+      "liveActivityHint": "Stream de eventos en tiempo real",
+      "chat": "Chat",
+      "chatHint": "Canales y mensajes directos",
+      "files": "Archivos",
+      "filesHint": "Mis activos subidos",
+      "users": "Usuarios",
+      "usersHint": "Directorio de identidad",
+      "roles": "Roles",
+      "rolesHint": "Permisos y asignación de roles",
+      "groups": "Grupos",
+      "groupsHint": "Grupos org y membresía",
+      "products": "Productos",
+      "productsHint": "Inventario del catálogo",
+      "brands": "Marcas",
+      "brandsHint": "Marcas del catálogo",
+      "categories": "Categorías",
+      "categoriesHint": "Categorías del catálogo",
+      "tickets": "Tickets",
+      "ticketsHint": "Solicitudes de soporte",
+      "invoices": "Facturas",
+      "invoicesHint": "Historial de facturación",
+      "health": "Salud",
+      "healthHint": "Sonda de disponibilidad y dependencias",
+      "auditTrail": "Registro de auditoría",
+      "auditTrailHint": "Eventos de actividad, seguridad y cambios",
+      "trash": "Papelera",
+      "trashHint": "Registros eliminados temporalmente",
+      "sessions": "Sesiones",
+      "sessionsHint": "Sesiones de usuario activas",
+      "settings": "Configuración",
+      "createUser": "Crear usuario",
+      "createUserHint": "Registrar una nueva cuenta",
+      "createRole": "Crear rol",
+      "createRoleHint": "Definir un nuevo conjunto de permisos",
+      "createGroup": "Crear grupo",
+      "createGroupHint": "Organizar miembros",
+      "createProduct": "Crear producto",
+      "createProductHint": "Agregar al catálogo",
+      "createBrand": "Crear marca",
+      "createBrandHint": "Agregar una marca al catálogo",
+      "createCategory": "Crear categoría",
+      "createCategoryHint": "Agregar una categoría al catálogo",
+      "createTicket": "Crear ticket",
+      "createTicketHint": "Enviar una solicitud de soporte",
+      "createChannel": "Crear canal de chat",
+      "createChannelHint": "Iniciar un nuevo espacio de conversación",
+      "uploadFile": "Subir archivo",
+      "uploadFileHint": "Agregar a tu almacenamiento",
+      "profile": "Perfil",
+      "profileHint": "Nombre, correo, contacto",
+      "security": "Seguridad",
+      "securityHint": "Contraseña, 2FA, sesiones",
+      "apiKeys": "API Keys",
+      "apiKeysHint": "Generar y rotar",
+      "notifications": "Notificaciones",
+      "notificationsHint": "Preferencias de correo",
+      "appearance": "Apariencia",
+      "appearanceHint": "Tema, acento, fuente, densidad",
+      "switchLight": "Cambiar a claro",
+      "switchDark": "Cambiar a oscuro",
+      "followSystem": "Seguir tema del sistema",
+      "setAccent": "Establecer acento: {{label}}",
+      "signOut": "Cerrar sesión",
+      "signOutHint": "Terminar esta sesión"
+    }
+  },
+  "files": {
+    "title": "Mis archivos",
+    "upload": "Subir",
+    "dropzone": "Suelta archivos aquí o haz clic para subir",
+    "dropzoneDesc": "Admite imágenes y documentos de hasta 10 MB",
+    "empty": {
+      "title": "Sin archivos aún",
+      "body": "Sube tu primer archivo para comenzar."
+    },
+    "deleteConfirm": "¿Eliminar este archivo?",
+    "deleteDesc": "Esta acción no se puede deshacer."
+  },
+  "chat": {
+    "title": "Chat",
+    "newMessage": "Nuevo mensaje",
+    "noChannels": "Sin canales",
+    "noMessages": "Sin mensajes aún",
+    "typeMessage": "Escribe un mensaje…",
+    "send": "Enviar",
+    "mentions": "Menciones",
+    "pinned": "Mensajes fijados",
+    "search": "Buscar mensajes",
+    "members": "Miembros",
+    "settings": "Configuración del canal",
+    "leave": "Salir del canal",
+    "delete": "Eliminar canal",
+    "create": "Crear canal",
+    "channelName": "Nombre del canal",
+    "typing": "{{name}} está escribiendo…",
+    "typingMultiple": "{{names}} están escribiendo…"
+  },
+  "layout": {
+    "skipToMain": "Saltar al contenido principal"
+  },
+  "authShell": {
+    "securityNote": "Cifrado en tránsito · Sesión protegida con JWT",
+    "adminLabel": "Administración FullStackHero",
+    "consoleBadge": "Consola · Multi-tenant"
+  },
+  "health": {
+    "title": "Salud",
+    "eyebrow": "Sistema · Salud",
+    "subtitle": "Sonda de disponibilidad en vivo de cada dependencia registrada. Actualizada cada {{interval}}s.",
+    "live": "En vivo",
+    "paused": "Pausado",
+    "pauseAutoRefresh": "Pausar actualización automática",
+    "resumeAutoRefresh": "Reanudar actualización automática",
+    "dependencies": "Dependencias",
+    "checksCount": "{{count}} verificaciones · total {{total}}",
+    "recentPolls": "Sondeos recientes",
+    "latencyBudget": "Presupuesto de latencia",
+    "latencyBudgetDesc": "Escalado contra un presupuesto blando de 500 ms. Barras en el tercio superior son zona de alerta temprana.",
+    "detail": "Detalle",
+    "noAdditionalDetails": "Sin detalles adicionales reportados.",
+    "noDescriptionRegistered": "Sin descripción registrada.",
+    "topSources": "Principales fuentes",
+    "windowLabel": "Ventana {{range}}",
+    "events": "eventos",
+    "vitals": {
+      "checks": "Verificaciones",
+      "roundTrip": "Ida y vuelta",
+      "endToEnd": "extremo a extremo",
+      "slowest": "Más lenta",
+      "singleCheck": "verificación individual",
+      "lastPoll": "Último sondeo",
+      "passing": "aprobando"
+    },
+    "status": {
+      "Healthy": {
+        "headline": "Todos los sistemas operativos",
+        "subline": "Cada dependencia responde dentro de la tolerancia."
+      },
+      "Degraded": {
+        "headline": "Degradación parcial",
+        "subline": "Una o más verificaciones reportan latencia elevada o advertencias."
+      },
+      "Unhealthy": {
+        "headline": "Interrupción detectada",
+        "subline": "Al menos una dependencia crítica no responde. Investiga las verificaciones fallidas."
+      }
+    }
+  },
+  "activity": {
+    "title": "Actividad en vivo",
+    "description": "Registro completo de eventos transmitido desde la API via Server-Sent Events.",
+    "columns": {
+      "action": "Acción",
+      "entity": "Entidad",
+      "time": "Hora"
+    },
+    "listeningTitle": "Escuchando actividad",
+    "listeningDesc": "El stream está abierto. Los eventos aparecerán aquí cuando el backend los publique.",
+    "noEventsTitle": "Sin eventos aún",
+    "noEventsDesc": "El stream de actividad no está conectado. Los eventos se acumularán cuando la conexión se restablezca.",
+    "eventsShown": "{{count}} evento mostrado",
+    "eventsShown_plural": "{{count}} eventos mostrados",
+    "totalEvents": "{{count}} total",
+    "ariaLabel": "Eventos de actividad"
+  },
+  "audits": {
+    "title": "Registro de auditoría",
+    "description": "Eventos de actividad, seguridad, cambios de entidad y excepciones en la plataforma. Ventana aplicada en el servidor; máximo 90 días.",
+    "searchPlaceholder": "Buscar en payload, fuente, usuario…",
+    "advanced": "Avanzado",
+    "reset": "Restablecer",
+    "type": "Tipo",
+    "severity": "Severidad",
+    "source": "Fuente",
+    "userId": "ID de usuario",
+    "correlation": "Correlación",
+    "trace": "Traza",
+    "tags": "Etiquetas",
+    "columns": {
+      "actor": "Actor",
+      "action": "Acción",
+      "entity": "Entidad",
+      "timestamp": "Marca de tiempo"
+    },
+    "empty": {
+      "title": "Sin auditorías en esta ventana",
+      "body": "Intenta ampliar el rango de tiempo o relajar los filtros. Los eventos de actividad llegan en cuanto la plataforma maneja una solicitud.",
+      "resetFilters": "Restablecer filtros"
+    },
+    "eventsFound": "{{count}} evento encontrado",
+    "eventsFound_plural": "{{count}} eventos encontrados",
+    "drawer": {
+      "title": "Detalle de auditoría",
+      "description": "Payload completo, identificadores y acciones relacionadas del evento seleccionado.",
+      "identity": "Identidad",
+      "trace": "Traza",
+      "payload": "Datos",
+      "pipeline": "Pipeline",
+      "relatedEvents": "Eventos relacionados",
+      "onCorrelation": "{{count}} en esta correlación",
+      "allByCorrelation": "Todos por correlación",
+      "allByTrace": "Todos por traza",
+      "occurred": "Ocurrido",
+      "received": "Recibido",
+      "sinkDelay": "Retraso del sink",
+      "auditId": "ID de auditoría",
+      "tenant": "Tenant",
+      "user": "Usuario",
+      "traceId": "ID de traza",
+      "spanId": "ID de span",
+      "correlationId": "ID de correlación",
+      "requestId": "ID de solicitud",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "thisEvent": "este evento",
+      "auditEvent": "Evento de auditoría",
+      "noOtherEvents": "Ningún otro evento comparte esta correlación. El ciclo completo de esta solicitud está en el payload anterior."
+    },
+    "summary": {
+      "activity": "Actividad",
+      "entity": "Entidad",
+      "security": "Seguridad",
+      "exception": "Excepción",
+      "warn": "Adv",
+      "err": "Error",
+      "topSources": "Principales fuentes"
+    }
+  },
+  "invoices": {
+    "title": "Facturas",
+    "description": "Historial de facturación de tu tenant, más reciente primero.",
+    "searchPlaceholder": "Buscar por número, estado o período…",
+    "columns": {
+      "invoiceNumber": "Factura #",
+      "customer": "Cliente",
+      "amount": "Monto",
+      "status": "Estado",
+      "dueDate": "Fecha de vencimiento"
+    },
+    "empty": {
+      "title": "Sin facturas aún",
+      "body": "Una vez que tu tenant sea facturado por un período, las facturas aparecerán aquí.",
+      "searchTitle": "Sin facturas encontradas",
+      "clearSearch": "Limpiar búsqueda"
+    },
+    "period": "período",
+    "paid": "pagada",
+    "due": "vence",
+    "found": "encontrada",
+    "matched": "coincide",
+    "invoice": "factura",
+    "invoices": "facturas"
+  },
+  "demo": {
+    "title": "Cuentas de demostración",
+    "panelAriaLabel": "Panel de cuentas demo de desarrollo",
+    "pickAccount": "Elige una cuenta para precompletar el formulario de inicio de sesión.",
+    "filterPlaceholder": "Filtrar por nombre, correo, persona…",
+    "noMatches": "Ninguna cuenta de demo coincide con \"{{filter}}\".",
+    "sharedPassword": "Contraseña compartida",
+    "copy": "copiar",
+    "copied": "copiado",
+    "loaded": "cargado",
+    "use": "usar →"
   },
   "overview": {
     "greeting": {
@@ -199,6 +576,95 @@
     "browseCatalogStep": "Ver catálogo",
     "browseCatalogStepDesc": "Productos, marcas, categorías listos.",
     "watchLive": "Ver en vivo",
-    "watchLiveDesc": "Stream SSE directo en el dashboard."
+    "watchLiveDesc": "Stream SSE directo en el dashboard.",
+    "failure": "Error ·"
+  },
+  "fields": {
+    "required": "requerido",
+    "optional": "opcional"
+  },
+  "errorBand": {
+    "failure": "Error ·"
+  },
+  "mobileNav": {
+    "openMenu": "Abrir menú de navegación",
+    "primaryNav": "Navegación principal"
+  },
+  "impersonation": {
+    "banner": "Estás viendo como {{name}}",
+    "exit": "Salir",
+    "returned": "Regresaste a tu sesión",
+    "couldNotEnd": "No se pudo finalizar la suplantación correctamente",
+    "restoredLocal": "Se restauró la sesión local.",
+    "crossTenant": "Suplantación entre tenants",
+    "active": "Suplantando",
+    "operator": "operador",
+    "ending": "Finalizando…",
+    "end": "Finalizar suplantación"
+  },
+  "notifications": {
+    "noNotifications": "Sin notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "viewAll": "Ver todas",
+    "title": "Notificaciones",
+    "allCaughtUp": "Todo al día",
+    "unreadCount": "{{unread}} sin leer · {{total}} cargadas",
+    "markAllReadBtn": "Marcar todo leído",
+    "recent": "Recientes",
+    "loadingInbox": "Cargando…",
+    "emptyDesc": "Nada aún. Las menciones y actualizaciones de canales aparecerán aquí.",
+    "settingsLink": "Configuración ↗",
+    "ariaLabel": "Notificaciones",
+    "ariaLabelUnread": "Notificaciones, {{count}} sin leer",
+    "relativeTime": {
+      "justNow": "ahora mismo"
+    }
+  },
+  "userPicker": {
+    "placeholder": "Buscar usuario…",
+    "noResults": "Sin usuarios encontrados",
+    "clearSelection": "Limpiar selección",
+    "clear": "Limpiar",
+    "reassign": "Buscar para reasignar…",
+    "searching": "Buscando \"{{query}}\"…",
+    "noMatch": "Sin usuarios que coincidan con \"{{query}}\".",
+    "searchResults": "Resultados de búsqueda"
+  },
+  "realtime": {
+    "offline": "Desconectado",
+    "connecting": "Conectando",
+    "connected": "En vivo",
+    "reconnecting": "Reconectando",
+    "statusTitle": "Tiempo real: {{status}}"
+  },
+  "settings": {
+    "apiKeys": {
+      "comingSoon": "Las API keys aún no están disponibles.",
+      "comingSoonDesc": "Los tokens de acceso personal están en la hoja de ruta v1.1. Por ahora, el acceso fluye a través del JWT del usuario emitido al iniciar sesión.",
+      "viewRoadmap": "Ver hoja de ruta"
+    },
+    "notifications": {
+      "comingSoon": "Las notificaciones aún no están configuradas.",
+      "comingSoonDesc": "Las preferencias de notificación por correo, push y WhatsApp estarán disponibles pronto."
+    },
+    "security": {
+      "title": "Seguridad",
+      "changePassword": "Cambiar contraseña",
+      "currentPassword": "Contraseña actual",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "changePwBtn": "Cambiar contraseña",
+      "changingPw": "Cambiando contraseña…",
+      "activeSessions": "Sesiones activas",
+      "activeSessionsDesc": "Dispositivos con sesión abierta en este tenant.",
+      "revokeAll": "Revocar todas",
+      "revokeAllConfirm": "¿Revocar todas las sesiones?",
+      "revokeAllDesc": "Todos los dispositivos excepto el actual serán desconectados.",
+      "revoke": "Revocar",
+      "revokeConfirm": "¿Revocar esta sesión?",
+      "current": "Actual",
+      "noOtherSessions": "Sin otras sesiones activas",
+      "noOtherSessionsDesc": "Solo tienes una sesión activa en este dispositivo."
+    }
   }
 }
