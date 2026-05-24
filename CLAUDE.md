@@ -1,191 +1,1318 @@
-# FullStackHero .NET Starter Kit
+# CLAUDE.md — Maka Omni-Commerce Ecosystem
+# Fuente de verdad absoluta. Leer COMPLETO antes de ejecutar cualquier comando.
+# Versión: 3.0 | Mayo 2026 — Sincronizado con FSH real
 
-> A production-ready modular .NET framework for building enterprise applications.
+---
 
-## Architecture
+## ⚡ PROTOCOLO DE INICIO — OBLIGATORIO EN CADA SESIÓN
 
-**Modular Monolith + Vertical Slice Architecture (VSA)**
+Antes de escribir UNA SOLA línea de código, ejecuta este checklist mentalmente:
 
-- **BuildingBlocks** (`src/BuildingBlocks/`) — shared framework libraries (Core, Persistence, Web, Caching, Eventing, etc.)
-- **Modules** (`src/Modules/`) — bounded contexts (Identity, Multitenancy, Auditing)
-- **Host** (`src/Host/`) — composition-root host applications (API, AppHost)
-- **Tests** (`src/Tests/`) — per-module test projects + architecture tests
+1. ¿Leí este archivo completo? → Si no: léelo ahora. Sin excepciones.
+2. ¿Estoy en la rama correcta? → `git branch --show-current` (debe ser `develop` o `feature/`)
+3. ¿Hay migraciones EF Core pendientes? → `dotnet ef migrations list`
+4. ¿La tarea pertenece al módulo correcto? → Ver §5
+5. ¿La tarea viola alguna REGLA PROHIBIDA? → Ver §7
+6. ¿Es tarea nueva? → Activar Plan Mode (`Shift+Tab`), proponer modelo y esperar confirmación de Juan
 
-### Module Boundaries
+Si cualquier respuesta es dudosa: **PARAR y preguntar antes de continuar.**
 
-Modules communicate through **Contracts** projects only. A module MUST NOT reference another module's runtime project.
+---
+
+## 1. IDENTIDAD DEL PROYECTO
+
+| Campo | Valor |
+|---|---|
+| **Producto** | Maka Omni-Commerce Ecosystem |
+| **Tipo** | Plataforma SaaS: ERP + CRM + WhatsApp Omnicanal |
+| **Empresas** | Maka Solutions SAS / Tecnoimportaciones |
+| **Líder técnico** | Juan Carlos Sánchez Hernández (CEO / Ing. Sistemas) |
+| **Equipo** | 14 personas — Bogotá y Medellín |
+| **Negocio** | Retail B2B/B2C audiovisual profesional + Maka Studios |
+| **Marcas clave** | Sony, DJI, Canon, Nikon, Blackmagic, Nanlite, Godox, DZOFilm (exclusivo Colombia) |
+| **ERP a reemplazar** | Effi / Efficommerce |
+| **E-commerce** | WooCommerce + Electro Theme (se mantiene; integración vía API) |
+
+### Usuarios clave
+
+| Perfil | Nombre | Módulos |
+|---|---|---|
+| CEO / Admin | Juan | Todos |
+| CFO | Yuly | Contabilidad, Facturación, BI |
+| Gerente Medellín | Sandra | Inventario, Ventas, Logística |
+| Contabilidad | Daniela | Contabilidad, Facturación DIAN |
+| Dir. Creativo | Juan Daniel | CRM, Mensajería |
+
+---
+
+## 2. VISIÓN DEL SISTEMA
+
+> Un único flujo de datos donde cada acción comercial —contacto, cotización, pedido, pago, despacho, entrega, garantía— actualiza en tiempo real todos los módulos relevantes sin intervención manual. La IA asiste a cada actor con el contexto preciso en el momento preciso.
+
+Un solo registro viaja sin interrupciones desde el primer Lead hasta la resolución de garantía. **No hay sincronizaciones entre sistemas: hay un sistema.**
+
+---
+
+## 3. STACK TECNOLÓGICO — INAMOVIBLE
+
+### 3.1 Boilerplate base — FullStackHero .NET Starter Kit
 
 ```
-Modules.Identity/           ← runtime (internal)
-Modules.Identity.Contracts/ ← public API (commands, queries, events, DTOs, service interfaces)
+Repositorio:    https://github.com/fullstackhero/dotnet-starter-kit
+Fork del proyecto: https://github.com/makasolutions/maka-erp
+Formato solución: .slnx  (XML-based, NO el .sln tradicional)
 ```
 
-### Feature Folder Layout
+**⚠️ DIRECTORIOS PROTEGIDOS DEL BOILERPLATE — NO MODIFICAR:**
+```
+src/BuildingBlocks/     ← Framework compartido. Cambios aquí tienen blast radius total.
+                           Solo modificar con aprobación EXPLÍCITA de Juan.
+src/Modules/Identity/   ← Módulo de identidad nativo FSH.
+```
+Para extender funcionalidad del framework: crear módulo propio en `src/Modules/`, nunca tocar BuildingBlocks.
 
-Each feature is a vertical slice inside `Features/v{version}/{Area}/{FeatureName}/`:
+### 3.2 Core del stack (tal como viene en FSH)
+
+| Concern | Tecnología | Versión |
+|---|---|---|
+| Runtime | .NET 10 / C# latest | 10.x |
+| CQRS / Mediator | **Mediator 3.0.1** (source-generated, NO MediatR) | 3.0.1 |
+| Validación | FluentValidation | 12.x |
+| ORM | Entity Framework Core | 10.x |
+| Base de datos | PostgreSQL (Npgsql) | 10.0.1 |
+| Auth | JWT Bearer + ASP.NET Identity | 10.x |
+| Multitenancy | **Finbuckle.MultiTenant** | 10.x |
+| Caché | Redis (StackExchange) | 2.8.x |
+| Jobs | Hangfire + Hangfire.PostgreSql | 1.8.23 / 1.21.1 |
+| Resiliencia | Microsoft.Extensions.Http.Resilience (Polly v8) | — |
+| Feature Flags | Microsoft.FeatureManagement (con overrides por tenant) | — |
+| Webhooks | Suscripciones por tenant con firma HMAC | — |
+| **Real-time** | **Server-Sent Events (SSE)** ← FSH nativo | — |
+| Logging | Serilog + OpenTelemetry (OTLP) | — |
+| API Docs | **OpenAPI + Scalar** (NO Swashbuckle) | — |
+| API Versioning | Asp.Versioning | — |
+| Hosting | **.NET Aspire** (AppHost) | — |
+| Testing | xUnit + Shouldly + NSubstitute + AutoFixture + NetArchTest | — |
+
+### 3.3 Stack adicional Maka (sobre FSH)
 
 ```
-Features/v1/Users/RegisterUser/
-├── RegisterUserEndpoint.cs          # Minimal API endpoint
-├── RegisterUserCommandHandler.cs    # CQRS handler
-└── RegisterUserCommandValidator.cs  # FluentValidation
+Bus de eventos:  MassTransit 8.5.7 + MassTransit.RabbitMQ 8.5.7
+                 ⚠️  v9 tiene licencia COMERCIAL — NO actualizar sin autorización de Juan.
+                     v8.5.7 es Apache 2.0, soporte garantizado hasta fin 2026.
+Broker:          RabbitMQ 4.2.x (Docker)
+UI Framework:    Syncfusion Blazor 33.2.7 — ÚNICO framework UI permitido
+                 MudBlazor está PURGADO. Si aparece alguna referencia: eliminar inmediatamente.
+Frontend:        Blazor Unified Model (SSR + Server + WASM según caso de uso)
 ```
 
-Additional module folders: `Domain/`, `Data/`, `Services/`, `Events/`, `Authorization/`.
+### 3.4 Paquetes NuGet — Directory.Packages.props
 
-## Tech Stack
-
-| Concern | Technology |
-|---------|-----------|
-| Framework | .NET 10 / C# latest |
-| Solution format | `.slnx` (XML-based) |
-| Package management | Central (`Directory.Packages.props`) |
-| CQRS / Mediator | Mediator 3.0.1 (source generator) |
-| Validation | FluentValidation 12.x |
-| ORM | Entity Framework Core 10.x |
-| Database | PostgreSQL (Npgsql) |
-| Auth | JWT Bearer + ASP.NET Identity |
-| Multitenancy | Finbuckle.MultiTenant 10.x (claim/header/query strategies) |
-| Caching | Redis (StackExchange) |
-| Jobs | Hangfire |
-| Resilience | Microsoft.Extensions.Http.Resilience (Polly v8) |
-| Feature Flags | Microsoft.FeatureManagement with tenant overrides |
-| Idempotency | Idempotency-Key header with cache-based replay |
-| Webhooks | Tenant-scoped subscriptions with HMAC signing |
-| Real-time | Server-Sent Events (SSE) |
-| Logging | Serilog + OpenTelemetry (OTLP) |
-| API docs | OpenAPI + Scalar |
-| API versioning | Asp.Versioning |
-| Hosting | .NET Aspire (AppHost) |
-| Testing | xUnit, Shouldly, NSubstitute, AutoFixture, NetArchTest |
-
-## Build & Run
-
-```bash
-# Build
-dotnet build src/FSH.Starter.slnx
-
-# Run API (from repo root)
-dotnet run --project src/Host/FSH.Starter.Api
-
-# Run with Aspire
-dotnet run --project src/Host/FSH.Starter.AppHost
-
-# Run tests
-dotnet test src/FSH.Starter.slnx
+```xml
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- FSH core — respetar versiones que trae el boilerplate -->
+    <PackageVersion Include="Mediator" Version="3.0.1" />
+    <PackageVersion Include="FluentValidation" Version="12.0.0" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+    <PackageVersion Include="Finbuckle.MultiTenant.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.8.16" />
+    <PackageVersion Include="Hangfire.Core" Version="1.8.23" />
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.23" />
+    <PackageVersion Include="Hangfire.PostgreSql" Version="1.21.1" />
+    <!-- MassTransit v8 ÚNICAMENTE (Apache 2.0) -->
+    <PackageVersion Include="MassTransit" Version="8.5.7" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.7" />
+    <!-- Syncfusion — requiere licencia -->
+    <PackageVersion Include="Syncfusion.Blazor.Core" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Grids" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Kanban" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Charts" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Inputs" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Popups" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Navigations" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.DropDowns" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Notifications" Version="33.2.7" />
+    <PackageVersion Include="Syncfusion.Blazor.Calendars" Version="33.2.7" />
+  </ItemGroup>
+</Project>
 ```
 
-## Key Conventions
+---
 
-### Endpoints
+## 4. ARQUITECTURA — CÓMO ESTÁ ORGANIZADO FSH Y CÓMO LO EXTENDEMOS
 
-Static extension methods on `IEndpointRouteBuilder`. Return `RouteHandlerBuilder`.
+### 4.1 Estructura de carpetas FSH (la real)
 
+```
+maka-erp/
+├── CLAUDE.md                            ← Este archivo
+├── docker-compose.yml
+├── Directory.Packages.props             ← Central Package Management
+├── src/
+│   ├── FSH.Starter.slnx                 ← Archivo de solución (formato .slnx)
+│   ├── BuildingBlocks/                  ← ⛔ PROTEGIDO — no modificar
+│   │   ├── Core/                        ← Interfaces base, abstracciones
+│   │   ├── Persistence/                 ← DbContext base, Specifications, migrations helper
+│   │   ├── Web/                         ← Middleware, extensiones HTTP
+│   │   ├── Caching/                     ← Abstracciones Redis
+│   │   ├── Eventing/                    ← Interfaces de eventos de dominio e integración
+│   │   └── ...
+│   ├── Modules/
+│   │   ├── Identity/                    ← ⛔ PROTEGIDO — módulo FSH nativo
+│   │   │   ├── FSH.Starter.Modules.Identity/
+│   │   │   └── FSH.Starter.Modules.Identity.Contracts/
+│   │   ├── Multitenancy/                ← ⛔ PROTEGIDO — módulo FSH nativo
+│   │   ├── Auditing/                    ← ⛔ PROTEGIDO — módulo FSH nativo
+│   │   │
+│   │   ├── Catalog/                     ← ✅ MÓDULO MAKA — Productos y catálogo
+│   │   │   ├── Maka.Modules.Catalog/
+│   │   │   └── Maka.Modules.Catalog.Contracts/
+│   │   ├── Inventory/                   ← ✅ MÓDULO MAKA
+│   │   │   ├── Maka.Modules.Inventory/
+│   │   │   └── Maka.Modules.Inventory.Contracts/
+│   │   ├── Imports/                     ← ✅ MÓDULO MAKA — Importaciones
+│   │   ├── CRM/                         ← ✅ MÓDULO MAKA
+│   │   ├── WhatsApp/                    ← ✅ MÓDULO MAKA
+│   │   ├── Orders/                      ← ✅ MÓDULO MAKA — OMS
+│   │   ├── Billing/                     ← ✅ MÓDULO MAKA — Facturación DIAN
+│   │   ├── Accounting/                  ← ✅ MÓDULO MAKA
+│   │   ├── Logistics/                   ← ✅ MÓDULO MAKA
+│   │   ├── Warranties/                  ← ✅ MÓDULO MAKA
+│   │   ├── Dropshipping/                ← ✅ MÓDULO MAKA
+│   │   ├── BI/                          ← ✅ MÓDULO MAKA
+│   │   ├── Automation/                  ← ✅ MÓDULO MAKA
+│   │   └── HR/                          ← ✅ MÓDULO MAKA
+│   └── Host/
+│       ├── FSH.Starter.Api/             ← API host
+│       └── FSH.Starter.AppHost/         ← .NET Aspire host
+└── tests/
+    └── [NombreModulo].Tests/
+```
+
+### 4.2 Estructura interna de un módulo Maka (Vertical Slice)
+
+```
+Maka.Modules.Inventory/
+├── Features/
+│   └── v1/
+│       ├── Products/
+│       │   ├── CreateProduct/
+│       │   │   ├── CreateProductEndpoint.cs        ← Minimal API, static extension method
+│       │   │   ├── CreateProductCommandHandler.cs  ← ICommandHandler<T, TResponse>
+│       │   │   └── CreateProductCommandValidator.cs← FluentValidation
+│       │   └── GetProductById/
+│       │       ├── GetProductByIdEndpoint.cs
+│       │       └── GetProductByIdQueryHandler.cs   ← IQueryHandler<T, TResponse>
+│       └── Stock/
+│           └── TransferStock/
+│               ├── TransferStockEndpoint.cs
+│               ├── TransferStockCommandHandler.cs
+│               └── TransferStockCommandValidator.cs
+├── Domain/
+│   ├── Product.cs                      ← AggregateRoot con domain events
+│   ├── SerialNumber.cs                 ← Entity
+│   └── StockMovement.cs
+├── Data/
+│   ├── InventoryDbContext.cs
+│   ├── ProductConfiguration.cs         ← EF Fluent API config
+│   └── Migrations/
+├── Events/
+│   ├── StockTransferredEvent.cs        ← IIntegrationEvent (para MassTransit)
+│   └── StockAlertEvent.cs
+├── Services/                           ← Servicios de dominio si aplica
+└── InventoryModule.cs                  ← IModule con [FshModule(Order = n)]
+
+Maka.Modules.Inventory.Contracts/
+└── v1/
+    ├── Products/
+    │   ├── CreateProduct/
+    │   │   └── CreateProductCommand.cs  ← ICommand<CreateProductResponse>
+    │   └── GetProductById/
+    │       ├── GetProductByIdQuery.cs   ← IQuery<ProductDto>
+    │       └── ProductDto.cs
+    └── Stock/
+        └── TransferStock/
+            └── TransferStockCommand.cs
+```
+
+### 4.3 Patrones de código FSH — ejemplos exactos
+
+**Módulo (registro):**
 ```csharp
-public static class RegisterUserEndpoint
+[FshModule(Order = 5)]
+public class InventoryModule : IModule
 {
-    internal static RouteHandlerBuilder MapRegisterUserEndpoint(this IEndpointRouteBuilder endpoints)
+    public void ConfigureServices(IHostApplicationBuilder builder)
     {
-        return endpoints.MapPost("/register", (RegisterUserCommand command,
-            IMediator mediator, CancellationToken cancellationToken) =>
-            mediator.Send(command, cancellationToken))
-            .WithName("RegisterUser")
-            .WithSummary("Register user")
-            .RequirePermission(IdentityPermissionConstants.Users.Create);
+        builder.Services.AddScoped<IStockService, StockService>();
+        // registrar DbContext, etc.
+    }
+
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("api/v{version:apiVersion}/inventory")
+                             .WithTags("Inventory");
+        group.MapCreateProductEndpoint();
+        group.MapGetProductByIdEndpoint();
+        group.MapTransferStockEndpoint();
     }
 }
 ```
 
-### CQRS
-
-- **Commands/Queries** → defined in `Modules.{Name}.Contracts` (implement `ICommand<TResponse>` / `IQuery<TResponse>`)
-- **Handlers** → defined in `Modules.{Name}/Features/` (implement `ICommandHandler<T, TResponse>` / `IQueryHandler<T, TResponse>`)
-- Handlers return `ValueTask<T>` and use `.ConfigureAwait(false)`
-
-### Validation
-
-FluentValidation validators are auto-registered by `ModuleLoader`. Name them `{Command}Validator`.
-
-### Domain Events
-
-- Inherit from `DomainEvent` (abstract record with `EventId`, `OccurredOnUtc`, `CorrelationId`, `TenantId`)
-- Entities implement `IHasDomainEvents` with `_domainEvents` list
-- Integration events implement `IIntegrationEvent`, handlers implement `IIntegrationEventHandler<T>`
-
-### Domain Entities
-
-- `BaseEntity` — `Id`, `CreatedAt`, `UpdatedAt`, `TenantId`
-- `AggregateRoot` — extends `BaseEntity` with domain events
-- `IHasTenant`, `IAuditableEntity`, `ISoftDeletable` — marker interfaces
-
-### Module Registration
-
-Each module implements `IModule` with `[FshModule(Order = n)]` attribute:
-
+**Endpoint (Minimal API, método estático):**
 ```csharp
-[FshModule(Order = 1)]
-public class IdentityModule : IModule
+public static class CreateProductEndpoint
 {
-    public void ConfigureServices(IHostApplicationBuilder builder) { ... }
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) { ... }
+    internal static RouteHandlerBuilder MapCreateProductEndpoint(this IEndpointRouteBuilder endpoints)
+    {
+        return endpoints.MapPost("/products",
+            (CreateProductCommand command, IMediator mediator, CancellationToken ct) =>
+                mediator.Send(command, ct))
+            .WithName("CreateProduct")
+            .WithSummary("Create a new product")
+            .RequirePermission(InventoryPermissionConstants.Products.Create);
+    }
 }
 ```
 
-Endpoints are grouped under versioned API paths: `api/v{version:apiVersion}/{module}`.
+**Command (en Contracts):**
+```csharp
+// En Maka.Modules.Inventory.Contracts/v1/Products/CreateProduct/
+public record CreateProductCommand(
+    string Sku,
+    string Name,
+    decimal BasePrice,
+    JsonDocument? Specs  // ← JSONB para especificaciones técnicas variables
+) : ICommand<CreateProductResponse>;
 
-### Exceptions
+public record CreateProductResponse(Guid Id, string Sku);
+```
 
-Use framework exception types: `CustomException` (with `HttpStatusCode`), `NotFoundException`, `ForbiddenException`, `UnauthorizedException`. Global handler converts to `ProblemDetails` (RFC 9457).
+**Handler:**
+```csharp
+public class CreateProductCommandHandler(InventoryDbContext db)
+    : ICommandHandler<CreateProductCommand, CreateProductResponse>
+{
+    public async ValueTask<CreateProductResponse> Handle(
+        CreateProductCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
 
-### Permissions
+        var product = new Product(command.Sku, command.Name, command.BasePrice, command.Specs);
+        db.Products.Add(product);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-Constants in `Shared/Identity/IdentityPermissionConstants.cs`. Applied via `.RequirePermission()` on endpoints.
+        return new CreateProductResponse(product.Id, product.Sku);
+    }
+}
+```
 
-### Specifications
+**Validator:**
+```csharp
+public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
+{
+    public CreateProductCommandValidator()
+    {
+        RuleFor(x => x.Sku).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.BasePrice).GreaterThan(0);
+    }
+}
+```
 
-Use `Specification<T>` base class from `Persistence/Specifications/` for query composition. Default `AsNoTracking = true`.
+**Query con Specification (AsNoTracking por defecto):**
+```csharp
+public class GetProductByIdQueryHandler(InventoryDbContext db)
+    : IQueryHandler<GetProductByIdQuery, ProductDto>
+{
+    public async ValueTask<ProductDto> Handle(
+        GetProductByIdQuery query, CancellationToken cancellationToken)
+    {
+        // Usar Specification<T> del framework con AsNoTracking = true por defecto
+        var product = await db.Products
+            .AsNoTracking()  // explícito para máxima claridad, aunque Specification ya lo hace
+            .Where(p => p.Id == query.Id && p.TenantId == query.TenantId)
+            .Select(p => p.ToDto())  // mapeo manual via extension method
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
 
-## Coding Style
+        return product ?? throw new NotFoundException($"Product {query.Id} not found.");
+    }
+}
+```
 
-- **Namespace style**: File-scoped (`namespace X;`)
-- **Indentation**: 4 spaces
-- **Var usage**: Prefer explicit types; `var` only when type is apparent from RHS
-- **Null checks**: `is null` / `is not null` (not `== null`)
-- **Pattern matching**: Preferred over `is`/`as` casts
-- **Switch expressions**: Preferred
-- **Async**: `ValueTask<T>` for handlers, `.ConfigureAwait(false)` on all awaits
-- **Guard clauses**: `ArgumentNullException.ThrowIfNull(param)` at method entry
-- **Properties**: Prefer auto-properties, `default!` for required non-nullable strings
-- **Records**: Use for DTOs, events, and value objects
+**Entidad de dominio:**
+```csharp
+public class Product : AggregateRoot  // hereda de BaseEntity (Id, CreatedAt, UpdatedAt, TenantId)
+{
+    public string Sku { get; private set; } = default!;
+    public string Name { get; private set; } = default!;
+    public decimal BasePrice { get; private set; }
+    public JsonDocument? Specs { get; private set; }  // ← JSONB PostgreSQL
 
-## Testing Conventions
+    private Product() { }  // requerido por EF Core
 
-- **Naming**: `MethodName_Should_ExpectedBehavior_When_Condition`
-- **Pattern**: Arrange-Act-Assert with `#region` grouping (Happy Path, Exception, Edge Cases)
-- **Assertions**: Shouldly (`result.ShouldBe(...)`, `result.ShouldNotBeNull()`)
-- **Mocking**: NSubstitute (`Substitute.For<IService>()`)
-- **Test data**: AutoFixture (`_fixture.Create<string>()`)
-- **Architecture tests**: NetArchTest enforces module boundary rules
+    public Product(string sku, string name, decimal basePrice, JsonDocument? specs)
+    {
+        ArgumentNullException.ThrowIfNull(sku);
+        Sku = sku;
+        Name = name;
+        BasePrice = basePrice;
+        Specs = specs;
 
-## Protected Directories
+        RaiseDomainEvent(new ProductCreatedEvent(Id, Sku, TenantId));
+    }
+}
+```
 
-**DO NOT modify BuildingBlocks** without explicit approval. These are shared framework libraries consumed by all modules. Changes here have wide blast radius.
+**Mapeo manual (NUNCA AutoMapper):**
+```csharp
+// Archivo: Maka.Modules.Inventory/Extensions/ProductExtensions.cs
+public static class ProductExtensions
+{
+    public static ProductDto ToDto(this Product product) => new(
+        product.Id,
+        product.Sku,
+        product.Name,
+        product.BasePrice,
+        product.Specs
+    );
+}
+```
 
-## Adding a New Feature
+### 4.4 Comunicación entre módulos
 
-1. Add command/query + response in `Modules.{Name}.Contracts/v1/{Area}/{Feature}/`
-2. Add handler in `Modules.{Name}/Features/v1/{Area}/{Feature}/`
-3. Add validator in the same feature folder
-4. Add endpoint in the same feature folder
-5. Wire endpoint in the module's `MapEndpoints()` method
-6. Add tests in `Tests/{Name}.Tests/`
+```
+REGLA FUNDAMENTAL:
+  Un módulo NUNCA referencia el runtime de otro módulo.
+  Solo puede referenciar el proyecto .Contracts del otro módulo.
 
-## Adding a New Module
+CORRECTO:
+  Maka.Modules.Orders → referencia → Maka.Modules.Inventory.Contracts
+  (usa CreateProductCommand desde Contracts para consultar stock disponible)
 
-1. Create `Modules.{Name}/` and `Modules.{Name}.Contracts/` projects under `src/Modules/{Name}/`
-2. Implement `IModule` with `[FshModule(Order = n)]`
-3. Add DbContext extending from framework base
-4. Register in `Program.cs` module assemblies array
-5. Add migration project if needed
-6. Add test project in `src/Tests/`
-7. Add architecture test rules
+INCORRECTO:
+  Maka.Modules.Orders → referencia → Maka.Modules.Inventory
+  (acceso directo al runtime = violación de boundaries)
+
+Para eventos entre módulos:
+  Publicar IIntegrationEvent vía MassTransit (bus de RabbitMQ)
+  El módulo receptor tiene un IIntegrationEventHandler<T>
+```
+
+### 4.5 Multitenancy con Finbuckle
+
+```
+FSH usa Finbuckle.MultiTenant 10.x para aislar datos por tenant.
+
+Estrategias de resolución del TenantId (configuradas en FSH):
+  - Claim (JWT): el token contiene el tenant_id → más común para API
+  - Header: X-Tenant header → útil para integraciones B2B
+  - Query string: ?tenant=xxx → útil para desarrollo/testing
+
+Lo que esto significa para los handlers:
+  - NO necesitas agregar TenantId manualmente a cada query
+  - Finbuckle inyecta IMultiTenantContextAccessor<T>
+  - Los Global Query Filters de EF Core filtran por TenantId automáticamente
+  - PERO: en queries manuales (sin Specification), sí debes filtrar explícitamente
+
+Ejemplo de acceso al TenantId actual:
+  private readonly IMultiTenantContextAccessor<AppTenantInfo> _tenantContext;
+  var tenantId = _tenantContext.MultiTenantContext?.TenantInfo?.Id;
+```
+
+### 4.6 Real-time: SSE (no SignalR)
+
+```
+FSH usa Server-Sent Events (SSE) para comunicación en tiempo real, no SignalR.
+
+Esto afecta el módulo WhatsApp y los dashboards BI:
+  - La bandeja de WhatsApp multiagente usará SSE para push de mensajes entrantes
+  - Los dashboards de BI usarán SSE para actualización de métricas
+  - Implementar usando IAsyncEnumerable<T> + IResult de Minimal APIs
+
+Para el módulo WhatsApp, el flujo será:
+  Cliente Blazor ← SSE stream ← API endpoint que escucha RabbitMQ consumer
+```
+
+---
+
+## 5. COMANDOS DE BUILD Y RUN — FSH
+
+```bash
+# Build completo
+dotnet build src/FSH.Starter.slnx
+
+# Correr la API directamente
+dotnet run --project src/Host/FSH.Starter.Api
+
+# Correr con Aspire (recomendado — levanta todos los servicios)
+dotnet run --project src/Host/FSH.Starter.AppHost
+
+# Correr tests
+dotnet test src/FSH.Starter.slnx
+
+# Crear migración para un módulo específico
+dotnet ef migrations add NombreMigracion \
+  --project src/Modules/Inventory/Maka.Modules.Inventory \
+  --startup-project src/Host/FSH.Starter.Api \
+  --output-dir Data/Migrations
+
+# Aplicar migraciones
+dotnet ef database update \
+  --project src/Modules/Inventory/Maka.Modules.Inventory \
+  --startup-project src/Host/FSH.Starter.Api
+```
+
+---
+
+## 6. FASE 0 — CONFIGURACIÓN DEL AMBIENTE DE DESARROLLO
+
+**Objetivo:** Entorno 100% funcional, MudBlazor eliminado, Syncfusion instalado.
+**Criterio de éxito:** `dotnet build` sin errores, API inicia, Scalar accesible, sin referencias MudBlazor.
+
+### PASO 0.1 — Verificar prerequisitos
+
+```bash
+dotnet --version          # Requerido: 10.0.x
+node --version            # Requerido: 22.x LTS
+docker --version
+docker compose version    # v2.x (sin guión)
+git --version
+dotnet ef --version       # Si falta: dotnet tool install --global dotnet-ef
+```
+
+### PASO 0.2 — Repositorio (ya hecho)
+
+```bash
+# Verificar que origin y upstream están configurados
+git remote -v
+# Debe mostrar: origin (tu fork) + upstream (fullstackhero)
+
+# Confirmar que estás en develop
+git branch --show-current
+```
+
+### PASO 0.3 — Docker Compose (infraestructura local)
+
+Crear `docker-compose.yml` en la raíz del proyecto:
+
+```yaml
+version: '3.9'
+name: maka-local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: maka_postgres
+    environment:
+      POSTGRES_USER: maka_user
+      POSTGRES_PASSWORD: maka_dev_2026
+      POSTGRES_DB: maka_erp_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - maka_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maka_user -d maka_erp_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: maka_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - maka_redis_data:/data
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: maka_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: maka_user
+      RABBITMQ_DEFAULT_PASS: maka_dev_2026
+      RABBITMQ_DEFAULT_VHOST: maka_vhost
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # http://localhost:15672
+    volumes:
+      - maka_rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: maka_adminer
+    ports:
+      - "8081:8080"     # http://localhost:8081
+    restart: unless-stopped
+
+volumes:
+  maka_postgres_data:
+  maka_redis_data:
+  maka_rabbitmq_data:
+```
+
+```bash
+docker compose up -d
+docker compose ps   # todos deben estar "Up" o "healthy"
+```
+
+### PASO 0.4 — Configurar appsettings.Development.json
+
+En `src/Host/FSH.Starter.Api/appsettings.Development.json` (este archivo está en .gitignore):
+
+```json
+{
+  "DatabaseOptions": {
+    "ConnectionString": "Host=localhost;Port=5432;Database=maka_erp_dev;Username=maka_user;Password=maka_dev_2026"
+  },
+  "RedisOptions": {
+    "ConnectionString": "localhost:6379,abortConnect=false"
+  },
+  "RabbitMQOptions": {
+    "Host": "localhost",
+    "VirtualHost": "maka_vhost",
+    "Username": "maka_user",
+    "Password": "maka_dev_2026"
+  },
+  "JwtOptions": {
+    "Key": "CAMBIAR_POR_KEY_DE_AL_MENOS_64_CARACTERES",
+    "Issuer": "MakaERP",
+    "Audience": "MakaERP",
+    "TokenExpirationInMinutes": 60,
+    "RefreshTokenExpirationInDays": 7
+  },
+  "Syncfusion": {
+    "LicenseKey": "PENDIENTE"
+  },
+  "WhatsAppOptions": {
+    "VerifyToken": "PENDIENTE",
+    "AccessToken": "PENDIENTE",
+    "PhoneNumberId": "PENDIENTE",
+    "AppSecret": "PENDIENTE",
+    "ApiVersion": "v19.0"
+  },
+  "DianOptions": {
+    "PtaProvider": "Alegra",
+    "ApiKey": "PENDIENTE",
+    "SandboxMode": true
+  }
+}
+```
+
+> ⚠️ Verificar que `appsettings.Development.json` está en el `.gitignore`. Si no: agregar.
+
+### PASO 0.5 — Purga total de MudBlazor ⚠️
+
+```bash
+# 1. Detectar todas las referencias — NO eliminar nada aún, solo reportar
+echo "=== .csproj con MudBlazor ==="
+grep -r "MudBlazor" --include="*.csproj" -l
+
+echo "=== .cs con MudBlazor ==="
+grep -r "MudBlazor" --include="*.cs" -l
+
+echo "=== .razor con MudBlazor o componentes Mud* ==="
+grep -r "MudBlazor\|Mud[A-Z]" --include="*.razor" -l
+
+# 2. Reportar lista a Juan y esperar confirmación para proceder
+
+# 3. Una vez confirmado: remover paquete de cada .csproj
+dotnet remove [PROYECTO].csproj package MudBlazor
+
+# 4. Eliminar @using MudBlazor de _Imports.razor
+
+# 5. Reemplazar componentes Mud* por equivalentes Syncfusion (tabla abajo)
+
+# 6. Verificación final — debe devolver cero resultados
+grep -r "MudBlazor\|Mud[A-Z]" --include="*.razor" --include="*.cs" --include="*.csproj" .
+```
+
+**Tabla de equivalencias MudBlazor → Syncfusion:**
+
+| MudBlazor | Syncfusion Blazor |
+|---|---|
+| `MudDataGrid` / `MudTable` | `SfGrid` |
+| `MudTextField` | `SfTextBox` |
+| `MudSelect` | `SfDropDownList` |
+| `MudDatePicker` | `SfDatePicker` |
+| `MudDialog` | `SfDialog` |
+| `MudButton` | `button` HTML con estilos Syncfusion |
+| `MudAlert` | `SfToast` |
+| `MudChip` | `SfChip` |
+| `MudStepper` | `SfStepWizard` |
+| `MudTabs` | `SfTab` |
+| `MudNavMenu` | `SfSidebar` + `SfTreeView` |
+| `MudProgressLinear` | `SfProgressBar` |
+| `MudTooltip` | `SfTooltip` |
+
+### PASO 0.6 — Instalar Syncfusion
+
+```bash
+# Instalar en el proyecto Blazor del Host
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Core
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Grids
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Kanban
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Charts
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Inputs
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Popups
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Navigations
+dotnet add src/Host/FSH.Starter.Api/FSH.Starter.Api.csproj package Syncfusion.Blazor.Notifications
+```
+
+En `Program.cs`:
+```csharp
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(
+    builder.Configuration["Syncfusion:LicenseKey"]
+    ?? throw new InvalidOperationException("Syncfusion license key not configured"));
+
+builder.Services.AddSyncfusionBlazor();
+```
+
+En `_Imports.razor` (agregar, reemplazando las de MudBlazor):
+```razor
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Kanban
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Calendars
+```
+
+En `App.razor` o `index.html`:
+```html
+<link href="_content/Syncfusion.Blazor.Themes/bootstrap5.css" rel="stylesheet" />
+```
+
+### PASO 0.7 — Actualizar paquetes y compilar
+
+```bash
+# Ver qué paquetes están desactualizados
+dotnet list src/FSH.Starter.slnx package --outdated
+
+# Build completo
+dotnet build src/FSH.Starter.slnx
+
+# Si hay errores: reportar ANTES de intentar corregir nada
+```
+
+### PASO 0.8 — Verificación final Fase 0
+
+```bash
+# Correr con Aspire (levanta todos los servicios definidos en AppHost)
+dotnet run --project src/Host/FSH.Starter.AppHost
+```
+
+**Criterios de éxito — todos deben pasar:**
+```
+✅ dotnet build → sin errores
+✅ API inicia sin excepciones
+✅ Scalar UI accesible (el endpoint lo define FSH, típicamente /scalar o /api-docs)
+✅ Log → "Connected to PostgreSQL"
+✅ Log → "Redis connected"
+✅ Log → "MassTransit started" / "RabbitMQ connected"
+✅ grep -r "MudBlazor" . → cero resultados
+✅ http://localhost:15672 → RabbitMQ Management UI accesible
+```
+
+**Cuando pasen todos: reportar "✅ FASE 0 COMPLETADA" y esperar instrucción para Fase 1.**
+
+---
+
+## 7. MÓDULOS Y REQUERIMIENTOS FUNCIONALES POR FASE
+
+---
+
+### FASE 1: NÚCLEO OPERATIVO — Reemplazar Effi
+**Semanas 1-8 | Criterio de éxito:** E-commerce opera sin Effi.
+
+#### Módulo Catalog — Productos y Catálogo
+
+**RF-CAT-1** Modelo híbrido: datos base tipados (SKU, Nombre, PrecioBase COP) + campo `Specs` de tipo `JsonDocument` (JSONB en PostgreSQL) para especificaciones técnicas variables por categoría.
+
+**RF-CAT-2** Productos simples y variables. Las variantes heredan el SKU padre pero tienen SKU propio, precio propio y stock propio.
+
+**RF-CAT-3** Códigos EAN + generación de etiquetas QR para impresión.
+
+**RF-CAT-4** Precios múltiples: base, descuento, lista B2B, volumen, cliente VIP.
+
+**RF-CAT-5** SEO por producto: meta título, meta descripción, URL amigable, JSON-LD structured data.
+
+**RF-CAT-6** Importación masiva desde CSV con mapeo de columnas configurable.
+
+**RF-CAT-7** Sincronización bidireccional con WooCommerce vía REST API (stock, precios, disponibilidad). Evento de integración `ProductSyncedToWooCommerceEvent` vía MassTransit.
+
+#### Módulo Inventory — Inventario Multibodega
+
+**RF-INV-1** Stock en tiempo real por SKU + variante + bodega. Bodegas iniciales: Bogotá, Medellín.
+
+**RF-INV-2** `SerialNumber` como entidad hija de `Product`. Un S/N por unidad física. Se asigna al ingresar mercancía; se vincula a venta y garantía. Vital para cámaras, drones, equipos audiovisuales.
+
+**RF-INV-3** `StockMovement`: trazabilidad de cada movimiento — entradas, salidas, transferencias, ajustes, devoluciones, bajas, muestras. Cada movimiento publica `StockMovedEvent` → contabilidad genera asiento automático.
+
+**RF-INV-4** Transferencias entre bodegas con estado `InTransit` hasta confirmación de recepción.
+
+**RF-INV-5** `StockReservation`: stock reservado para pedidos pendientes de pago. `StockAvailable = StockOnHand - StockReserved`.
+
+**RF-INV-6** Stock mínimo por producto/bodega. Al alcanzar el mínimo: publicar `StockBelowMinimumEvent` → Automation module crea solicitud de compra + alerta.
+
+**RF-INV-7** Valoración Promedio Ponderado. Costo promedio actualizado en cada entrada. Exposición vía query `GetInventoryValuationQuery`.
+
+**RF-INV-8** Conteos físicos cíclicos con aprobación requerida antes de aplicar ajuste.
+
+**RF-INV-9** Query `GetStockCoverageQuery`: días de cobertura estimados por producto según velocidad de ventas.
+
+#### Módulo Orders — OMS
+
+**RF-ORD-1** Flujo: `Quotation` → `SalesOrder` → `Invoice` → `DeliveryNote`. Cada transición es un Command que publica Integration Event.
+
+**RF-ORD-2** Notificaciones automáticas al cliente en cada cambio de estado: WhatsApp (plantilla HSM) + email.
+
+**RF-ORD-3** Al confirmar pago: publicar `OrderPaidEvent` → Billing genera factura DIAN → Inventory descuenta stock.
+
+**RF-ORD-4** Al preparar despacho: publicar `OrderReadyToShipEvent` → Logistics genera guía transportadora.
+
+**RF-ORD-5** Devoluciones: `ReturnOrder` → reingreso al inventario + generación de nota crédito DIAN.
+
+**RF-ORD-6** Métodos de pago: Wompi, PayU, PSE, Nequi, Daviplata, transferencia, contraentrega.
+
+**RF-ORD-7** Carritos abandonados: `AbandonedCartEvent` a las 2h y 24h → Automation envía WhatsApp + email.
+
+#### Módulo Billing — Facturación Electrónica DIAN
+
+**RF-BILL-1** Documentos: Factura de Venta, Nota Crédito, Nota Débito, Documento Equivalente (POS), Nómina Electrónica.
+
+**RF-BILL-2** Transmisión en tiempo real a PTA. Integración inicial: Alegra API. Re-envío automático si falla.
+
+**RF-BILL-3** IVA diferencial: 0%, 5%, 19%. Motor de impuestos parametrizable por tipo de cliente.
+
+**RF-BILL-4** Retenciones automáticas según tipo de cliente y tabla de retenciones configurada.
+
+**RF-BILL-5** Resoluciones: rangos de numeración, vigencias, alerta al 80% de uso del rango.
+
+**RF-BILL-6** Entrega al cliente: email + WhatsApp (PDF + XML) automático al emitir.
+
+**RF-BILL-7** Información exógena DIAN: formatos 1001, 1003, 1005, 1006, 1007, 1008, 1009. XML compatible con prevalidador DIAN.
+
+#### Módulo Logistics — Transportadoras
+
+**RF-LOG-1** Transportadoras con API oficial: Coordinadora, Servientrega, Interrapidísimo, TCC, Domina, Envía.
+
+**RF-LOG-2** Por transportadora: cotización automática, generación de guía con N° rastreo, tracking en tiempo real, notificación al cliente, reporte de novedades.
+
+**RF-LOG-3** Contraentrega: recaudo registrado al recibir de transportadora, conciliación automática.
+
+**RF-LOG-4** Despacho masivo: cola filtrable, picking list por pedido con ubicación, impresión masiva de etiquetas.
+
+**RF-LOG-5** Calculadora de envío en checkout. Seguro obligatorio para productos de alto valor. Click & collect en tiendas Bogotá/Medellín.
+
+---
+
+### FASE 2: CRM E IMPORTACIONES
+**Semanas 9-16 | Criterio de éxito:** Pipeline comercial activo, costos de importación calculados.
+
+#### Módulo CRM
+
+**RF-CRM-1** Ciclo Lead → MQL → SQL → Oportunidad → Cliente. Clasificación automática por reglas.
+
+**RF-CRM-2** Lead scoring por comportamiento: páginas visitadas, productos consultados, interacciones previas.
+
+**RF-CRM-3** Captura desde: WhatsApp (primer mensaje), formularios web, Instagram DM, Facebook Messenger, CSV.
+
+**RF-CRM-4** Pipelines configurables: B2C, B2B, distribuidores, recuperación. Vista Kanban con `SfKanban`.
+
+**RF-CRM-5** Ficha 360° del cliente: datos, historial de compras, conversaciones WhatsApp, garantías activas, facturas, cotizaciones. Una sola pantalla, sin cambiar de módulo.
+
+**RF-CRM-6** Cuentas B2B: empresa con múltiples contactos, límite de crédito, historial de pagos.
+
+**RF-CRM-7** Cotizaciones rápidas con reserva temporal de stock (TTL configurable 24-48h).
+
+**RF-CRM-8** Actividades: llamadas, reuniones (sync Google Calendar), tareas con recordatorios, notas internas.
+
+#### Módulo Imports — Importaciones Internacionales
+
+**RF-IMP-1** Orden de importación: proveedor extranjero, incoterm (FOB/CIF), país, moneda, subpartida arancelaria.
+
+**RF-IMP-2** Simulador de costo de importación: FOB + TRM + flete + seguro + arancel + IVA importación + bodegaje + aduana + transporte nacional + gastos financieros.
+
+**RF-IMP-3** TRM del día (API Banco de la República Colombia) **grabada físicamente** en el registro al cotizar. Inmutable. No puede cambiar retroactivamente.
+
+**RF-IMP-4** Distribución del costo entre los productos del despacho: proporcional a FOB o a peso/volumen, configurable.
+
+**RF-IMP-5** Estados: Pedido → En tránsito → En puerto → En aduana → Nacionalizado → En bodega.
+
+**RF-IMP-6** Carga de documentos: factura comercial, packing list, BL/AWB, certificado de origen, liquidación DIAN.
+
+**RF-IMP-7** Al recepcionar en bodega: publicar `ImportReceivedEvent` → Inventory actualiza stock con costo real por unidad → Accounting genera asiento de importación.
+
+**RF-IMP-8** Proveedores de Tecnoimportaciones: Canon, Sony, DJI, Godox, Nanlite, Blackmagic, DZOFilm (directo China, distribución exclusiva Colombia).
+
+#### Módulo WhatsApp — Omnicanal
+
+**RF-WA-1** Meta Cloud API (oficial). Webhooks para recepción de mensajes en tiempo real vía SSE.
+
+**RF-WA-2** Bandeja multiagente con SSE. Una conversación asignada a un agente. Los demás pueden ver, no escribir.
+
+**RF-WA-3** Panel lateral con ficha CRM del contacto actualizada en tiempo real (SSE stream desde CRM module).
+
+**RF-WA-4** Plantillas HSM: confirmación de pedido, número de guía, notificación de garantía resuelta.
+
+**RF-WA-5** Ciclo de venta dentro del chat: consulta → stock → ficha producto → confirmar → link de pago → `OrderPaidEvent` → OMS.
+
+**RF-WA-6** Bot IA entrenado con catálogo, políticas de envío y garantía, FAQs, tono de marca. Escalado a humano por reglas configurables.
+
+**RF-WA-7** Performance Hub: ROAS conversacional, tasa de conversión por agente, valor promedio por canal.
+
+#### Módulo Purchasing — Compras Nacionales
+
+**RF-PUR-1** Solicitud de compra con aprobación por niveles de monto.
+
+**RF-PUR-2** Cotización a múltiples proveedores con comparativa automática. Priorizar al de menor precio en última vigencia activa.
+
+**RF-PUR-3** Vigencia de precios: precio vigente si `ValidUntil IS NULL`. Al insertar nuevo precio para mismo proveedor/artículo, el anterior se cierra automáticamente con fecha actual.
+
+**RF-PUR-4** Validación a 3 bandas: Orden de Compra + Recepción + Factura del proveedor.
+
+#### Módulo Accounting — Contabilidad
+
+**RF-ACC-1** Plan de cuentas NIIF para pymes (Colombia).
+
+**RF-ACC-2** Asientos automáticos por Integration Events recibidos de otros módulos:
+
+| Evento recibido | Asiento generado |
+|---|---|
+| `OrderPaidEvent` | Débito caja/banco / Crédito ingresos |
+| `OrderShippedEvent` | Débito costo de ventas / Crédito inventario |
+| `PurchaseReceivedEvent` | Débito inventario / Crédito cuentas por pagar |
+| `ImportReceivedEvent` | Débito inventario costo total / Crédito múltiples gastos |
+| `OrderReturnedEvent` | Reversión venta + reingreso inventario |
+| `WarrantyResolvedEvent` | Débito gasto garantías / Crédito proveedor o inventario |
+
+**RF-ACC-3** Aging report de cuentas por cobrar y pagar. Conciliación bancaria asistida por IA.
+
+**RF-ACC-4** Múltiples monedas con diferencia en cambio automática (COP base + USD + EUR mínimo).
+
+**RF-ACC-5** Reportes: Balance General, P&L (por período/canal/línea), Flujo de Caja, Estado de Patrimonio.
+
+**RF-ACC-6** Integridad: documentos aprobados/facturados son **inmutables**. Lógica de bloqueo en entidades de dominio.
+
+---
+
+### FASE 3: IA Y AUTOMATIZACIÓN
+**Semanas 17-24 | Criterio de éxito:** Bot resuelve >50% de consultas sin intervención humana.
+
+#### Módulo Warranties — Garantías y Postventa
+
+**RF-WAR-1** Garantía registrada al vender, vinculada al `SerialNumber`. Fecha inicio = fecha entrega confirmada por transportadora.
+
+**RF-WAR-2** Períodos por marca (Tecnoimportaciones): Canon 1a, Sony 1a, DJI 12m, Godox 2a, Nanlite 2a, DZOFilm 1a, Blackmagic 1a.
+
+**RF-WAR-3** Apertura de caso desde WhatsApp bot, portal cliente o mostrador físico.
+
+**RF-WAR-4** Verificación automática: ¿En período? ¿S/N corresponde a venta propia? ¿Garantías previas por esta unidad?
+
+**RF-WAR-5** Flujo: Diagnóstico → Reparar / Reponer stock / Reembolso. Cada decisión publica Integration Event.
+
+**RF-WAR-6** SLA configurable por categoría. Alerta cuando un caso está próximo a vencer.
+
+**RF-WAR-7** Reclamación automática al fabricante cuando la falla es de fábrica. `WarrantyClaimEvent` → proveedor.
+
+**RF-WAR-8** Reporte de tasa de falla por marca/producto para negociación con fabricantes.
+
+#### Módulo BI — Inteligencia de Negocio
+
+**RF-BI-1** Dashboards con `SfChart` y `SfGrid`. Actualización en tiempo real vía SSE.
+
+**RF-BI-2** Dashboard CEO: ventas del día vs. período anterior, pedidos por estado, top 10 productos/clientes, inventario crítico, saldo de caja.
+
+**RF-BI-3** Dashboard Ventas: pipeline por etapa, tasa de conversión por vendedor/canal, forecast 30 días.
+
+**RF-BI-4** Dashboard Inventario: stock por bodega/categoría, días de cobertura, próximas importaciones.
+
+**RF-BI-5** Dashboard Logística: pedidos en tránsito, tasa devoluciones por transportadora, recaudos pendientes.
+
+**RF-BI-6** Dashboard Financiero: P&L simplificado, flujo de caja 30 días, cartera vencida.
+
+**RF-BI-7** Dashboard Garantías: casos abiertos, SLA próximo a vencer, tasa de falla por marca, costo acumulado.
+
+**RF-BI-8** BI predictivo: predicción de agotamiento de stock, scoring de abandono de clientes, alertas de anomalías en ventas.
+
+#### Módulo Automation — Workflows
+
+**RF-AUTO-1** Motor visual sin código: Trigger → Condición → Acción.
+
+**RF-AUTO-2** Triggers: nuevo lead, cambio de etapa pipeline, pedido pagado, stock bajo mínimo, garantía abierta, N días sin actividad del cliente, mensaje WhatsApp recibido.
+
+**RF-AUTO-3** Acciones: enviar WhatsApp (plantilla HSM), enviar email, crear tarea, cambiar estado, asignar lead, generar solicitud de compra, publicar Integration Event en RabbitMQ.
+
+**RF-AUTO-4** Implementación: Hangfire para jobs recurrentes, MassTransit Sagas para flujos con estado (ej. ciclo completo de importación).
+
+#### Módulo AI Services — Capa de Inteligencia Artificial
+
+**RF-AI-1** AI Copywriter: generación de títulos y descripciones SEO vía Claude API (Anthropic). Descripción 1600+ palabras, meta título ≤60 chars, meta descripción 135-139 chars.
+
+**RF-AI-2** Sales Bot: chatbot WhatsApp que califica leads (BANT), responde dudas técnicas, ejecuta flujo de venta.
+
+**RF-AI-3** Lead Scoring predictivo: aprende qué características correlacionan con conversión.
+
+**RF-AI-4** Resúmenes de conversación: IA resume hilos largos de WhatsApp para el equipo comercial.
+
+**RF-AI-5** Conciliación bancaria asistida: movimientos sin coincidencia automática presentados al contador con sugerencia IA.
+
+---
+
+### FASE 4: ESCALA Y DIFERENCIACIÓN
+**Semanas 25-36 | Criterio de éxito:** Sistema percibido como ventaja competitiva.**
+
+#### Módulo Dropshipping
+
+**RF-DROP-1** Identificación automática al confirmar pedido: ¿stock propio o dropshipping?
+
+**RF-DROP-2** Notificación al proveedor (email + API). Portal del proveedor: órdenes pendientes, ingreso de guía, confirmación de despacho.
+
+**RF-DROP-3** Liquidación periódica automática: cobrado al cliente - comisión = monto al proveedor.
+
+**RF-DROP-4** Evaluación del proveedor: tasa de cumplimiento, tasa de garantías, tiempo de entrega.
+
+#### Portal B2B Distribuidores
+
+**RF-B2B-1** Acceso por invitación con aprobación manual.
+
+**RF-B2B-2** Catálogo con precios diferenciados. Conversión automática de Orden de Compra del cliente a pedido en el sistema.
+
+**RF-B2B-3** Límites de crédito con alertas. Historial completo accesible desde el portal.
+
+#### WMS — Gestión de Bodegas
+
+**RF-WMS-1** Jerarquía de ubicaciones recursiva: Bodega → Pasillo → Estante → Nivel → Posición. Tabla con `ParentId` para cualquier profundidad.
+
+**RF-WMS-2** Etiquetas QR por ubicación. Picking optimizado con ruta sugerida.
+
+**RF-WMS-3** Preparar arquitectura para RFID sin implementar en esta fase.
+
+#### Módulo Integrations — API Propia
+
+**RF-INT-1** API REST: OpenAPI 3.0 (Scalar), OAuth 2.0, rate limiting, sandbox, webhooks configurables por tenant.
+
+**RF-INT-2** Integraciones de Tecnoimportaciones:
+
+| Sistema | Propósito | Fase |
+|---|---|---|
+| WooCommerce + Electro | Sync pedidos/inventario/productos bidireccional | 1 |
+| Wompi / PayU | Confirmación pagos | 1 |
+| Coordinadora, Servientrega, TCC, Interrapidísimo, Domina, Envía | Guías y tracking | 1 |
+| DIAN vía Alegra | Facturación electrónica + nómina | 1 |
+| WhatsApp Business API | Mensajería omnicanal | 2 |
+| Banco República Colombia | TRM diaria automática | 2 |
+| Bancolombia / Davivienda | Extractos para conciliación | 2 |
+| Google Calendar / Outlook | Sync reuniones | 2 |
+| Meta Pixel / Google Analytics | Eventos de conversión | 3 |
+| Claude API (Anthropic) | AI Copywriter, bot, resúmenes | 3 |
+
+---
+
+## 8. REGLAS DE RENDIMIENTO Y SEGURIDAD
+
+```
+Performance:
+- Queries de inventario: < 200ms
+- AsNoTracking() en TODAS las queries de lectura (Specification<T> lo hace por defecto; en queries manuales, explícito)
+- Caché Redis para catálogos: TTL configurable, latencia < 50ms
+- Paginación server-side en todos los listados. NUNCA traer todos los registros.
+- Índices PostgreSQL obligatorios en: TenantId, SKU, SerialNumber, CustomerId, OrderId, CreatedAt
+
+Multitenancy:
+- Finbuckle.MultiTenant maneja el aislamiento — no implementar TenantId manualmente
+- Los Global Query Filters de EF Core filtran por TenantId automáticamente en el DbContext base
+- En queries manuales fuera del DbContext: filtrar por TenantId explícitamente
+- Ningún endpoint puede acceder a datos de otro Tenant aunque el usuario esté autenticado
+
+Seguridad:
+- Ningún endpoint sin .RequirePermission() — sin excepciones
+- Nunca exponer IDs de base de datos en URLs → usar GUIDs generados en el dominio
+- Documentos aprobados/facturados: inmutables. Lógica de bloqueo en las entidades.
+- Los logs de Serilog no deben incluir PII en texto plano
+```
+
+---
+
+## 9. REGLAS PROHIBIDAS — NUNCA VIOLAR
+
+```
+🚫 PROHIBIDO: Modificar src/BuildingBlocks/ sin aprobación explícita de Juan
+   Razón: blast radius total — afecta todos los módulos
+
+🚫 PROHIBIDO: Referenciar el runtime de otro módulo (solo sus .Contracts)
+   Razón: viola los module boundaries de FSH
+   Correcto: Maka.Modules.Orders → Maka.Modules.Inventory.Contracts
+   Incorrecto: Maka.Modules.Orders → Maka.Modules.Inventory
+
+🚫 PROHIBIDO: MediatR clásico (reflexión)
+   Razón: FSH usa Mediator 3.0.1 source-generated. Son incompatibles.
+   Usar: ICommand<T>, IQuery<T>, ICommandHandler<T,R>, IQueryHandler<T,R> del framework
+
+🚫 PROHIBIDO: AutoMapper o mapeo automático por reflexión
+   Solución: métodos de extensión estáticos en [Modulo]/Extensions/ (ej. ProductExtensions.ToDto())
+
+🚫 PROHIBIDO: Patrón Repository genérico (IRepository<T>)
+   Solución: DbContext directo en los Handlers + Specification<T> del framework para queries complejas
+
+🚫 PROHIBIDO: MudBlazor en cualquier forma
+   Solución: Syncfusion Blazor exclusivamente
+
+🚫 PROHIBIDO: MassTransit v9 (licencia comercial)
+   Solución: v8.5.7 Apache 2.0. Si v9 se requiere: escalar a Juan para decisión.
+
+🚫 PROHIBIDO: SignalR para real-time
+   Razón: FSH usa SSE (Server-Sent Events) de forma nativa
+   Solución: IAsyncEnumerable<T> + SSE endpoints de Minimal APIs
+
+🚫 PROHIBIDO: Swashbuckle/Swagger
+   Razón: FSH usa Scalar para documentación API
+   Solución: configurar con OpenAPI + Scalar como viene en FSH
+
+🚫 PROHIBIDO: Lógica de negocio en Handlers
+   Regla: Handlers orquestan. La lógica va en las entidades (Domain). La validación va en Validators.
+
+🚫 PROHIBIDO: Adivinar parámetros de Meta API, endpoints DIAN o componentes Syncfusion sin documentación
+   Solución: parar y pedir documentación oficial al usuario
+
+🚫 PROHIBIDO: Credenciales o API keys en código o archivos commiteados
+   Solución: appsettings.Development.json (en .gitignore) o .NET Secret Manager
+
+🚫 PROHIBIDO: Crear o modificar cualquier componente UI sin usar los wrappers Maka* de
+   Syncfusion para componentes complejos.
+
+   Mapa de componentes obligatorio:
+   - Tablas / listados de datos    → MakaGrid
+   - Gráficas / charts             → MakaChart
+   - Tableros Kanban               → MakaKanban
+   - Tablas pivote / analytics     → MakaPivot
+   - Calendarios / agenda          → MakaScheduler
+   - Inputs de texto               → SfTextBox
+   - Selects / dropdowns           → SfDropDownList
+   - Date pickers                  → SfDatePicker
+   - Botones, badges, cards,
+     avatars, skeleton             → componentes Tailwind nativos existentes
+                                      (NO reemplazar, ya están bien construidos)
+
+🚫 PROHIBIDO: Agregar texto visible al usuario sin usar t() de i18next Y sin crear
+   las traducciones en TODOS los idiomas configurados.
+
+   PROCESO OBLIGATORIO para cualquier texto nuevo:
+
+   Paso 1 — Identificar el namespace correcto:
+   common, catalog, inventory, orders, crm, settings,
+   billing, logistics, warranties, imports, whatsapp, hr
+
+   Paso 2 — Agregar la key en español primero:
+   public/locales/es/[namespace].json
+
+   Paso 3 — Agregar la traducción en inglés:
+   public/locales/en/[namespace].json
+
+   Paso 4 — Si hay más idiomas en public/locales/:
+   Agregar en TODOS los idiomas existentes sin excepción.
+
+   Paso 5 — Recién entonces usar t('namespace:key') en el componente.
+
+   Reglas adicionales:
+   - NUNCA dejar una key sin traducción en algún idioma configurado
+   - NUNCA usar strings de texto directos en JSX/TSX aunque sea "solo temporal"
+   - NUNCA usar el namespace 'common' para strings específicos de un módulo
+   - Si no se conoce la traducción exacta en inglés, usar una aproximación razonable
+     y agregar comentario: // TODO: review translation
+
+🚫 PROHIBIDO: Crear componentes que no respeten el sistema de temas y apariencia
+   del dashboard.
+
+   1. NUNCA usar colores hardcodeados (hex, rgb, hsl). Siempre usar tokens CSS:
+
+      Texto:       var(--color-text-primary/secondary/tertiary/disabled)
+      Superficies: var(--color-bg-primary/secondary/tertiary/elevated)
+      Bordes:      var(--color-border-primary/secondary/tertiary)
+      Acento:      var(--color-accent) / var(--color-accent-subtle) / var(--color-accent-muted)
+      Semánticos:  var(--color-success/warning/danger/info) + variantes -subtle
+      Charts:      var(--color-chart-1..5) / var(--color-saffron)
+
+   2. NUNCA usar clases Tailwind de color fijas: bg-white, text-black, bg-gray-100,
+      text-gray-600, border-gray-200, etc. Usar clases semánticas del proyecto o
+      tokens CSS directos.
+
+   3. Syncfusion usa canvas — no lee CSS vars automáticamente. SIEMPRE resolver
+      colores en mount con:
+        getComputedStyle(document.documentElement).getPropertyValue('--color-chart-1').trim()
+      Patrón de referencia: MakaChart.tsx — seguir ese ejemplo exactamente.
+
+   4. Todo componente nuevo debe verse correctamente en:
+      - Tema Light y Dark
+      - Con cualquiera de los 6 acentos: rose, indigo, violet, sky, emerald, amber + custom
+      - Con cualquiera de las tipografías disponibles
+
+   5. Antes de hacer commit de un componente nuevo, verificar visualmente en
+      Light + Dark mode mínimo.
+
+   6. Si un componente Syncfusion no respeta dark mode automáticamente, agregar
+      CSS override usando:
+        [data-theme="dark"] .e-grid { ... }
+        [data-theme="dark"] .e-kanban { ... }
+        [data-theme="dark"] .e-schedule { ... }
+```
+
+---
+
+## 10. CONVENCIONES DE CÓDIGO FSH
+
+```csharp
+// Namespace: file-scoped
+namespace Maka.Modules.Inventory.Features.v1.Products.CreateProduct;
+
+// Nulos: is null / is not null (no == null)
+if (product is null) throw new NotFoundException(...);
+
+// Guard clause al inicio de métodos
+ArgumentNullException.ThrowIfNull(command);
+
+// ValueTask en handlers (no Task)
+public async ValueTask<CreateProductResponse> Handle(...) { ... }
+
+// ConfigureAwait(false) en todos los awaits
+await db.SaveChangesAsync(ct).ConfigureAwait(false);
+
+// Records para DTOs, Commands, Queries, Events
+public record ProductDto(Guid Id, string Sku, string Name, decimal BasePrice);
+
+// Switch expression preferido sobre switch statement
+var result = status switch {
+    OrderStatus.Paid => "Pagado",
+    OrderStatus.Shipped => "Despachado",
+    _ => "Desconocido"
+};
+
+// Properties: auto-properties, default! para strings requeridos
+public string Sku { get; private set; } = default!;
+
+// Tests: Arrange-Act-Assert + Shouldly
+result.ShouldBe(expected);
+result.ShouldNotBeNull();
+```
+
+---
+
+## 11. WORKFLOW DE DESARROLLO
+
+```
+Por cada nueva feature:
+
+1. PLAN MODE (Shift+Tab):
+   - Proponer entidad de dominio y propiedades
+   - Proponer Command/Query en .Contracts + Validator
+   - Proponer Handler + tablas/relaciones DB afectadas
+   - Identificar Integration Events que se publican y quién los consume
+   ⏸ Esperar confirmación de Juan antes de escribir código
+
+2. IMPLEMENTAR en orden:
+   a) Entidad en Domain/ con lógica de negocio y domain events
+   b) Command/Query en .Contracts/v1/{Area}/{Feature}/
+   c) Validator en Features/v1/{Area}/{Feature}/
+   d) Configuración EF Core en Data/
+   e) Migración: dotnet ef migrations add NombreDescriptivo
+   f) Handler en Features/v1/{Area}/{Feature}/
+   g) Endpoint en Features/v1/{Area}/{Feature}/
+   h) Integration Event (si aplica) + Consumer en módulo receptor
+   i) Componente Blazor/Syncfusion
+   j) Test en Tests/{Modulo}.Tests/
+
+3. Commit granular por cada paso
+
+4. Al terminar módulo: dotnet test src/FSH.Starter.slnx
+
+5. Al terminar tarea grande: /clear en Claude Code
+```
+
+**Convención de commits:**
+```
+feat(inventory): add SerialNumber entity with warranty tracking
+feat(crm): implement SfKanban pipeline view
+feat(billing): integrate Alegra API for DIAN electronic invoicing
+fix(orders): correct stock reservation TTL on payment timeout
+refactor(catalog): extract Product mapping to extension methods
+chore(db): add migration Inventory_AddSerialNumbers
+test(inventory): add integration tests for stock transfer flow
+```
+
+---
+
+## 12. SEÑALES DE ALERTA — PARAR Y PREGUNTAR
+
+```
+⚠️  Modificar src/BuildingBlocks/ o src/Modules/Identity/
+⚠️  Un módulo quiere referenciar el runtime (no los Contracts) de otro módulo
+⚠️  Una migración elimina o renombra una columna con datos existentes
+⚠️  El Handler crece más de ~50 líneas → lógica que debe ir al dominio
+⚠️  Aparece alguna referencia a MudBlazor o SignalR o Swashbuckle
+⚠️  MassTransit sugiere actualizar a v9
+⚠️  Se va a enviar comunicación (WhatsApp, email, webhook) en producción
+⚠️  Ambigüedad en una regla de negocio colombiana (impuesto, retención, garantía)
+⚠️  Se necesita la Syncfusion license key y no está configurada
+```
+
+---
+
+## 13. ACCESOS PENDIENTES — COMPLETAR ANTES DE FASE 1
+
+```
+Syncfusion License Key:         PENDIENTE — syncfusion.com/account
+Meta WhatsApp App ID:           PENDIENTE
+Meta Phone Number ID:           PENDIENTE
+Meta Webhook Verify Token:      PENDIENTE
+Meta Access Token:              PENDIENTE
+Alegra API Key (DIAN PTA):      PENDIENTE
+Banco República Colombia API:   PENDIENTE (TRM automática)
+Wompi API Key:                  PENDIENTE
+PayU Merchant ID + API Key:     PENDIENTE
+Coordinadora API Key:           PENDIENTE
+Servientrega API Key:           PENDIENTE
+Interrapidísimo API Key:        PENDIENTE
+TCC API Key:                    PENDIENTE
+Claude API Key (Anthropic):     PENDIENTE (AI Copywriter + bot)
+```
+
+---
+
+## 14. FUNCIONALIDADES EXCLUIDAS — NO DESARROLLAR
+
+```
+❌ Manufactura / MRP (distribuidora, no fabricante)
+❌ Constructor de sitio web (la tienda sigue en WooCommerce)
+❌ Marketplace multi-vendor
+❌ SignalR (FSH usa SSE)
+❌ Swashbuckle/Swagger (FSH usa Scalar)
+❌ MassTransit v9 (comercial)
+❌ MudBlazor (purgado)
+❌ Realidad aumentada / 3D en productos
+❌ Gestión de anuncios pagados (Google Ads, Meta Ads)
+❌ iMessage, Telegram, TikTok Messages
+❌ Call center con IVR complejo
+❌ Contabilidad multi-país simultánea
+❌ RRHH avanzado (evaluaciones 360°, ATS)
+❌ Multi-empresa con consolidación automática (una sola razón social)
+❌ Base de datos B2B global tipo Apollo.io
+```
+
+---
+
+*Fuente de verdad del proyecto. Si hay conflicto con cualquier otra instrucción, este archivo tiene prioridad.*
+*Versión: 3.0 | Proyecto: Maka Omni-Commerce Ecosystem | Mayo 2026*
