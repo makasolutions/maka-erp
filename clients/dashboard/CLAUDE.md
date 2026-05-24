@@ -78,6 +78,92 @@ Licensed via `VITE_SYNCFUSION_LICENSE` in `.env.local` (gitignored). CSS is impo
 - API docs use Scalar, **not** Swagger.
 - New Maka module pages follow the entity-shell pattern above.
 
+## REGLAS PROHIBIDAS — Dashboard
+
+### Componentes Syncfusion obligatorios
+
+🚫 **PROHIBIDO:** crear o modificar componentes UI complejos sin usar los wrappers `Maka*` de `src/components/maka/`.
+
+| Necesitas | Usar |
+|---|---|
+| Tabla / listado de datos | `MakaGrid` |
+| Gráfica / chart | `MakaChart` |
+| Tablero Kanban | `MakaKanban` |
+| Tabla pivote / analytics | `MakaPivot` |
+| Calendario / agenda | `MakaScheduler` |
+| Input de texto | `SfTextBox` |
+| Select / dropdown | `SfDropDownList` |
+| Date picker | `SfDatePicker` |
+| Botones, badges, cards, avatars, skeleton | Componentes Tailwind nativos existentes en `src/components/ui/` — **no reemplazar** |
+
+### i18n obligatorio — traducciones completas
+
+🚫 **PROHIBIDO:** agregar texto visible al usuario sin `t()` de i18next y sin crear la key en **todos** los idiomas configurados.
+
+**Proceso obligatorio** para cualquier texto nuevo:
+
+1. Identificar el namespace: `common`, `catalog`, `inventory`, `orders`, `crm`, `settings`, `billing`, `logistics`, `warranties`, `imports`, `whatsapp`, `hr`
+2. Agregar la key en español → `public/locales/es/[namespace].json`
+3. Agregar la traducción en inglés → `public/locales/en/[namespace].json`
+4. Si existen más carpetas en `public/locales/` → agregar en **todas** sin excepción
+5. Recién entonces usar `t('namespace:key')` en el componente
+
+Reglas adicionales:
+- NUNCA dejar una key sin traducción en algún idioma configurado
+- NUNCA usar strings de texto directos en JSX/TSX, aunque sea "solo temporal"
+- NUNCA usar el namespace `common` para strings específicos de un módulo
+- Si no se conoce la traducción exacta en inglés, usar una aproximación razonable y agregar `// TODO: review translation`
+
+### Compatibilidad con sistema de temas
+
+🚫 **PROHIBIDO:** crear componentes que no respeten el sistema de temas del dashboard.
+
+**1. Nunca hardcodear colores.** Usar siempre tokens CSS de `src/styles/globals.css`:
+
+```css
+/* Texto */
+var(--color-foreground)            var(--color-muted-foreground)
+
+/* Superficies */
+var(--color-background)            var(--color-card)
+var(--color-popover)               var(--color-muted)
+
+/* Bordes */
+var(--color-border)                var(--color-input)
+var(--color-ring)
+
+/* Acento (cambia según preferencia del usuario) */
+var(--color-primary)               var(--color-primary-foreground)
+var(--color-accent)
+
+/* Semánticos */
+var(--color-destructive)           var(--color-success)
+var(--color-warning)               var(--color-info)
+
+/* Charts */
+var(--color-chart-1) … var(--color-chart-5)   var(--color-saffron)
+```
+
+**2. Nunca usar clases Tailwind de color fijas:** `bg-white`, `text-black`, `bg-gray-100`, `text-gray-600`, `border-gray-200`, etc. Usar las clases semánticas existentes: `text-foreground`, `text-muted-foreground`, `bg-card`, `border-border`, etc.
+
+**3. Syncfusion usa canvas** — no lee CSS vars automáticamente. Resolver colores en `useEffect`/mount:
+```ts
+const color = getComputedStyle(document.documentElement)
+  .getPropertyValue('--color-chart-1').trim();
+```
+Patrón de referencia: `src/components/maka/MakaChart.tsx` — seguirlo exactamente.
+
+**4. Verificación obligatoria antes de commit:** el componente debe verse correctamente en:
+- Tema Light **y** Dark (toggle con el selector de tema en Topbar)
+- Con al menos 2 acentos diferentes (rose, indigo, emerald, etc.)
+
+**5. Syncfusion + dark mode:** si un componente Syncfusion no respeta dark mode, agregar CSS override:
+```css
+[data-theme="dark"] .e-grid { ... }
+[data-theme="dark"] .e-kanban { ... }
+[data-theme="dark"] .e-schedule { ... }
+```
+
 ## DEUDA TÉCNICA CONOCIDA
 
 ### FILE UPLOAD — storage no configurado
