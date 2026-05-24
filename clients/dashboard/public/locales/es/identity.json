@@ -135,6 +135,7 @@
   "roles": {
     "title": "Roles",
     "singular": "rol",
+    "plural": "roles",
     "description": "Conjuntos de permisos a nivel sistema. Los usuarios heredan todos los permisos de sus roles asignados.",
     "searchPlaceholder": "Buscar por nombre o descripción…",
     "system": "sistema",

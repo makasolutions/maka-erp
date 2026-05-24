@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useMutation,
   useQuery,
@@ -52,13 +53,14 @@ function newGuid(): string {
 }
 
 export function RolesPage() {
+  const { t } = useTranslation("identity");
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim().toLowerCase()), 200);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(search.trim().toLowerCase()), 200);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const query = useQuery({
@@ -83,24 +85,25 @@ export function RolesPage() {
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Shield}
-        title="Roles"
+        title={t("roles.title")}
         total={query.data ? roles.length : null}
-        unit="role"
-        description="Roles bundle permissions into named bands of authority. Assign them from the user detail page."
+        unit={t("roles.singular")}
+        unitPlural={t("roles.plural")}
+        description={t("roles.description")}
       >
         <Button
           onClick={() => setCreateOpen(true)}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
           <Plus className="size-4" />
-          New role
+          {t("roles.actions.create")}
         </Button>
       </EntityPageHeader>
 
       <EntitySearch
         value={search}
         onChange={setSearch}
-        placeholder="Search by name or description…"
+        placeholder={t("roles.searchPlaceholder")}
       />
 
       {query.isLoading ? (
@@ -108,11 +111,11 @@ export function RolesPage() {
       ) : filtered.length === 0 ? (
         <EntityEmpty
           icon={Shield}
-          title={searchActive ? "No roles found" : "No roles yet"}
+          title={searchActive ? t("roles.emptySearch") : t("roles.empty.title")}
           body={
             searchActive
-              ? `Nothing matches "${debounced}". Try a different term or clear the search.`
-              : "Create the first role to start grouping permissions. Without roles, members default to no access."
+              ? t("roles.emptySearchBody", { term: debounced })
+              : t("roles.empty.body")
           }
           action={
             searchActive ? (
@@ -121,7 +124,7 @@ export function RolesPage() {
                 onClick={() => setSearch("")}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                Clear search
+                {t("roles.clearSearch")}
               </Button>
             ) : (
               <Button
@@ -129,7 +132,7 @@ export function RolesPage() {
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
                 <Plus className="mr-1.5 size-4" />
-                Add role
+                {t("roles.addRole")}
               </Button>
             )
           }
@@ -138,7 +141,7 @@ export function RolesPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {filtered.length} role{filtered.length !== 1 ? "s" : ""} found
+              {t("roles.rolesFound", { count: filtered.length })}
             </p>
           </div>
 
@@ -152,9 +155,9 @@ export function RolesPage() {
           {/* Desktop: table */}
           <EntityListCard className="hidden md:block">
             <EntityListHeader className={DESKTOP_COLS}>
-              <span>Name</span>
-              <span className="hidden lg:block">Description</span>
-              <span>Permissions</span>
+              <span>{t("roles.columns.name")}</span>
+              <span className="hidden lg:block">{t("roles.columns.description")}</span>
+              <span>{t("roles.fields.permissions")}</span>
               <span />
             </EntityListHeader>
 
@@ -190,18 +193,16 @@ export function RolesPage() {
 //  Rows
 // ───────────────────────────────────────────────────────────────────────
 
-function permissionLabel(role: RoleDto) {
-  if (role.permissions === undefined || role.permissions === null) return "—";
-  const n = role.permissions.length;
-  return `${n} ${n === 1 ? "permission" : "permissions"}`;
-}
-
 function RoleMobileCard({ role }: { role: RoleDto }) {
+  const { t } = useTranslation("identity");
   const isSystem = SYSTEM_ROLE_NAMES.has(role.name.toLowerCase());
+  const n = role.permissions?.length ?? 0;
+  const permLabel = role.permissions == null ? "—" : t("roles.permissionCount", { count: n });
+
   return (
     <EntityMobileCard
       href={`/identity/roles/${role.id}`}
-      aria-label={`Open role ${role.name}`}
+      aria-label={t("roles.openRoleAria", { name: role.name })}
     >
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-3">
@@ -211,7 +212,7 @@ function RoleMobileCard({ role }: { role: RoleDto }) {
               <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
                 {role.name}
               </p>
-              {isSystem && <EntityStatusBadge>System</EntityStatusBadge>}
+              {isSystem && <EntityStatusBadge>{t("roles.systemBadge")}</EntityStatusBadge>}
             </div>
             <p
               className={cn(
@@ -219,23 +220,25 @@ function RoleMobileCard({ role }: { role: RoleDto }) {
                 !role.description && "italic opacity-60",
               )}
             >
-              {role.description ?? "No description on file."}
+              {role.description ?? t("roles.noDescriptionOnFile")}
             </p>
           </div>
         </div>
         <ChevronRight className="size-4 shrink-0 text-[var(--color-border)]" />
       </div>
       <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-1.5">
-        <EntityStatusBadge tone="info">
-          {permissionLabel(role)}
-        </EntityStatusBadge>
+        <EntityStatusBadge tone="info">{permLabel}</EntityStatusBadge>
       </div>
     </EntityMobileCard>
   );
 }
 
 function RoleDesktopRow({ role, isLast }: { role: RoleDto; isLast: boolean }) {
+  const { t } = useTranslation("identity");
   const isSystem = SYSTEM_ROLE_NAMES.has(role.name.toLowerCase());
+  const n = role.permissions?.length ?? 0;
+  const permLabel = role.permissions == null ? "—" : t("roles.permissionCount", { count: n });
+
   return (
     <EntityListRow className={DESKTOP_COLS} isLast={isLast}>
       {/* Name */}
@@ -248,7 +251,7 @@ function RoleDesktopRow({ role, isLast }: { role: RoleDto; isLast: boolean }) {
           {role.name}
         </span>
         {isSystem && (
-          <EntityStatusBadge className="shrink-0">System</EntityStatusBadge>
+          <EntityStatusBadge className="shrink-0">{t("roles.systemBadge")}</EntityStatusBadge>
         )}
       </Link>
 
@@ -261,13 +264,13 @@ function RoleDesktopRow({ role, isLast }: { role: RoleDto; isLast: boolean }) {
           )}
           title={role.description ?? undefined}
         >
-          {role.description ?? "No description on file."}
+          {role.description ?? t("roles.noDescriptionOnFile")}
         </p>
       </div>
 
       {/* Permission count */}
       <span className="font-mono text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
-        {permissionLabel(role)}
+        {permLabel}
       </span>
 
       <div className="flex items-center justify-end">
@@ -278,7 +281,7 @@ function RoleDesktopRow({ role, isLast }: { role: RoleDto; isLast: boolean }) {
 }
 
 // ───────────────────────────────────────────────────────────────────────
-//  Create dialog — hooks/mutations preserved verbatim
+//  Create dialog
 // ───────────────────────────────────────────────────────────────────────
 
 function CreateRoleDialog({
@@ -288,6 +291,7 @@ function CreateRoleDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("identity");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -308,15 +312,15 @@ function CreateRoleDialog({
         description: description.trim() || undefined,
       }),
     onSuccess: (role) => {
-      toast.success("Role created", {
-        description: `Now configure ${role.name}'s permissions.`,
+      toast.success(t("roles.roleCreated"), {
+        description: t("roles.roleCreatedDesc", { name: role.name }),
       });
       void queryClient.invalidateQueries({ queryKey: ["identity", "roles"] });
       onClose();
       navigate(`/identity/roles/${role.id}`);
     },
     onError: (err) =>
-      toast.error("Create failed", { description: describe(err) }),
+      toast.error(t("roles.createFailed"), { description: describe(err) }),
   });
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -330,19 +334,16 @@ function CreateRoleDialog({
       <DialogContent>
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle>Create a role</DialogTitle>
-            <DialogDescription>
-              Roles bundle permissions. After creating, you'll be taken to the
-              editor to assign permissions and tune access.
-            </DialogDescription>
+            <DialogTitle>{t("roles.createTitle")}</DialogTitle>
+            <DialogDescription>{t("roles.createDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            <Field id="role-name" label="Name" required>
+            <Field id="role-name" label={t("roles.fields.name")} required>
               <Input
                 id="role-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Manager"
+                placeholder={t("roles.namePlaceholder")}
                 required
                 autoFocus
                 maxLength={128}
@@ -350,14 +351,14 @@ function CreateRoleDialog({
             </Field>
             <Field
               id="role-description"
-              label="Description"
-              hint="Shown to admins when assigning roles. Plain English helps."
+              label={t("roles.fields.description")}
+              hint={t("roles.descriptionHint")}
             >
               <Input
                 id="role-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Can manage users and assign roles"
+                placeholder={t("roles.descriptionPlaceholder")}
                 maxLength={512}
               />
             </Field>
@@ -369,7 +370,7 @@ function CreateRoleDialog({
                 variant="outline"
                 disabled={mutation.isPending}
               >
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -378,7 +379,7 @@ function CreateRoleDialog({
               className="gap-1.5"
             >
               <Plus className="h-4 w-4" />
-              {mutation.isPending ? "Creating…" : "Create role"}
+              {mutation.isPending ? t("roles.creating") : t("roles.create")}
             </Button>
           </DialogFooter>
         </form>

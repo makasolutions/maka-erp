@@ -1,7 +1,47 @@
 {
   "sessions": {
     "title": "Active sessions",
-    "description": "Devices and browsers currently signed in.",
+    "unit": "session",
+    "unitPlural": "sessions",
+    "description": "Every browser and device currently signed in to {{tenant}}. Refreshes every 30 seconds.",
+    "refresh": "Refresh",
+    "searchPlaceholder": "Find by user, email, or IP…",
+    "filterVisibility": "Visibility",
+    "filterLiveOnly": "Live only",
+    "filterIncludeInactive": "Include inactive",
+    "statsActive": "{{count}} active",
+    "statsUsers": "{{count}} users",
+    "statsMobile": "{{count}} mobile",
+    "found_one": "{{count}} session found",
+    "found_other": "{{count}} sessions found",
+    "empty": {
+      "title": "No active sessions",
+      "searchTitle": "No sessions found",
+      "body": "Sessions appear when users sign in. Toggle Include inactive to see expired and revoked sessions.",
+      "searchBody": "Nothing matches \"{{term}}\". Try a different term, or toggle Include inactive to see expired sessions.",
+      "clearSearch": "Clear search"
+    },
+    "cols": {
+      "user": "User",
+      "device": "Device",
+      "ip": "IP",
+      "lastActivity": "Last activity",
+      "actions": "Actions"
+    },
+    "youBadge": "You",
+    "inactiveBadge": "Inactive",
+    "allDevices": "All devices",
+    "allDevicesShort": "All",
+    "allDevicesTitle": "Sign this user out of all devices",
+    "revoking": "Revoking…",
+    "revoke": "Revoke",
+    "revokeSuccess": "Session revoked",
+    "revokeAllSuccess_one": "Revoked {{count}} session",
+    "revokeAllSuccess_other": "Revoked {{count}} sessions",
+    "revokeErrorFallback": "Could not revoke session.",
+    "revokeAllErrorFallback": "Could not revoke sessions.",
+    "unknownUser": "Unknown user",
+    "unknownBrowser": "Unknown browser",
     "fields": {
       "device": "Device",
       "location": "Location",
@@ -9,25 +49,42 @@
       "lastSeen": "Last seen",
       "current": "Current session"
     },
-    "revoke": "Revoke session",
-    "revokeAll": "Revoke all",
     "revokeConfirm": "Revoke this session?",
     "revokeAllConfirm": "Revoke all sessions?",
-    "revokeAllDesc": "All devices except the current one will be signed out.",
-    "empty": {
-      "title": "No active sessions",
-      "body": "There are no other open sessions at this time."
-    }
+    "revokeAllDesc": "All devices except the current one will be signed out."
   },
   "trash": {
-    "title": "Trash",
-    "description": "Recently deleted items. Permanently removed after 30 days.",
-    "restore": "Restore",
-    "deletePermanently": "Delete permanently",
-    "empty": {
-      "title": "Trash is empty",
-      "body": "Deleted items will appear here."
+    "title": "Recycle bin",
+    "description": "Soft-deleted records, kept indefinitely until you restore them. Restoring a row brings it back to its parent list with the same ID and history intact.",
+    "navLabel": "Trash sections",
+    "tabs": {
+      "products": "Products",
+      "brands": "Brands",
+      "categories": "Categories",
+      "tickets": "Tickets",
+      "files": "Files"
     },
+    "empty": {
+      "title": "The {{label}} trash is empty",
+      "body": "Soft-deleted {{label}} land here for as long as you want — no automatic purge. Anything you remove from the main list can be recovered.",
+      "backTo": "Back to {{label}}"
+    },
+    "countInTrash": "{{count}} {{label}} in trash",
+    "cols": {
+      "entity": "Entity",
+      "deletedBy": "Deleted by",
+      "deletedAt": "Deleted at",
+      "actions": "Actions"
+    },
+    "restoredProduct": "Product restored",
+    "restoredBrand": "Brand restored",
+    "restoredCategory": "Category restored",
+    "restoredTicket": "Ticket restored",
+    "restoredFile": "File restored",
+    "restoring": "Restoring…",
+    "restore": "Restore",
+    "byPrefix": "by {{id}}…",
+    "deletePermanently": "Delete permanently",
     "deletedAt": "Deleted at",
     "expiresAt": "Expires at",
     "restoreConfirm": "Restore this item?",

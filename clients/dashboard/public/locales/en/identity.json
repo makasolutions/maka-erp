@@ -135,6 +135,7 @@
   "roles": {
     "title": "Roles",
     "singular": "role",
+    "plural": "roles",
     "description": "System-level permission sets. Users inherit all permissions from their assigned roles.",
     "searchPlaceholder": "Search by name or description…",
     "system": "system",

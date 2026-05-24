@@ -1,7 +1,47 @@
 {
   "sessions": {
     "title": "Sesiones activas",
-    "description": "Dispositivos y navegadores con sesión iniciada actualmente.",
+    "unit": "sesión",
+    "unitPlural": "sesiones",
+    "description": "Cada navegador y dispositivo con sesión activa en {{tenant}}. Se actualiza cada 30 segundos.",
+    "refresh": "Actualizar",
+    "searchPlaceholder": "Buscar por usuario, correo o IP…",
+    "filterVisibility": "Visibilidad",
+    "filterLiveOnly": "Solo activas",
+    "filterIncludeInactive": "Incluir inactivas",
+    "statsActive": "{{count}} activas",
+    "statsUsers": "{{count}} usuarios",
+    "statsMobile": "{{count}} móviles",
+    "found_one": "{{count}} sesión encontrada",
+    "found_other": "{{count}} sesiones encontradas",
+    "empty": {
+      "title": "Sin sesiones activas",
+      "searchTitle": "Sin sesiones encontradas",
+      "body": "Las sesiones aparecen cuando los usuarios inician sesión. Activa Incluir inactivas para ver sesiones vencidas y revocadas.",
+      "searchBody": "Nada coincide con \"{{term}}\". Prueba otro término, o activa Incluir inactivas para ver sesiones vencidas.",
+      "clearSearch": "Limpiar búsqueda"
+    },
+    "cols": {
+      "user": "Usuario",
+      "device": "Dispositivo",
+      "ip": "IP",
+      "lastActivity": "Última actividad",
+      "actions": "Acciones"
+    },
+    "youBadge": "Tú",
+    "inactiveBadge": "Inactiva",
+    "allDevices": "Todos los dispositivos",
+    "allDevicesShort": "Todo",
+    "allDevicesTitle": "Cerrar sesión de este usuario en todos sus dispositivos",
+    "revoking": "Revocando…",
+    "revoke": "Revocar",
+    "revokeSuccess": "Sesión revocada",
+    "revokeAllSuccess_one": "Se revocó {{count}} sesión",
+    "revokeAllSuccess_other": "Se revocaron {{count}} sesiones",
+    "revokeErrorFallback": "No se pudo revocar la sesión.",
+    "revokeAllErrorFallback": "No se pudieron revocar las sesiones.",
+    "unknownUser": "Usuario desconocido",
+    "unknownBrowser": "Navegador desconocido",
     "fields": {
       "device": "Dispositivo",
       "location": "Ubicación",
@@ -9,25 +49,42 @@
       "lastSeen": "Última actividad",
       "current": "Sesión actual"
     },
-    "revoke": "Revocar sesión",
-    "revokeAll": "Revocar todas",
     "revokeConfirm": "¿Revocar esta sesión?",
     "revokeAllConfirm": "¿Revocar todas las sesiones?",
-    "revokeAllDesc": "Todos los dispositivos excepto el actual serán desconectados.",
-    "empty": {
-      "title": "Sin sesiones activas",
-      "body": "No hay otras sesiones abiertas actualmente."
-    }
+    "revokeAllDesc": "Todos los dispositivos excepto el actual serán desconectados."
   },
   "trash": {
     "title": "Papelera",
-    "description": "Elementos eliminados recientemente. Se borran permanentemente después de 30 días.",
-    "restore": "Restaurar",
-    "deletePermanently": "Eliminar permanentemente",
-    "empty": {
-      "title": "La papelera está vacía",
-      "body": "Los elementos eliminados aparecerán aquí."
+    "description": "Registros eliminados, conservados indefinidamente hasta que los restaures. Restaurar una fila la devuelve a su lista de origen con el mismo ID e historial.",
+    "navLabel": "Secciones de la papelera",
+    "tabs": {
+      "products": "Productos",
+      "brands": "Marcas",
+      "categories": "Categorías",
+      "tickets": "Tickets",
+      "files": "Archivos"
     },
+    "empty": {
+      "title": "La papelera de {{label}} está vacía",
+      "body": "Los {{label}} eliminados aparecen aquí indefinidamente — sin purga automática. Cualquier elemento que elimines de la lista principal puede recuperarse.",
+      "backTo": "Volver a {{label}}"
+    },
+    "countInTrash": "{{count}} {{label}} en la papelera",
+    "cols": {
+      "entity": "Entidad",
+      "deletedBy": "Eliminado por",
+      "deletedAt": "Eliminado el",
+      "actions": "Acciones"
+    },
+    "restoredProduct": "Producto restaurado",
+    "restoredBrand": "Marca restaurada",
+    "restoredCategory": "Categoría restaurada",
+    "restoredTicket": "Ticket restaurado",
+    "restoredFile": "Archivo restaurado",
+    "restoring": "Restaurando…",
+    "restore": "Restaurar",
+    "byPrefix": "por {{id}}…",
+    "deletePermanently": "Eliminar permanentemente",
     "deletedAt": "Eliminado el",
     "expiresAt": "Expira el",
     "restoreConfirm": "¿Restaurar este elemento?",

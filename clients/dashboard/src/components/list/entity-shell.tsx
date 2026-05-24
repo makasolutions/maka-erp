@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/cn";
 import { ToneIconTile, type ToneIconTileTone } from "./tone-icon-tile";
 
@@ -16,6 +17,7 @@ export function EntityPageHeader({
   tone = "primary",
   total,
   unit = "item",
+  unitPlural,
   description,
   children,
 }: {
@@ -26,6 +28,9 @@ export function EntityPageHeader({
   tone?: ToneIconTileTone;
   total?: number | null;
   unit?: string;
+  /** Explicit plural form of `unit`. Use when the locale's plural isn't
+   *  formed by appending "s" (e.g. "rol" → "roles", "sesión" → "sesiones"). */
+  unitPlural?: string;
   description?: React.ReactNode;
   /** Action buttons rendered on the right (stack full-width on mobile). */
   children?: React.ReactNode;
@@ -41,7 +46,7 @@ export function EntityPageHeader({
             </h1>
             {total !== undefined && total !== null && (
               <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
-                {total} {total === 1 ? unit : `${unit}s`}
+                {total} {total === 1 ? unit : (unitPlural ?? `${unit}s`)}
               </span>
             )}
           </div>
@@ -75,6 +80,7 @@ export function EntitySearch({
   placeholder?: string;
   autoFocus?: boolean;
 }) {
+  const { t } = useTranslation("common");
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]" />
@@ -99,7 +105,7 @@ export function EntitySearch({
           className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-[11px] font-medium text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)] transition-colors hover:text-[var(--color-muted-foreground)]"
           type="button"
         >
-          Clear
+          {t("actions.clear")}
         </button>
       )}
     </div>
@@ -170,18 +176,19 @@ export function EntityPager({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const { t } = useTranslation("common");
   if (totalPages <= 1) return null;
   return (
     <div className="mt-3 flex items-center justify-between">
       <p className="text-[11px] text-[var(--color-muted-foreground)]">
-        Page {page} of {totalPages}
+        {t("table.pageOf", { page, total: totalPages })}
       </p>
       <div className="flex items-center gap-1">
         <button
           type="button"
           disabled={!hasPrev}
           onClick={onPrev}
-          aria-label="Previous page"
+          aria-label={t("actions.prev")}
           className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[oklch(from_var(--color-muted)_l_c_h_/_0.5)] hover:text-[var(--color-foreground)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           <ChevronLeft className="size-4" />
@@ -190,7 +197,7 @@ export function EntityPager({
           type="button"
           disabled={!hasNext}
           onClick={onNext}
-          aria-label="Next page"
+          aria-label={t("actions.next")}
           className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[oklch(from_var(--color-muted)_l_c_h_/_0.5)] hover:text-[var(--color-foreground)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           <ChevronRight className="size-4" />
