@@ -1,39 +1,43 @@
 import { ApiRequestError } from "@/lib/api-client";
+import i18next from "i18next";
 
-const dateLong = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "2-digit",
-  year: "numeric",
-});
+function getDateFormatter() {
+  return new Intl.DateTimeFormat(i18next.language || "es", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
 
 export function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
-  return dateLong.format(new Date(iso));
+  return getDateFormatter().format(new Date(iso));
 }
 
 // "APR 30 2026" — mono-caps tabular form for ledger/registry rows.
 export function formatDateMono(iso: string | null | undefined) {
   if (!iso) return "—";
-  return dateLong.format(new Date(iso)).toUpperCase().replace(",", "");
+  return getDateFormatter().format(new Date(iso)).toUpperCase().replace(",", "");
 }
 
-// "3d ago", "2mo ago" — terse relative time for the secondary line.
+// "hace 3d", "hace 2mo" — terse relative time for the secondary line.
 export function formatRelative(iso: string | null | undefined) {
   if (!iso) return "";
   const diffMs = Date.now() - new Date(iso).getTime();
   if (Number.isNaN(diffMs) || diffMs < 0) return "";
+  const t = i18next.t.bind(i18next);
   const sec = Math.floor(diffMs / 1000);
-  if (sec < 60) return "just now";
+  if (sec < 60) return t("common:relativeTime.justNow");
   const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
+  if (min < 60) return t("common:relativeTime.minutesAgo", { count: min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return t("common:relativeTime.hoursAgo", { count: hr });
   const day = Math.floor(hr / 24);
-  if (day < 30) return `${day}d ago`;
+  if (day < 30) return t("common:relativeTime.daysAgo", { count: day });
   const mo = Math.floor(day / 30);
-  if (mo < 12) return `${mo}mo ago`;
+  if (mo < 12) return t("common:relativeTime.monthsAgo", { count: mo });
   const yr = Math.floor(day / 365);
-  return `${yr}y ago`;
+  return t("common:relativeTime.yearsAgo", { count: yr });
 }
 
 export function pad2(n: number) {

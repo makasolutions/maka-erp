@@ -1,4 +1,17 @@
 {
+  "relativeTime": {
+    "justNow": "just now",
+    "minutesAgo_one": "{{count}}m ago",
+    "minutesAgo_other": "{{count}}m ago",
+    "hoursAgo_one": "{{count}}h ago",
+    "hoursAgo_other": "{{count}}h ago",
+    "daysAgo_one": "{{count}}d ago",
+    "daysAgo_other": "{{count}}d ago",
+    "monthsAgo_one": "{{count}}mo ago",
+    "monthsAgo_other": "{{count}}mo ago",
+    "yearsAgo_one": "{{count}}y ago",
+    "yearsAgo_other": "{{count}}y ago"
+  },
   "actions": {
     "save": "Save",
     "cancel": "Cancel",
@@ -405,8 +418,8 @@
     "listeningDesc": "The stream is open. Events will appear here as the backend publishes them.",
     "noEventsTitle": "No events yet",
     "noEventsDesc": "The activity stream is not connected. Events will queue once the connection comes online.",
-    "eventsShown": "{{count}} event shown",
-    "eventsShown_plural": "{{count}} events shown",
+    "eventsShown_one": "{{count}} event shown",
+    "eventsShown_other": "{{count}} events shown",
     "totalEvents": "{{count}} total",
     "ariaLabel": "Activity events"
   },
@@ -438,8 +451,8 @@
       "body": "Try widening the time range or relaxing the filters. Activity events arrive as soon as the platform handles a request.",
       "resetFilters": "Reset filters"
     },
-    "eventsFound": "{{count}} event found",
-    "eventsFound_plural": "{{count}} events found",
+    "eventsFound_one": "{{count}} event found",
+    "eventsFound_other": "{{count}} events found",
     "drawer": {
       "title": "Audit detail",
       "description": "Full payload, identifiers, and related actions for the selected audit event.",

@@ -1,4 +1,17 @@
 {
+  "relativeTime": {
+    "justNow": "justo ahora",
+    "minutesAgo_one": "hace {{count}}m",
+    "minutesAgo_other": "hace {{count}}m",
+    "hoursAgo_one": "hace {{count}}h",
+    "hoursAgo_other": "hace {{count}}h",
+    "daysAgo_one": "hace {{count}}d",
+    "daysAgo_other": "hace {{count}}d",
+    "monthsAgo_one": "hace {{count}}mo",
+    "monthsAgo_other": "hace {{count}}mo",
+    "yearsAgo_one": "hace {{count}}a",
+    "yearsAgo_other": "hace {{count}}a"
+  },
   "actions": {
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -405,8 +418,8 @@
     "listeningDesc": "El stream está abierto. Los eventos aparecerán aquí cuando el backend los publique.",
     "noEventsTitle": "Sin eventos aún",
     "noEventsDesc": "El stream de actividad no está conectado. Los eventos se acumularán cuando la conexión se restablezca.",
-    "eventsShown": "{{count}} evento mostrado",
-    "eventsShown_plural": "{{count}} eventos mostrados",
+    "eventsShown_one": "{{count}} evento mostrado",
+    "eventsShown_other": "{{count}} eventos mostrados",
     "totalEvents": "{{count}} total",
     "ariaLabel": "Eventos de actividad"
   },
@@ -438,8 +451,8 @@
       "body": "Intenta ampliar el rango de tiempo o relajar los filtros. Los eventos de actividad llegan en cuanto la plataforma maneja una solicitud.",
       "resetFilters": "Restablecer filtros"
     },
-    "eventsFound": "{{count}} evento encontrado",
-    "eventsFound_plural": "{{count}} eventos encontrados",
+    "eventsFound_one": "{{count}} evento encontrado",
+    "eventsFound_other": "{{count}} eventos encontrados",
     "drawer": {
       "title": "Detalle de auditoría",
       "description": "Payload completo, identificadores y acciones relacionadas del evento seleccionado.",

@@ -65,8 +65,8 @@
       "clearSearch": "Clear search",
       "clearFilters": "Clear filters"
     },
-    "found": "{{count}} product found",
-    "found_plural": "{{count}} products found",
+    "found_one": "{{count}} product found",
+    "found_other": "{{count}} products found",
     "lowStock": "Low stock",
     "inStock": "In stock",
     "outOfStock": "Out of stock",
@@ -184,8 +184,8 @@
       "filterBody": "No brands match the current filters.",
       "clearSearch": "Clear search"
     },
-    "found": "{{count}} brand found",
-    "found_plural": "{{count}} brands found",
+    "found_one": "{{count}} brand found",
+    "found_other": "{{count}} brands found",
     "deleteConfirm": "Delete \"{{name}}\"?",
     "deleteDesc": "This permanently removes {{name}}. Products referencing this brand will need to be reassigned.",
     "createDesc": "Add a brand to your catalog. The slug is generated automatically from the name.",
@@ -223,8 +223,8 @@
       "filterBody": "No categories match the current filters.",
       "clearSearch": "Clear search"
     },
-    "found": "{{count}} category found",
-    "found_plural": "{{count}} categories found",
+    "found_one": "{{count}} category found",
+    "found_other": "{{count}} categories found",
     "deleteConfirm": "Delete \"{{name}}\"?",
     "deleteDesc": "This permanently removes {{name}}. Child categories and products referencing it will need to be reassigned.",
     "createDesc": "Add a category to your catalog. The slug is generated automatically from the name.",
