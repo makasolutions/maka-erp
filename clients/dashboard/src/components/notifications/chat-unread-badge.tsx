@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { MessageCircle } from "lucide-react";
 import { listMyChannels } from "@/api/chat";
 import { cn } from "@/lib/cn";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/cn";
  *   - the composer invalidates it when the user sends
  */
 export function ChatUnreadBadge() {
+  const { t } = useTranslation("chat");
   const navigate = useNavigate();
   const { data: channels } = useQuery({
     queryKey: ["chat", "my-channels"],
@@ -33,8 +35,8 @@ export function ChatUnreadBadge() {
   return (
     <button
       type="button"
-      aria-label={`Chat${unread > 0 ? `, ${unread} unread message${unread === 1 ? "" : "s"}` : ""}`}
-      title={unread > 0 ? `${unread} unread chat message${unread === 1 ? "" : "s"}` : "Chat"}
+      aria-label={unread > 0 ? t("badge.ariaWithUnread", { count: unread }) : t("badge.chat")}
+      title={unread > 0 ? t("badge.titleWithUnread", { count: unread }) : t("badge.chat")}
       onClick={() => navigate("/chat")}
       className={cn(
         "relative grid h-9 w-9 cursor-pointer place-items-center rounded-md",

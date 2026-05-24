@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Hash, Lock, MessageCircle, Users2, X } from "lucide-react";
 import type { ChannelDto, MessageDto } from "@/api/chat";
@@ -83,6 +84,7 @@ function ChatToast({
   onView: () => void;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation("chat");
   const queryClient = useQueryClient();
   const author = useUserDisplay(payload.authorUserId);
   // Read the channel from cache rather than firing a fresh fetch — the
@@ -92,12 +94,12 @@ function ChatToast({
   const channel = channels?.find((c) => c.id === payload.channelId);
 
   const channelLabel = !channel
-    ? "a channel"
+    ? t("notifier.aChannel")
     : channel.type === 2
       ? `#${channel.name ?? "channel"}`
       : channel.type === 0
-        ? "direct message"
-        : "group chat";
+        ? t("notifier.directMessage")
+        : t("notifier.groupChat");
   const ChannelIcon = !channel
     ? MessageCircle
     : channel.type === 2
@@ -141,7 +143,7 @@ function ChatToast({
       <button
         type="button"
         onClick={onView}
-        title="Open conversation"
+        title={t("notifier.openConversation")}
         className={cn(
           "relative flex w-full items-start gap-3 p-3 pr-9 text-left",
           "cursor-pointer transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
@@ -167,7 +169,7 @@ function ChatToast({
               className="h-1 w-1 shrink-0 rounded-full bg-[var(--color-primary)] opacity-70"
             />
             <span className="truncate text-[11px] text-[var(--color-muted-foreground)]">
-              just now
+              {t("notifier.justNow")}
             </span>
           </div>
 
@@ -193,7 +195,7 @@ function ChatToast({
             </p>
           ) : (
             <p className="mt-2 text-[12px] italic text-[var(--color-muted-foreground)]">
-              (attachment or empty body)
+              {t("notifier.noBody")}
             </p>
           )}
         </div>
@@ -207,8 +209,8 @@ function ChatToast({
           e.stopPropagation();
           onDismiss();
         }}
-        aria-label="Dismiss notification"
-        title="Dismiss"
+        aria-label={t("notifier.dismissAria")}
+        title={t("notifier.dismiss")}
         className={cn(
           "absolute right-2 top-2 grid h-6 w-6 cursor-pointer place-items-center rounded-md",
           "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",

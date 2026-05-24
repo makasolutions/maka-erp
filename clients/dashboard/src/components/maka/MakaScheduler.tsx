@@ -22,6 +22,7 @@ import {
   type View,
 } from "@syncfusion/ej2-react-schedule";
 import { L10n, loadCldr } from "@syncfusion/ej2-base";
+import { useTranslation } from "react-i18next";
 // CLDR data for the "es" locale — required by Syncfusion's Internationalization
 // layer for date/time formatting (day names, month names, AM/PM, patterns).
 // L10n.load() covers UI strings; loadCldr() covers calendar/number data.
@@ -180,10 +181,11 @@ export function MakaScheduler({
   height = "550px",
   defaultView = "Week",
 }: MakaSchedulerProps) {
+  const { i18n } = useTranslation();
   return (
     <ScheduleComponent
       height={height}
-      locale="es"
+      locale={i18n.language}
       timezone="America/Bogota"
       currentView={defaultView}
       timeFormat="h:mm a"

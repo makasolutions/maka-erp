@@ -22,6 +22,7 @@ import {
   type ToolbarItems,
 } from "@syncfusion/ej2-react-pivotview";
 import { L10n } from "@syncfusion/ej2-base";
+import { useTranslation } from "react-i18next";
 
 // ── Spanish locale ────────────────────────────────────────────────────────────
 L10n.load({
@@ -275,6 +276,7 @@ export function MakaPivot({
   height = 500,
   formatAsCOP = true,
 }: MakaPivotProps) {
+  const { i18n } = useTranslation();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const toFields = (names: string[]): any[] => names.map((n) => ({ name: n }));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -309,7 +311,7 @@ export function MakaPivot({
       dataSourceSettings={dataSourceSettings}
       height={height}
       width="100%"
-      locale="es"
+      locale={i18n.language}
       showToolbar
       toolbar={toolbar}
       showFieldList

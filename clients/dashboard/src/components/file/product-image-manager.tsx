@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Loader2, Star, StarOff, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,6 +44,7 @@ type Props = {
  *   - Clicking an image opens a fullscreen preview modal.
  */
 export function ProductImageManager({ productId, images, invalidateKey, className }: Props) {
+  const { t } = useTranslation("files");
   const queryClient = useQueryClient();
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [pendingRemove, setPendingRemove] = useState<ProductImageDto | null>(null);
@@ -63,27 +65,27 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
       void queryClient.invalidateQueries({ queryKey: invalidateKey });
     },
     onError: (e: unknown) => {
-      toast.error(extract(e, "Failed to attach image"));
+      toast.error(extract(e, t("productImages.toastAttachFailed")));
     },
   });
 
   const thumbnailMutation = useMutation({
     mutationFn: (imageId: string) => setProductThumbnail(productId, imageId),
     onSuccess: () => {
-      toast.success("Cover image updated");
+      toast.success(t("productImages.toastCoverUpdated"));
       void queryClient.invalidateQueries({ queryKey: invalidateKey });
     },
-    onError: (e: unknown) => toast.error(extract(e, "Failed to set cover")),
+    onError: (e: unknown) => toast.error(extract(e, t("productImages.toastCoverFailed"))),
   });
 
   const removeMutation = useMutation({
     mutationFn: (imageId: string) => removeProductImage(productId, imageId),
     onSuccess: () => {
-      toast.success("Image removed");
+      toast.success(t("productImages.toastRemoved"));
       void queryClient.invalidateQueries({ queryKey: invalidateKey });
       setPendingRemove(null);
     },
-    onError: (e: unknown) => toast.error(extract(e, "Failed to remove image")),
+    onError: (e: unknown) => toast.error(extract(e, t("productImages.toastRemoveFailed"))),
   });
 
   const handlePick = () => {
@@ -103,7 +105,7 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
           }
           await attachMutation.mutateAsync({ fileAssetId: asset.id, url: meta.publicUrl });
         } catch (e) {
-          toast.error(extract(e, `Upload failed: ${file.name}`));
+          toast.error(extract(e, t("productImages.uploadFailed", { name: file.name })));
         }
       }
       reset();
@@ -122,7 +124,7 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
           {isUploading || attachMutation.isPending
             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
             : <Upload className="h-3.5 w-3.5" />}
-          Upload images
+          {t("productImages.upload")}
         </Button>
         {progress && progress.status !== "done" && (
           <span className="text-[11.5px] tabular-nums text-[var(--color-muted-foreground)]">
@@ -130,14 +132,14 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
           </span>
         )}
         <span className="ml-auto text-[11.5px] text-[var(--color-muted-foreground)]">
-          {sorted.length} image{sorted.length === 1 ? "" : "s"} · JPG / PNG / WebP / GIF · up to 10 MB
+          {t("productImages.count", { count: sorted.length })} · {t("productImages.hint")}
         </span>
       </div>
 
       {/* Gallery grid */}
       {sorted.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-[var(--color-muted)] px-6 py-10 text-center text-sm text-[var(--color-muted-foreground)]">
-          No images yet. Upload one to set the product's cover.
+          {t("productImages.empty")}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -178,6 +180,7 @@ function ImageTile({
   onRemove: () => void;
   busy: boolean;
 }) {
+  const { t } = useTranslation("files");
   return (
     <div
       className={cn(
@@ -191,7 +194,7 @@ function ImageTile({
         type="button"
         onClick={onPreview}
         className="block aspect-square w-full cursor-pointer"
-        aria-label="Preview image"
+        aria-label={t("productImages.previewAria")}
       >
         <img
           src={image.url}
@@ -204,7 +207,7 @@ function ImageTile({
       {image.isThumbnail && (
         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary-foreground)]">
           <Star className="h-3 w-3 fill-current" />
-          Cover
+          {t("productImages.cover")}
         </span>
       )}
 
@@ -219,8 +222,8 @@ function ImageTile({
               onSetThumbnail();
             }}
             disabled={busy}
-            title="Set as cover"
-            aria-label="Set as cover"
+            title={t("productImages.setCoverTitle")}
+            aria-label={t("productImages.setCoverAria")}
             className="bg-[oklch(0_0_0/0.45)] text-white hover:bg-[oklch(0_0_0/0.65)]"
           >
             <StarOff className="h-4 w-4" />
@@ -235,8 +238,8 @@ function ImageTile({
             onRemove();
           }}
           disabled={busy}
-          title="Remove image"
-          aria-label="Remove image"
+          title={t("productImages.removeTitle")}
+          aria-label={t("productImages.removeAria")}
           className="bg-[oklch(0_0_0/0.45)] text-white hover:bg-[var(--color-destructive)]"
         >
           <Trash2 className="h-4 w-4" />
@@ -247,13 +250,14 @@ function ImageTile({
 }
 
 function PreviewDialog({ image, onClose }: { image: ProductImageDto | null; onClose: () => void }) {
+  const { t } = useTranslation("files");
   return (
     <Dialog open={image !== null} onOpenChange={(o) => (o ? undefined : onClose())}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="truncate">Image preview</DialogTitle>
+          <DialogTitle className="truncate">{t("productImages.dialogTitle")}</DialogTitle>
           <DialogDescription>
-            {image?.isThumbnail ? "Current cover image." : "Click outside to close."}
+            {image?.isThumbnail ? t("productImages.dialogDescCover") : t("productImages.dialogDescClose")}
           </DialogDescription>
         </DialogHeader>
         {image && (
@@ -267,7 +271,7 @@ function PreviewDialog({ image, onClose }: { image: ProductImageDto | null; onCl
         )}
         <DialogFooter>
           <DialogClose asChild>
-            <Button size="sm">Close</Button>
+            <Button size="sm">{t("productImages.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -286,28 +290,28 @@ function RemoveDialog({
   onConfirm: () => void;
   busy: boolean;
 }) {
+  const { t } = useTranslation("files");
   return (
     <Dialog open={image !== null} onOpenChange={(o) => (o ? undefined : onCancel())}>
       <DialogContent>
         <DialogHeader>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-destructive)]">
-            Remove image
+            {t("productImages.removeDialogTag")}
           </span>
-          <DialogTitle>Detach this image?</DialogTitle>
+          <DialogTitle>{t("productImages.removeDialogTitle")}</DialogTitle>
           <DialogDescription>
-            The image is removed from this product. {image?.isThumbnail
-              ? "It's currently the cover — another image will be promoted automatically."
-              : ""}
+            {t("productImages.removeDialogBody")}{" "}
+            {image?.isThumbnail ? t("productImages.removeDialogBodyThumbnail") : ""}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={busy}>
-              Cancel
+              {t("common:actions.cancel")}
             </Button>
           </DialogClose>
           <Button variant="destructive" onClick={onConfirm} disabled={busy}>
-            {busy ? "Removing…" : "Remove"}
+            {busy ? t("productImages.removing") : t("productImages.remove")}
           </Button>
         </DialogFooter>
       </DialogContent>

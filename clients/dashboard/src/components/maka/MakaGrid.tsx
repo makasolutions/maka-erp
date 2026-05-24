@@ -30,9 +30,116 @@ import {
 } from "@syncfusion/ej2-react-grids";
 import { L10n } from "@syncfusion/ej2-base";
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
-// ── Spanish locale strings for the grid ──────────────────────────────────────
+// ── Locale strings for the grid (ES + EN) ────────────────────────────────────
 L10n.load({
+  en: {
+    grid: {
+      EmptyRecord: "No records to display",
+      GroupDropArea: "Drag a column header here to group by that column",
+      UnGroup: "Click here to ungroup",
+      EmptyDataSourceError: "DataSource must not be empty on initial load since columns are generated from the dataSource in AutoGenerate Column Grid",
+      Add: "Add",
+      Edit: "Edit",
+      Cancel: "Cancel",
+      Update: "Update",
+      Delete: "Delete",
+      Print: "Print",
+      Pdfexport: "Export PDF",
+      Excelexport: "Export Excel",
+      Wordexport: "Export Word",
+      Csvexport: "Export CSV",
+      Search: "Search",
+      Columnchooser: "Columns",
+      Save: "Save",
+      Item: "record",
+      Items: "records",
+      EditOperationAlert: "No records selected for edit operation",
+      DeleteOperationAlert: "No records selected for delete operation",
+      SaveButton: "Save",
+      OKButton: "OK",
+      CancelButton: "Cancel",
+      EditFormTitle: "Details of ",
+      AddFormTitle: "Add New Record",
+      BatchSaveConfirm: "Are you sure you want to save the changes?",
+      BatchSaveLostChanges: "Unsaved changes will be lost. Are you sure you want to continue?",
+      ConfirmDelete: "Are you sure you want to delete this record?",
+      CancelEdit: "Are you sure you want to cancel the changes?",
+      ChooseColumns: "Choose Columns",
+      SearchColumns: "Search Columns",
+      Matchs: "No Matches Found",
+      FilterButton: "Filter",
+      ClearButton: "Clear",
+      StartsWith: "Starts With",
+      EndsWith: "Ends With",
+      Contains: "Contains",
+      Equal: "Equal",
+      NotEqual: "Not Equal",
+      LessThan: "Less Than",
+      LessThanOrEqual: "Less Than Or Equal",
+      GreaterThan: "Greater Than",
+      GreaterThanOrEqual: "Greater Than Or Equal",
+      ChooseDate: "Choose a Date",
+      EnterValue: "Enter the value",
+      Copy: "Copy",
+      Group: "Group by this column",
+      Ungroup: "Ungroup by this column",
+      autoFitAll: "Auto Fit all columns",
+      autoFit: "Auto Fit this column",
+      Export: "Export",
+      FirstPage: "First Page",
+      LastPage: "Last Page",
+      PreviousPage: "Previous Page",
+      NextPage: "Next Page",
+      SortAscending: "Sort Ascending",
+      SortDescending: "Sort Descending",
+      EditRecord: "Edit Record",
+      DeleteRecord: "Delete Record",
+      FilterMenu: "Filter",
+      SelectAll: "Select All",
+      Blanks: "Blanks",
+      FilterTrue: "True",
+      FilterFalse: "False",
+      NoResult: "No results",
+      ClearFilter: "Clear Filter",
+      NumberFilter: "Number Filter",
+      TextFilter: "Text Filter",
+      DateFilter: "Date Filter",
+      DateTimeFilter: "DateTime Filter",
+      MatchCase: "Match Case",
+      Between: "Between",
+      CustomFilter: "Custom Filter",
+      CustomFilterPlaceHolder: "Enter the value",
+      CustomFilterDatePlaceHolder: "Choose a date",
+      AND: "AND",
+      OR: "OR",
+      ShowRowsWhere: "Show rows where:",
+      NotStartsWith: "Does Not Start With",
+      Like: "Like",
+      NotEndsWith: "Does Not End With",
+      NotContains: "Does Not Contain",
+      IsNull: "Is Null",
+      NotNull: "Is Not Null",
+      IsEmpty: "Is Empty",
+      IsNotEmpty: "Is Not Empty",
+      AddCurrentSelection: "Add current selection to filter",
+    },
+    pager: {
+      currentPageInfo: "{0} of {1} pages",
+      totalItemsInfo: "({0} items)",
+      totalItemInfo: "({0} item)",
+      firstPageTooltip: "Go to first page",
+      lastPageTooltip: "Go to last page",
+      nextPageTooltip: "Go to next page",
+      previousPageTooltip: "Go to previous page",
+      nextPagerTooltip: "Go to next pager",
+      previousPagerTooltip: "Go to previous pager",
+      pagerDropDown: "Items per page",
+      pagerAllDropDown: "Items",
+      All: "All",
+    },
+  },
   es: {
     grid: {
       EmptyRecord: "No hay registros para mostrar",
@@ -170,6 +277,7 @@ export function MakaGrid<T extends object>({
   height = "400px",
   onRowClick,
 }: MakaGridProps<T>) {
+  const { i18n } = useTranslation();
   const gridRef = useRef<GridComponent>(null);
 
   const toolbarOptions: ToolbarItems[] = ["Search", "ExcelExport", "PdfExport"];
@@ -202,7 +310,7 @@ export function MakaGrid<T extends object>({
         ref={gridRef}
         dataSource={dataSource}
         height={height}
-        locale="es"
+        locale={i18n.language}
         allowPaging
         allowSorting
         allowFiltering

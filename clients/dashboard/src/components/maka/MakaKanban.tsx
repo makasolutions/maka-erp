@@ -16,6 +16,7 @@ import {
   type DragEventArgs,
 } from "@syncfusion/ej2-react-kanban";
 import { L10n } from "@syncfusion/ej2-base";
+import { useTranslation } from "react-i18next";
 
 // ── Spanish locale ────────────────────────────────────────────────────────────
 L10n.load({
@@ -74,11 +75,12 @@ export function MakaKanban({
   headerField = "title",
   onCardDrop,
 }: MakaKanbanProps) {
+  const { i18n } = useTranslation();
   return (
     <KanbanComponent
       dataSource={dataSource}
       keyField={keyField}
-      locale="es"
+      locale={i18n.language}
       cardSettings={{
         contentField: "description",
         headerField: headerField,
