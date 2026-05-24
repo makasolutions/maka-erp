@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   ArrowRight,
@@ -90,15 +91,14 @@ function periodProgress(now: Date = new Date()): number {
 }
 
 /**
- * Time-of-day greeting. Three buckets — morning (<12), afternoon (<17),
- * evening (rest). Mirrors the dentalOS dashboard greeting helper so the
- * tone of voice matches across products.
+ * Time-of-day greeting key. Three buckets — morning (<12), afternoon (<17),
+ * evening (rest). Returns a key for i18next lookup.
  */
-function getGreeting(): "Good morning" | "Good afternoon" | "Good evening" {
+function getGreetingKey(): "overview.greeting.morning" | "overview.greeting.afternoon" | "overview.greeting.evening" {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "overview.greeting.morning";
+  if (hour < 17) return "overview.greeting.afternoon";
+  return "overview.greeting.evening";
 }
 
 function relativeTime(iso: string, now: number = Date.now()): string {
@@ -189,9 +189,9 @@ function StatCard({
         <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           {label}
         </p>
-        <p className="mt-1 font-display text-[20px] font-bold leading-none tracking-tight tabular-nums text-foreground sm:text-[22px]">
+        <div className="mt-1 font-display text-[20px] font-bold leading-none tracking-tight tabular-nums text-foreground sm:text-[22px]">
           {value}
-        </p>
+        </div>
         {sublabel && (
           <p className="mt-1.5 truncate text-[11px] text-muted-foreground">
             {sublabel}
@@ -307,6 +307,7 @@ function SubscriptionBody({
   data: SubscriptionDto | null | undefined;
   loading: boolean;
 }) {
+  const { t } = useTranslation("common");
   if (loading) {
     return (
       <div className="space-y-3">
@@ -322,14 +323,14 @@ function SubscriptionBody({
       <div className="flex flex-col items-start gap-3">
         <div>
           <div className="text-[13px] font-semibold tracking-tight text-foreground">
-            No active subscription
+            {t("overview.noSubscription")}
           </div>
           <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">
-            Pick a plan to enable billing, quotas, and overage tracking.
+            {t("overview.noSubscriptionDesc")}
           </p>
         </div>
         <Button asChild variant="soft" size="sm">
-          <Link to="/invoices">Choose plan</Link>
+          <Link to="/invoices">{t("overview.choosePlan")}</Link>
         </Button>
       </div>
     );
@@ -338,6 +339,7 @@ function SubscriptionBody({
   const tone = subscriptionTone(data.status);
   const progressPct = Math.round(periodProgress() * 100);
   const daysLeft = daysLeftInMonth();
+  const dateLocale = t("overview.dateFormat");
 
   const dateFmt: Intl.DateTimeFormatOptions = {
     month: "short",
@@ -365,26 +367,26 @@ function SubscriptionBody({
 
       <dl className="space-y-1.5 text-[12px]">
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted-foreground">Started</dt>
+          <dt className="text-muted-foreground">{t("overview.started")}</dt>
           <dd className="tabular-nums text-foreground">
-            {new Date(data.startUtc).toLocaleDateString("en-US", dateFmt)}
+            {new Date(data.startUtc).toLocaleDateString(dateLocale, dateFmt)}
           </dd>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted-foreground">Ends</dt>
+          <dt className="text-muted-foreground">{t("overview.ends")}</dt>
           <dd className="tabular-nums text-foreground">
             {data.endUtc
-              ? new Date(data.endUtc).toLocaleDateString("en-US", dateFmt)
-              : "open-ended"}
+              ? new Date(data.endUtc).toLocaleDateString(dateLocale, dateFmt)
+              : t("overview.openEnded")}
           </dd>
         </div>
       </dl>
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground">Current period</span>
+          <span className="text-muted-foreground">{t("overview.currentPeriod")}</span>
           <span className="tabular-nums text-foreground">
-            {progressPct}% · {daysLeft}d left
+            {progressPct}% · {t("overview.daysLeft", { count: daysLeft })}
           </span>
         </div>
         <div className="h-1 overflow-hidden rounded-full bg-[var(--color-muted)]">
@@ -409,6 +411,7 @@ function SystemStatusBody({
   sseStatus: SseStatus;
   eventCount: number;
 }) {
+  const { t } = useTranslation("common");
   const live = sseStatus === "connected";
   const errored = sseStatus === "error";
   const Icon = live ? Wifi : WifiOff;
@@ -446,24 +449,24 @@ function SystemStatusBody({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-semibold capitalize tracking-tight text-foreground">
-              {live ? "Stream live" : sseStatus}
+              {live ? t("overview.streamLive") : sseStatus}
             </span>
             {live && <Badge variant="success">SSE</Badge>}
             {errored && <Badge variant="danger">offline</Badge>}
           </div>
           <p className="mt-0.5 text-[11.5px] text-muted-foreground">
             {live
-              ? "Backend events are flowing in real time."
+              ? t("overview.streamLiveDesc")
               : errored
-                ? "Stream disconnected. Events will queue once it recovers."
-                : "Waiting for the stream to come online."}
+                ? t("overview.streamErrorDesc")
+                : t("overview.streamWaitingDesc")}
           </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-[oklch(from_var(--color-border)_l_c_h_/_0.5)] pt-3">
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          Events this session
+          {t("overview.eventsThisSession")}
         </span>
         <span className="font-display text-[16px] font-bold tabular-nums text-foreground">
           {formatNumber(eventCount)}
@@ -490,6 +493,21 @@ function recentEventTypeIcon(eventType: number): React.ComponentType<{ className
   if (eventType === AuditEventType.Exception) return Activity;
   if (eventType === AuditEventType.EntityChange) return Server;
   return Activity;
+}
+
+function NoRecentActivity() {
+  const { t } = useTranslation("common");
+  return (
+    <div className="flex flex-col items-center gap-2 py-6 text-center">
+      <ScrollText className="size-4 text-muted-foreground" />
+      <div className="text-[13px] font-semibold tracking-tight text-foreground">
+        {t("overview.noRecentActivity")}
+      </div>
+      <p className="max-w-sm text-[11.5px] text-muted-foreground">
+        {t("overview.noRecentActivityDesc")}
+      </p>
+    </div>
+  );
 }
 
 function RecentAuditsBody() {
@@ -525,15 +543,7 @@ function RecentAuditsBody() {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 py-6 text-center">
-        <ScrollText className="size-4 text-muted-foreground" />
-        <div className="text-[13px] font-semibold tracking-tight text-foreground">
-          No recent activity
-        </div>
-        <p className="max-w-sm text-[11.5px] text-muted-foreground">
-          Audited actions in the last 24 hours will appear here.
-        </p>
-      </div>
+      <NoRecentActivity />
     );
   }
 
@@ -595,41 +605,41 @@ type QuickAction = {
   tone: StatTone;
 };
 
-const QUICK_ACTIONS: QuickAction[] = [
-  {
-    to: "/identity/users",
-    title: "Invite users",
-    description: "Add teammates, assign roles.",
-    icon: UsersRound,
-    tone: "info",
-  },
-  {
-    to: "/catalog/products",
-    title: "Browse catalog",
-    description: "Products, brands, categories.",
-    icon: Package,
-    tone: "success",
-  },
-  {
-    to: "/invoices",
-    title: "Subscription",
-    description: "Plans, invoices, usage.",
-    icon: CreditCard,
-    tone: "primary",
-  },
-  {
-    to: "/activity",
-    title: "Live activity",
-    description: "Real-time event stream.",
-    icon: Activity,
-    tone: "warning",
-  },
-];
-
 function QuickActionsBody() {
+  const { t } = useTranslation("common");
+  const quickActions: QuickAction[] = [
+    {
+      to: "/identity/users",
+      title: t("overview.inviteUsers"),
+      description: t("overview.inviteUsersDesc"),
+      icon: UsersRound,
+      tone: "info",
+    },
+    {
+      to: "/catalog/products",
+      title: t("overview.browseCatalog"),
+      description: t("overview.browseCatalogDesc"),
+      icon: Package,
+      tone: "success",
+    },
+    {
+      to: "/invoices",
+      title: t("overview.subscriptionAction"),
+      description: t("overview.subscriptionActionDesc"),
+      icon: CreditCard,
+      tone: "primary",
+    },
+    {
+      to: "/activity",
+      title: t("overview.liveActivity"),
+      description: t("overview.liveActivityDesc"),
+      icon: Activity,
+      tone: "warning",
+    },
+  ];
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {QUICK_ACTIONS.map((a) => (
+      {quickActions.map((a) => (
         <Link
           key={a.to}
           to={a.to}
@@ -668,6 +678,7 @@ function QuickActionsBody() {
 // ────────────────────────────────────────────────────────────────────────
 
 function LiveFeedBody({ events }: { events: SseEvent[] }) {
+  const { t } = useTranslation("common");
   const visible = useMemo(() => events.slice(0, 5), [events]);
 
   if (visible.length === 0) {
@@ -675,10 +686,10 @@ function LiveFeedBody({ events }: { events: SseEvent[] }) {
       <div className="flex flex-col items-center gap-2 py-6 text-center">
         <Activity className="size-4 text-muted-foreground" />
         <div className="text-[13px] font-semibold tracking-tight text-foreground">
-          Listening for activity
+          {t("overview.listeningForActivity")}
         </div>
         <p className="max-w-sm text-[11.5px] text-muted-foreground">
-          Events will appear here as the backend publishes them.
+          {t("overview.listeningDesc")}
         </p>
       </div>
     );
@@ -737,41 +748,6 @@ type SetupTileSpec = {
   tone: StatTone;
 };
 
-const SETUP_TILES: SetupTileSpec[] = [
-  {
-    to: "/invoices",
-    step: "01",
-    title: "Pick a plan",
-    description: "Enable billing, quotas, and overage tracking.",
-    icon: Sparkles,
-    tone: "primary",
-  },
-  {
-    to: "/identity/users",
-    step: "02",
-    title: "Invite your team",
-    description: "Add teammates, assign roles, and group them.",
-    icon: UsersRound,
-    tone: "info",
-  },
-  {
-    to: "/catalog/products",
-    step: "03",
-    title: "Browse catalog",
-    description: "Sample products, brands, categories ready to go.",
-    icon: Package,
-    tone: "success",
-  },
-  {
-    to: "/activity",
-    step: "04",
-    title: "Watch live",
-    description: "SSE stream right into the dashboard.",
-    icon: Activity,
-    tone: "warning",
-  },
-];
-
 function FirstRunPanel({
   tenantName,
   tenantId,
@@ -781,6 +757,41 @@ function FirstRunPanel({
   tenantId: string | undefined;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation("common");
+  const setupTiles: SetupTileSpec[] = [
+    {
+      to: "/invoices",
+      step: "01",
+      title: t("overview.pickPlan"),
+      description: t("overview.pickPlanDesc"),
+      icon: Sparkles,
+      tone: "primary",
+    },
+    {
+      to: "/identity/users",
+      step: "02",
+      title: t("overview.inviteTeam"),
+      description: t("overview.inviteTeamDesc"),
+      icon: UsersRound,
+      tone: "info",
+    },
+    {
+      to: "/catalog/products",
+      step: "03",
+      title: t("overview.browseCatalogStep"),
+      description: t("overview.browseCatalogStepDesc"),
+      icon: Package,
+      tone: "success",
+    },
+    {
+      to: "/activity",
+      step: "04",
+      title: t("overview.watchLive"),
+      description: t("overview.watchLiveDesc"),
+      icon: Activity,
+      tone: "warning",
+    },
+  ];
   return (
     <section
       aria-labelledby="firstrun-heading"
@@ -792,8 +803,8 @@ function FirstRunPanel({
           writeDismissed(tenantId, true);
           onDismiss();
         }}
-        aria-label="Dismiss setup checklist"
-        title="Skip for now"
+        aria-label={t("actions.close")}
+        title={t("actions.close")}
         className="absolute right-3 top-3 z-10 grid size-7 cursor-pointer place-items-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--color-accent)] hover:text-foreground"
       >
         <X className="size-3.5" />
@@ -804,20 +815,20 @@ function FirstRunPanel({
           id="firstrun-heading"
           className="font-display text-[20px] font-bold tracking-tight text-foreground sm:text-[22px]"
         >
-          Welcome to {tenantName}
+          {t("overview.welcomeTitle", { tenant: tenantName })}
         </h2>
         <p className="mt-1 max-w-xl text-[12.5px] leading-relaxed text-muted-foreground">
-          Your tenant is provisioned and ready. Here's where most teams start.
+          {t("overview.welcomeDesc")}
         </p>
 
         <ul className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-          {SETUP_TILES.map((tile, idx) => (
+          {setupTiles.map((tile, idx) => (
             <li
               key={tile.to}
               className="fsh-enter"
               style={{ animationDelay: `${80 + idx * 60}ms` }}
             >
-              <SetupTile spec={tile} />
+              <SetupTile spec={tile} stepLabel={t("overview.stepLabel", { step: tile.step })} openLabel={t("overview.open")} />
             </li>
           ))}
         </ul>
@@ -826,7 +837,7 @@ function FirstRunPanel({
   );
 }
 
-function SetupTile({ spec }: { spec: SetupTileSpec }) {
+function SetupTile({ spec, stepLabel, openLabel }: { spec: SetupTileSpec; stepLabel: string; openLabel: string }) {
   const Icon = spec.icon;
   return (
     <Link
@@ -847,7 +858,7 @@ function SetupTile({ spec }: { spec: SetupTileSpec }) {
           <Icon className="size-3.5" />
         </span>
         <span className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
-          Step {spec.step}
+          {stepLabel}
         </span>
       </div>
 
@@ -861,7 +872,7 @@ function SetupTile({ spec }: { spec: SetupTileSpec }) {
       </div>
 
       <div className="mt-auto flex items-center gap-1 pt-1 text-[11px] font-medium text-muted-foreground transition-colors group-hover/tile:text-foreground">
-        Open
+        {openLabel}
         <ArrowRight className="size-3 transition-transform group-hover/tile:translate-x-0.5" />
       </div>
     </Link>
@@ -873,6 +884,7 @@ function SetupTile({ spec }: { spec: SetupTileSpec }) {
 // ────────────────────────────────────────────────────────────────────────
 
 export function OverviewPage() {
+  const { t } = useTranslation("common");
   const { user } = useAuth();
   const { status: sseStatus, eventCount } = useSseStatus();
   const { events } = useSseEvents();
@@ -922,13 +934,14 @@ export function OverviewPage() {
 
   // ── Header strings ────────────────────────────────────────────────────
   const now = new Date();
-  const dateCaption = now.toLocaleDateString("en-US", {
+  const dateLocale = t("overview.dateFormat");
+  const dateCaption = now.toLocaleDateString(dateLocale, {
     weekday: "long",
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-  const greeting = getGreeting();
+  const greeting = t(getGreetingKey());
   const firstName = (user?.name ?? user?.email?.split("@")[0] ?? "operator")
     .toString()
     .split(" ")[0];
@@ -942,7 +955,7 @@ export function OverviewPage() {
   );
   const planSub = subscription.data
     ? subscription.data.status
-    : "No subscription";
+    : t("overview.noSubscription");
 
   const resourcesValue = usage.isLoading ? (
     <Skeleton className="h-5 w-10" />
@@ -952,12 +965,12 @@ export function OverviewPage() {
   const resourcesSub = (
     <>
       <span className="tabular-nums">{totalsView.avgUtilization.toFixed(0)}%</span>{" "}
-      avg utilization
+      {t("overview.avgUtilization", { pct: "" }).replace("% ", "")}
       {totalsView.overage > 0 && (
         <>
           {" · "}
           <span className="text-[var(--color-destructive)]">
-            {formatNumber(totalsView.overage)} overage
+            {t("overview.overage", { count: formatNumber(totalsView.overage) })}
           </span>
         </>
       )}
@@ -989,18 +1002,18 @@ export function OverviewPage() {
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" disabled={refreshing} onClick={onRefresh}>
             <RefreshCw className={cn("mr-1.5 size-3.5", refreshing && "animate-spin")} />
-            Refresh
+            {t("overview.refresh")}
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/activity">
               <Activity className="mr-1.5 size-3.5" />
-              View activity
+              {t("overview.viewActivity")}
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/system/audits">
               <ScrollText className="mr-1.5 size-3.5" />
-              View audits
+              {t("overview.viewAudits")}
             </Link>
           </Button>
         </div>
@@ -1012,7 +1025,7 @@ export function OverviewPage() {
           index={0}
           tone="primary"
           icon={Server}
-          label="Plan"
+          label={t("overview.plan")}
           value={planValue}
           sublabel={planSub}
         />
@@ -1020,15 +1033,15 @@ export function OverviewPage() {
           index={1}
           tone="success"
           icon={Calendar}
-          label="Period"
+          label={t("overview.period")}
           value={currentPeriodLabel()}
-          sublabel={`${daysLeftInMonth()} days remaining`}
+          sublabel={t("overview.daysRemaining", { count: daysLeftInMonth() })}
         />
         <StatCard
           index={2}
           tone="warning"
           icon={Gauge}
-          label="Resources"
+          label={t("overview.resources")}
           value={resourcesValue}
           sublabel={resourcesSub}
         />
@@ -1036,7 +1049,7 @@ export function OverviewPage() {
           index={3}
           tone="info"
           icon={Zap}
-          label="Live events"
+          label={t("overview.liveEvents")}
           value={<span className="tabular-nums">{formatNumber(eventCount)}</span>}
           sublabel={
             <span className="inline-flex items-center gap-1.5">
@@ -1071,11 +1084,11 @@ export function OverviewPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         {/* Left rail */}
         <aside className="w-full space-y-4 lg:w-[360px] lg:shrink-0">
-          <EntityDetailSection title="Subscription" icon={CreditCard}>
+          <EntityDetailSection title={t("overview.subscription")} icon={CreditCard}>
             <SubscriptionBody data={subscription.data} loading={subscription.isLoading} />
           </EntityDetailSection>
 
-          <EntityDetailSection title="System status" icon={Wifi}>
+          <EntityDetailSection title={t("overview.systemStatus")} icon={Wifi}>
             <SystemStatusBody sseStatus={sseStatus} eventCount={eventCount} />
           </EntityDetailSection>
         </aside>
@@ -1083,15 +1096,15 @@ export function OverviewPage() {
         {/* Right column — 2-up widget grid */}
         <div className="grid w-full min-w-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           <EntityDetailSection
-            title="Recent audits"
+            title={t("overview.recentAudits")}
             icon={ScrollText}
-            description="Last 24 hours, top 5 events."
+            description={t("overview.last24h")}
             action={
               <Link
                 to="/system/audits"
                 className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                See all <ArrowUpRight className="size-3" />
+                {t("overview.seeAll")} <ArrowUpRight className="size-3" />
               </Link>
             }
           >
@@ -1099,9 +1112,9 @@ export function OverviewPage() {
           </EntityDetailSection>
 
           <EntityDetailSection
-            title="Usage by resource"
+            title={t("overview.usageByResource")}
             icon={Gauge}
-            description="Current-month consumption against plan limits."
+            description={t("overview.usagePeriodDesc")}
             action={
               totalsView.overage > 0 ? <Badge variant="danger">overage</Badge> : undefined
             }
@@ -1110,13 +1123,13 @@ export function OverviewPage() {
               <UsageSkeleton />
             ) : usage.isError ? (
               <UsageEmpty
-                title="Couldn't load usage"
-                description="The usage endpoint returned an error. Try refreshing."
+                title={t("overview.couldntLoadUsage")}
+                description={t("overview.couldntLoadUsageDesc")}
               />
             ) : rows.length === 0 ? (
               <UsageEmpty
-                title="No usage captured yet"
-                description="Activity will appear here as the backend records snapshots for this period."
+                title={t("overview.noUsageCaptured")}
+                description={t("overview.noUsageCapturedDesc")}
               />
             ) : (
               <ul>
@@ -1128,23 +1141,23 @@ export function OverviewPage() {
           </EntityDetailSection>
 
           <EntityDetailSection
-            title="Quick actions"
+            title={t("overview.quickActions")}
             icon={Sparkles}
-            description="Jump into the most-used destinations."
+            description={t("overview.quickActionsDesc")}
           >
             <QuickActionsBody />
           </EntityDetailSection>
 
           <EntityDetailSection
-            title="Live feed"
+            title={t("overview.liveFeed")}
             icon={Activity}
-            description="Real-time backend events over SSE."
+            description={t("overview.liveFeedDesc")}
             action={
               <Link
                 to="/activity"
                 className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Open <ArrowUpRight className="size-3" />
+                {t("overview.open")} <ArrowUpRight className="size-3" />
               </Link>
             }
           >
