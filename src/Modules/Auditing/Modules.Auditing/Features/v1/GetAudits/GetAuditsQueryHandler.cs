@@ -96,16 +96,16 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            string term = query.Search;
-            // Search is scoped to Source and UserName only. PayloadJson is a jsonb
-            // column and cannot be searched with ILIKE directly.
-            // Contains(StringComparison.OrdinalIgnoreCase) is translated by Npgsql
-            // to a case-insensitive ILIKE pattern without requiring explicit casts,
-            // avoiding the CA1862/CA1304 analyser violations.
-            // Full-text payload search is deferred until a ts_vector column is added.
+            // Use EF.Functions.ILike so Npgsql translates this to a PostgreSQL
+            // ILIKE expression directly. The GIN trigram indexes on Source and
+            // UserName (gin_trgm_ops) make the ILIKE pattern scan efficient.
+            // Explicit ILike is preferred over Contains(StringComparison) because
+            // EF Core's translation of Contains+OrdinalIgnoreCase can vary across
+            // Npgsql versions and emit client-side evaluation warnings.
+            string pattern = $"%{query.Search}%";
             audits = audits.Where(a =>
-                (a.Source != null && a.Source.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                (a.UserName != null && a.UserName.Contains(term, StringComparison.OrdinalIgnoreCase)));
+                (a.Source != null && EF.Functions.ILike(a.Source, pattern)) ||
+                (a.UserName != null && EF.Functions.ILike(a.UserName, pattern)));
         }
 
         // ── Entity-change column filters ─────────────────────────────────
