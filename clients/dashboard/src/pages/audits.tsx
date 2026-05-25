@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/cn";
+import { useLocalization } from "@/contexts/localization-context";
 
 const PAGE_SIZE = 25;
 const DESKTOP_COLS = "grid-cols-[1.6fr_140px_1.2fr_180px]";
@@ -131,17 +132,6 @@ function fmtIsoDense(iso: string): { date: string; time: string } {
   return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}:${ss}.${ms}` };
 }
 
-/**
- * Local-timezone timestamp — used in the audit table rows.
- * Temporary until global localization (Grupo 3) is configured.
- */
-function fmtLocalDense(iso: string): { date: string; time: string } {
-  const d = new Date(iso);
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const date = d.toLocaleDateString("es-CO", { timeZone: tz, dateStyle: "short" });
-  const time = d.toLocaleTimeString("es-CO", { timeZone: tz, timeStyle: "medium" });
-  return { date, time };
-}
 
 function fmtRelative(
   iso: string,
@@ -446,7 +436,7 @@ function AuditMobileCard({
   row: AuditSummaryDto;
   onOpen: () => void;
 }) {
-  const ts = fmtLocalDense(row.occurredAtUtc);
+  const { formatDate, formatTime } = useLocalization();
   const Icon = eventTypeIcon(row.eventType);
   const tone = severityTone(row.severity);
   const toneColor = severityColorVar(row.severity);
@@ -489,7 +479,7 @@ function AuditMobileCard({
           {row.source ?? "—"}
         </code>
         <span className="ml-auto font-mono text-[11px] tabular-nums text-[var(--color-muted-foreground)]">
-          {ts.time} · {ts.date}
+          {formatTime(row.occurredAtUtc)} · {formatDate(row.occurredAtUtc)}
         </span>
       </div>
     </button>
@@ -559,7 +549,7 @@ function AuditDesktopRow({
   onOpen: () => void;
 }) {
   const { t } = useTranslation("common");
-  const ts = fmtLocalDense(row.occurredAtUtc);
+  const { formatDate, formatTime } = useLocalization();
   const Icon = eventTypeIcon(row.eventType);
   const tone = severityTone(row.severity);
   const toneColor = severityColorVar(row.severity);
@@ -646,11 +636,11 @@ function AuditDesktopRow({
         )}
       </div>
 
-      {/* Timestamp — local timezone */}
+      {/* Timestamp — tenant timezone (from localization config) */}
       <div className="flex items-center justify-between gap-2">
         <div className="font-mono text-[11.5px] tabular-nums leading-tight">
-          <div className="text-[var(--color-foreground)]">{ts.time}</div>
-          <div className="text-[10.5px] text-[var(--color-muted-foreground)]">{ts.date}</div>
+          <div className="text-[var(--color-foreground)]">{formatTime(row.occurredAtUtc)}</div>
+          <div className="text-[10.5px] text-[var(--color-muted-foreground)]">{formatDate(row.occurredAtUtc)}</div>
         </div>
         <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
       </div>

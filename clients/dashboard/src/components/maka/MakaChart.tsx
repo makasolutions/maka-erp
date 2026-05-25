@@ -4,14 +4,14 @@
  * - Resolves CSS custom properties (--color-chart-1..5, --color-saffron)
  *   at mount time via getComputedStyle, since Syncfusion's canvas engine
  *   cannot read oklch CSS vars directly.
- * - Tooltip with COP formatting when formatAsCOP=true.
+ * - Tooltip with tenant-currency formatting when formatAsCOP=true (reads currency from LocalizationContext).
  * - Legend at the bottom, responsive width=100%.
  * - Supports Line, Bar, Area, Pie, Doughnut chart types.
  *
  * NEVER use ChartComponent or AccumulationChartComponent directly — always
  * use MakaChart.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChartComponent,
   SeriesCollectionDirective,
@@ -26,6 +26,7 @@ import {
   AreaSeries,
   type SeriesModel,
 } from "@syncfusion/ej2-react-charts";
+import { useLocalization } from "@/contexts/localization-context";
 import {
   AccumulationChartComponent,
   AccumulationSeriesCollectionDirective,
@@ -63,14 +64,6 @@ function resolveMakaChartPalette(): string[] {
   ];
 }
 
-// ── COP formatter ─────────────────────────────────────────────────────────────
-
-const copFormatter = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type MakaChartType = "Line" | "Bar" | "Area" | "Pie" | "Doughnut";
@@ -88,7 +81,7 @@ export interface MakaChartProps {
   type?: MakaChartType;
   /** Container height; default "350px" */
   height?: string;
-  /** When true, tooltip values are formatted as Colombian pesos (COP) */
+  /** When true, tooltip values are formatted as currency using the tenant localization config */
   formatAsCOP?: boolean;
 }
 
@@ -105,15 +98,29 @@ export function MakaChart({
 }: MakaChartProps) {
   const [palette, setPalette] = useState<string[]>(FALLBACK_PALETTE);
   const chartRef = useRef<ChartComponent>(null);
+  const { config } = useLocalization();
 
   useEffect(() => {
     setPalette(resolveMakaChartPalette());
   }, []);
 
+  // Build currency formatter from tenant config (respects language + currency).
+  // Used to derive the Syncfusion tooltip template string by formatting zero
+  // and replacing the "0" with Syncfusion's ${point.y} placeholder.
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(config.language === "es" ? "es-CO" : "en-US", {
+        style: "currency",
+        currency: config.currency,
+        maximumFractionDigits: 0,
+      }),
+    [config.language, config.currency],
+  );
+
   const tooltipSettings = {
     enable: true,
     format: formatAsCOP
-      ? `<b>\${point.x}</b><br/>${copFormatter.format(0).replace("0", "${point.y}")}`
+      ? `<b>\${point.x}</b><br/>${currencyFormatter.format(0).replace("0", "${point.y}")}`
       : "${point.x} : <b>${point.y}</b>",
   };
 

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalization } from "@/contexts/localization-context";
 import { ExternalLink, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -87,14 +88,6 @@ function fmtRelativeCompact(iso: string): string {
   return `${Math.floor(h / 24)}d`;
 }
 
-/** Local-timezone full timestamp for tooltip — temporary until global localization is configured. */
-function fmtLocalFull(iso: string): string {
-  return new Date(iso).toLocaleString("es-CO", {
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    dateStyle: "short",
-    timeStyle: "medium",
-  });
-}
 
 // ────────────────────────────────────────────────────────────────────────
 // OperationBadge — pill chip with semantic colour tint.
@@ -229,13 +222,14 @@ function AuditTimelineRow({
   // Both section title ("Historial de cambios", "por") and operation labels
   // ("Creación", "Actualización"…) live in the settings namespace.
   const { t } = useTranslation("settings");
+  const { formatDateTime } = useLocalization();
 
   const colors = operationColors(item.entityOperation);
   const actor =
     item.userName ??
     (item.userId ? `${item.userId.slice(0, 8)}…` : "System");
   const relTime = fmtRelativeCompact(item.occurredAtUtc);
-  const fullTime = fmtLocalFull(item.occurredAtUtc);
+  const fullTime = formatDateTime(item.occurredAtUtc);
 
   return (
     <li className="flex items-start gap-2.5 py-1.5">

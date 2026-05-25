@@ -38,10 +38,12 @@ export type LocalizationContextValue = {
   isLoading: boolean;
   /** Persist a full config update. Resolves once the server confirms. */
   update: (next: LocalizationConfig) => Promise<void>;
-  /** Format an ISO date-time string to a locale-aware short string. */
+  /** Format an ISO date-time string to a locale-aware combined string. */
   formatDateTime: (iso: string) => string;
-  /** Format a date-only ISO string (or Date). */
+  /** Format an ISO string (or Date) to the date part only. */
   formatDate: (iso: string | Date) => string;
+  /** Format an ISO string (or Date) to the time part only. */
+  formatTime: (iso: string | Date) => string;
   /** Format an amount as currency per the tenant config. */
   formatCurrency: (amount: number) => string;
   /** Format a plain number with the tenant's grouping/decimal style. */
@@ -114,6 +116,16 @@ function buildDateFormatter(config: LocalizationConfig): Intl.DateTimeFormat {
   return new Intl.DateTimeFormat(intlLocale(config), {
     timeZone: config.timezone,
     ...dateOptions(config),
+  });
+}
+
+function buildTimeFormatter(config: LocalizationConfig): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(intlLocale(config), {
+    timeZone: config.timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: config.timeFormat === "12h",
   });
 }
 
@@ -209,6 +221,17 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     [config],
   );
 
+  const formatTime = useCallback(
+    (iso: string | Date): string => {
+      try {
+        return buildTimeFormatter(config).format(iso instanceof Date ? iso : new Date(iso));
+      } catch {
+        return String(iso);
+      }
+    },
+    [config],
+  );
+
   const formatCurrency = useCallback(
     (amount: number): string => {
       try {
@@ -238,10 +261,11 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       update,
       formatDateTime,
       formatDate,
+      formatTime,
       formatCurrency,
       formatNumber,
     }),
-    [config, isLoading, update, formatDateTime, formatDate, formatCurrency, formatNumber],
+    [config, isLoading, update, formatDateTime, formatDate, formatTime, formatCurrency, formatNumber],
   );
 
   return (
