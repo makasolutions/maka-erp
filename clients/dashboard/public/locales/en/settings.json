@@ -208,6 +208,49 @@
     "keyCopied": "Key copied to clipboard",
     "newKeyWarning": "Copy the key now — you won't be able to see it again."
   },
+  "audits": {
+    "filters": {
+      "entity": "Entity",
+      "operation": "Operation",
+      "user": "User",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "clear": "Clear filters",
+      "allEntities": "All entities",
+      "allOperations": "All operations",
+      "allUsers": "All users",
+      "searchUser": "Search user…"
+    },
+    "operations": {
+      "insert": "Insert",
+      "update": "Update",
+      "delete": "Delete",
+      "softDelete": "Soft delete",
+      "restore": "Restore"
+    },
+    "diff": {
+      "before": "Before",
+      "after": "After",
+      "field": "Field",
+      "created": "Record created",
+      "deleted": "Record deleted",
+      "updated": "Changes made",
+      "sensitive": "Protected value",
+      "noChanges": "No changes recorded",
+      "entity": "Entity",
+      "operation": "Operation",
+      "key": "Key",
+      "table": "Table"
+    },
+    "section": {
+      "title": "Change history",
+      "viewAll": "View all",
+      "empty": "No changes recorded",
+      "by": "by",
+      "loading": "Loading history…",
+      "errorLoading": "Failed to load history"
+    }
+  },
   "saved": "Settings saved",
   "nav": "Settings sections",
   "sectionHeader": "Sections",

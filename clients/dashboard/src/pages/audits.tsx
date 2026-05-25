@@ -937,6 +937,59 @@ function FieldInput({
 }
 
 // ────────────────────────────────────────────────────────────────────────
+// Entity-change diff — types and helpers.
+// The backend uses SystemTextJsonAuditSerializer with CamelCase policy, so
+// payload keys are always camelCase and EntityOperation serialises as a
+// string ("Insert", "Update", "Delete", "SoftDelete", "Restore").
+// ────────────────────────────────────────────────────────────────────────
+
+type PropertyChangeItem = {
+  name: string;
+  dataType?: string | null;
+  oldValue?: unknown;
+  newValue?: unknown;
+  isSensitive: boolean;
+};
+
+type EntityChangePayload = {
+  dbContext: string;
+  schema?: string | null;
+  table: string;
+  entityName: string;
+  key: string;
+  operation: string;
+  changes: PropertyChangeItem[];
+  transactionId?: string | null;
+};
+
+function parseEntityChangePayload(payload: unknown): EntityChangePayload | null {
+  if (!payload || typeof payload !== "object") return null;
+  const p = payload as Record<string, unknown>;
+  // Guard both casings for safety (serialiser always writes camelCase, but
+  // downstream proxies or manual records may preserve PascalCase).
+  const changes = p.changes ?? p.Changes;
+  if (!Array.isArray(changes)) return null;
+  return {
+    dbContext: String(p.dbContext ?? p.DbContext ?? ""),
+    schema: (p.schema ?? p.Schema) != null ? String(p.schema ?? p.Schema) : null,
+    table: String(p.table ?? p.Table ?? ""),
+    entityName: String(p.entityName ?? p.EntityName ?? ""),
+    key: String(p.key ?? p.Key ?? ""),
+    operation: String(p.operation ?? p.Operation ?? ""),
+    changes: changes as PropertyChangeItem[],
+    transactionId: (p.transactionId ?? p.TransactionId) != null
+      ? String(p.transactionId ?? p.TransactionId)
+      : null,
+  };
+}
+
+function formatDiffValue(value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+// ────────────────────────────────────────────────────────────────────────
 // Detail drawer — right-side panel with the full payload, metadata grid,
 // and "jump to correlated/traced events" actions. Re-uses the existing
 // Dialog primitive but overrides positioning so it slides in from the
@@ -1160,6 +1213,9 @@ function DrawerBody({
           onJumpAudit={onJumpAudit}
         />
       )}
+
+      {/* Entity-change diff — before/after field table, only for EntityChange events */}
+      <EntityChangeDiffSection detail={detail} />
 
       {/* Payload */}
       <section>
@@ -1389,5 +1445,157 @@ function CopyButton({ value }: { value: string }) {
     >
       {copied ? t("audits.drawer.copied") : t("audits.drawer.copy")}
     </button>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// EntityChangeDiffSection — before/after field table rendered inside the
+// detail drawer when the event type is EntityChange. Shows a colour-coded
+// row per changed property: green = created field, red = deleted field,
+// yellow = modified field. Sensitive values are masked as ••••••.
+// Only rendered when parseEntityChangePayload succeeds (i.e. the payload
+// structure matches the EntityChangeEventPayload contract).
+// ────────────────────────────────────────────────────────────────────────
+
+function EntityChangeDiffSection({ detail }: { detail: AuditDetailDto }) {
+  const { t } = useTranslation("settings");
+
+  if (detail.eventType !== AuditEventType.EntityChange) return null;
+
+  const parsed = parseEntityChangePayload(detail.payload);
+  if (!parsed) return null;
+
+  const op = parsed.operation; // "Insert" | "Update" | "Delete" | "SoftDelete" | "Restore"
+  const isInsert = op === "Insert";
+  const isDelete = op === "Delete" || op === "SoftDelete";
+
+  const opLabel = isInsert
+    ? t("audits.diff.created")
+    : isDelete
+      ? t("audits.diff.deleted")
+      : t("audits.diff.updated");
+
+  // Per-row background — uses relative oklch so the tint tracks the
+  // current theme's chroma without baking in a fixed lightness.
+  function rowBg(change: PropertyChangeItem): string {
+    const hasOld = change.oldValue !== null && change.oldValue !== undefined;
+    const hasNew = change.newValue !== null && change.newValue !== undefined;
+    if (isInsert || (!hasOld && hasNew))
+      return "oklch(from var(--color-success) l c h / 0.10)";
+    if (isDelete || (hasOld && !hasNew))
+      return "oklch(from var(--color-destructive) l c h / 0.08)";
+    return "oklch(from var(--color-warning) l c h / 0.07)";
+  }
+
+  const isComplex = (v: unknown) =>
+    v !== null && v !== undefined && typeof v === "object";
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <SectionLabel>{opLabel}</SectionLabel>
+        <span className="font-mono text-[10.5px] text-[var(--color-muted-foreground)]">
+          {parsed.entityName}
+          {parsed.key && (
+            <>
+              {" · "}
+              <span className="opacity-70">{t("audits.diff.key")}: </span>
+              {parsed.key}
+            </>
+          )}
+        </span>
+      </div>
+
+      {/* Table + entity metadata */}
+      <div className="mt-1.5 mb-2 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[10.5px] text-[var(--color-muted-foreground)]">
+        <span>
+          <span className="opacity-60">{t("audits.diff.table")}: </span>
+          {parsed.table}
+        </span>
+        <span>
+          <span className="opacity-60">{t("audits.diff.entity")}: </span>
+          {parsed.entityName}
+        </span>
+      </div>
+
+      {parsed.changes.length === 0 ? (
+        <p className="text-[11.5px] text-[var(--color-muted-foreground)]">
+          {t("audits.diff.noChanges")}
+        </p>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] bg-[var(--color-muted)]">
+                <th className="px-3 py-1.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+                  {t("audits.diff.field")}
+                </th>
+                {!isInsert && (
+                  <th className="px-3 py-1.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+                    {t("audits.diff.before")}
+                  </th>
+                )}
+                {!isDelete && (
+                  <th className="px-3 py-1.5 text-left font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+                    {t("audits.diff.after")}
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {parsed.changes.map((change, idx) => (
+                <tr
+                  key={idx}
+                  style={{ backgroundColor: rowBg(change) }}
+                  className="border-b border-[var(--color-border)] last:border-0"
+                >
+                  {/* Field name + optional data type hint */}
+                  <td className="px-3 py-2 align-top font-mono text-[11.5px] font-medium text-[var(--color-foreground)]">
+                    {change.name}
+                    {change.dataType && (
+                      <span className="ml-1.5 font-normal text-[10px] text-[var(--color-muted-foreground)]">
+                        {change.dataType}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Before */}
+                  {!isInsert && (
+                    <td className="px-3 py-2 align-top font-mono text-[11.5px] text-[var(--color-muted-foreground)]">
+                      {change.isSensitive ? (
+                        <span className="tracking-[0.3em]">{t("audits.diff.sensitive")}</span>
+                      ) : isComplex(change.oldValue) ? (
+                        <pre className="max-h-24 overflow-auto whitespace-pre-wrap text-[10.5px] leading-relaxed">
+                          {formatDiffValue(change.oldValue)}
+                        </pre>
+                      ) : (
+                        <span className="break-all">{formatDiffValue(change.oldValue)}</span>
+                      )}
+                    </td>
+                  )}
+
+                  {/* After */}
+                  {!isDelete && (
+                    <td className="px-3 py-2 align-top font-mono text-[11.5px] text-[var(--color-foreground)]">
+                      {change.isSensitive ? (
+                        <span className="tracking-[0.3em] text-[var(--color-muted-foreground)]">
+                          {t("audits.diff.sensitive")}
+                        </span>
+                      ) : isComplex(change.newValue) ? (
+                        <pre className="max-h-24 overflow-auto whitespace-pre-wrap text-[10.5px] leading-relaxed">
+                          {formatDiffValue(change.newValue)}
+                        </pre>
+                      ) : (
+                        <span className="break-all">{formatDiffValue(change.newValue)}</span>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }

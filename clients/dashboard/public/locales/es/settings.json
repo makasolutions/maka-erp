@@ -208,6 +208,49 @@
     "keyCopied": "Clave copiada al portapapeles",
     "newKeyWarning": "Copia la clave ahora — no podrás verla de nuevo."
   },
+  "audits": {
+    "filters": {
+      "entity": "Entidad",
+      "operation": "Operación",
+      "user": "Usuario",
+      "dateFrom": "Desde",
+      "dateTo": "Hasta",
+      "clear": "Limpiar filtros",
+      "allEntities": "Todas las entidades",
+      "allOperations": "Todas las operaciones",
+      "allUsers": "Todos los usuarios",
+      "searchUser": "Buscar usuario…"
+    },
+    "operations": {
+      "insert": "Creación",
+      "update": "Actualización",
+      "delete": "Eliminación",
+      "softDelete": "Eliminación lógica",
+      "restore": "Restauración"
+    },
+    "diff": {
+      "before": "Antes",
+      "after": "Después",
+      "field": "Campo",
+      "created": "Registro creado",
+      "deleted": "Registro eliminado",
+      "updated": "Cambios realizados",
+      "sensitive": "Valor protegido",
+      "noChanges": "Sin cambios registrados",
+      "entity": "Entidad",
+      "operation": "Operación",
+      "key": "Clave",
+      "table": "Tabla"
+    },
+    "section": {
+      "title": "Historial de cambios",
+      "viewAll": "Ver todos",
+      "empty": "Sin cambios registrados",
+      "by": "por",
+      "loading": "Cargando historial…",
+      "errorLoading": "Error al cargar el historial"
+    }
+  },
   "saved": "Configuración guardada",
   "nav": "Secciones de configuración",
   "sectionHeader": "Secciones",

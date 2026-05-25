@@ -51,7 +51,9 @@
     "reactivate": "Reactivate",
     "deactivate": "Deactivate",
     "clearSearch": "Clear search",
-    "clearFilter": "Clear filter"
+    "clearFilter": "Clear filter",
+    "createInline": "Create \"{{name}}\"",
+    "createNew": "Create new"
   },
   "status": {
     "active": "Active",
