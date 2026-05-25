@@ -34,4 +34,16 @@ public sealed class GetAuditsQuery : IPagedQuery, IQuery<PagedResponse<AuditSumm
     public string? TraceId { get; set; }
 
     public string? Search { get; set; }
+
+    // ── Entity-change filters (require the denormalized columns added in
+    //    the Auditing_AddEntityColumns migration) ─────────────────────────
+
+    /// <summary>Exact or partial match on EntityName (e.g. "Brand", "Category").</summary>
+    public string? EntityName { get; set; }
+
+    /// <summary>Exact match on EntityKey (the entity's primary key string).</summary>
+    public string? EntityKey { get; set; }
+
+    /// <summary>Exact match on EntityOperation (e.g. "Insert", "Update", "Delete").</summary>
+    public string? EntityOperation { get; set; }
 }

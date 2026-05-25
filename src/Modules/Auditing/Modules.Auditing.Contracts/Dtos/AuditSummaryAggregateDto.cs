@@ -15,4 +15,11 @@ public sealed class AuditSummaryAggregateDto
 
     public IDictionary<string, long> EventsByTenant { get; init; } =
         new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Distinct entity names seen in the window, sorted by change count descending.
+    /// Populated only for EntityChange events. Used to drive the entity-name
+    /// dropdown in the audit filter bar.
+    /// </summary>
+    public IReadOnlyList<string> TopEntityNames { get; init; } = [];
 }

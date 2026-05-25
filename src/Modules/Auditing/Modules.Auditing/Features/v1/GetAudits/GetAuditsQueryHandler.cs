@@ -107,6 +107,29 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
                 (a.UserName != null && EF.Functions.ILike(a.UserName, $"%{term}%")));
         }
 
+        // ── Entity-change column filters ─────────────────────────────────
+        if (!string.IsNullOrWhiteSpace(query.EntityName))
+        {
+            // ILike so "Brand" matches both "Brand" and any future subclasses.
+            // The IX_AuditRecords_Tenant_EntityName_OccurredAt composite index
+            // makes this efficient when combined with the tenant filter.
+            audits = audits.Where(a => a.EntityName != null
+                && EF.Functions.ILike(a.EntityName, $"%{query.EntityName}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.EntityKey))
+        {
+            // Exact match — GUIDs are not prefix-searchable in a meaningful way.
+            // The gin_trgm_ops index on EntityKey still accelerates this for
+            // UUIDs because trigram indexing works on substrings.
+            audits = audits.Where(a => a.EntityKey == query.EntityKey);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.EntityOperation))
+        {
+            audits = audits.Where(a => a.EntityOperation == query.EntityOperation);
+        }
+
         audits = audits.OrderByDescending(a => a.OccurredAtUtc);
 
         IQueryable<AuditSummaryDto> projected = audits.Select(a => new AuditSummaryDto

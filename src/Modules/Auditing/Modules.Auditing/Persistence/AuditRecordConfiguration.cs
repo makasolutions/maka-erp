@@ -62,5 +62,25 @@ public class AuditRecordConfiguration : IEntityTypeConfiguration<AuditRecord>
             .HasMethod("gin")
             .HasOperators("jsonb_path_ops")
             .HasDatabaseName("IX_AuditRecords_PayloadJson_gin");
+
+        // ── Denormalized entity-change columns ───────────────────────────
+        builder.Property(x => x.EntityName).HasMaxLength(256).IsRequired(false);
+        builder.Property(x => x.EntityKey).HasMaxLength(500).IsRequired(false);
+        builder.Property(x => x.EntityOperation).HasMaxLength(50).IsRequired(false);
+
+        // Composite index for "show me all changes to entity type X" — covers
+        // the EntityAuditSection and the entity-name dropdown in the filter bar.
+        builder.HasIndex(x => new { x.TenantId, x.EntityName, x.OccurredAtUtc })
+            .IsDescending(false, false, true)
+            .HasDatabaseName("IX_AuditRecords_Tenant_EntityName_OccurredAt");
+
+        // GIN trigram index so EntityKey ILIKE '%uuid%' uses an index probe
+        // rather than a sequential scan. The key is typically a GUID or short
+        // composite string — trigrams are sparse but the index is still faster
+        // than a full table scan for large tenants.
+        builder.HasIndex(x => x.EntityKey)
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops")
+            .HasDatabaseName("IX_AuditRecords_EntityKey_trgm");
     }
 }

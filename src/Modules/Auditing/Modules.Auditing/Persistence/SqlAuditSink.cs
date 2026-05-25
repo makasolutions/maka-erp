@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Finbuckle.MultiTenant;
 using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Shared.Multitenancy;
@@ -45,23 +46,51 @@ public sealed class SqlAuditSink : IAuditSink
 
             var db = scope.ServiceProvider.GetRequiredService<AuditDbContext>();
 
-            var records = group.Select(e => new AuditRecord
+            var records = group.Select(e =>
             {
-                Id = e.Id,
-                OccurredAtUtc = e.OccurredAtUtc,
-                ReceivedAtUtc = e.ReceivedAtUtc,
-                EventType = (int)e.EventType,
-                Severity = (byte)e.Severity,
-                TenantId = e.TenantId,
-                UserId = e.UserId,
-                UserName = e.UserName,
-                TraceId = e.TraceId,
-                SpanId = e.SpanId,
-                CorrelationId = e.CorrelationId,
-                RequestId = e.RequestId,
-                Source = e.Source,
-                Tags = (long)e.Tags,
-                PayloadJson = _serializer.SerializePayload(e.Payload)
+                var payloadJson = _serializer.SerializePayload(e.Payload);
+
+                // Denormalize entity-change fields so UI filters don't need JSONB ops.
+                string? entityName = null;
+                string? entityKey = null;
+                string? entityOperation = null;
+                if (e.EventType == AuditEventType.EntityChange && !string.IsNullOrEmpty(payloadJson))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(payloadJson);
+                        var root = doc.RootElement;
+                        entityName = TryGetString(root, "entityName", "EntityName");
+                        entityKey = TryGetString(root, "key", "Key");
+                        entityOperation = TryGetString(root, "operation", "Operation");
+                    }
+                    catch (JsonException)
+                    {
+                        // Malformed payload — leave the denormalized columns null.
+                    }
+                }
+
+                return new AuditRecord
+                {
+                    Id = e.Id,
+                    OccurredAtUtc = e.OccurredAtUtc,
+                    ReceivedAtUtc = e.ReceivedAtUtc,
+                    EventType = (int)e.EventType,
+                    Severity = (byte)e.Severity,
+                    TenantId = e.TenantId,
+                    UserId = e.UserId,
+                    UserName = e.UserName,
+                    TraceId = e.TraceId,
+                    SpanId = e.SpanId,
+                    CorrelationId = e.CorrelationId,
+                    RequestId = e.RequestId,
+                    Source = e.Source,
+                    Tags = (long)e.Tags,
+                    EntityName = entityName,
+                    EntityKey = entityKey,
+                    EntityOperation = entityOperation,
+                    PayloadJson = payloadJson,
+                };
             }).ToList();
 
             db.AuditRecords.AddRange(records);
@@ -72,5 +101,18 @@ public sealed class SqlAuditSink : IAuditSink
                 _log.LogInformation("Wrote {Count} audit records for tenant {TenantId}.", records.Count, tenantInfo.Id);
             }
         }
+    }
+
+    /// <summary>
+    /// Reads the first matching property (camelCase or PascalCase) as a string.
+    /// Returns null when the property is absent, null, or not a string.
+    /// </summary>
+    private static string? TryGetString(JsonElement root, string camelName, string pascalName)
+    {
+        if (root.TryGetProperty(camelName, out var el) || root.TryGetProperty(pascalName, out el))
+        {
+            return el.ValueKind == JsonValueKind.String ? el.GetString() : null;
+        }
+        return null;
     }
 }

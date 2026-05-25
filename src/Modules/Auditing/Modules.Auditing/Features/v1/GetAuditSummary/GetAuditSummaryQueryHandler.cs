@@ -72,12 +72,26 @@ public sealed class GetAuditSummaryQueryHandler : IQueryHandler<GetAuditSummaryQ
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Top entity names (from denormalized column) — up to 50 distinct values,
+        // ordered by change count so the most-active entities appear first in the
+        // dropdown.
+        var topEntityNames = await scoped
+            .Where(a => a.EntityName != null)
+            .GroupBy(a => a.EntityName!)
+            .Select(g => new { Name = g.Key, Count = (long)g.Count() })
+            .OrderByDescending(g => g.Count)
+            .Take(50)
+            .Select(g => g.Name)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         return new AuditSummaryAggregateDto
         {
             EventsByType = byType.ToDictionary(x => (AuditEventType)x.Key, x => x.Count),
             EventsBySeverity = bySeverity.ToDictionary(x => (AuditSeverity)x.Key, x => x.Count),
             EventsBySource = bySource.ToDictionary(x => x.Key, x => x.Count, StringComparer.OrdinalIgnoreCase),
             EventsByTenant = byTenant.ToDictionary(x => x.Key, x => x.Count, StringComparer.OrdinalIgnoreCase),
+            TopEntityNames = topEntityNames,
         };
     }
 
