@@ -7,7 +7,8 @@
     "notifications": "Notificaciones",
     "apiKeys": "API Keys",
     "tenant": "Tenant",
-    "billing": "Facturación"
+    "billing": "Facturación",
+    "localization": "Localización"
   },
   "profile": {
     "title": "Perfil",
@@ -259,6 +260,65 @@
     "securityHint": "Contraseña y sesiones activas",
     "appearanceHint": "Tema y preferencias visuales",
     "notificationsHint": "Cómo nos comunicamos contigo",
-    "apiKeysHint": "Tokens de acceso personal"
+    "apiKeysHint": "Tokens de acceso personal",
+    "localizationHint": "Fecha, hora, moneda e idioma"
+  },
+  "localization": {
+    "title": "Localización",
+    "description": "Controla cómo se muestran fechas, horas, números y moneda en todo el dashboard.",
+    "dateTime": "Fecha y hora",
+    "dateTimeDesc": "Zona horaria, formato de fecha y reloj.",
+    "regionLanguage": "Región e idioma",
+    "regionLanguageDesc": "Idioma de la interfaz, moneda y separadores numéricos.",
+    "timezone": "Zona horaria",
+    "timezoneDesc": "Todas las fechas del dashboard se convierten a esta zona horaria.",
+    "dateFormat": "Formato de fecha",
+    "timeFormat": "Formato de hora",
+    "language": "Idioma de la interfaz",
+    "currency": "Moneda predeterminada",
+    "currencyDesc": "Se usa para importes y reportes en todo el dashboard.",
+    "numberFormat": "Formato de número",
+    "numberFormatDesc": "Separadores de miles y decimales.",
+    "preview": "Vista previa",
+    "previewDesc": "Así se verán los valores con la configuración actual.",
+    "previewDate": "Fecha de muestra",
+    "previewDateTime": "Fecha y hora",
+    "previewCurrency": "Moneda",
+    "previewNumber": "Número",
+    "save": "Guardar cambios",
+    "saving": "Guardando…",
+    "saved": "Localización guardada",
+    "saveFailed": "Error al guardar",
+    "regions": {
+      "latinAmerica": "América Latina",
+      "northAmerica": "América del Norte",
+      "europe": "Europa",
+      "middleEastAsia": "Oriente Medio y Asia",
+      "africa": "África",
+      "oceania": "Oceanía",
+      "utc": "UTC"
+    },
+    "timeFormats": {
+      "12h": "12 horas (AM/PM)",
+      "24h": "24 horas"
+    },
+    "dateFormats": {
+      "DDMMYYYY": "DD/MM/AAAA",
+      "MMDDYYYY": "MM/DD/AAAA",
+      "YYYYMMDD": "AAAA-MM-DD"
+    },
+    "currencies": {
+      "COP": "COP — Peso colombiano",
+      "USD": "USD — Dólar estadounidense",
+      "EUR": "EUR — Euro"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    },
+    "numberFormats": {
+      "dotComma": "1.000,00 (punto miles, coma decimal)",
+      "commaDot": "1,000.00 (coma miles, punto decimal)"
+    }
   }
 }

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Bell,
   ChevronRight,
+  Globe,
   KeyRound,
   Palette,
   Settings as SettingsIcon,
@@ -26,6 +27,7 @@ const TAB_DEFS: TabDef[] = [
   { to: "/settings/appearance", labelKey: "sections.appearance", hintKey: "tabs.appearanceHint", icon: Palette },
   { to: "/settings/notifications", labelKey: "sections.notifications", hintKey: "tabs.notificationsHint", icon: Bell },
   { to: "/settings/api-keys", labelKey: "sections.apiKeys", hintKey: "tabs.apiKeysHint", icon: KeyRound },
+  { to: "/settings/localization", labelKey: "sections.localization", hintKey: "tabs.localizationHint", icon: Globe },
 ];
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");

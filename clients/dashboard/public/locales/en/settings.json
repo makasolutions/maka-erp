@@ -7,7 +7,8 @@
     "notifications": "Notifications",
     "apiKeys": "API Keys",
     "tenant": "Tenant",
-    "billing": "Billing"
+    "billing": "Billing",
+    "localization": "Localization"
   },
   "profile": {
     "title": "Profile",
@@ -259,6 +260,65 @@
     "securityHint": "Password and active sessions",
     "appearanceHint": "Theme and visual preferences",
     "notificationsHint": "How we reach you",
-    "apiKeysHint": "Personal access tokens"
+    "apiKeysHint": "Personal access tokens",
+    "localizationHint": "Date, time, currency and language"
+  },
+  "localization": {
+    "title": "Localization",
+    "description": "Controls how dates, times, numbers, and currency are displayed across the dashboard.",
+    "dateTime": "Date & Time",
+    "dateTimeDesc": "Timezone, date format, and clock style.",
+    "regionLanguage": "Region & Language",
+    "regionLanguageDesc": "UI language, currency, and number separators.",
+    "timezone": "Timezone",
+    "timezoneDesc": "All dashboard dates are converted to this timezone.",
+    "dateFormat": "Date format",
+    "timeFormat": "Time format",
+    "language": "Interface language",
+    "currency": "Default currency",
+    "currencyDesc": "Used for amounts and reports throughout the dashboard.",
+    "numberFormat": "Number format",
+    "numberFormatDesc": "Thousands and decimal separators.",
+    "preview": "Preview",
+    "previewDesc": "How values will look with the current configuration.",
+    "previewDate": "Sample date",
+    "previewDateTime": "Date & time",
+    "previewCurrency": "Currency",
+    "previewNumber": "Number",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Localization saved",
+    "saveFailed": "Failed to save",
+    "regions": {
+      "latinAmerica": "Latin America",
+      "northAmerica": "North America",
+      "europe": "Europe",
+      "middleEastAsia": "Middle East & Asia",
+      "africa": "Africa",
+      "oceania": "Oceania",
+      "utc": "UTC"
+    },
+    "timeFormats": {
+      "12h": "12-hour (AM/PM)",
+      "24h": "24-hour"
+    },
+    "dateFormats": {
+      "DDMMYYYY": "DD/MM/YYYY",
+      "MMDDYYYY": "MM/DD/YYYY",
+      "YYYYMMDD": "YYYY-MM-DD"
+    },
+    "currencies": {
+      "COP": "COP — Colombian Peso",
+      "USD": "USD — US Dollar",
+      "EUR": "EUR — Euro"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    },
+    "numberFormats": {
+      "dotComma": "1.000,00 (dot thousands, comma decimal)",
+      "commaDot": "1,000.00 (comma thousands, dot decimal)"
+    }
   }
 }

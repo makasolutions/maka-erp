@@ -67,6 +67,10 @@ const NotificationsSettings = lazyNamed(
   "NotificationsSettings",
 );
 const ApiKeysSettings = lazyNamed(() => import("@/pages/settings/api-keys"), "ApiKeysSettings");
+const LocalizationSettings = lazyNamed(
+  () => import("@/pages/settings/localization"),
+  "LocalizationSettings",
+);
 const HealthPage = lazyNamed(() => import("@/pages/health"), "HealthPage");
 const AuditsPage = lazyNamed(() => import("@/pages/audits"), "AuditsPage");
 const TicketsPage = lazyNamed(() => import("@/pages/tickets/tickets"), "TicketsPage");
@@ -207,6 +211,7 @@ export const router = createBrowserRouter([
               { path: "appearance", element: withSuspense(<AppearanceSettings />) },
               { path: "notifications", element: withSuspense(<NotificationsSettings />) },
               { path: "api-keys", element: withSuspense(<ApiKeysSettings />) },
+              { path: "localization", element: withSuspense(<LocalizationSettings />) },
             ],
           },
         ],
