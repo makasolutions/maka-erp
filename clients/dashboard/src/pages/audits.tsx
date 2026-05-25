@@ -47,7 +47,6 @@ import {
   EntityListRow,
   EntityPageHeader,
   EntityPager,
-  EntitySearch,
   EntityStatusBadge,
 } from "@/components/list";
 import {
@@ -296,14 +295,7 @@ export function AuditsPage() {
         </Button>
       </EntityPageHeader>
 
-      {/* Search */}
-      <EntitySearch
-        value={searchInput}
-        onChange={setSearchInput}
-        placeholder={t("audits.searchPlaceholder")}
-      />
-
-      {/* Filter bar — preserved verbatim (range presets, chips, advanced) */}
+      {/* Filter bar — search lives inside the bar (Row 1) so there's only one input */}
       <FilterBar
         filters={filters}
         searchInput={searchInput}
