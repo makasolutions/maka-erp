@@ -47,7 +47,23 @@ if (cli.Help)
     await Console.Out.WriteLineAsync(MigratorCommand.HelpText).ConfigureAwait(false);
     return 0;
 }
+
 var builder = Host.CreateApplicationBuilder(args);
+
+// seed-demo is a dev-only verb. Override EnvironmentName to Development here,
+// before the explicit appsettings files are loaded (lines below), so:
+//   (a) appsettings.Development.json is picked up, and
+//   (b) the IsDevelopment() guard inside the seed-demo block passes.
+// We cannot rely on ASPNETCORE_ENVIRONMENT being set correctly by the caller:
+// on Windows a system-level ASPNETCORE_ENVIRONMENT=Production survives both
+// shell overrides and launchSettings.json (the runtime resolves the name before
+// any in-process code can mutate Environment.SetEnvironmentVariable).
+// Mutating builder.Environment.EnvironmentName at this point is safe — the host
+// hasn't built yet and this property is explicitly writable on IHostEnvironment.
+if (cli.Command == "seed-demo" && !builder.Environment.IsDevelopment())
+{
+    builder.Environment.EnvironmentName = Environments.Development;
+}
 
 // In local development (dotnet run), the working directory is the project folder,
 // but appsettings.json is linked and copied to the output directory.

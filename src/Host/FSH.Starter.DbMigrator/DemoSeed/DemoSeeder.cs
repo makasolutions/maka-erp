@@ -43,6 +43,7 @@ internal sealed class DemoSeeder
     private readonly IConfiguration _config;
     private readonly ILogger<DemoSeeder> _logger;
     private string _sharedPassword = string.Empty;
+    private string _adminPassword = string.Empty;
 
     public static readonly DemoTenant Acme = new(
         Id: "acme",
@@ -69,6 +70,9 @@ internal sealed class DemoSeeder
         _sharedPassword = _config["Seed:DemoPassword"]
             ?? throw new InvalidOperationException(
                 "Seed:DemoPassword must be configured (see appsettings.Development.json).");
+        // Tenant admins get their own password (distinct from regular demo users)
+        // so the dev login panel's ROOT_PASSWORD = "123Pa$$word!" stays truthful.
+        _adminPassword = _config["Seed:DefaultAdminPassword"] ?? _sharedPassword;
 
         await EnsureDemoTenantsExistAsync(cancellationToken).ConfigureAwait(false);
         await SeedRootSuperAdminAsync(cancellationToken).ConfigureAwait(false);
@@ -140,7 +144,9 @@ internal sealed class DemoSeeder
             adminEmail: MultitenancyConstants.Root.EmailAddress,
             issuer: MultitenancyConstants.Root.Issuer);
 
-        await SeedUsersInTenantAsync(rootTenant, BuildRootUsers(), [], cancellationToken).ConfigureAwait(false);
+        // Root admin (admin@root.com) keeps the platform-owner password, not the
+        // shared demo password, so the login panel's ROOT_PASSWORD stays correct.
+        await SeedUsersInTenantAsync(rootTenant, BuildRootUsers(), [], _adminPassword, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task SeedTenantUsersAsync(DemoTenant demo, CancellationToken cancellationToken)
@@ -152,13 +158,16 @@ internal sealed class DemoSeeder
 
         var users = demo.Id == Acme.Id ? BuildAcmeUsers() : BuildGlobexUsers();
         var customRoles = demo.Id == Acme.Id ? BuildAcmeCustomRoles() : Array.Empty<DemoRole>();
-        await SeedUsersInTenantAsync(tenant, users, customRoles, cancellationToken).ConfigureAwait(false);
+        // Tenant admins (admin@acme.com, admin@globex.com) use the shared demo
+        // password so the login panel renders one consistent credential for the group.
+        await SeedUsersInTenantAsync(tenant, users, customRoles, _sharedPassword, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task SeedUsersInTenantAsync(
         AppTenantInfo tenant,
         IReadOnlyList<DemoUser> users,
         IReadOnlyList<DemoRole> customRoles,
+        string tenantAdminPassword,
         CancellationToken cancellationToken)
     {
         using var scope = _services.CreateScope();
@@ -235,7 +244,7 @@ internal sealed class DemoSeeder
             }
             else
             {
-                await EnsureSharedPasswordAsync(userManager, hasher, existing).ConfigureAwait(false);
+                await EnsurePasswordAsync(userManager, hasher, existing, _sharedPassword).ConfigureAwait(false);
             }
 
             foreach (var role in demoUser.Roles)
@@ -250,29 +259,29 @@ internal sealed class DemoSeeder
         }
 
         // Tenant admin (admin@<tenant>.com) was created by IdentityDbInitializer
-        // with the framework default password. Realign so the dev login panel's
-        // advertised credential is truthful for both the tenant admin AND every
-        // demo user.
+        // with the framework default password. Realign with tenantAdminPassword so
+        // the dev login panel's advertised credential stays truthful.
         if (!string.IsNullOrWhiteSpace(tenant.AdminEmail))
         {
             var admin = await userManager.FindByEmailAsync(tenant.AdminEmail).ConfigureAwait(false);
             if (admin is not null)
             {
-                await EnsureSharedPasswordAsync(userManager, hasher, admin).ConfigureAwait(false);
+                await EnsurePasswordAsync(userManager, hasher, admin, tenantAdminPassword).ConfigureAwait(false);
             }
         }
     }
 
-    private async Task EnsureSharedPasswordAsync(
+    private async Task EnsurePasswordAsync(
         UserManager<FshUser> userManager,
         PasswordHasher<FshUser> hasher,
-        FshUser user)
+        FshUser user,
+        string password)
     {
-        if (await userManager.CheckPasswordAsync(user, _sharedPassword).ConfigureAwait(false))
+        if (await userManager.CheckPasswordAsync(user, password).ConfigureAwait(false))
         {
             return;
         }
-        user.PasswordHash = hasher.HashPassword(user, _sharedPassword);
+        user.PasswordHash = hasher.HashPassword(user, password);
         var result = await userManager.UpdateAsync(user).ConfigureAwait(false);
         if (!result.Succeeded && _logger.IsEnabled(LogLevel.Warning))
         {
