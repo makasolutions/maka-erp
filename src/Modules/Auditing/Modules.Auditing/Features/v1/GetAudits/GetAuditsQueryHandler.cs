@@ -78,7 +78,10 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
 
         if (!string.IsNullOrWhiteSpace(query.Source))
         {
-            audits = audits.Where(a => a.Source == query.Source);
+            // Use ILIKE so partial terms work (e.g. "Catalog" matches
+            // "FSH.Modules.Catalog.Features.v1.Products…").
+            // The gin_trgm_ops index on Source makes this efficient.
+            audits = audits.Where(a => a.Source != null && EF.Functions.ILike(a.Source, $"%{query.Source}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(query.CorrelationId))
@@ -94,12 +97,12 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string term = query.Search;
-            // ILIKE on PayloadJson is sequential without a GIN/trigram index.
-            // The composite (TenantId, OccurredAtUtc) index keeps the planner
-            // honest by scoping the scan; pair this with a GIN index on
-            // PayloadJson in production for sub-second search.
+            // NOTE: PayloadJson is a jsonb column — EF.Functions.ILike cannot be
+            // applied directly to jsonb (PostgreSQL raises "operator does not exist:
+            // jsonb ~~* unknown"). Search is therefore scoped to Source and UserName,
+            // both of which have gin_trgm_ops indexes and accept ILIKE efficiently.
+            // Full-text payload search is deferred until a ts_vector column is added.
             audits = audits.Where(a =>
-                (a.PayloadJson != null && EF.Functions.ILike(a.PayloadJson, $"%{term}%")) ||
                 (a.Source != null && EF.Functions.ILike(a.Source, $"%{term}%")) ||
                 (a.UserName != null && EF.Functions.ILike(a.UserName, $"%{term}%")));
         }
