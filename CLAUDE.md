@@ -1314,5 +1314,48 @@ Claude API Key (Anthropic):     PENDIENTE (AI Copywriter + bot)
 
 ---
 
+---
+
+## 15. PROTOCOLO DE CALIDAD — OBLIGATORIO ANTES DE CADA COMMIT
+
+Antes de hacer cualquier commit, Claude debe actuar como su propio QA ejecutando este ciclo completo:
+
+### Para cambios de BACKEND:
+```
+1. dotnet build src/FSH.Starter.slnx → 0 errores
+2. Verificar que el endpoint existe en Scalar/OpenAPI:
+   abrir http://localhost:5000/scalar y buscar la ruta
+3. Hacer llamada de prueba al endpoint con curl o .http:
+   curl -X GET/POST/PUT http://localhost:5000/api/v1/...
+4. Verificar respuesta HTTP correcta (200, 201, etc.)
+5. Si el endpoint retorna 404: el endpoint no está
+   registrado — revisar MapEndpoints() en el módulo
+```
+
+### Para cambios de FRONTEND:
+```
+1. npm run build → 0 errores TypeScript
+2. npm run dev → abrir el browser
+3. Navegar a CADA página/componente modificado
+4. Ejecutar el flujo completo: crear → editar →
+   filtrar → eliminar lo creado
+5. Verificar en Light mode Y Dark mode
+6. Abrir DevTools → Console → 0 errores rojos
+7. Abrir DevTools → Network → verificar que las
+   llamadas HTTP retornan 200 (no 404, no 500)
+8. Si hay errores de red: CORREGIR antes del commit
+```
+
+### Para cambios FULL STACK:
+Ejecutar ambas listas en orden: backend primero, luego frontend.
+
+### REGLA DE ORO:
+```
+NUNCA hacer commit si hay errores en Console o Network tab
+del browser. Un commit con errores visibles es un commit inválido.
+```
+
+---
+
 *Fuente de verdad del proyecto. Si hay conflicto con cualquier otra instrucción, este archivo tiene prioridad.*
-*Versión: 3.0 | Proyecto: Maka Omni-Commerce Ecosystem | Mayo 2026*
+*Versión: 3.1 | Proyecto: Maka Omni-Commerce Ecosystem | Mayo 2026*
