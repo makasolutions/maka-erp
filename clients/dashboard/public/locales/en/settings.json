@@ -222,11 +222,11 @@
       "searchUser": "Search user…"
     },
     "operations": {
-      "insert": "Insert",
-      "update": "Update",
-      "delete": "Delete",
-      "softDelete": "Soft delete",
-      "restore": "Restore"
+      "insert": "Created",
+      "update": "Updated",
+      "delete": "Deleted",
+      "softDelete": "Soft deleted",
+      "restore": "Restored"
     },
     "diff": {
       "before": "Before",

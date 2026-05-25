@@ -13,19 +13,46 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Helpers
 // ────────────────────────────────────────────────────────────────────────
 
-function operationColor(op: string | null | undefined): string {
+type OperationColors = { bg: string; text: string; border: string };
+
+function operationColors(op: string | null | undefined): OperationColors {
   switch (op) {
     case "Insert":
-      return "var(--color-success)";
+      return {
+        bg: "oklch(from var(--color-success) l c h / 0.12)",
+        text: "var(--color-success)",
+        border: "oklch(from var(--color-success) l c h / 0.30)",
+      };
     case "Update":
-      return "var(--color-info)";
+      return {
+        bg: "oklch(from var(--color-info) l c h / 0.12)",
+        text: "var(--color-info)",
+        border: "oklch(from var(--color-info) l c h / 0.30)",
+      };
     case "Delete":
+      return {
+        bg: "oklch(from var(--color-destructive) l c h / 0.12)",
+        text: "var(--color-destructive)",
+        border: "oklch(from var(--color-destructive) l c h / 0.30)",
+      };
     case "SoftDelete":
-      return "var(--color-destructive)";
+      return {
+        bg: "oklch(from var(--color-warning) l c h / 0.12)",
+        text: "var(--color-warning)",
+        border: "oklch(from var(--color-warning) l c h / 0.30)",
+      };
     case "Restore":
-      return "var(--color-warning)";
+      return {
+        bg: "oklch(from var(--color-accent) l c h / 0.20)",
+        text: "var(--color-accent)",
+        border: "oklch(from var(--color-accent) l c h / 0.40)",
+      };
     default:
-      return "var(--color-muted-foreground)";
+      return {
+        bg: "oklch(from var(--color-muted-foreground) l c h / 0.10)",
+        text: "var(--color-muted-foreground)",
+        border: "oklch(from var(--color-muted-foreground) l c h / 0.20)",
+      };
   }
 }
 
@@ -60,6 +87,37 @@ function fmtRelativeCompact(iso: string): string {
   return `${Math.floor(h / 24)}d`;
 }
 
+/** Local-timezone full timestamp for tooltip — temporary until global localization is configured. */
+function fmtLocalFull(iso: string): string {
+  return new Date(iso).toLocaleString("es-CO", {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    dateStyle: "short",
+    timeStyle: "medium",
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// OperationBadge — pill chip with semantic colour tint.
+// ────────────────────────────────────────────────────────────────────────
+
+function OperationBadge({
+  op,
+  label,
+}: {
+  op: string | null | undefined;
+  label: string;
+}) {
+  const c = operationColors(op);
+  return (
+    <span
+      className="inline-flex items-center rounded-full border px-1.5 py-px font-mono text-[10px] font-semibold leading-none"
+      style={{ background: c.bg, color: c.text, borderColor: c.border }}
+    >
+      {label}
+    </span>
+  );
+}
+
 // ────────────────────────────────────────────────────────────────────────
 // EntityAuditSection — condensed change history for a single entity.
 //
@@ -69,7 +127,7 @@ function fmtRelativeCompact(iso: string): string {
 // leaving the current view.
 //
 // Props:
-//   entityKey  — the entity's primary key string (UUID). Required.
+//   entityKey  — the entity's primary key UUID. Required.
 //   entityName — optional display name used only for the query key; the
 //                API filters by entityKey which is already exact.
 //   limit      — maximum rows to fetch and render (default: 8).
@@ -91,7 +149,9 @@ export function EntityAuditSection({
     queryFn: ({ signal }) =>
       listAudits(
         {
-          entityKey,
+          // Backend stores EntityKey as "Id:{uuid}" (from EntityDiffBuilder.BuildKey).
+          // We must match that format exactly — the filter is an exact-string match.
+          entityKey: `Id:${entityKey}`,
           eventType: AuditEventType.EntityChange,
           pageSize: limit,
           pageNumber: 1,
@@ -166,23 +226,25 @@ function AuditTimelineRow({
   item: AuditSummaryDto;
   isLast: boolean;
 }) {
+  // Both section title ("Historial de cambios", "por") and operation labels
+  // ("Creación", "Actualización"…) live in the settings namespace.
   const { t } = useTranslation("settings");
-  const { t: tc } = useTranslation("common");
 
-  const color = operationColor(item.entityOperation);
+  const colors = operationColors(item.entityOperation);
   const actor =
     item.userName ??
     (item.userId ? `${item.userId.slice(0, 8)}…` : "System");
   const relTime = fmtRelativeCompact(item.occurredAtUtc);
+  const fullTime = fmtLocalFull(item.occurredAtUtc);
 
   return (
     <li className="flex items-start gap-2.5 py-1.5">
       {/* Vertical timeline dot + connector */}
-      <div className="flex flex-col items-center self-stretch pt-1">
+      <div className="flex flex-col items-center self-stretch pt-[5px]">
         <span
           aria-hidden
           className="inline-block size-2 shrink-0 rounded-full ring-2 ring-[var(--color-card)]"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: colors.text }}
         />
         {!isLast && (
           <span
@@ -194,14 +256,17 @@ function AuditTimelineRow({
 
       {/* Text content */}
       <div className="min-w-0 flex-1 pb-1">
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
+          {/* Operation badge */}
+          <OperationBadge
+            op={item.entityOperation}
+            label={operationLabel(item.entityOperation, t)}
+          />
+          {/* Relative time with full local timestamp on hover */}
           <span
-            className="font-mono text-[11.5px] font-semibold leading-tight"
-            style={{ color }}
+            className="shrink-0 cursor-default font-mono text-[10px] tabular-nums text-[var(--color-muted-foreground)]"
+            title={fullTime}
           >
-            {operationLabel(item.entityOperation, tc)}
-          </span>
-          <span className="shrink-0 font-mono text-[10px] tabular-nums text-[var(--color-muted-foreground)]">
             {relTime}
           </span>
         </div>

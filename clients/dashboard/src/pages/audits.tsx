@@ -119,7 +119,7 @@ function eventTypeIcon(eventType: number): React.ComponentType<React.SVGProps<SV
 // ────────────────────────────────────────────────────────────────────────
 
 function fmtIsoDense(iso: string): { date: string; time: string } {
-  // 2026-04-30 14:32:11.234
+  // UTC — used in the detail drawer where the label explicitly reads "UTC".
   const d = new Date(iso);
   const yyyy = d.getUTCFullYear();
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -129,6 +129,18 @@ function fmtIsoDense(iso: string): { date: string; time: string } {
   const ss = String(d.getUTCSeconds()).padStart(2, "0");
   const ms = String(d.getUTCMilliseconds()).padStart(3, "0");
   return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}:${ss}.${ms}` };
+}
+
+/**
+ * Local-timezone timestamp — used in the audit table rows.
+ * Temporary until global localization (Grupo 3) is configured.
+ */
+function fmtLocalDense(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const date = d.toLocaleDateString("es-CO", { timeZone: tz, dateStyle: "short" });
+  const time = d.toLocaleTimeString("es-CO", { timeZone: tz, timeStyle: "medium" });
+  return { date, time };
 }
 
 function fmtRelative(
@@ -434,7 +446,7 @@ function AuditMobileCard({
   row: AuditSummaryDto;
   onOpen: () => void;
 }) {
-  const ts = fmtIsoDense(row.occurredAtUtc);
+  const ts = fmtLocalDense(row.occurredAtUtc);
   const Icon = eventTypeIcon(row.eventType);
   const tone = severityTone(row.severity);
   const toneColor = severityColorVar(row.severity);
@@ -488,6 +500,55 @@ function AuditMobileCard({
 //  Desktop row — Actor | Action | Entity | Timestamp
 // ───────────────────────────────────────────────────────────────────────
 
+/** Returns the last dot-segment of a qualified name. "A.B.MyClass" → "MyClass" */
+function lastSegment(source: string | null | undefined): string {
+  if (!source) return "—";
+  const parts = source.split(".");
+  return parts[parts.length - 1] ?? source;
+}
+
+/** Semantic colour for an entity operation — matches entity-audit-section palette. */
+function operationBadgeStyle(op: string | null | undefined): React.CSSProperties {
+  switch (op) {
+    case "Insert":
+      return {
+        background: "oklch(from var(--color-success) l c h / 0.12)",
+        color: "var(--color-success)",
+        borderColor: "oklch(from var(--color-success) l c h / 0.30)",
+      };
+    case "Update":
+      return {
+        background: "oklch(from var(--color-info) l c h / 0.12)",
+        color: "var(--color-info)",
+        borderColor: "oklch(from var(--color-info) l c h / 0.30)",
+      };
+    case "Delete":
+      return {
+        background: "oklch(from var(--color-destructive) l c h / 0.12)",
+        color: "var(--color-destructive)",
+        borderColor: "oklch(from var(--color-destructive) l c h / 0.30)",
+      };
+    case "SoftDelete":
+      return {
+        background: "oklch(from var(--color-warning) l c h / 0.12)",
+        color: "var(--color-warning)",
+        borderColor: "oklch(from var(--color-warning) l c h / 0.30)",
+      };
+    case "Restore":
+      return {
+        background: "oklch(from var(--color-accent) l c h / 0.20)",
+        color: "var(--color-accent)",
+        borderColor: "oklch(from var(--color-accent) l c h / 0.40)",
+      };
+    default:
+      return {
+        background: "oklch(from var(--color-muted-foreground) l c h / 0.10)",
+        color: "var(--color-muted-foreground)",
+        borderColor: "oklch(from var(--color-muted-foreground) l c h / 0.20)",
+      };
+  }
+}
+
 function AuditDesktopRow({
   row,
   isLast,
@@ -497,12 +558,19 @@ function AuditDesktopRow({
   isLast: boolean;
   onOpen: () => void;
 }) {
-  const ts = fmtIsoDense(row.occurredAtUtc);
+  const { t } = useTranslation("common");
+  const ts = fmtLocalDense(row.occurredAtUtc);
   const Icon = eventTypeIcon(row.eventType);
   const tone = severityTone(row.severity);
   const toneColor = severityColorVar(row.severity);
   const actor = row.userName ?? (row.userId ? `${row.userId.slice(0, 8)}…` : "System");
   const tags = decodeTags(row.tags);
+
+  // Entity column: show entity name prominently for EntityChange events.
+  const isEntityChange = row.eventType === AuditEventType.EntityChange;
+  const primaryEntityLabel = isEntityChange
+    ? (row.entityName ?? lastSegment(row.source))
+    : lastSegment(row.source);
 
   return (
     <EntityListRow className={DESKTOP_COLS} isLast={isLast} onClick={onOpen}>
@@ -536,11 +604,28 @@ function AuditDesktopRow({
         </div>
       </div>
 
-      {/* Entity (source + tags) */}
+      {/* Entity — primary name + namespace + operation badge for EntityChange */}
       <div className="min-w-0">
-        <code className="block truncate font-mono text-[12px] text-[var(--color-foreground)]">
+        {/* Primary: short entity name */}
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-[12.5px] font-medium text-[var(--color-foreground)]">
+            {primaryEntityLabel}
+          </span>
+          {/* Operation badge — shown only for EntityChange events */}
+          {isEntityChange && row.entityOperation && (
+            <span
+              className="inline-flex shrink-0 items-center rounded-full border px-1.5 py-px font-mono text-[10px] font-semibold leading-none"
+              style={operationBadgeStyle(row.entityOperation)}
+            >
+              {t(`audits.operations.${row.entityOperation.charAt(0).toLowerCase() + row.entityOperation.slice(1)}`)}
+            </span>
+          )}
+        </div>
+        {/* Secondary: full namespace or source */}
+        <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
           {row.source ?? "—"}
         </code>
+        {/* Tags (kept below namespace) */}
         {tags.length > 0 && (
           <div className="mt-0.5 flex flex-wrap items-center gap-1">
             {tags.slice(0, 2).map((name) => (
@@ -561,7 +646,7 @@ function AuditDesktopRow({
         )}
       </div>
 
-      {/* Timestamp */}
+      {/* Timestamp — local timezone */}
       <div className="flex items-center justify-between gap-2">
         <div className="font-mono text-[11.5px] tabular-nums leading-tight">
           <div className="text-[var(--color-foreground)]">{ts.time}</div>

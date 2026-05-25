@@ -456,11 +456,11 @@
     "allEntities": "All entities",
     "allOperations": "All operations",
     "operations": {
-      "insert": "Insert",
-      "update": "Update",
-      "delete": "Delete",
-      "softDelete": "Soft delete",
-      "restore": "Restore"
+      "insert": "Created",
+      "update": "Updated",
+      "delete": "Deleted",
+      "softDelete": "Soft deleted",
+      "restore": "Restored"
     },
     "columns": {
       "actor": "Actor",
