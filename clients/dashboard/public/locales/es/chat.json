@@ -69,6 +69,10 @@
     "you": "tú",
     "admin": "admin",
     "removeConfirm": "¿Eliminar a {{name}} del canal?",
+    "removeDialogBody": "{{name}} perderá acceso a este canal de inmediato.",
+    "removeMember": "Eliminar miembro",
+    "removingMember": "Eliminando…",
+    "cancel": "Cancelar",
     "removeAriaLabel": "Eliminar a {{name}}"
   },
   "page": {

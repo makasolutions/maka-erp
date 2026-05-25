@@ -56,6 +56,10 @@ export function ChannelSettingsDialog({
   const isAdmin = selfMember?.role === ChannelMemberRole.Admin;
   const { t } = useTranslation("chat");
 
+  // ── Danger-zone confirmation state ────────────────────────────────────
+  // Tracks which confirmation dialog is open: archive, leave, or none.
+  const [confirm, setConfirm] = useState<"archive" | "leave" | null>(null);
+
   // General section — local form state. Initialised from the channel on open;
   // persisted via Save. Discarded if the dialog is dismissed without saving.
   const [name, setName] = useState(channel.name ?? "");
@@ -98,7 +102,10 @@ export function ChannelSettingsDialog({
       onOpenChange(false);
       navigate("/chat");
     },
-    onError: () => toast.error(t("toast.channelArchiveFailed")),
+    onError: () => {
+      toast.error(t("toast.channelArchiveFailed"));
+      setConfirm(null);
+    },
   });
 
   const leaveMutation = useMutation({
@@ -109,149 +116,224 @@ export function ChannelSettingsDialog({
       onOpenChange(false);
       navigate("/chat");
     },
-    onError: () => toast.error(t("toast.leaveChannelFailed")),
+    onError: () => {
+      toast.error(t("toast.leaveChannelFailed"));
+      setConfirm(null);
+    },
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{t("settings.title")}</DialogTitle>
-          <DialogDescription>
-            {t("settings.description")}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody className="max-h-[60vh] space-y-6 overflow-y-auto">
-          {/* ── General ─────────────────────────────────────────────── */}
-          <section className="space-y-3">
-            <SectionTitle>{t("settings.sectionGeneral")}</SectionTitle>
-            <div className="space-y-1.5">
-              <Label htmlFor="channel-settings-name">{t("settings.nameLabel")}</Label>
-              <Input
-                id="channel-settings-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={!isAdmin}
-                maxLength={80}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="channel-settings-description">{t("settings.descLabel")}</Label>
-              <Input
-                id="channel-settings-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={!isAdmin}
-                placeholder={t("settings.descPlaceholder")}
-                maxLength={200}
-              />
-            </div>
-            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label
-              htmlFor="channel-settings-private"
-              className={cn(
-                "flex cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] p-3",
-                !isAdmin && "cursor-not-allowed opacity-60",
-              )}
-            >
-              <input
-                id="channel-settings-private"
-                type="checkbox"
-                className="mt-0.5"
-                checked={isPrivate}
-                onChange={(e) => setIsPrivate(e.target.checked)}
-                disabled={!isAdmin}
-              />
-              <div className="flex-1">
-                <div className="text-sm font-medium">{t("settings.privateLabel")}</div>
-                <div className="text-xs text-[var(--color-muted-foreground)]">
-                  {t("settings.privateHint")}
-                </div>
+    <>
+      {/* ── Settings dialog ─────────────────────────────────────────── */}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{t("settings.title")}</DialogTitle>
+            <DialogDescription>
+              {t("settings.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="max-h-[60vh] space-y-6 overflow-y-auto">
+            {/* ── General ─────────────────────────────────────────────── */}
+            <section className="space-y-3">
+              <SectionTitle>{t("settings.sectionGeneral")}</SectionTitle>
+              <div className="space-y-1.5">
+                <Label htmlFor="channel-settings-name">{t("settings.nameLabel")}</Label>
+                <Input
+                  id="channel-settings-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={!isAdmin}
+                  maxLength={80}
+                />
               </div>
-            </label>
-          </section>
-
-          {/* ── Members ─────────────────────────────────────────────── */}
-          <section className="space-y-3">
-            <SectionTitle>
-              {t("settings.sectionMembers")}
-              <span className="ml-2 text-[11px] tabular-nums text-[var(--color-muted-foreground)]">
-                {channel.members.length}
-              </span>
-            </SectionTitle>
-            <MemberList
-              channel={channel}
-              selfUserId={selfUserId}
-              isAdmin={isAdmin}
-            />
-            {isAdmin && <AddMembersRow channel={channel} />}
-          </section>
-
-          {/* ── Danger zone ─────────────────────────────────────────── */}
-          <section className="space-y-2">
-            <SectionTitle>{t("settings.sectionDanger")}</SectionTitle>
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] p-3">
-              {isAdmin ? (
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-medium">{t("settings.archiveTitle")}</div>
-                    <div className="text-xs text-[var(--color-muted-foreground)]">
-                      {t("settings.archiveDesc")}
-                    </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="channel-settings-description">{t("settings.descLabel")}</Label>
+                <Input
+                  id="channel-settings-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder={t("settings.descPlaceholder")}
+                  maxLength={200}
+                />
+              </div>
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+              <label
+                htmlFor="channel-settings-private"
+                className={cn(
+                  "flex cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] p-3",
+                  !isAdmin && "cursor-not-allowed opacity-60",
+                )}
+              >
+                <input
+                  id="channel-settings-private"
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={isPrivate}
+                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  disabled={!isAdmin}
+                />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">{t("settings.privateLabel")}</div>
+                  <div className="text-xs text-[var(--color-muted-foreground)]">
+                    {t("settings.privateHint")}
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm(t("settings.archiveConfirm"))) {
-                        archiveMutation.mutate();
-                      }
-                    }}
-                    disabled={archiveMutation.isPending}
-                  >
-                    <Trash2 className="mr-1 h-3.5 w-3.5" aria-hidden />
-                    {archiveMutation.isPending ? t("settings.archiving") : t("settings.archive")}
-                  </Button>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-medium">{t("settings.leaveTitle")}</div>
-                    <div className="text-xs text-[var(--color-muted-foreground)]">
-                      {t("settings.leaveDesc")}
+              </label>
+            </section>
+
+            {/* ── Members ─────────────────────────────────────────────── */}
+            <section className="space-y-3">
+              <SectionTitle>
+                {t("settings.sectionMembers")}
+                <span className="ml-2 text-[11px] tabular-nums text-[var(--color-muted-foreground)]">
+                  {channel.members.length}
+                </span>
+              </SectionTitle>
+              <MemberList
+                channel={channel}
+                selfUserId={selfUserId}
+                isAdmin={isAdmin}
+              />
+              {isAdmin && <AddMembersRow channel={channel} />}
+            </section>
+
+            {/* ── Danger zone ─────────────────────────────────────────── */}
+            <section className="space-y-2">
+              <SectionTitle>{t("settings.sectionDanger")}</SectionTitle>
+              <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] p-3">
+                {isAdmin ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">{t("settings.archiveTitle")}</div>
+                      <div className="text-xs text-[var(--color-muted-foreground)]">
+                        {t("settings.archiveDesc")}
+                      </div>
                     </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setConfirm("archive")}
+                      disabled={archiveMutation.isPending}
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" aria-hidden />
+                      {archiveMutation.isPending ? t("settings.archiving") : t("settings.archive")}
+                    </Button>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm(t("settings.leaveConfirm"))) {
-                        leaveMutation.mutate();
-                      }
-                    }}
-                    disabled={leaveMutation.isPending}
-                  >
-                    <UserMinus className="mr-1 h-3.5 w-3.5" aria-hidden />
-                    {leaveMutation.isPending ? t("settings.leaving") : t("settings.leave")}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </section>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            {t("settings.close")}
-          </Button>
-          {isAdmin && (
-            <Button
-              size="sm"
-              disabled={!dirty || !name.trim() || saveMutation.isPending}
-              onClick={() => saveMutation.mutate()}
-            >
-              {saveMutation.isPending ? t("settings.saving") : t("settings.saveChanges")}
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">{t("settings.leaveTitle")}</div>
+                      <div className="text-xs text-[var(--color-muted-foreground)]">
+                        {t("settings.leaveDesc")}
+                      </div>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setConfirm("leave")}
+                      disabled={leaveMutation.isPending}
+                    >
+                      <UserMinus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                      {leaveMutation.isPending ? t("settings.leaving") : t("settings.leave")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </section>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              {t("settings.close")}
             </Button>
-          )}
+            {isAdmin && (
+              <Button
+                size="sm"
+                disabled={!dirty || !name.trim() || saveMutation.isPending}
+                onClick={() => saveMutation.mutate()}
+              >
+                {saveMutation.isPending ? t("settings.saving") : t("settings.saveChanges")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Archive confirmation ─────────────────────────────────────── */}
+      <ConfirmDialog
+        open={confirm === "archive"}
+        onOpenChange={(v) => { if (!v) setConfirm(null); }}
+        title={t("settings.archiveConfirm")}
+        body={t("settings.archiveDesc")}
+        confirmLabel={archiveMutation.isPending ? t("settings.archiving") : t("settings.archive")}
+        isPending={archiveMutation.isPending}
+        onConfirm={() => archiveMutation.mutate()}
+      />
+
+      {/* ── Leave confirmation ───────────────────────────────────────── */}
+      <ConfirmDialog
+        open={confirm === "leave"}
+        onOpenChange={(v) => { if (!v) setConfirm(null); }}
+        title={t("settings.leaveConfirm")}
+        body={t("settings.leaveDesc")}
+        confirmLabel={leaveMutation.isPending ? t("settings.leaving") : t("settings.leave")}
+        isPending={leaveMutation.isPending}
+        onConfirm={() => leaveMutation.mutate()}
+      />
+    </>
+  );
+}
+
+// ─── Shared confirmation dialog ──────────────────────────────────────────────
+// Used for archive, leave, and remove-member confirmations — replaces the
+// browser-native window.confirm() which shows an untrusted "localhost" header
+// and cannot be styled to match the app design system.
+
+interface ConfirmDialogProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  isPending?: boolean;
+  onConfirm: () => void;
+}
+
+function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  body,
+  confirmLabel,
+  isPending = false,
+  onConfirm,
+}: ConfirmDialogProps) {
+  const { t } = useTranslation("chat");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{body}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            {t("settings.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {confirmLabel}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -307,6 +389,10 @@ function MemberRow({
   const display = useUserDisplay(userId);
   const queryClient = useQueryClient();
   const { t } = useTranslation("chat");
+
+  // ── Remove-member confirmation ─────────────────────────────────────
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const mutation = useMutation({
     mutationFn: () => removeChannelMember(channelId, userId),
     onSuccess: () => {
@@ -314,60 +400,74 @@ function MemberRow({
       void queryClient.invalidateQueries({ queryKey: ["chat", "my-channels"] });
       toast.success(t("toast.memberRemoved"));
     },
-    onError: () => toast.error(t("toast.memberRemoveFailed")),
+    onError: () => {
+      toast.error(t("toast.memberRemoveFailed"));
+      setShowConfirm(false);
+    },
   });
 
   return (
-    <li className="flex items-center gap-2.5 px-3 py-2">
-      <Avatar
-        name={display.name}
-        src={display.imageUrl ?? null}
-        size="sm"
-        className="shrink-0"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium text-[var(--color-foreground)]">
-            {display.name}
-            {isSelf && (
-              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                {t("settings.you")}
+    <>
+      <li className="flex items-center gap-2.5 px-3 py-2">
+        <Avatar
+          name={display.name}
+          src={display.imageUrl ?? null}
+          size="sm"
+          className="shrink-0"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-[var(--color-foreground)]">
+              {display.name}
+              {isSelf && (
+                <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                  {t("settings.you")}
+                </span>
+              )}
+            </span>
+            {memberIsAdmin && (
+              <span className="inline-flex items-center gap-0.5 rounded-md bg-[var(--color-primary-soft)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
+                <ShieldCheck className="h-2.5 w-2.5" aria-hidden /> {t("settings.admin")}
               </span>
             )}
-          </span>
-          {memberIsAdmin && (
-            <span className="inline-flex items-center gap-0.5 rounded-md bg-[var(--color-primary-soft)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
-              <ShieldCheck className="h-2.5 w-2.5" aria-hidden /> {t("settings.admin")}
-            </span>
+          </div>
+          {display.handle && (
+            <div className="truncate text-[11px] text-[var(--color-muted-foreground)]">
+              @{display.handle}
+            </div>
           )}
         </div>
-        {display.handle && (
-          <div className="truncate text-[11px] text-[var(--color-muted-foreground)]">
-            @{display.handle}
-          </div>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => setShowConfirm(true)}
+            disabled={mutation.isPending}
+            aria-label={t("settings.removeAriaLabel", { name: display.name })}
+            className={cn(
+              "grid h-8 w-8 cursor-pointer place-items-center rounded-md",
+              "text-[var(--color-muted-foreground)] hover:bg-[var(--color-destructive)] hover:text-white",
+              "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
+              "disabled:opacity-50",
+            )}
+          >
+            <UserMinus className="h-3.5 w-3.5" aria-hidden />
+          </button>
         )}
-      </div>
+      </li>
+
+      {/* ── Remove-member confirmation dialog ─────────────────────── */}
       {canRemove && (
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm(t("settings.removeConfirm", { name: display.name }))) {
-              mutation.mutate();
-            }
-          }}
-          disabled={mutation.isPending}
-          aria-label={t("settings.removeAriaLabel", { name: display.name })}
-          className={cn(
-            "grid h-8 w-8 cursor-pointer place-items-center rounded-md",
-            "text-[var(--color-muted-foreground)] hover:bg-[var(--color-destructive)] hover:text-white",
-            "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
-            "disabled:opacity-50",
-          )}
-        >
-          <UserMinus className="h-3.5 w-3.5" aria-hidden />
-        </button>
+        <ConfirmDialog
+          open={showConfirm}
+          onOpenChange={setShowConfirm}
+          title={t("settings.removeConfirm", { name: display.name })}
+          body={t("settings.removeDialogBody", { name: display.name })}
+          confirmLabel={mutation.isPending ? t("settings.removingMember") : t("settings.removeMember")}
+          isPending={mutation.isPending}
+          onConfirm={() => mutation.mutate()}
+        />
       )}
-    </li>
+    </>
   );
 }
 

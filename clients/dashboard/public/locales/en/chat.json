@@ -69,6 +69,10 @@
     "you": "you",
     "admin": "admin",
     "removeConfirm": "Remove {{name}} from the channel?",
+    "removeDialogBody": "{{name}} will immediately lose access to this channel.",
+    "removeMember": "Remove member",
+    "removingMember": "Removing…",
+    "cancel": "Cancel",
     "removeAriaLabel": "Remove {{name}}"
   },
   "page": {
