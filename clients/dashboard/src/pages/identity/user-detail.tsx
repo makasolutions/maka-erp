@@ -63,6 +63,7 @@ import {
 } from "@/components/list";
 import { describe } from "@/lib/list-helpers";
 import { cn } from "@/lib/cn";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 
 type DialogState =
   | { mode: "closed" }
@@ -523,6 +524,13 @@ export function UserDetailPage() {
           locale={locale}
         />
       )}
+
+      {/* Change history */}
+      <EntityDetailSection title={t("users.detail.changeHistory")}>
+        <div className="px-5 py-4">
+          <EntityAuditSection entityKey={userId} entityName="User" />
+        </div>
+      </EntityDetailSection>
 
       {/* Delete confirmation */}
       <Dialog

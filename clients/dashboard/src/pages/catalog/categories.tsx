@@ -66,6 +66,7 @@ import {
   formatRelative,
   slugify,
 } from "@/lib/list-helpers";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 
 const PAGE_SIZE = 50;
 
@@ -648,6 +649,13 @@ function CategoryEditorDialog({
                 placeholder={t("categories.descPlaceholder")}
               />
             </Field>
+
+            {/* Change history — only shown when editing an existing category */}
+            {category && (
+              <div className="border-t border-[var(--color-border)] pt-4">
+                <EntityAuditSection entityKey={category.id} entityName="Category" />
+              </div>
+            )}
           </DialogBody>
 
           <DialogFooter>

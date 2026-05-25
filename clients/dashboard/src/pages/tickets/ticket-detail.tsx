@@ -68,6 +68,7 @@ import {
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { useUserDisplay } from "@/lib/use-user-display";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 import {
   describe,
   formatDate,
@@ -182,6 +183,12 @@ export function TicketDetailPage() {
             </div>
             <PropertiesSection ticket={ticket} />
           </div>
+
+          <EntityDetailSection title={t("detail.changeHistory")}>
+            <div className="px-5 py-4">
+              <EntityAuditSection entityKey={ticket.id} entityName="Ticket" />
+            </div>
+          </EntityDetailSection>
 
           <ResolveDialog
             open={dialog.mode === "resolve"}

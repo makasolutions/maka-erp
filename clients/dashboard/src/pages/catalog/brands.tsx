@@ -61,6 +61,7 @@ import {
   formatRelative,
   slugify,
 } from "@/lib/list-helpers";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 
 const PAGE_SIZE = 20;
 
@@ -555,6 +556,13 @@ function BrandEditorDialog({
                 type="url"
               />
             </Field>
+
+            {/* Change history — only shown when editing an existing brand */}
+            {brand && (
+              <div className="border-t border-[var(--color-border)] pt-4">
+                <EntityAuditSection entityKey={brand.id} entityName="Brand" />
+              </div>
+            )}
           </DialogBody>
 
           <DialogFooter>

@@ -118,7 +118,8 @@
       "label": "Assignee",
       "hint": "Search by name or email. Clear the selection to unassign.",
       "clearWarning": "Clearing the assignee will unassign the ticket."
-    }
+    },
+    "changeHistory": "Change history"
   },
   "toast": {
     "opened": "Ticket opened",

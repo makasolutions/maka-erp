@@ -54,6 +54,7 @@ import {
 } from "@/components/list";
 import { describe, pad2 } from "@/lib/list-helpers";
 import { cn } from "@/lib/cn";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 
 // System roles defined by the framework (RoleConstants.DefaultRoles on the
 // server). These cannot be deleted, renamed, re-described, or have their
@@ -634,6 +635,13 @@ export function RoleDetailPage() {
             })}
           </div>
         )}
+      </EntityDetailSection>
+
+      {/* Change history */}
+      <EntityDetailSection title={t("roles.detail.changeHistory")}>
+        <div className="px-5 py-4">
+          <EntityAuditSection entityKey={roleId} entityName="Role" />
+        </div>
       </EntityDetailSection>
 
       {/* Delete dialog */}

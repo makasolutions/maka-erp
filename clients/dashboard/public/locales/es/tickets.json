@@ -118,7 +118,8 @@
       "label": "Asignado a",
       "hint": "Busca por nombre o correo. Limpia la selección para desasignar.",
       "clearWarning": "Limpiar el asignado dejará el ticket sin asignar."
-    }
+    },
+    "changeHistory": "Historial de cambios"
   },
   "toast": {
     "opened": "Ticket abierto",

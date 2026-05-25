@@ -120,6 +120,7 @@
       "revokeAll": "Revocar todas",
       "revoking": "Revocando…",
       "revoke": "Revocar",
+      "changeHistory": "Historial de cambios",
       "activeSessions": "Sesiones activas",
       "activeSessionsDesc": "{{active}} activas · {{total}} en total",
       "ended": "Finalizada",
@@ -237,7 +238,8 @@
       "updateFailed": "Error al actualizar",
       "permissionsUpdateFailed": "Error al actualizar permisos",
       "unsavedChangeCount_one": "{{count}} cambio sin guardar",
-      "unsavedChangeCount_other": "{{count}} cambios sin guardar"
+      "unsavedChangeCount_other": "{{count}} cambios sin guardar",
+      "changeHistory": "Historial de cambios"
     }
   },
   "groups": {
@@ -349,7 +351,8 @@
       "dupesPresent": "· {{count}} ya presentes",
       "addFailed": "Error al agregar",
       "attachRoleAria": "Adjuntar {{name}}",
-      "adding": "Agregando…"
+      "adding": "Agregando…",
+      "changeHistory": "Historial de cambios"
     }
   }
 }

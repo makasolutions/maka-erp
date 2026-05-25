@@ -59,6 +59,7 @@ import {
 } from "@/components/list";
 import { describe, pad2 } from "@/lib/list-helpers";
 import { cn } from "@/lib/cn";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 
 function memberDisplay(m: GroupMemberDto, fallback: string): string {
   const parts = [m.firstName, m.lastName].filter(Boolean);
@@ -429,6 +430,13 @@ export function GroupDetailPage() {
           )}
         </EntityDetailSection>
       </div>
+
+      {/* Change history */}
+      <EntityDetailSection title={t("groups.detail.changeHistory")}>
+        <div className="px-5 py-4">
+          <EntityAuditSection entityKey={groupId} entityName="Group" />
+        </div>
+      </EntityDetailSection>
 
       {/* Delete dialog */}
       <Dialog open={confirmDelete} onOpenChange={(o) => (!o ? setConfirmDelete(false) : undefined)}>
