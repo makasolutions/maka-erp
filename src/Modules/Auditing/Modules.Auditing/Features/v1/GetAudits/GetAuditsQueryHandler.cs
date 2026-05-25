@@ -97,14 +97,15 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string term = query.Search;
-            // NOTE: PayloadJson is a jsonb column — EF.Functions.ILike cannot be
-            // applied directly to jsonb (PostgreSQL raises "operator does not exist:
-            // jsonb ~~* unknown"). Search is therefore scoped to Source and UserName,
-            // both of which have gin_trgm_ops indexes and accept ILIKE efficiently.
+            // Search is scoped to Source and UserName only. PayloadJson is a jsonb
+            // column and cannot be searched with ILIKE directly.
+            // Contains(StringComparison.OrdinalIgnoreCase) is translated by Npgsql
+            // to a case-insensitive ILIKE pattern without requiring explicit casts,
+            // avoiding the CA1862/CA1304 analyser violations.
             // Full-text payload search is deferred until a ts_vector column is added.
             audits = audits.Where(a =>
-                (a.Source != null && EF.Functions.ILike(a.Source, $"%{term}%")) ||
-                (a.UserName != null && EF.Functions.ILike(a.UserName, $"%{term}%")));
+                (a.Source != null && a.Source.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (a.UserName != null && a.UserName.Contains(term, StringComparison.OrdinalIgnoreCase)));
         }
 
         // ── Entity-change column filters ─────────────────────────────────
@@ -145,7 +146,10 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
             CorrelationId = a.CorrelationId,
             RequestId = a.RequestId,
             Source = a.Source,
-            Tags = (AuditTag)a.Tags
+            Tags = (AuditTag)a.Tags,
+            EntityName = a.EntityName,
+            EntityKey = a.EntityKey,
+            EntityOperation = a.EntityOperation,
         });
 
         return await projected.ToPagedResponseAsync(query, cancellationToken).ConfigureAwait(false);

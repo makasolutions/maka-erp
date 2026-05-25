@@ -6,16 +6,23 @@ namespace FSH.Modules.Auditing.Persistence;
 
 /// <summary>
 /// Captures EF Core entity changes at SaveChanges to produce an EntityChange event.
+/// Registered as Scoped so it can safely inject the ambient IAuditScope, which
+/// provides TenantId/UserId/UserName from the current HTTP or Hangfire execution context.
 /// </summary>
 public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly IAuditPublisher _publisher;
     private readonly TimeProvider _timeProvider;
+    private readonly IAuditScope _auditScope;
 
-    public AuditingSaveChangesInterceptor(IAuditPublisher publisher, TimeProvider timeProvider)
+    public AuditingSaveChangesInterceptor(
+        IAuditPublisher publisher,
+        TimeProvider timeProvider,
+        IAuditScope auditScope)
     {
         _publisher = publisher;
         _timeProvider = timeProvider;
+        _auditScope = auditScope;
     }
 
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -61,8 +68,13 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
                     receivedAtUtc: now,
                     eventType: AuditEventType.EntityChange,
                     severity: AuditSeverity.Information,
-                    tenantId: null, userId: null, userName: null,
-                    traceId: null, spanId: null, correlationId: null, requestId: null,
+                    tenantId: _auditScope.TenantId,
+                    userId: _auditScope.UserId,
+                    userName: _auditScope.UserName,
+                    traceId: _auditScope.TraceId,
+                    spanId: _auditScope.SpanId,
+                    correlationId: _auditScope.CorrelationId,
+                    requestId: _auditScope.RequestId,
                     source: ctx.GetType().Name,
                     tags: AuditTag.None,
                     payload: payload);
