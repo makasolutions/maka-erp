@@ -194,7 +194,9 @@
     "descriptionHint": "Se muestra en las páginas de listado y detalle del producto.",
     "logoHint": "Opcional. URL pública de la imagen del logo de la marca.",
     "namePlaceholder": "Artículos Acme",
-    "descPlaceholder": "Artículos de calidad para el hogar moderno."
+    "descPlaceholder": "Artículos de calidad para el hogar moderno.",
+    "editAria": "Editar {{name}}",
+    "deleteAria": "Eliminar {{name}}"
   },
   "categories": {
     "title": "Categorías",

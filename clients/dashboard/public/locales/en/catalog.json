@@ -194,7 +194,9 @@
     "descriptionHint": "Shown on listing and product detail pages.",
     "logoHint": "Optional. Public URL to the brand's logo image.",
     "namePlaceholder": "Acme Goods",
-    "descPlaceholder": "Quality essentials for the modern home."
+    "descPlaceholder": "Quality essentials for the modern home.",
+    "editAria": "Edit {{name}}",
+    "deleteAria": "Delete {{name}}"
   },
   "categories": {
     "title": "Categories",

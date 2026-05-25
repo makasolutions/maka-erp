@@ -250,6 +250,7 @@ function MobileCard({
   brand: BrandDto;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation("catalog");
   return (
     <EntityMobileCard
       href="#"
@@ -257,7 +258,7 @@ function MobileCard({
         e.preventDefault();
         onEdit();
       }}
-      aria-label={`Edit brand ${brand.name}`}
+      aria-label={t("brands.editAria", { name: brand.name })}
     >
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-3">
@@ -299,6 +300,7 @@ function DesktopRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation("catalog");
   return (
     <EntityListRow
       className="grid-cols-[1fr_180px_140px_24px]"
@@ -342,7 +344,7 @@ function DesktopRow({
       <div className="flex items-center justify-end gap-1">
         <button
           type="button"
-          aria-label={`Edit ${brand.name}`}
+          aria-label={t("brands.editAria", { name: brand.name })}
           onClick={onEdit}
           className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
         >
@@ -350,7 +352,7 @@ function DesktopRow({
         </button>
         <button
           type="button"
-          aria-label={`Delete ${brand.name}`}
+          aria-label={t("brands.deleteAria", { name: brand.name })}
           onClick={onDelete}
           className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
         >
