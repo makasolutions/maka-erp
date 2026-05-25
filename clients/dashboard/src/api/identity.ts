@@ -122,6 +122,38 @@ export async function setProfileImage(imageUrl: string | null): Promise<void> {
   });
 }
 
+// -----------------------------
+// Localization
+// -----------------------------
+
+export type LocalizationConfig = {
+  /** IANA timezone identifier, e.g. "America/Bogota". */
+  timezone: string;
+  /** Display token: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD". */
+  dateFormat: string;
+  /** Clock style: "12h" | "24h". */
+  timeFormat: string;
+  /** ISO 4217 currency code: "COP" | "USD" | "EUR". */
+  currency: string;
+  /** BCP 47 language tag: "es" | "en". */
+  language: string;
+  /** Number grouping/decimal style: "1.000,00" | "1,000.00". */
+  numberFormat: string;
+};
+
+export async function getTenantLocalization(): Promise<LocalizationConfig> {
+  return apiFetch<LocalizationConfig>("/api/v1/identity/localization");
+}
+
+export async function updateTenantLocalization(
+  config: LocalizationConfig,
+): Promise<LocalizationConfig> {
+  return apiFetch<LocalizationConfig>("/api/v1/identity/localization", {
+    method: "PUT",
+    body: JSON.stringify(config),
+  });
+}
+
 /** Fetch the authenticated user's full profile (name, email, phone, imageUrl, etc.). */
 export async function getMyProfile(): Promise<UserDto> {
   return apiFetch<UserDto>("/api/v1/identity/profile");
