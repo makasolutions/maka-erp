@@ -437,7 +437,7 @@ function TrashShell<T>({
     <div>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-          {t("trash.countInTrash", { count: total, label: label.toLowerCase() })}
+          {t(`trash.count.${tabKey}`, { count: total })}
         </p>
       </div>
 

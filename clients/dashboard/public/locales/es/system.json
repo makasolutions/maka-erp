@@ -69,7 +69,18 @@
       "body": "Los {{label}} eliminados aparecen aquí indefinidamente — sin purga automática. Cualquier elemento que elimines de la lista principal puede recuperarse.",
       "backTo": "Volver a {{label}}"
     },
-    "countInTrash": "{{count}} {{label}} en la papelera",
+    "count": {
+      "products_one": "1 producto en la papelera",
+      "products_other": "{{count}} productos en la papelera",
+      "brands_one": "1 marca en la papelera",
+      "brands_other": "{{count}} marcas en la papelera",
+      "categories_one": "1 categoría en la papelera",
+      "categories_other": "{{count}} categorías en la papelera",
+      "tickets_one": "1 ticket en la papelera",
+      "tickets_other": "{{count}} tickets en la papelera",
+      "files_one": "1 archivo en la papelera",
+      "files_other": "{{count}} archivos en la papelera"
+    },
     "cols": {
       "entity": "Entidad",
       "deletedBy": "Eliminado por",
