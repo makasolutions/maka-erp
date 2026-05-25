@@ -42,6 +42,8 @@ using FSH.Modules.Identity.Features.v1.Sessions.RevokeAllSessions;
 using FSH.Modules.Identity.Features.v1.Sessions.RevokeSession;
 using FSH.Modules.Identity.Features.v1.Tokens.RefreshToken;
 using FSH.Modules.Identity.Features.v1.Tokens.TokenGeneration;
+using FSH.Modules.Identity.Features.v1.Localization.GetTenantLocalization;
+using FSH.Modules.Identity.Features.v1.Localization.UpdateTenantLocalization;
 using FSH.Modules.Identity.Features.v1.TwoFactor.Disable;
 using FSH.Modules.Identity.Features.v1.TwoFactor.Enroll;
 using FSH.Modules.Identity.Features.v1.TwoFactor.VerifyEnroll;
@@ -261,5 +263,9 @@ public class IdentityModule : IModule
         group.MapEnrollTwoFactorEndpoint();
         group.MapVerifyEnrollTwoFactorEndpoint();
         group.MapDisableTwoFactorEndpoint();
+
+        // localization
+        group.MapGetTenantLocalizationEndpoint();
+        group.MapUpdateTenantLocalizationEndpoint();
     }
 }

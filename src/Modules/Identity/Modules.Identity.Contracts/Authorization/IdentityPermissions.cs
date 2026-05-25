@@ -73,6 +73,15 @@ public static class IdentityPermissions
         public const string Revoke = $"Permissions.{Resource}.Revoke";
     }
 
+    public static class Localization
+    {
+        public const string Resource = nameof(Localization);
+        /// <summary>Read localization settings for the caller's tenant. Any authenticated user.</summary>
+        public const string View   = $"Permissions.{Resource}.View";
+        /// <summary>Update localization settings for the caller's tenant. Requires admin.</summary>
+        public const string Update = $"Permissions.{Resource}.Update";
+    }
+
     public static IReadOnlyList<FshPermission> All { get; } =
     [
         new("View Users",          ActionConstants.View,   Users.Resource, IsBasic: true),
@@ -108,5 +117,8 @@ public static class IdentityPermissions
 
         new("View Impersonation Grants",   ActionConstants.View, Impersonation.Resource),
         new("Revoke Impersonation Grants", "Revoke",             Impersonation.Resource),
+
+        new("View Localization",   ActionConstants.View,   Localization.Resource, IsBasic: true),
+        new("Update Localization", ActionConstants.Update, Localization.Resource),
     ];
 }
