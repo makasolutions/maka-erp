@@ -448,6 +448,20 @@
     "trace": "Trace",
     "tracePlaceholder": "hex traceparent",
     "tags": "Tags",
+    "entityName": "Entity",
+    "entityNamePlaceholder": "Filter by entity…",
+    "entityKey": "Entity key",
+    "entityKeyPlaceholder": "Entity UUID…",
+    "entityOperation": "Operation",
+    "allEntities": "All entities",
+    "allOperations": "All operations",
+    "operations": {
+      "insert": "Insert",
+      "update": "Update",
+      "delete": "Delete",
+      "softDelete": "Soft delete",
+      "restore": "Restore"
+    },
     "columns": {
       "actor": "Actor",
       "action": "Action",

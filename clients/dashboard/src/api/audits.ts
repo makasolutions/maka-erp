@@ -87,6 +87,10 @@ export type AuditSummaryDto = {
   requestId?: string | null;
   source?: string | null;
   tags: number;
+  /** Populated for EntityChange events only. */
+  entityName?: string | null;
+  entityKey?: string | null;
+  entityOperation?: string | null;
 };
 
 export type AuditDetailDto = AuditSummaryDto & {
@@ -102,6 +106,8 @@ export type AuditSummaryAggregateDto = {
   eventsBySeverity: Record<string, number>;
   eventsBySource: Record<string, number>;
   eventsByTenant: Record<string, number>;
+  /** Top entity names seen in the window (EntityChange events only), sorted by count. */
+  topEntityNames: string[];
 };
 
 export type PagedResponse<T> = {
@@ -132,6 +138,15 @@ export type ListAuditsQuery = {
   traceId?: string;
   search?: string;
   sort?: string;
+
+  /** Partial match on EntityName (e.g. "Brand", "Category"). */
+  entityName?: string;
+
+  /** Exact match on EntityKey (entity primary key). */
+  entityKey?: string;
+
+  /** Exact match on EntityOperation ("Insert" | "Update" | "Delete" | "SoftDelete" | "Restore"). */
+  entityOperation?: string;
 };
 
 function toQueryString(query: Record<string, unknown>): string {

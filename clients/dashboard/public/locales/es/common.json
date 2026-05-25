@@ -448,6 +448,20 @@
     "trace": "Traza",
     "tracePlaceholder": "trazaparent hexadecimal",
     "tags": "Etiquetas",
+    "entityName": "Entidad",
+    "entityNamePlaceholder": "Filtrar por entidad…",
+    "entityKey": "Clave de entidad",
+    "entityKeyPlaceholder": "UUID de la entidad…",
+    "entityOperation": "Operación",
+    "allEntities": "Todas las entidades",
+    "allOperations": "Todas las operaciones",
+    "operations": {
+      "insert": "Creación",
+      "update": "Actualización",
+      "delete": "Eliminación",
+      "softDelete": "Eliminación lógica",
+      "restore": "Restauración"
+    },
     "columns": {
       "actor": "Actor",
       "action": "Acción",

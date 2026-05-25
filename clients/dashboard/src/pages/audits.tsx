@@ -161,6 +161,9 @@ type FilterState = {
   correlation: string;
   trace: string;
   search: string;
+  entityName: string;
+  entityKey: string;
+  entityOperation: string;
   page: number;
 };
 
@@ -174,6 +177,9 @@ const INITIAL_FILTERS: FilterState = {
   correlation: "",
   trace: "",
   search: "",
+  entityName: "",
+  entityKey: "",
+  entityOperation: "",
   page: 1,
 };
 
@@ -214,6 +220,9 @@ export function AuditsPage() {
           correlationId: filters.correlation || undefined,
           traceId: filters.trace || undefined,
           search: filters.search || undefined,
+          entityName: filters.entityName || undefined,
+          entityKey: filters.entityKey || undefined,
+          entityOperation: filters.entityOperation || undefined,
         },
         signal,
       ),
@@ -267,7 +276,10 @@ export function AuditsPage() {
     (filters.source ? 1 : 0) +
     (filters.user ? 1 : 0) +
     (filters.correlation ? 1 : 0) +
-    (filters.trace ? 1 : 0);
+    (filters.trace ? 1 : 0) +
+    (filters.entityName ? 1 : 0) +
+    (filters.entityKey ? 1 : 0) +
+    (filters.entityOperation ? 1 : 0);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -300,6 +312,7 @@ export function AuditsPage() {
         filters={filters}
         searchInput={searchInput}
         activeChipCount={activeChipCount}
+        topEntityNames={summaryQuery.data?.topEntityNames ?? []}
         onPatch={(p) => setFilters((f) => ({ ...f, ...p, page: 1 }))}
         onSearchInput={setSearchInput}
         onReset={onResetFilters}
@@ -695,6 +708,7 @@ function FilterBar({
   filters,
   searchInput,
   activeChipCount,
+  topEntityNames,
   onPatch,
   onSearchInput,
   onReset,
@@ -702,6 +716,7 @@ function FilterBar({
   filters: FilterState;
   searchInput: string;
   activeChipCount: number;
+  topEntityNames: string[];
   onPatch: (patch: Partial<FilterState>) => void;
   onSearchInput: (v: string) => void;
   onReset: () => void;
@@ -846,26 +861,61 @@ function FilterBar({
                 {t("audits.tags")}
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {AUDIT_TAG_LABELS.map((t) => {
-                  const active = (filters.tagsMask & t.flag) !== 0;
+                {AUDIT_TAG_LABELS.map((tl) => {
+                  const active = (filters.tagsMask & tl.flag) !== 0;
                   return (
                     <Chip
-                      key={t.flag}
+                      key={tl.flag}
                       active={active}
                       onClick={() =>
                         onPatch({
                           tagsMask: active
-                            ? filters.tagsMask & ~t.flag
-                            : filters.tagsMask | t.flag,
+                            ? filters.tagsMask & ~tl.flag
+                            : filters.tagsMask | tl.flag,
                         })
                       }
                     >
-                      {t.name}
+                      {tl.name}
                     </Chip>
                   );
                 })}
               </div>
             </div>
+
+            {/* Entity-change specific filters — only meaningful when eventType=EntityChange
+                but available in all contexts so the user can pre-filter before adding that chip */}
+            <div className="col-span-full h-px bg-[var(--color-border)]" />
+
+            <FieldSelect
+              label={t("audits.entityName")}
+              value={filters.entityName}
+              onChange={(v) => onPatch({ entityName: v })}
+            >
+              <option value="">{t("audits.allEntities")}</option>
+              {topEntityNames.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </FieldSelect>
+
+            <FieldSelect
+              label={t("audits.entityOperation")}
+              value={filters.entityOperation}
+              onChange={(v) => onPatch({ entityOperation: v })}
+            >
+              <option value="">{t("audits.allOperations")}</option>
+              <option value="Insert">{t("audits.operations.insert")}</option>
+              <option value="Update">{t("audits.operations.update")}</option>
+              <option value="Delete">{t("audits.operations.delete")}</option>
+              <option value="SoftDelete">{t("audits.operations.softDelete")}</option>
+              <option value="Restore">{t("audits.operations.restore")}</option>
+            </FieldSelect>
+
+            <FieldInput
+              label={t("audits.entityKey")}
+              placeholder={t("audits.entityKeyPlaceholder")}
+              value={filters.entityKey}
+              onChange={(v) => onPatch({ entityKey: v })}
+            />
           </div>
         )}
       </CardContent>
@@ -932,6 +982,40 @@ function FieldInput({
         placeholder={placeholder}
         className="h-8 font-mono text-[12px]"
       />
+    </label>
+  );
+}
+
+function FieldSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+        {label}
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          "h-8 w-full min-w-0 rounded-lg border border-[var(--color-input)] bg-transparent px-2 py-0",
+          "font-mono text-[12px] text-[var(--color-foreground)] shadow-xs outline-none",
+          "transition-[color,box-shadow,border-color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
+          "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+          "dark:bg-[oklch(from_var(--color-input)_l_c_h_/_0.3)]",
+          "focus-visible:border-[var(--color-ring)] focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
+        )}
+      >
+        {children}
+      </select>
     </label>
   );
 }
