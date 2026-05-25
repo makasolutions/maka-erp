@@ -125,14 +125,18 @@ function splitLatency(ms: number): [string, string] {
   return [(ms / 1000).toFixed(2), "s"];
 }
 
-function formatRelative(iso: string, now: number = Date.now()): string {
+function formatRelative(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  now: number = Date.now(),
+): string {
   const delta = Math.max(0, Math.floor((now - Date.parse(iso)) / 1000));
-  if (delta < 5) return "just now";
-  if (delta < 60) return `${delta}s ago`;
+  if (delta < 5) return t("relativeTime.justNow");
+  if (delta < 60) return t("relativeTime.secondsAgo", { count: delta });
   const m = Math.floor(delta / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return t("relativeTime.minutesAgo", { count: m });
   const h = Math.floor(m / 60);
-  return `${h}h ago`;
+  return t("relativeTime.hoursAgo", { count: h });
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -341,7 +345,7 @@ function HeroPanel({
             <Vital label={t("health.vitals.slowest")} value={formatLatency(slowestMs)} hint={t("health.vitals.singleCheck")} />
             <Vital
               label={t("health.vitals.lastPoll")}
-              value={formatRelative(snapshot.fetchedAt)}
+              value={formatRelative(snapshot.fetchedAt, t)}
               hint={new Date(snapshot.fetchedAt).toLocaleTimeString(undefined, {
                 hour12: false,
               })}
@@ -360,7 +364,7 @@ function HeroPanel({
           </div>
           <HistoryPips ticks={history} />
           <p className="mt-2 font-mono text-[10.5px] tabular-nums text-[var(--color-muted-foreground)]">
-            {history.length} / {HISTORY_LIMIT} this session
+            {t("health.recentPollsSession", { current: history.length, total: HISTORY_LIMIT })}
           </p>
         </div>
       </div>

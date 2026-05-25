@@ -1,6 +1,7 @@
 {
   "relativeTime": {
     "justNow": "justo ahora",
+    "secondsAgo": "hace {{count}}s",
     "minutesAgo_one": "hace {{count}}m",
     "minutesAgo_other": "hace {{count}}m",
     "hoursAgo_one": "hace {{count}}h",
@@ -372,6 +373,7 @@
     "dependencies": "Dependencias",
     "checksCount": "{{count}} verificaciones · total {{total}}",
     "recentPolls": "Sondeos recientes",
+    "recentPollsSession": "{{current}} / {{total}} esta sesión",
     "recentPollHistory": "Historial de sondeos recientes",
     "pollNoData": "sin datos",
     "latencyBudget": "Presupuesto de latencia",

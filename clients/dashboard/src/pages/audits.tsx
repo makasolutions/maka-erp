@@ -132,16 +132,20 @@ function fmtIsoDense(iso: string): { date: string; time: string } {
   return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}:${ss}.${ms}` };
 }
 
-function fmtRelative(iso: string, now: number = Date.now()): string {
+function fmtRelative(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  now: number = Date.now(),
+): string {
   const delta = Math.max(0, Math.floor((now - Date.parse(iso)) / 1000));
-  if (delta < 5) return "just now";
-  if (delta < 60) return `${delta}s ago`;
+  if (delta < 5) return t("relativeTime.justNow");
+  if (delta < 60) return t("relativeTime.secondsAgo", { count: delta });
   const m = Math.floor(delta / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return t("relativeTime.minutesAgo", { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return t("relativeTime.hoursAgo", { count: h });
   const days = Math.floor(h / 24);
-  return `${days}d ago`;
+  return t("relativeTime.daysAgo", { count: days });
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -1081,7 +1085,7 @@ function DrawerHeader({ detail, loading }: { detail?: AuditDetailDto; loading: b
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] tabular-nums text-[var(--color-muted-foreground)]">
           <span>{ts.date} {ts.time} UTC</span>
           <span aria-hidden>·</span>
-          <span>{fmtRelative(detail.occurredAtUtc)}</span>
+          <span>{fmtRelative(detail.occurredAtUtc, t)}</span>
         </div>
         {tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">

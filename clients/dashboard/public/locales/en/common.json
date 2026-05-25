@@ -1,6 +1,7 @@
 {
   "relativeTime": {
     "justNow": "just now",
+    "secondsAgo": "{{count}}s ago",
     "minutesAgo_one": "{{count}}m ago",
     "minutesAgo_other": "{{count}}m ago",
     "hoursAgo_one": "{{count}}h ago",
@@ -372,6 +373,7 @@
     "dependencies": "Dependencies",
     "checksCount": "{{count}} checks · total {{total}}",
     "recentPolls": "Recent polls",
+    "recentPollsSession": "{{current}} / {{total}} this session",
     "recentPollHistory": "Recent poll history",
     "pollNoData": "no data",
     "latencyBudget": "Latency budget",
