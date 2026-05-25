@@ -45,9 +45,18 @@ export function pad2(n: number) {
 }
 
 // Mirror the server's slug derivation so editors can show a live preview.
+// NFD-normalise first so accented chars (á→a, ñ→n, ü→u) survive intact
+// instead of turning into dashes.
 export function slugify(value: string) {
-  const lower = value.trim().toLowerCase();
-  const chars = [...lower].map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
+  // Decompose into base char + combining diacritic, then strip the
+  // diacritics (U+0300–U+036F = Combining Diacritical Marks block).
+  const normalized = value
+    .trim()
+    .normalize("NFD")
+    // Covers all combining diacritical marks (U+0300–U+036F)
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+  const chars = [...normalized].map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
   let s = chars.join("").replace(/^-+|-+$/g, "");
   while (s.includes("--")) s = s.replace(/--/g, "-");
   return s;
