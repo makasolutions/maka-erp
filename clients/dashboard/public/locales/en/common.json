@@ -587,6 +587,7 @@
   },
   "settings": {
     "apiKeys": {
+      "description": "Long-lived credentials used by services to call the FSH API. Treat them like passwords.",
       "comingSoon": "API keys aren't available yet.",
       "comingSoonDesc": "Personal access tokens are on the v1.1 roadmap. For now, your access flows through the user-bound JWT issued at sign-in.",
       "viewRoadmap": "View roadmap"

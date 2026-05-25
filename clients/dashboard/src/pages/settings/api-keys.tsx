@@ -17,7 +17,7 @@ export function ApiKeysSettings() {
       <SettingsSection
         title={t("settings.apiKeys.comingSoon")}
         icon={KeyRound}
-        description="Long-lived credentials used by services to call the FSH API. Treat them like passwords."
+        description={t("settings.apiKeys.description")}
       >
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-[var(--color-muted)]">

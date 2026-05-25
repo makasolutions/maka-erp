@@ -658,6 +658,7 @@
   },
   "settings": {
     "apiKeys": {
+      "description": "Credenciales de larga duración que los servicios usan para llamar a la API. Trátelas como contraseñas.",
       "comingSoon": "Las API keys aún no están disponibles.",
       "comingSoonDesc": "Los tokens de acceso personal están en la hoja de ruta v1.1. Por ahora, el acceso fluye a través del JWT del usuario emitido al iniciar sesión.",
       "viewRoadmap": "Ver hoja de ruta"
