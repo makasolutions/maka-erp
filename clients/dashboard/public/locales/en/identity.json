@@ -5,7 +5,7 @@
     "description": "Every member with access to this tenant. Register newcomers, review status, and manage roles.",
     "register": "Register user",
     "registerMember": "Register a member",
-    "registerDesc": "Add a new user to this tenant. Username and email must be unique. Passwords need an uppercase letter, lowercase letter, and a digit.",
+    "registerDesc": "Add a new user to this tenant. Username and email must be unique. Passwords need at least 10 characters, an uppercase letter, lowercase letter, and a digit.",
     "registering": "Registering…",
     "registered": "User registered",
     "registeredDesc": "An email confirmation may be required before sign-in.",

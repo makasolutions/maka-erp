@@ -5,7 +5,7 @@
     "description": "Todos los miembros con acceso a este tenant. Registra nuevos, revisa el estado y gestiona roles.",
     "register": "Registrar usuario",
     "registerMember": "Registrar miembro",
-    "registerDesc": "Agrega un nuevo usuario a este tenant. El usuario y correo deben ser únicos. Las contraseñas necesitan mayúscula, minúscula y un número.",
+    "registerDesc": "Agrega un nuevo usuario a este tenant. El usuario y correo deben ser únicos. Las contraseñas necesitan mínimo 10 caracteres, mayúscula, minúscula y un número.",
     "registering": "Registrando…",
     "registered": "Usuario registrado",
     "registeredDesc": "Puede requerirse confirmación de correo antes del inicio de sesión.",
