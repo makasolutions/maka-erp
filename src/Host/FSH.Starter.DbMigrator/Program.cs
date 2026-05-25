@@ -322,19 +322,13 @@ try
     if (cli.Command == "seed-demo")
     {
         var env = host.Services.GetRequiredService<IHostEnvironment>();
-        if (!env.IsDevelopment() && !cli.Force)
+        if (!env.IsDevelopment())
         {
             await Console.Error.WriteLineAsync(
                 $"[demo-seed] REFUSING to run — ASPNETCORE_ENVIRONMENT is '{env.EnvironmentName}'. "
-                + "seed-demo is dev-only by design. Pass --force to override (dev machines only).")
+                + "seed-demo is dev-only by design.")
                 .ConfigureAwait(false);
             return 1;
-        }
-        if (cli.Force && !env.IsDevelopment())
-        {
-            await Console.Out.WriteLineAsync(
-                $"[demo-seed] --force: bypassing Development guard (env={env.EnvironmentName}).")
-                .ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync("[demo-seed] provisioning acme + globex with demo content…")

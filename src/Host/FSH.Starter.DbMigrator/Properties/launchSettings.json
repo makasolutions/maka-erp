@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FSH.Starter.DbMigrator": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

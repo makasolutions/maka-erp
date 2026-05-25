@@ -15,8 +15,7 @@ internal sealed record MigratorCommand(
     string? Tenant,
     bool CatalogOnly,
     bool SeedAfter,
-    bool Help,
-    bool Force)
+    bool Help)
 {
     private static readonly string[] KnownVerbs = ["apply", "seed", "seed-demo", "list-pending"];
 
@@ -35,9 +34,8 @@ internal sealed record MigratorCommand(
         var catalogOnly = args.Any(a => string.Equals(a, "--catalog-only", StringComparison.OrdinalIgnoreCase));
         var seedAfter = args.Any(a => string.Equals(a, "--seed", StringComparison.OrdinalIgnoreCase));
         var help = args.Any(a => a is "-h" or "--help");
-        var force = args.Any(a => string.Equals(a, "--force", StringComparison.OrdinalIgnoreCase));
 
-        return new MigratorCommand(verb, tenant, catalogOnly, seedAfter, help, force);
+        return new MigratorCommand(verb, tenant, catalogOnly, seedAfter, help);
     }
 
     private static string? ExtractValue(string[] args, string flag)
@@ -76,8 +74,6 @@ internal sealed record MigratorCommand(
           --tenant <id>        Restrict to a single tenant id (default: all tenants).
           --catalog-only       Skip the per-tenant pass; only the tenant catalog is migrated.
           --seed               After apply, also call ITenantService.SeedTenantAsync.
-          --force              Bypass the Development-only guard for seed-demo (useful when
-                               ASPNETCORE_ENVIRONMENT is locked at OS level to Production).
           -h, --help           Print this help text.
 
         Exit codes:
