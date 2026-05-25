@@ -176,7 +176,8 @@
     "languageDesc": "Elige el idioma de visualización del dashboard.",
     "spanish": "Español",
     "english": "Inglés",
-    "changeLanguage": "Cambiar idioma"
+    "changeLanguage": "Cambiar idioma",
+    "languageMovedNote": "La configuración de idioma se encuentra en la sección"
   },
   "notifications": {
     "email": "Notificaciones por correo",
@@ -319,6 +320,7 @@
     "numberFormats": {
       "dotComma": "1.000,00 (punto miles, coma decimal)",
       "commaDot": "1,000.00 (coma miles, punto decimal)"
-    }
+    },
+    "languageTopbarNote": "El idioma también se puede cambiar desde el botón en la barra superior."
   }
 }

@@ -401,6 +401,9 @@ export function LocalizationSettings() {
                 </OptionPill>
               ))}
             </div>
+            <p className="text-[11px] text-[var(--color-muted-foreground)]">
+              {t("localization.languageTopbarNote")}
+            </p>
           </div>
 
           {/* Currency */}

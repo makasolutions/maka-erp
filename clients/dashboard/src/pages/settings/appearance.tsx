@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Monitor, Moon, Palette, Sun } from "lucide-react";
+import { Info, Monitor, Moon, Palette, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LanguageSelectorInline } from "@/components/ui/language-selector";
 import {
   Dialog,
   DialogBody,
@@ -67,14 +67,21 @@ export function AppearanceSettings() {
 
   return (
     <div className="space-y-6 fsh-enter">
-      {/* Language */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("appearance.language")}</CardTitle>
-          <CardDescription>{t("appearance.languageDesc")}</CardDescription>
-        </CardHeader>
-        <CardContent className="px-6 pb-5 pt-1">
-          <LanguageSelectorInline />
+      {/* Language — moved to Localization settings */}
+      <Card className="border-dashed">
+        <CardContent className="flex items-start gap-3 px-6 py-4">
+          <Info className="mt-0.5 size-4 shrink-0 text-[var(--color-muted-foreground)]" aria-hidden />
+          <div className="space-y-1">
+            <p className="text-sm text-[var(--color-muted-foreground)]">
+              {t("appearance.languageMovedNote")}
+            </p>
+            <Link
+              to="/settings/localization"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--color-primary)] hover:underline"
+            >
+              {t("sections.localization")} →
+            </Link>
+          </div>
         </CardContent>
       </Card>
 

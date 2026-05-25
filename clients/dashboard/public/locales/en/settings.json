@@ -176,7 +176,8 @@
     "languageDesc": "Choose the display language for the dashboard.",
     "spanish": "Spanish",
     "english": "English",
-    "changeLanguage": "Change language"
+    "changeLanguage": "Change language",
+    "languageMovedNote": "Language settings have been moved to the"
   },
   "notifications": {
     "email": "Email notifications",
@@ -319,6 +320,7 @@
     "numberFormats": {
       "dotComma": "1.000,00 (dot thousands, comma decimal)",
       "commaDot": "1,000.00 (comma thousands, dot decimal)"
-    }
+    },
+    "languageTopbarNote": "The interface language can also be changed from the button in the top bar."
   }
 }
