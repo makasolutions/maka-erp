@@ -272,7 +272,8 @@ export function AuditsPage() {
         icon={ScrollText}
         title={t("audits.title")}
         total={paged?.totalCount ?? null}
-        unit="event"
+        unit={t("audits.unit")}
+        unitPlural={t("audits.unitPlural")}
         description={t("audits.description")}
       >
         <Button
@@ -346,7 +347,7 @@ export function AuditsPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {paged?.totalCount ?? 0} event{(paged?.totalCount ?? 0) !== 1 ? "s" : ""} found
+              {t("audits.eventsFound", { count: paged?.totalCount ?? 0 })}
             </p>
             {auditsQuery.isFetching && (
               <Loader2 className="size-3.5 animate-spin text-[var(--color-muted-foreground)]" />

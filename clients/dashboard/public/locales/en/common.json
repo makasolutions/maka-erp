@@ -407,6 +407,8 @@
     }
   },
   "activity": {
+    "unit": "event",
+    "unitPlural": "events",
     "title": "Live activity",
     "description": "Full event log streamed from the API over Server-Sent Events.",
     "columns": {
@@ -424,6 +426,8 @@
     "ariaLabel": "Activity events"
   },
   "audits": {
+    "unit": "event",
+    "unitPlural": "events",
     "title": "Audit trail",
     "description": "Activity, security, entity-change, and exception events across the platform. Window enforced server-side; max 90 days.",
     "searchPlaceholder": "Search payload, source, user…",

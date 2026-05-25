@@ -81,15 +81,20 @@ export function ActivityPage() {
         icon={Activity}
         title={t("activity.title")}
         total={eventCount}
-        unit="event"
+        unit={t("activity.unit")}
+        unitPlural={t("activity.unitPlural")}
         description={t("activity.description")}
       >
         {isLive ? (
-          <Badge variant="success">streaming</Badge>
+          <Badge variant="success">{t("realtime.connected")}</Badge>
         ) : status === "error" ? (
-          <Badge variant="danger">offline</Badge>
+          <Badge variant="danger">{t("realtime.offline")}</Badge>
         ) : (
-          <Badge variant="default">{status}</Badge>
+          <Badge variant="default">
+            {status === "reconnecting"
+              ? t("realtime.reconnecting")
+              : t("realtime.connecting")}
+          </Badge>
         )}
       </EntityPageHeader>
 

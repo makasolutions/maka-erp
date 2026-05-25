@@ -407,6 +407,8 @@
     }
   },
   "activity": {
+    "unit": "evento",
+    "unitPlural": "eventos",
     "title": "Actividad en vivo",
     "description": "Registro completo de eventos transmitido desde la API via Server-Sent Events.",
     "columns": {
@@ -424,6 +426,8 @@
     "ariaLabel": "Eventos de actividad"
   },
   "audits": {
+    "unit": "evento",
+    "unitPlural": "eventos",
     "title": "Registro de auditoría",
     "description": "Eventos de actividad, seguridad, cambios de entidad y excepciones en la plataforma. Ventana aplicada en el servidor; máximo 90 días.",
     "searchPlaceholder": "Buscar en payload, fuente, usuario…",
