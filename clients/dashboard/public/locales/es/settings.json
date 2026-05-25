@@ -86,6 +86,7 @@
       "disableFailedFallback": "No se pudo desactivar la verificación en dos pasos."
     },
     "sessionsSection": {
+      "title": "Sesiones activas",
       "active_one": "{{count}} activa",
       "active_other": "{{count}} activas",
       "description": "Navegadores y dispositivos con sesión activa en tu cuenta.",

@@ -86,6 +86,7 @@
       "disableFailedFallback": "Could not disable two-factor."
     },
     "sessionsSection": {
+      "title": "Active sessions",
       "active_one": "{{count}} active",
       "active_other": "{{count}} active",
       "description": "Browsers and devices currently signed in to your account.",
