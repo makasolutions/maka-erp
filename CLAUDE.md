@@ -1135,6 +1135,25 @@ Seguridad:
    - Si no se conoce la traducción exacta en inglés, usar una aproximación razonable
      y agregar comentario: // TODO: review translation
 
+🚫 PROHIBIDO: Guardar configuración, preferencias o datos de usuario/apariencia/
+   localización en localStorage, sessionStorage o variables globales como fuente
+   de verdad.
+
+   REGLA — Todo debe persistir por Tenant:
+   Todo lo que sea configurable por una empresa (tenant) DEBE persistir en la
+   base de datos bajo el TenantId correspondiente. Esto incluye sin excepción:
+   - Configuración de apariencia (tema, acento, tipografía)
+   - Configuración de localización (timezone, moneda, idioma, formato de
+     fecha/hora/números)
+   - Cualquier preferencia futura de configuración del tenant
+
+   PATRÓN CORRECTO:
+   1. Backend: tabla con TenantId + campos de configuración
+   2. Frontend: cargar desde API al iniciar sesión
+   3. Frontend: guardar via API (PUT/PATCH) cuando el usuario cambia algo
+   4. Frontend: usar localStorage SOLO como caché temporal para evitar flicker
+      en el boot — siempre sincronizar con la BD como fuente de verdad
+
 🚫 PROHIBIDO: Crear componentes que no respeten el sistema de temas y apariencia
    del dashboard.
 
@@ -1170,6 +1189,24 @@ Seguridad:
         [data-theme="dark"] .e-kanban { ... }
         [data-theme="dark"] .e-schedule { ... }
 ```
+
+---
+
+## 9b. REGLA — Reinicio del servidor después de cambios backend
+
+Cuando se hagan cambios al backend que requieran reinicio del servidor, SIEMPRE
+indicar explícitamente al usuario:
+
+```
+"Para aplicar estos cambios necesitas reiniciar la API.
+ Ejecuta en PowerShell:
+ Get-Process dotnet | Stop-Process -Force
+ dotnet run --project src/Host/FSH.Starter.Api"
+```
+
+Nunca asumir que el servidor se reinició automáticamente.
+Nunca hacer commit del backend sin antes verificar que el endpoint funciona
+con la API reiniciada.
 
 ---
 
@@ -1353,6 +1390,20 @@ Ejecutar ambas listas en orden: backend primero, luego frontend.
 ```
 NUNCA hacer commit si hay errores en Console o Network tab
 del browser. Un commit con errores visibles es un commit inválido.
+```
+
+### QA Multitenancy obligatorio:
+```
+Si el sistema tiene multitenancy, las pruebas DEBEN hacerse con al
+menos 2 tenants distintos para confirmar aislamiento de datos:
+
+1. Hacer el cambio/acción con el tenant A (ej. root)
+2. Verificar que el tenant B (ej. acme) NO ve los datos del tenant A
+3. Hacer el cambio/acción con el tenant B
+4. Verificar que el tenant A NO ve los datos del tenant B
+5. Específicamente para configuración (apariencia, localización):
+   - Cambiar timezone en root → verificar que acme mantiene su timezone
+   - Cambiar tema en acme → verificar que root mantiene su tema
 ```
 
 ---
