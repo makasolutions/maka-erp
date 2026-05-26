@@ -15,6 +15,16 @@ public class TenantAppearanceConfiguration : IEntityTypeConfiguration<TenantAppe
             .HasKey(a => a.Id);
 
         builder
+            .Property(a => a.UserId)
+            .IsRequired()
+            .HasMaxLength(36);
+
+        builder
+            .HasIndex(a => a.UserId)
+            .IsUnique()
+            .HasDatabaseName("IX_TenantAppearances_UserId");
+
+        builder
             .Property(a => a.Theme)
             .IsRequired()
             .HasMaxLength(10);
@@ -46,7 +56,5 @@ public class TenantAppearanceConfiguration : IEntityTypeConfiguration<TenantAppe
             .Property(a => a.LastModifiedBy)
             .HasMaxLength(256);
 
-        // Unique per tenant — enforced by Finbuckle global query filter + single row design.
-        // We do not add a unique index because TenantId is injected transparently.
     }
 }

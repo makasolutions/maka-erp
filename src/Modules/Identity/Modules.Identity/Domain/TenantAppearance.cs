@@ -3,14 +3,21 @@ using FSH.Framework.Core.Domain;
 namespace FSH.Modules.Identity.Domain;
 
 /// <summary>
-/// Appearance preferences scoped to a tenant.
-/// One row per tenant. Controls theme, accent colour, font family, and layout
-/// density for the React dashboard. Backed by the database so settings survive
-/// across sessions and devices.
+/// Appearance preferences scoped to a specific user within a tenant.
+/// One row per (tenant, user) pair. Controls theme, accent colour, font family,
+/// and layout density for the React dashboard. Backed by the database so settings
+/// survive across sessions and devices, and are isolated per user.
 /// </summary>
 public class TenantAppearance : IAuditableEntity
 {
     public Guid Id { get; private set; }
+
+    /// <summary>
+    /// The user this appearance row belongs to (string form of the user's Guid).
+    /// Stored as string to avoid a FK dependency on the ASP.NET Identity user table
+    /// from this domain entity, keeping the same pattern as <see cref="TenantLocalization"/>.
+    /// </summary>
+    public string UserId { get; private set; } = default!;
 
     /// <summary>"light" | "dark" | "system"</summary>
     public string Theme { get; private set; } = default!;
@@ -44,10 +51,11 @@ public class TenantAppearance : IAuditableEntity
 
     private TenantAppearance() { } // EF Core
 
-    public static TenantAppearance CreateDefault(string? createdBy = null) =>
+    public static TenantAppearance CreateDefault(string userId, string? createdBy = null) =>
         new()
         {
             Id = Guid.NewGuid(),
+            UserId = userId,
             Theme = "system",
             Accent = "rose",
             Font = "inter",

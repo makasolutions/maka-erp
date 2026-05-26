@@ -23,17 +23,20 @@ public sealed class GetTenantAppearanceQueryHandler : IQueryHandler<GetTenantApp
         GetTenantAppearanceQuery query,
         CancellationToken cancellationToken)
     {
+        var userId = _currentUser.GetUserId().ToString();
+        var userEmail = _currentUser.GetUserEmail();
+
         // Finbuckle global query filter scopes this to the current tenant automatically.
+        // We additionally filter by UserId so each user gets their own appearance row.
         var appearance = await _dbContext.TenantAppearances
             .AsNoTracking()
-            .FirstOrDefaultAsync(cancellationToken)
+            .FirstOrDefaultAsync(a => a.UserId == userId, cancellationToken)
             .ConfigureAwait(false);
 
         if (appearance is null)
         {
-            // Seed default row if none exists yet.
-            var userEmail = _currentUser.GetUserEmail();
-            appearance = TenantAppearance.CreateDefault(createdBy: userEmail);
+            // First access for this user — seed a default row.
+            appearance = TenantAppearance.CreateDefault(userId, createdBy: userEmail);
             _dbContext.TenantAppearances.Add(appearance);
             await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }

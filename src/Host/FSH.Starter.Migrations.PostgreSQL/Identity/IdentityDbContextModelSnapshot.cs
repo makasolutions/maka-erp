@@ -594,7 +594,16 @@ namespace FSH.Starter.Migrations.PostgreSQL.Identity
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TenantAppearances_UserId");
 
                     b.ToTable("TenantAppearances", "identity");
 

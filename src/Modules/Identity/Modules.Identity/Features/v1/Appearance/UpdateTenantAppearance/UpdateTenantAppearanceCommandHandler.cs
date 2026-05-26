@@ -26,17 +26,19 @@ public sealed class UpdateTenantAppearanceCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var userName = _currentUser.GetUserEmail();
+        var userId = _currentUser.GetUserId().ToString();
+        var userEmail = _currentUser.GetUserEmail();
 
         // Finbuckle global query filter scopes to the current tenant.
+        // We additionally filter by UserId so each user gets their own appearance row.
         var appearance = await _dbContext.TenantAppearances
-            .FirstOrDefaultAsync(cancellationToken)
+            .FirstOrDefaultAsync(a => a.UserId == userId, cancellationToken)
             .ConfigureAwait(false);
 
         if (appearance is null)
         {
-            // First time — create the row.
-            appearance = TenantAppearance.CreateDefault(createdBy: userName);
+            // First save for this user — create their row.
+            appearance = TenantAppearance.CreateDefault(userId, createdBy: userEmail);
             _dbContext.TenantAppearances.Add(appearance);
         }
 
@@ -46,7 +48,7 @@ public sealed class UpdateTenantAppearanceCommandHandler
             command.Font,
             command.Density,
             command.CustomAccentJson,
-            modifiedBy: userName);
+            modifiedBy: userEmail);
 
         await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
