@@ -128,9 +128,11 @@ public static class IdentityPermissions
         new("Revoke Impersonation Grants", "Revoke",             Impersonation.Resource),
 
         new("View Localization",   ActionConstants.View,   Localization.Resource, IsBasic: true),
-        new("Update Localization", ActionConstants.Update, Localization.Resource),
+        // IsBasic: any authenticated user can save their tenant's localization (language, timezone, etc.)
+        new("Update Localization", ActionConstants.Update, Localization.Resource, IsBasic: true),
 
         new("View Appearance",     ActionConstants.View,   Appearance.Resource, IsBasic: true),
-        new("Update Appearance",   ActionConstants.Update, Appearance.Resource),
+        // IsBasic: any authenticated user can save their tenant's appearance (theme, accent, font, etc.)
+        new("Update Appearance",   ActionConstants.Update, Appearance.Resource,   IsBasic: true),
     ];
 }

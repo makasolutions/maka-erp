@@ -22,6 +22,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useAuth } from "@/auth/use-auth";
 import {
   getTenantLocalization,
@@ -76,6 +77,19 @@ function readCache(): LocalizationConfig | null {
 function writeCache(config: LocalizationConfig) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Clear the localization localStorage cache.
+ * Call on logout / tenant switch so the next user doesn't briefly see
+ * the previous user's locale settings before the API response arrives.
+ */
+export function clearLocalizationCache(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
   } catch {
     /* storage unavailable */
   }
@@ -187,6 +201,14 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     onSuccess: (updated) => {
       queryClient.setQueryData(["identity", "localization"], updated);
       writeCache(updated);
+    },
+    onError: (err) => {
+      const status = (err as { status?: number })?.status;
+      if (status === 401) return; // apiFetch already handles this
+      toast.error("No se pudo guardar la localización", {
+        description: "Revisa tu conexión o vuelve a iniciar sesión.",
+        duration: 5000,
+      });
     },
   });
 

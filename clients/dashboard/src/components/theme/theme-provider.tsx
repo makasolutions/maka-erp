@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
+import { toast } from "sonner";
 import {
   ACCENT_STORAGE_KEY,
   accents,
@@ -212,13 +213,36 @@ function applyDensity(value: DensityMode) {
   document.documentElement.classList.toggle("density-compact", value === "compact");
 }
 
-/** Fire-and-forget: persist appearance to the API. Swallows errors (e.g. 401 when not logged in). */
+/**
+ * Clear all appearance-related localStorage keys.
+ * Call on logout / tenant switch so the next user doesn't briefly see
+ * the previous user's theme before the API response arrives.
+ */
+export function clearAppearanceCache(): void {
+  try {
+    localStorage.removeItem(THEME_STORAGE_KEY);
+    localStorage.removeItem(FONT_STORAGE_KEY);
+    localStorage.removeItem(ACCENT_STORAGE_KEY);
+    localStorage.removeItem(CUSTOM_ACCENT_STORAGE_KEY);
+    localStorage.removeItem(DENSITY_STORAGE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Fire-and-forget: persist appearance to the API. Shows a toast when the call fails. */
 async function persistAppearanceToApi(config: AppearanceConfig): Promise<void> {
   try {
     await updateTenantAppearance(config);
-  } catch {
-    // Silently ignore — caller may not be authenticated yet, or network may be down.
-    // localStorage is the fallback truth until the next successful sync.
+  } catch (err) {
+    // Skip feedback if not authenticated yet (e.g. theme toggled on the login page)
+    // or offline — localStorage is the fallback until the next successful sync.
+    const status = (err as { status?: number })?.status;
+    if (!status || status === 401) return;
+    toast.error("No se pudo guardar la apariencia", {
+      description: "Revisa tu conexión o vuelve a iniciar sesión.",
+      duration: 5000,
+    });
   }
 }
 

@@ -4,6 +4,8 @@ import { tokenStore } from "@/auth/token-store";
 import { decodeJwt, type JwtClaims } from "@/auth/jwt";
 import { issueToken } from "@/auth/api";
 import { endImpersonation, startImpersonation } from "@/api/identity";
+import { clearAppearanceCache } from "@/components/theme/theme-provider";
+import { clearLocalizationCache } from "@/contexts/localization-context";
 
 export type AuthUser = {
   id: string;
@@ -129,6 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // admin app is built. The API boundary is satisfied by sending
       // X-FSH-App=admin for root logins (see auth/api.ts).
       tokenStore.setTokens(tokens.accessToken, tokens.refreshToken);
+      // Clear appearance/locale localStorage so a fresh user doesn't briefly
+      // see the previous user's theme/language before the API responds.
+      clearAppearanceCache();
+      clearLocalizationCache();
       // Drop any cached query state from before login. Without this, a
       // failed pre-login probe (e.g. OverviewPage's billing fetch
       // firing during the brief window before ProtectedRoute redirects
@@ -143,6 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     tokenStore.clear();
+    // Clear appearance/locale localStorage on logout so the next user
+    // (or a re-login to a different tenant) starts from a clean slate.
+    clearAppearanceCache();
+    clearLocalizationCache();
     queryClient.clear();
   }, [queryClient]);
 
@@ -153,6 +163,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // so the next render fetches with the new identity — otherwise
       // user/role/permission caches from the actor session would leak.
       tokenStore.beginImpersonation(response.accessToken, response.impersonatedTenantId);
+      // Clear appearance/locale cache so the impersonated tenant's settings
+      // load fresh rather than showing the operator's settings briefly.
+      clearAppearanceCache();
+      clearLocalizationCache();
       queryClient.clear();
     },
     [queryClient],
@@ -169,6 +183,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStore.restoreStashedActor();
       throw new Error("End impersonation failed; restored local session.");
     } finally {
+      // Clear appearance/locale cache so the restored operator's settings
+      // load fresh rather than showing the impersonated tenant's settings.
+      clearAppearanceCache();
+      clearLocalizationCache();
       queryClient.clear();
     }
   }, [queryClient]);
