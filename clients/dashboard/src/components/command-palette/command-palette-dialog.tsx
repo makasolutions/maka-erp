@@ -48,6 +48,22 @@ import { cn } from "@/lib/cn";
  * a smaller bundle for cold start.
  */
 
+// Permission strings — must mirror the backend Permissions.{Resource}.{Action} shape.
+const P = {
+  billingView:           "Permissions.Billing.View",
+  catalogBrandsView:     "Permissions.Catalog.Brands.View",
+  catalogCategoriesView: "Permissions.Catalog.Categories.View",
+  catalogProductsView:   "Permissions.Catalog.Products.View",
+  ticketsView:           "Permissions.Tickets.View",
+  usersView:             "Permissions.Users.View",
+  rolesView:             "Permissions.Roles.View",
+  groupsView:            "Permissions.Groups.View",
+  auditTrailsView:       "Permissions.AuditTrails.View",
+  sessionsViewAll:       "Permissions.Sessions.ViewAll",
+  filesViewTrash:        "Permissions.Files.ViewTrash",
+  chatChannelsView:      "Permissions.Chat.Channels.View",
+} as const;
+
 type ActionItem = {
   id: string;
   label: string;
@@ -56,6 +72,11 @@ type ActionItem = {
   /** Free-form keywords for fuzzy matching. */
   keywords?: string[];
   shortcut?: string;
+  /**
+   * When set, this action only appears for users who hold this permission.
+   * Omit for actions every authenticated user should access.
+   */
+  permission?: string;
   perform: () => void;
 };
 
@@ -72,9 +93,11 @@ export function CommandPaletteDialog({
   onOpenChange: (next: boolean) => void;
 }) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { setMode, setAccent } = useTheme();
   const { t } = useTranslation("common");
+
+  const permissions = user?.permissions ?? [];
 
   // Build the action set fresh each time the palette opens. The ones
   // that navigate close the palette; the ones that mutate appearance
@@ -85,224 +108,252 @@ export function CommandPaletteDialog({
       navigate(path);
       close();
     };
+
+    // Returns true if the user holds `perm` (or if the item has no guard).
+    const can = (perm: string | undefined) => !perm || permissions.includes(perm);
+
+    // Filter a group's items by the user's permissions and drop the whole
+    // group if nothing remains.
+    const withPermissions = (
+      heading: string,
+      items: ActionItem[],
+    ): ActionGroup[] => {
+      const visible = items.filter((item) => can(item.permission));
+      return visible.length > 0 ? [{ heading, items: visible }] : [];
+    };
+
     return [
-      {
-        heading: t("commandPalette.groups.navigate"),
-        items: [
-          {
-            id: "nav-overview",
-            label: t("commandPalette.items.overview"),
-            hint: t("commandPalette.items.overviewHint"),
-            Icon: LayoutDashboard,
-            keywords: ["home", "dashboard"],
-            perform: go("/"),
-          },
-          {
-            id: "nav-activity",
-            label: t("commandPalette.items.liveActivity"),
-            hint: t("commandPalette.items.liveActivityHint"),
-            Icon: Activity,
-            keywords: ["events", "sse", "log"],
-            perform: go("/activity"),
-          },
-          {
-            id: "nav-chat",
-            label: t("commandPalette.items.chat"),
-            hint: t("commandPalette.items.chatHint"),
-            Icon: MessageSquare,
-            keywords: ["messages", "dm", "channel", "conversation"],
-            perform: go("/chat"),
-          },
-          {
-            id: "nav-files",
-            label: t("commandPalette.items.files"),
-            hint: t("commandPalette.items.filesHint"),
-            Icon: Folder,
-            keywords: ["storage", "uploads", "documents"],
-            perform: go("/files"),
-          },
-          {
-            id: "nav-users",
-            label: t("commandPalette.items.users"),
-            hint: t("commandPalette.items.usersHint"),
-            Icon: Users,
-            keywords: ["identity", "people", "members", "team"],
-            perform: go("/identity/users"),
-          },
-          {
-            id: "nav-roles",
-            label: t("commandPalette.items.roles"),
-            hint: t("commandPalette.items.rolesHint"),
-            Icon: ShieldCheck,
-            keywords: ["identity", "permissions", "rbac"],
-            perform: go("/identity/roles"),
-          },
-          {
-            id: "nav-groups",
-            label: t("commandPalette.items.groups"),
-            hint: t("commandPalette.items.groupsHint"),
-            Icon: Users,
-            keywords: ["identity", "teams", "org"],
-            perform: go("/identity/groups"),
-          },
-          {
-            id: "nav-products",
-            label: t("commandPalette.items.products"),
-            hint: t("commandPalette.items.productsHint"),
-            Icon: Package,
-            keywords: ["catalog", "sku", "inventory", "stock"],
-            perform: go("/catalog/products"),
-          },
-          {
-            id: "nav-brands",
-            label: t("commandPalette.items.brands"),
-            hint: t("commandPalette.items.brandsHint"),
-            Icon: Tag,
-            keywords: ["catalog"],
-            perform: go("/catalog/brands"),
-          },
-          {
-            id: "nav-categories",
-            label: t("commandPalette.items.categories"),
-            hint: t("commandPalette.items.categoriesHint"),
-            Icon: Boxes,
-            keywords: ["catalog"],
-            perform: go("/catalog/categories"),
-          },
-          {
-            id: "nav-tickets",
-            label: t("commandPalette.items.tickets"),
-            hint: t("commandPalette.items.ticketsHint"),
-            Icon: LifeBuoy,
-            keywords: ["support", "issues", "helpdesk"],
-            perform: go("/tickets"),
-          },
-          {
-            id: "nav-invoices",
-            label: t("commandPalette.items.invoices"),
-            hint: t("commandPalette.items.invoicesHint"),
-            Icon: Receipt,
-            keywords: ["billing", "payment"],
-            perform: go("/invoices"),
-          },
-          {
-            id: "nav-health",
-            label: t("commandPalette.items.health"),
-            hint: t("commandPalette.items.healthHint"),
-            Icon: HeartPulse,
-            keywords: ["status", "uptime", "system", "ready", "redis", "postgres"],
-            perform: go("/system/health"),
-          },
-          {
-            id: "nav-audits",
-            label: t("commandPalette.items.auditTrail"),
-            hint: t("commandPalette.items.auditTrailHint"),
-            Icon: ScrollText,
-            keywords: ["audit", "log", "compliance", "security", "trace", "correlation"],
-            perform: go("/system/audits"),
-          },
-          {
-            id: "nav-trash",
-            label: t("commandPalette.items.trash"),
-            hint: t("commandPalette.items.trashHint"),
-            Icon: ScrollText,
-            keywords: ["recycle", "deleted", "restore"],
-            perform: go("/system/trash"),
-          },
-          {
-            id: "nav-sessions",
-            label: t("commandPalette.items.sessions"),
-            hint: t("commandPalette.items.sessionsHint"),
-            Icon: Shield,
-            keywords: ["devices", "logins"],
-            perform: go("/system/sessions"),
-          },
-          {
-            id: "nav-settings",
-            label: t("commandPalette.items.settings"),
-            Icon: SettingsIcon,
-            keywords: ["preferences", "config"],
-            perform: go("/settings"),
-          },
-        ],
-      },
-      {
-        heading: t("commandPalette.groups.create"),
-        items: [
-          {
-            id: "create-user",
-            label: t("commandPalette.items.createUser"),
-            hint: t("commandPalette.items.createUserHint"),
-            Icon: Plus,
-            keywords: ["new", "invite", "register", "identity"],
-            perform: go("/identity/users?action=create"),
-          },
-          {
-            id: "create-role",
-            label: t("commandPalette.items.createRole"),
-            hint: t("commandPalette.items.createRoleHint"),
-            Icon: Plus,
-            keywords: ["new", "permissions", "rbac"],
-            perform: go("/identity/roles?action=create"),
-          },
-          {
-            id: "create-group",
-            label: t("commandPalette.items.createGroup"),
-            hint: t("commandPalette.items.createGroupHint"),
-            Icon: Plus,
-            keywords: ["new", "team", "org"],
-            perform: go("/identity/groups?action=create"),
-          },
-          {
-            id: "create-product",
-            label: t("commandPalette.items.createProduct"),
-            hint: t("commandPalette.items.createProductHint"),
-            Icon: Plus,
-            keywords: ["new", "catalog", "sku"],
-            perform: go("/catalog/products?action=create"),
-          },
-          {
-            id: "create-brand",
-            label: t("commandPalette.items.createBrand"),
-            hint: t("commandPalette.items.createBrandHint"),
-            Icon: Plus,
-            keywords: ["new", "catalog"],
-            perform: go("/catalog/brands?action=create"),
-          },
-          {
-            id: "create-category",
-            label: t("commandPalette.items.createCategory"),
-            hint: t("commandPalette.items.createCategoryHint"),
-            Icon: Plus,
-            keywords: ["new", "catalog"],
-            perform: go("/catalog/categories?action=create"),
-          },
-          {
-            id: "create-ticket",
-            label: t("commandPalette.items.createTicket"),
-            hint: t("commandPalette.items.createTicketHint"),
-            Icon: Plus,
-            keywords: ["new", "support", "issue"],
-            perform: go("/tickets?action=create"),
-          },
-          {
-            id: "create-channel",
-            label: t("commandPalette.items.createChannel"),
-            hint: t("commandPalette.items.createChannelHint"),
-            Icon: Plus,
-            keywords: ["new", "chat", "channel"],
-            perform: go("/chat?action=create-channel"),
-          },
-          {
-            id: "create-file",
-            label: t("commandPalette.items.uploadFile"),
-            hint: t("commandPalette.items.uploadFileHint"),
-            Icon: Plus,
-            keywords: ["new", "upload", "attach"],
-            perform: go("/files?action=upload"),
-          },
-        ],
-      },
+      ...withPermissions(t("commandPalette.groups.navigate"), [
+        {
+          id: "nav-overview",
+          label: t("commandPalette.items.overview"),
+          hint: t("commandPalette.items.overviewHint"),
+          Icon: LayoutDashboard,
+          keywords: ["home", "dashboard"],
+          perform: go("/"),
+        },
+        {
+          id: "nav-activity",
+          label: t("commandPalette.items.liveActivity"),
+          hint: t("commandPalette.items.liveActivityHint"),
+          Icon: Activity,
+          keywords: ["events", "sse", "log"],
+          perform: go("/activity"),
+        },
+        {
+          id: "nav-chat",
+          label: t("commandPalette.items.chat"),
+          hint: t("commandPalette.items.chatHint"),
+          Icon: MessageSquare,
+          keywords: ["messages", "dm", "channel", "conversation"],
+          permission: P.chatChannelsView,
+          perform: go("/chat"),
+        },
+        {
+          id: "nav-files",
+          label: t("commandPalette.items.files"),
+          hint: t("commandPalette.items.filesHint"),
+          Icon: Folder,
+          keywords: ["storage", "uploads", "documents"],
+          perform: go("/files"),
+        },
+        {
+          id: "nav-users",
+          label: t("commandPalette.items.users"),
+          hint: t("commandPalette.items.usersHint"),
+          Icon: Users,
+          keywords: ["identity", "people", "members", "team"],
+          permission: P.usersView,
+          perform: go("/identity/users"),
+        },
+        {
+          id: "nav-roles",
+          label: t("commandPalette.items.roles"),
+          hint: t("commandPalette.items.rolesHint"),
+          Icon: ShieldCheck,
+          keywords: ["identity", "permissions", "rbac"],
+          permission: P.rolesView,
+          perform: go("/identity/roles"),
+        },
+        {
+          id: "nav-groups",
+          label: t("commandPalette.items.groups"),
+          hint: t("commandPalette.items.groupsHint"),
+          Icon: Users,
+          keywords: ["identity", "teams", "org"],
+          permission: P.groupsView,
+          perform: go("/identity/groups"),
+        },
+        {
+          id: "nav-products",
+          label: t("commandPalette.items.products"),
+          hint: t("commandPalette.items.productsHint"),
+          Icon: Package,
+          keywords: ["catalog", "sku", "inventory", "stock"],
+          permission: P.catalogProductsView,
+          perform: go("/catalog/products"),
+        },
+        {
+          id: "nav-brands",
+          label: t("commandPalette.items.brands"),
+          hint: t("commandPalette.items.brandsHint"),
+          Icon: Tag,
+          keywords: ["catalog"],
+          permission: P.catalogBrandsView,
+          perform: go("/catalog/brands"),
+        },
+        {
+          id: "nav-categories",
+          label: t("commandPalette.items.categories"),
+          hint: t("commandPalette.items.categoriesHint"),
+          Icon: Boxes,
+          keywords: ["catalog"],
+          permission: P.catalogCategoriesView,
+          perform: go("/catalog/categories"),
+        },
+        {
+          id: "nav-tickets",
+          label: t("commandPalette.items.tickets"),
+          hint: t("commandPalette.items.ticketsHint"),
+          Icon: LifeBuoy,
+          keywords: ["support", "issues", "helpdesk"],
+          permission: P.ticketsView,
+          perform: go("/tickets"),
+        },
+        {
+          id: "nav-invoices",
+          label: t("commandPalette.items.invoices"),
+          hint: t("commandPalette.items.invoicesHint"),
+          Icon: Receipt,
+          keywords: ["billing", "payment"],
+          permission: P.billingView,
+          perform: go("/invoices"),
+        },
+        {
+          id: "nav-health",
+          label: t("commandPalette.items.health"),
+          hint: t("commandPalette.items.healthHint"),
+          Icon: HeartPulse,
+          keywords: ["status", "uptime", "system", "ready", "redis", "postgres"],
+          perform: go("/system/health"),
+        },
+        {
+          id: "nav-audits",
+          label: t("commandPalette.items.auditTrail"),
+          hint: t("commandPalette.items.auditTrailHint"),
+          Icon: ScrollText,
+          keywords: ["audit", "log", "compliance", "security", "trace", "correlation"],
+          permission: P.auditTrailsView,
+          perform: go("/system/audits"),
+        },
+        {
+          id: "nav-trash",
+          label: t("commandPalette.items.trash"),
+          hint: t("commandPalette.items.trashHint"),
+          Icon: ScrollText,
+          keywords: ["recycle", "deleted", "restore"],
+          permission: P.filesViewTrash,
+          perform: go("/system/trash"),
+        },
+        {
+          id: "nav-sessions",
+          label: t("commandPalette.items.sessions"),
+          hint: t("commandPalette.items.sessionsHint"),
+          Icon: Shield,
+          keywords: ["devices", "logins"],
+          permission: P.sessionsViewAll,
+          perform: go("/system/sessions"),
+        },
+        {
+          id: "nav-settings",
+          label: t("commandPalette.items.settings"),
+          Icon: SettingsIcon,
+          keywords: ["preferences", "config"],
+          perform: go("/settings"),
+        },
+      ]),
+      ...withPermissions(t("commandPalette.groups.create"), [
+        {
+          id: "create-user",
+          label: t("commandPalette.items.createUser"),
+          hint: t("commandPalette.items.createUserHint"),
+          Icon: Plus,
+          keywords: ["new", "invite", "register", "identity"],
+          permission: P.usersView,
+          perform: go("/identity/users?action=create"),
+        },
+        {
+          id: "create-role",
+          label: t("commandPalette.items.createRole"),
+          hint: t("commandPalette.items.createRoleHint"),
+          Icon: Plus,
+          keywords: ["new", "permissions", "rbac"],
+          permission: P.rolesView,
+          perform: go("/identity/roles?action=create"),
+        },
+        {
+          id: "create-group",
+          label: t("commandPalette.items.createGroup"),
+          hint: t("commandPalette.items.createGroupHint"),
+          Icon: Plus,
+          keywords: ["new", "team", "org"],
+          permission: P.groupsView,
+          perform: go("/identity/groups?action=create"),
+        },
+        {
+          id: "create-product",
+          label: t("commandPalette.items.createProduct"),
+          hint: t("commandPalette.items.createProductHint"),
+          Icon: Plus,
+          keywords: ["new", "catalog", "sku"],
+          permission: P.catalogProductsView,
+          perform: go("/catalog/products?action=create"),
+        },
+        {
+          id: "create-brand",
+          label: t("commandPalette.items.createBrand"),
+          hint: t("commandPalette.items.createBrandHint"),
+          Icon: Plus,
+          keywords: ["new", "catalog"],
+          permission: P.catalogBrandsView,
+          perform: go("/catalog/brands?action=create"),
+        },
+        {
+          id: "create-category",
+          label: t("commandPalette.items.createCategory"),
+          hint: t("commandPalette.items.createCategoryHint"),
+          Icon: Plus,
+          keywords: ["new", "catalog"],
+          permission: P.catalogCategoriesView,
+          perform: go("/catalog/categories?action=create"),
+        },
+        {
+          id: "create-ticket",
+          label: t("commandPalette.items.createTicket"),
+          hint: t("commandPalette.items.createTicketHint"),
+          Icon: Plus,
+          keywords: ["new", "support", "issue"],
+          permission: P.ticketsView,
+          perform: go("/tickets?action=create"),
+        },
+        {
+          id: "create-channel",
+          label: t("commandPalette.items.createChannel"),
+          hint: t("commandPalette.items.createChannelHint"),
+          Icon: Plus,
+          keywords: ["new", "chat", "channel"],
+          permission: P.chatChannelsView,
+          perform: go("/chat?action=create-channel"),
+        },
+        {
+          id: "create-file",
+          label: t("commandPalette.items.uploadFile"),
+          hint: t("commandPalette.items.uploadFileHint"),
+          Icon: Plus,
+          keywords: ["new", "upload", "attach"],
+          perform: go("/files?action=upload"),
+        },
+      ]),
       {
         heading: t("commandPalette.groups.account"),
         items: [
@@ -400,7 +451,8 @@ export function CommandPaletteDialog({
         ],
       },
     ];
-  }, [navigate, onOpenChange, setMode, setAccent, logout, t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, onOpenChange, setMode, setAccent, logout, t, permissions]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

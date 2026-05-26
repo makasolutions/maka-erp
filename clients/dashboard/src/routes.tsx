@@ -2,9 +2,26 @@ import { lazy, Suspense, type ComponentType } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProtectedRoute } from "@/auth/protected-route";
+import { PermissionRoute } from "@/auth/permission-guard";
 import { RouteError } from "@/components/route-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
+
+// Permission strings — must match Permissions.{Resource}.{Action} in the backend.
+const PERM = {
+  billingView:           "Permissions.Billing.View",
+  catalogBrandsView:     "Permissions.Catalog.Brands.View",
+  catalogCategoriesView: "Permissions.Catalog.Categories.View",
+  catalogProductsView:   "Permissions.Catalog.Products.View",
+  ticketsView:           "Permissions.Tickets.View",
+  usersView:             "Permissions.Users.View",
+  rolesView:             "Permissions.Roles.View",
+  groupsView:            "Permissions.Groups.View",
+  auditTrailsView:       "Permissions.AuditTrails.View",
+  sessionsViewAll:       "Permissions.Sessions.ViewAll",
+  filesViewTrash:        "Permissions.Files.ViewTrash",
+  chatChannelsView:      "Permissions.Chat.Channels.View",
+} as const;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Lazy route boundaries
@@ -170,36 +187,92 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         errorElement: <RouteError />,
         children: [
+          // ── Always accessible (every authenticated user) ─────────────────
           { index: true, element: withSuspense(<OverviewPage />) },
           { path: "activity", element: withSuspense(<ActivityPage />) },
-          { path: "invoices", element: withSuspense(<InvoicesPage />) },
-          { path: "system/health", element: withSuspense(<HealthPage />) },
-          { path: "system/audits", element: withSuspense(<AuditsPage />) },
-          { path: "system/trash", element: withSuspense(<TrashPage />) },
-          { path: "system/sessions", element: withSuspense(<SessionsPage />) },
           { path: "files", element: withSuspense(<MyFilesPage />) },
-          { path: "chat", element: withSuspense(<ChatPage />) },
-          { path: "chat/:channelId", element: withSuspense(<ChatPage />) },
-          // ── Verificación instalación Syncfusion — eliminar antes del primer release ──
+          // ── System ────────────────────────────────────────────────────────
+          { path: "system/health", element: withSuspense(<HealthPage />) },
+          {
+            element: <PermissionRoute permission={PERM.auditTrailsView} />,
+            children: [{ path: "system/audits", element: withSuspense(<AuditsPage />) }],
+          },
+          {
+            element: <PermissionRoute permission={PERM.sessionsViewAll} />,
+            children: [{ path: "system/sessions", element: withSuspense(<SessionsPage />) }],
+          },
+          {
+            element: <PermissionRoute permission={PERM.filesViewTrash} />,
+            children: [{ path: "system/trash", element: withSuspense(<TrashPage />) }],
+          },
+          // ── Operations ────────────────────────────────────────────────────
+          {
+            element: <PermissionRoute permission={PERM.billingView} />,
+            children: [{ path: "invoices", element: withSuspense(<InvoicesPage />) }],
+          },
+          // ── Chat ──────────────────────────────────────────────────────────
+          {
+            element: <PermissionRoute permission={PERM.chatChannelsView} />,
+            children: [
+              { path: "chat", element: withSuspense(<ChatPage />) },
+              { path: "chat/:channelId", element: withSuspense(<ChatPage />) },
+            ],
+          },
+          // ── Syncfusion test — eliminar antes del primer release ────────────
           { path: "sf-test", element: withSuspense(<SyncfusionTestPage />) },
           // DEV ONLY - remove before production
           { path: "maka-components", element: withSuspense(<MakaComponentsPage />) },
-          { path: "tickets", element: withSuspense(<TicketsPage />) },
-          { path: "tickets/:ticketId", element: withSuspense(<TicketDetailPage />) },
-          { path: "identity", element: <Navigate to="/identity/users" replace /> },
-          { path: "identity/users", element: withSuspense(<UsersPage />) },
-          { path: "identity/users/:userId", element: withSuspense(<UserDetailPage />) },
-          { path: "identity/roles", element: withSuspense(<RolesPage />) },
-          { path: "identity/roles/:roleId", element: withSuspense(<RoleDetailPage />) },
-          { path: "identity/groups", element: withSuspense(<GroupsPage />) },
-          { path: "identity/groups/:groupId", element: withSuspense(<GroupDetailPage />) },
-          { path: "catalog", element: <Navigate to="/catalog/brands" replace /> },
-          { path: "catalog/brands", element: withSuspense(<BrandsPage />) },
-          { path: "catalog/categories", element: withSuspense(<CategoriesPage />) },
-          { path: "catalog/products", element: withSuspense(<ProductsPage />) },
+          // ── Tickets ───────────────────────────────────────────────────────
           {
-            path: "catalog/products/:productId",
-            element: withSuspense(<ProductDetailPage />),
+            element: <PermissionRoute permission={PERM.ticketsView} />,
+            children: [
+              { path: "tickets", element: withSuspense(<TicketsPage />) },
+              { path: "tickets/:ticketId", element: withSuspense(<TicketDetailPage />) },
+            ],
+          },
+          // ── Identity ──────────────────────────────────────────────────────
+          { path: "identity", element: <Navigate to="/identity/users" replace /> },
+          {
+            element: <PermissionRoute permission={PERM.usersView} />,
+            children: [
+              { path: "identity/users", element: withSuspense(<UsersPage />) },
+              { path: "identity/users/:userId", element: withSuspense(<UserDetailPage />) },
+            ],
+          },
+          {
+            element: <PermissionRoute permission={PERM.rolesView} />,
+            children: [
+              { path: "identity/roles", element: withSuspense(<RolesPage />) },
+              { path: "identity/roles/:roleId", element: withSuspense(<RoleDetailPage />) },
+            ],
+          },
+          {
+            element: <PermissionRoute permission={PERM.groupsView} />,
+            children: [
+              { path: "identity/groups", element: withSuspense(<GroupsPage />) },
+              { path: "identity/groups/:groupId", element: withSuspense(<GroupDetailPage />) },
+            ],
+          },
+          // ── Catalog ───────────────────────────────────────────────────────
+          { path: "catalog", element: <Navigate to="/catalog/brands" replace /> },
+          {
+            element: <PermissionRoute permission={PERM.catalogBrandsView} />,
+            children: [
+              { path: "catalog/brands", element: withSuspense(<BrandsPage />) },
+            ],
+          },
+          {
+            element: <PermissionRoute permission={PERM.catalogCategoriesView} />,
+            children: [
+              { path: "catalog/categories", element: withSuspense(<CategoriesPage />) },
+            ],
+          },
+          {
+            element: <PermissionRoute permission={PERM.catalogProductsView} />,
+            children: [
+              { path: "catalog/products", element: withSuspense(<ProductsPage />) },
+              { path: "catalog/products/:productId", element: withSuspense(<ProductDetailPage />) },
+            ],
           },
           {
             path: "settings",

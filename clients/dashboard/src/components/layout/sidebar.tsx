@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -15,6 +15,7 @@ import {
   type NavSection,
   type NavSpec,
 } from "@/components/layout/nav-data";
+import { useAuth } from "@/auth/use-auth";
 
 // Path → i18n key mapping for nav items (common namespace, nav.*)
 const NAV_ITEM_KEYS: Record<string, string> = {
@@ -218,23 +219,48 @@ export function SidebarNavBody({
    *  drawer to close itself on navigation. */
   onNavigate?: () => void;
 }) {
+  const { user } = useAuth();
+  const permissions = user?.permissions ?? [];
+
+  /** Returns true if the item is visible for the current user. */
+  const canSee = useCallback(
+    (item: NavSpec) => !item.permission || permissions.includes(item.permission),
+    [permissions],
+  );
+
+  // Filter top-level items
+  const visibleTopNavTop = useMemo(
+    () => topNavTop.filter(canSee),
+    [canSee],
+  );
+
+  // Filter sections — hide items the user can't access,
+  // then hide entire sections where no items remain.
+  const visibleSections = useMemo(
+    () =>
+      sections
+        .map((s) => ({ ...s, items: s.items.filter(canSee) }))
+        .filter((s) => s.items.length > 0),
+    [canSee],
+  );
+
   return (
     /* Nav scrolls vertically when item count exceeds available height.
        `overflow-x: clip` keeps the collapsed-mode hover tooltips from
        spawning a horizontal scrollbar — those tooltips will be
        clipped, but the native title= attribute is the fallback. */
     <nav className="flex-1 space-y-1.5 overflow-y-auto overflow-x-clip px-2.5 py-3.5">
-      {/* Top-level: Overview */}
+      {/* Top-level: Overview (filtered by permission) */}
       <div className="space-y-0.5">
-        {topNavTop.map((item) => (
+        {visibleTopNavTop.map((item) => (
           <NavItemLink key={item.to} item={item} collapsed={collapsed} indent={false} onNavigate={onNavigate} />
         ))}
       </div>
 
-      {/* Section accordions */}
+      {/* Section accordions (sections without accessible items are hidden) */}
       {!collapsed && (
         <div className="space-y-1.5 pt-1.5">
-          {sections.map((section) => (
+          {visibleSections.map((section) => (
             <AccordionSection
               key={section.id}
               section={section}
@@ -248,12 +274,10 @@ export function SidebarNavBody({
         </div>
       )}
 
-      {/* Collapsed mode: render every section's items inline as a flat
-          list with thin dividers between sections — accordion is a
-          label-driven affordance and isn't useful at 64px wide. */}
+      {/* Collapsed mode: flat icon stack of accessible items */}
       {collapsed && (
         <div className="space-y-1 pt-1.5">
-          {sections.map((section, idx) => (
+          {visibleSections.map((section, idx) => (
             <div key={section.id}>
               {idx > 0 && (
                 <div
