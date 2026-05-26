@@ -82,6 +82,15 @@ public static class IdentityPermissions
         public const string Update = $"Permissions.{Resource}.Update";
     }
 
+    public static class Appearance
+    {
+        public const string Resource = nameof(Appearance);
+        /// <summary>Read appearance settings for the caller's tenant. Any authenticated user.</summary>
+        public const string View   = $"Permissions.{Resource}.View";
+        /// <summary>Update appearance settings for the caller's tenant. Requires admin.</summary>
+        public const string Update = $"Permissions.{Resource}.Update";
+    }
+
     public static IReadOnlyList<FshPermission> All { get; } =
     [
         new("View Users",          ActionConstants.View,   Users.Resource, IsBasic: true),
@@ -120,5 +129,8 @@ public static class IdentityPermissions
 
         new("View Localization",   ActionConstants.View,   Localization.Resource, IsBasic: true),
         new("Update Localization", ActionConstants.Update, Localization.Resource),
+
+        new("View Appearance",     ActionConstants.View,   Appearance.Resource, IsBasic: true),
+        new("Update Appearance",   ActionConstants.Update, Appearance.Resource),
     ];
 }

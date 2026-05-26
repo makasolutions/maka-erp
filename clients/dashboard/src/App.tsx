@@ -11,6 +11,7 @@ import {
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/auth/auth-context";
 import { ThemeProvider, useTheme } from "@/components/theme/theme-provider";
+import { AppearanceSyncer } from "@/components/theme/appearance-syncer";
 import { CommandPaletteProvider } from "@/components/command-palette/command-palette";
 import { LocalizationProvider } from "@/contexts/localization-context";
 import { router } from "@/routes";
@@ -20,6 +21,7 @@ export function App() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <AppearanceSyncer />
           <LocalizationProvider>
             <CommandPaletteProvider>
               <RouterProvider router={router} />

@@ -44,6 +44,8 @@ public class IdentityDbContext : MultiTenantIdentityDbContext<FshUser,
 
     public DbSet<TenantLocalization> TenantLocalizations => Set<TenantLocalization>();
 
+    public DbSet<TenantAppearance> TenantAppearances => Set<TenantAppearance>();
+
     public IdentityDbContext(
         IMultiTenantContextAccessor<AppTenantInfo> multiTenantContextAccessor,
         DbContextOptions<IdentityDbContext> options,

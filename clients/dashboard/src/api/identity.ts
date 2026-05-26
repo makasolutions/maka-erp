@@ -154,6 +154,36 @@ export async function updateTenantLocalization(
   });
 }
 
+// -----------------------------
+// Appearance
+// -----------------------------
+
+export type AppearanceConfig = {
+  /** "light" | "dark" | "system" */
+  theme: string;
+  /** Preset accent id (e.g. "rose", "indigo") or "custom". */
+  accent: string;
+  /** Font family id (e.g. "inter", "geist", "mono"). */
+  font: string;
+  /** Layout density: "compact" | "default" | "comfortable". */
+  density: string;
+  /** JSON blob for custom accent — only meaningful when accent == "custom". */
+  customAccentJson?: string | null;
+};
+
+export async function getTenantAppearance(): Promise<AppearanceConfig> {
+  return apiFetch<AppearanceConfig>("/api/v1/identity/appearance");
+}
+
+export async function updateTenantAppearance(
+  config: AppearanceConfig,
+): Promise<AppearanceConfig> {
+  return apiFetch<AppearanceConfig>("/api/v1/identity/appearance", {
+    method: "PUT",
+    body: JSON.stringify(config),
+  });
+}
+
 /** Fetch the authenticated user's full profile (name, email, phone, imageUrl, etc.). */
 export async function getMyProfile(): Promise<UserDto> {
   return apiFetch<UserDto>("/api/v1/identity/profile");

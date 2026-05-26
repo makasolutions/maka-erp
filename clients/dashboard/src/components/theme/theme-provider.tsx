@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -24,6 +25,7 @@ import {
   type CustomAccentSpec,
   type DensityMode,
 } from "@/components/theme/appearance-options";
+import { updateTenantAppearance, type AppearanceConfig } from "@/api/identity";
 
 export type ThemeMode = "light" | "dark" | "system";
 type ResolvedTheme = "light" | "dark";
@@ -42,6 +44,12 @@ type ThemeContextValue = {
   setCustomAccent: (spec: CustomAccentSpec) => void;
   density: DensityMode;
   setDensity: (next: DensityMode) => void;
+  /**
+   * Apply all appearance values from the API response without triggering an
+   * API re-save. Called by AppearanceSyncer after a successful GET /appearance.
+   * Writes to localStorage so the boot cache stays fresh.
+   */
+  applyFromApiConfig: (config: AppearanceConfig) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -204,6 +212,16 @@ function applyDensity(value: DensityMode) {
   document.documentElement.classList.toggle("density-compact", value === "compact");
 }
 
+/** Fire-and-forget: persist appearance to the API. Swallows errors (e.g. 401 when not logged in). */
+async function persistAppearanceToApi(config: AppearanceConfig): Promise<void> {
+  try {
+    await updateTenantAppearance(config);
+  } catch {
+    // Silently ignore — caller may not be authenticated yet, or network may be down.
+    // localStorage is the fallback truth until the next successful sync.
+  }
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(() => readStoredMode());
   const [resolved, setResolved] = useState<ResolvedTheme>(() =>
@@ -228,6 +246,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = readStoredString(DENSITY_STORAGE_KEY, DEFAULT_DENSITY);
     return stored === "compact" ? "compact" : DEFAULT_DENSITY;
   });
+
+  // Refs that always hold the latest values without stale closures.
+  // Used by the debounced API persist so it always sends the full current config.
+  const modeRef = useRef(mode);
+  const fontRef = useRef(font);
+  const accentRef = useRef(accent);
+  const customAccentRef = useRef(customAccent);
+  const densityRef = useRef(density);
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  /** Debounced API persist — waits 600 ms after the last setter call. */
+  const schedulePersist = useCallback(() => {
+    if (persistTimer.current !== undefined) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      persistTimer.current = undefined;
+      void persistAppearanceToApi({
+        theme: modeRef.current,
+        accent: accentRef.current,
+        font: fontRef.current,
+        density: densityRef.current,
+        customAccentJson:
+          accentRef.current === CUSTOM_ACCENT_ID
+            ? JSON.stringify(customAccentRef.current)
+            : null,
+      });
+    }, 600);
+  }, []);
 
   // Apply font / accent / density — covers initial render and any
   // subsequent change. Custom-accent application also re-runs whenever
@@ -312,44 +357,119 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       applyDarkClass(nextResolved);
     });
 
+    modeRef.current = next;
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {
       /* storage unavailable */
     }
-  }, []);
+    schedulePersist();
+  }, [schedulePersist]);
 
   const setFont = useCallback((id: string) => {
     setFontState(id);
+    fontRef.current = id;
     try {
       window.localStorage.setItem(FONT_STORAGE_KEY, id);
     } catch {
       /* storage unavailable */
     }
-  }, []);
+    schedulePersist();
+  }, [schedulePersist]);
 
   const setAccent = useCallback((id: string) => {
     setAccentState(id);
+    accentRef.current = id;
     try {
       window.localStorage.setItem(ACCENT_STORAGE_KEY, id);
     } catch {
       /* storage unavailable */
     }
-  }, []);
+    schedulePersist();
+  }, [schedulePersist]);
 
   const setCustomAccent = useCallback((spec: CustomAccentSpec) => {
     setCustomAccentState(spec);
+    customAccentRef.current = spec;
     try {
       window.localStorage.setItem(CUSTOM_ACCENT_STORAGE_KEY, JSON.stringify(spec));
     } catch {
       /* storage unavailable */
     }
-  }, []);
+    schedulePersist();
+  }, [schedulePersist]);
 
   const setDensity = useCallback((next: DensityMode) => {
     setDensityState(next);
+    densityRef.current = next;
     try {
       window.localStorage.setItem(DENSITY_STORAGE_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+    schedulePersist();
+  }, [schedulePersist]);
+
+  /**
+   * Apply all appearance values received from the API.
+   * Does NOT schedule an API persist (avoids a circular write on login).
+   * Does write to localStorage so the boot cache stays fresh.
+   */
+  const applyFromApiConfig = useCallback((config: AppearanceConfig) => {
+    const theme = (config.theme === "light" || config.theme === "dark" || config.theme === "system")
+      ? config.theme as ThemeMode
+      : "system";
+    const nextResolved: ResolvedTheme =
+      theme === "dark" ? "dark"
+      : theme === "light" ? "light"
+      : systemPrefersDark() ? "dark" : "light";
+    const newFont = config.font || DEFAULT_FONT;
+    const newAccent = config.accent || DEFAULT_ACCENT;
+    const newDensity = (config.density === "compact" || config.density === "comfortable")
+      ? config.density as DensityMode
+      : DEFAULT_DENSITY;
+    let newCustomAccent: CustomAccentSpec = DEFAULT_CUSTOM_ACCENT;
+    if (config.customAccentJson) {
+      try {
+        const parsed = JSON.parse(config.customAccentJson) as Partial<CustomAccentSpec>;
+        newCustomAccent = {
+          h: typeof parsed.h === "number" ? parsed.h : DEFAULT_CUSTOM_ACCENT.h,
+          c: typeof parsed.c === "number" ? parsed.c : DEFAULT_CUSTOM_ACCENT.c,
+        };
+      } catch {
+        /* malformed JSON — use default */
+      }
+    }
+
+    // Apply DOM changes
+    withThemeTransition(() => {
+      flushSync(() => {
+        setModeState(theme);
+        setResolved(nextResolved);
+      });
+      applyDarkClass(nextResolved);
+    });
+    setFontState(newFont);
+    setAccentState(newAccent);
+    setCustomAccentState(newCustomAccent);
+    setDensityState(newDensity);
+
+    // Update refs
+    modeRef.current = theme;
+    fontRef.current = newFont;
+    accentRef.current = newAccent;
+    customAccentRef.current = newCustomAccent;
+    densityRef.current = newDensity;
+
+    // Refresh localStorage cache
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+      window.localStorage.setItem(FONT_STORAGE_KEY, newFont);
+      window.localStorage.setItem(ACCENT_STORAGE_KEY, newAccent);
+      window.localStorage.setItem(DENSITY_STORAGE_KEY, newDensity);
+      if (config.customAccentJson) {
+        window.localStorage.setItem(CUSTOM_ACCENT_STORAGE_KEY, config.customAccentJson);
+      }
     } catch {
       /* storage unavailable */
     }
@@ -362,6 +482,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       accent, setAccent,
       customAccent, setCustomAccent,
       density, setDensity,
+      applyFromApiConfig,
     }),
     [
       mode, resolved, setMode,
@@ -369,6 +490,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       accent, setAccent,
       customAccent, setCustomAccent,
       density, setDensity,
+      applyFromApiConfig,
     ],
   );
 
