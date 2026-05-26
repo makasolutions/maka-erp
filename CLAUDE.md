@@ -87,7 +87,7 @@ Para extender funcionalidad del framework: crear módulo propio en `src/Modules/
 | Resiliencia | Microsoft.Extensions.Http.Resilience (Polly v8) | — |
 | Feature Flags | Microsoft.FeatureManagement (con overrides por tenant) | — |
 | Webhooks | Suscripciones por tenant con firma HMAC | — |
-| **Real-time** | **Server-Sent Events (SSE)** ← FSH nativo | — |
+| **Real-time** | **SSE** (notificaciones/BI) + **SignalR** (chat/colaboración) | — |
 | Logging | Serilog + OpenTelemetry (OTLP) | — |
 | API Docs | **OpenAPI + Scalar** (NO Swashbuckle) | — |
 | API Versioning | Asp.Versioning | — |
@@ -425,18 +425,34 @@ Ejemplo de acceso al TenantId actual:
   var tenantId = _tenantContext.MultiTenantContext?.TenantInfo?.Id;
 ```
 
-### 4.6 Real-time: SSE (no SignalR)
+### 4.6 Real-time: SSE para notificaciones, SignalR para colaboración
+
+El proyecto usa DOS mecanismos de real-time según el caso de uso:
 
 ```
-FSH usa Server-Sent Events (SSE) para comunicación en tiempo real, no SignalR.
+SSE (Server-Sent Events) — usar para:
+  - Notificaciones del sistema (campana de notificaciones)
+  - Live feed de actividad
+  - Actualizaciones de métricas en dashboards/BI
+  - Cualquier flujo unidireccional servidor → cliente
+  - Patrón: IAsyncEnumerable<T> + Minimal API endpoint
 
-Esto afecta el módulo WhatsApp y los dashboards BI:
-  - La bandeja de WhatsApp multiagente usará SSE para push de mensajes entrantes
-  - Los dashboards de BI usarán SSE para actualización de métricas
-  - Implementar usando IAsyncEnumerable<T> + IResult de Minimal APIs
+SignalR — usar para:
+  - Chat en tiempo real (ya implementado en módulo Chat → AppHub)
+  - Bandeja de WhatsApp multiagente (múltiples agentes escribiendo/respondiendo)
+  - Cualquier flujo bidireccional o colaborativo donde múltiples usuarios
+    interactúan en tiempo real
+  - Patrón: Hub de SignalR con grupos por tenant/canal (ver AppHub.cs)
 
-Para el módulo WhatsApp, el flujo será:
-  Cliente Blazor ← SSE stream ← API endpoint que escucha RabbitMQ consumer
+REGLA DE DECISIÓN:
+  ¿Es unidireccional (servidor empuja datos al cliente)?      → SSE
+  ¿Es bidireccional o colaborativo (múltiples usuarios)?      → SignalR
+
+NUNCA mezclar: no usar SignalR donde SSE es suficiente (costo de conexión
+innecesario), ni SSE donde se necesita bidireccionalidad (limitación técnica).
+
+Para el módulo WhatsApp, el flujo de la bandeja multiagente será:
+  Múltiples agentes ↔ SignalR (AppHub) ↔ API ← RabbitMQ consumer
 ```
 
 ---
@@ -1075,9 +1091,9 @@ Seguridad:
 🚫 PROHIBIDO: MassTransit v9 (licencia comercial)
    Solución: v8.5.7 Apache 2.0. Si v9 se requiere: escalar a Juan para decisión.
 
-🚫 PROHIBIDO: SignalR para real-time
-   Razón: FSH usa SSE (Server-Sent Events) de forma nativa
-   Solución: IAsyncEnumerable<T> + SSE endpoints de Minimal APIs
+🚫 PROHIBIDO: usar SignalR donde SSE es suficiente (y viceversa)
+   Regla: flujo unidireccional → SSE. Flujo bidireccional/colaborativo → SignalR.
+   Ver §4.6 para la tabla de decisión completa y los patrones de implementación.
 
 🚫 PROHIBIDO: Swashbuckle/Swagger
    Razón: FSH usa Scalar para documentación API
@@ -1335,7 +1351,7 @@ Claude API Key (Anthropic):     PENDIENTE (AI Copywriter + bot)
 ❌ Manufactura / MRP (distribuidora, no fabricante)
 ❌ Constructor de sitio web (la tienda sigue en WooCommerce)
 ❌ Marketplace multi-vendor
-❌ SignalR (FSH usa SSE)
+❌ SignalR para casos de uso unidireccionales (usar SSE en su lugar — ver §4.6)
 ❌ Swashbuckle/Swagger (FSH usa Scalar)
 ❌ MassTransit v9 (comercial)
 ❌ MudBlazor (purgado)
