@@ -290,7 +290,8 @@ export function LocalizationSettings() {
       await update(draft);
       toast.success(t("localization.saved"));
     } catch {
-      toast.error(t("localization.saveFailed"));
+      // Error toast is handled by LocalizationContext's onError handler.
+      // We only catch here to stop the spinner cleanly.
     } finally {
       setIsSaving(false);
     }

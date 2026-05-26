@@ -205,8 +205,16 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     onError: (err) => {
       const status = (err as { status?: number })?.status;
       if (status === 401) return; // apiFetch already handles this
+      // Log for debugging (visible in DevTools Console)
+      console.error("[LocalizationContext] save failed — status:", status, err);
+      const description =
+        status === 403
+          ? "Sin permiso para guardar. Cierra sesión y vuelve a iniciar."
+          : status === 422
+            ? "Datos inválidos. Revisa los campos."
+            : "Revisa tu conexión o vuelve a iniciar sesión.";
       toast.error("No se pudo guardar la localización", {
-        description: "Revisa tu conexión o vuelve a iniciar sesión.",
+        description,
         duration: 5000,
       });
     },
