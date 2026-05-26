@@ -1,78 +1,56 @@
+version: '3.9'
+name: maka-local
+
 services:
   postgres:
-    image: postgres:17
+    image: postgres:17-alpine
+    container_name: maka_postgres
+    environment:
+      POSTGRES_USER: maka_user
+      POSTGRES_PASSWORD: maka_dev_2026
+      POSTGRES_DB: maka_erp_dev
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: fsh
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - maka_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maka_user -d maka_erp_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    container_name: maka_redis
     ports:
       - "6379:6379"
-
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
     volumes:
-      - minio-data:/data
+      - maka_redis_data:/data
+    restart: unless-stopped
 
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      - minio
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        until mc alias set local http://minio:9000 minioadmin minioadmin; do
-          echo "waiting for minio..."
-          sleep 2
-        done
-        mc mb --ignore-existing local/fsh-uploads
-        mc anonymous set download local/fsh-uploads
-
-  api:
-    build:
-      context: .
-      dockerfile: src/Host/FSH.Starter.Api/Dockerfile
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_started
-      redis:
-        condition: service_started
-      minio-init:
-        condition: service_completed_successfully
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: maka_rabbitmq
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      DatabaseOptions__ConnectionString: "Host=postgres;Port=5432;Database=fsh;Username=postgres;Password=password"
-      CachingOptions__Redis: "redis:6379"
-      Storage__Provider: s3
-      Storage__S3__Bucket: fsh-uploads
-      Storage__S3__Region: us-east-1
-      Storage__S3__ServiceUrl: http://minio:9000
-      Storage__S3__AccessKey: minioadmin
-      Storage__S3__SecretKey: minioadmin
-      Storage__S3__ForcePathStyle: "true"
-      Storage__S3__PublicBaseUrl: http://localhost:9000/fsh-uploads
-
-  otel-collector:
-    image: otel/opentelemetry-collector:latest
+      RABBITMQ_DEFAULT_USER: maka_user
+      RABBITMQ_DEFAULT_PASS: maka_dev_2026
+      RABBITMQ_DEFAULT_VHOST: maka_vhost
     ports:
-      - "4317:4317"
+      - "5672:5672"
+      - "15672:15672"   # http://localhost:15672
+    volumes:
+      - maka_rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: maka_adminer
+    ports:
+      - "8081:8080"     # http://localhost:8081
+    restart: unless-stopped
 
 volumes:
-  postgres-data:
-  minio-data:
+  maka_postgres_data:
+  maka_redis_data:
+  maka_rabbitmq_data:

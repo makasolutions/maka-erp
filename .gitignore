@@ -501,6 +501,10 @@ spec-os/
 /.claude/settings.local.json
 tmpclaude**
 
+# Configuración local con credenciales — nunca commitear (CLAUDE.md §PASO 0.4)
+**/appsettings.Development.json
+**/appsettings.Production.json
+
 # Auto Claude data directory
 .auto-claude/
 
