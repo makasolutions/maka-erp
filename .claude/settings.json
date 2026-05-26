@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(dotnet:*)",
+      "Bash(git:*)",
+      "Bash(docker:*)",
+      "Bash(grep:*)",
+      "Bash(Get-ChildItem:*)",
+      "Bash(cat:*)",
+      "Bash(powershell:*)",
+      "Bash(pwsh:*)",
+      "Bash(php:*)",
+      "Write(*)",
+      "mcp__Claude_in_Chrome__read_console_messages"
+    ],
+    "deny": [
+      "Bash(rm:*)",
+      "Bash(Remove-Item:*)",
+      "Bash(del:*)",
+      "Bash(rd:*)"
+    ]
+  }
+}

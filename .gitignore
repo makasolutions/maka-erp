@@ -501,6 +501,12 @@ spec-os/
 /.claude/settings.local.json
 tmpclaude**
 
+# Runtime-generated tenant logo files
+**/wwwroot/tenants/
+
+# Temporary OpenAPI check files
+JANN*.json
+
 # Configuración local con credenciales — nunca commitear (CLAUDE.md §PASO 0.4)
 **/appsettings.Development.json
 **/appsettings.Production.json
