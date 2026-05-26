@@ -4,6 +4,7 @@ import {
   FolderTree,
   HeartPulse,
   LayoutDashboard,
+  LayoutGrid,
   MessageCircle,
   Package,
   Receipt,
@@ -93,6 +94,7 @@ export const sections: NavSection[] = [
       { to: "/system/audits", label: "Audit trail", icon: ScrollText },
       { to: "/system/sessions", label: "Sessions", icon: Wifi },
       { to: "/system/trash", label: "Trash", icon: Trash2 },
+      { to: "/maka-components", label: "Maka Components", icon: LayoutGrid },
     ],
   },
 ];
