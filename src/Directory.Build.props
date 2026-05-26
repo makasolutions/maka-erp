@@ -20,8 +20,17 @@
 
 		<!-- Docs -->
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<NoWarn>$(NoWarn);CS1591;MSG0005;CA1054;CA1056</NoWarn>
-		<!-- Suppress warning about missing XML docs -->
+		<NoWarn>$(NoWarn);CS1591;MSG0005;CA1054;CA1056;CA1040;CA1034;CA1724;CA1848;CA2007</NoWarn>
+		<!-- Suppress warnings about missing XML docs (CS1591) and several CA rules
+		     that fire on FSH boilerplate patterns we cannot change:
+		       CA1040 – marker interfaces (IFshCore, IGlobalEntity) in BuildingBlocks
+		       CA1034 – nested permission-constant classes (FSH convention)
+		       CA1724 – type names matching namespace segments (FSH permission classes)
+		       CA1848 – LoggerMessage delegates (BuildingBlocks/Quota legacy code)
+		       CA2007 – ConfigureAwait in ASP.NET Core endpoints (no SynchronizationContext)
+		     The .editorconfig sets severity=none for these rules but
+		     AnalysisMode=AllEnabledByDefault + CodeAnalysisTreatWarningsAsErrors
+		     overrides editorconfig; NoWarn here is the authoritative suppression. -->
 
 		<!-- Container tags (if using container builds) -->
 		<ContainerImageTags>10.0.0-rc;latest</ContainerImageTags>
