@@ -1,8 +1,9 @@
 /**
  * LanguageSelector — switches the dashboard display language between ES and EN.
  *
- * Uses i18next.changeLanguage() which persists the choice via
- * i18next-browser-languagedetector (localStorage key: "i18nextLng").
+ * Calls both i18next.changeLanguage() (immediate feedback) and
+ * useLocalization().update() (persist to API / tenant DB) so the choice
+ * survives page refreshes and multi-device sessions.
  */
 import { useTranslation } from "react-i18next";
 import { Check, Languages } from "lucide-react";
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
+import { useLocalization } from "@/contexts/localization-context";
 
 type Lang = { code: string; label: string; flag: string };
 
@@ -27,8 +29,16 @@ const LANGUAGES: Lang[] = [
  */
 export function LanguageSelectorButton() {
   const { i18n, t } = useTranslation("settings");
+  const { config, update } = useLocalization();
   const current = i18n.resolvedLanguage ?? i18n.language ?? "es";
   const shortLang = current.split("-")[0];
+
+  function handleSelect(langCode: string) {
+    // Apply immediately so the UI switches without waiting for the API round-trip.
+    void i18n.changeLanguage(langCode);
+    // Persist to the tenant DB so the choice survives page reloads / other devices.
+    void update({ ...config, language: langCode });
+  }
 
   return (
     <DropdownMenu>
@@ -54,7 +64,7 @@ export function LanguageSelectorButton() {
           return (
             <DropdownMenuItem
               key={lang.code}
-              onClick={() => void i18n.changeLanguage(lang.code)}
+              onClick={() => handleSelect(lang.code)}
               className="!my-0 flex cursor-pointer items-center gap-2.5 rounded-md !px-2.5 !py-1.5"
             >
               <span className="text-base leading-none" aria-hidden>
@@ -83,8 +93,14 @@ export function LanguageSelectorButton() {
  */
 export function LanguageSelectorInline() {
   const { i18n, t } = useTranslation("settings");
+  const { config, update } = useLocalization();
   const current = i18n.resolvedLanguage ?? i18n.language ?? "es";
   const shortLang = current.split("-")[0];
+
+  function handleSelect(langCode: string) {
+    void i18n.changeLanguage(langCode);
+    void update({ ...config, language: langCode });
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -94,7 +110,7 @@ export function LanguageSelectorInline() {
           <button
             key={lang.code}
             type="button"
-            onClick={() => void i18n.changeLanguage(lang.code)}
+            onClick={() => handleSelect(lang.code)}
             className={cn(
               "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-[13px] font-medium",
               "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
