@@ -18,6 +18,25 @@ export default defineConfig(({ mode }) => {
       port: 5174,
       strictPort: true,
       proxy: {
+        // SSE stream — this rule MUST come before the generic /api rule so
+        // Vite applies the socket-close handler only to long-lived SSE
+        // connections.  Without it Vite's http-proxy keeps the backend
+        // connection open after the browser tab is closed or hard-refreshed,
+        // because http-proxy does not destroy the proxyReq when the client
+        // socket closes for streaming responses.  Over time these "zombie"
+        // backend connections accumulate, preventing ASP.NET Core's
+        // HttpContext.RequestAborted from firing and keeping
+        // SseConnectionManager entries alive indefinitely.
+        "/api/v1/sse": {
+          target: apiBase,
+          changeOrigin: true,
+          secure: false,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq, req) => {
+              req.socket.on("close", () => proxyReq.destroy());
+            });
+          },
+        },
         // ws: true forwards the WebSocket upgrade used by SignalR's hub
         // transport at /api/v1/realtime/hub. Without it the negotiate
         // succeeds over HTTP but the WS upgrade falls into Vite's own
