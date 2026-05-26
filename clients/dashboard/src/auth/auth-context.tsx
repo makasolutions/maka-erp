@@ -45,10 +45,13 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 function claimsToUser(claims: JwtClaims | null): AuthUser | null {
   if (!claims?.sub) return null;
-  const permissions = Array.isArray(claims.permissions)
-    ? claims.permissions
-    : typeof claims.permissions === "string"
-      ? [claims.permissions]
+  // Backend emits `"permission"` (singular, ClaimConstants.Permission).
+  // Fall back to `"permissions"` (plural) for any future alias.
+  const rawPerms = claims.permission ?? claims.permissions;
+  const permissions = Array.isArray(rawPerms)
+    ? rawPerms
+    : typeof rawPerms === "string"
+      ? [rawPerms]
       : [];
   // `name` is the standard short claim; `unique_name` is what
   // JwtSecurityTokenHandler emits for ClaimTypes.Name. Treat empty

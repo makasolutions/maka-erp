@@ -10,6 +10,12 @@ export type JwtClaims = {
    */
   unique_name?: string;
   tenant?: string;
+  /**
+   * Backend emits `"permission"` (singular) via ClaimConstants.Permission.
+   * When the user has multiple permissions they arrive as a JSON array.
+   * `"permissions"` (plural) kept as a legacy alias for forward-compat.
+   */
+  permission?: string[] | string;
   permissions?: string[] | string;
   exp?: number;
   /**

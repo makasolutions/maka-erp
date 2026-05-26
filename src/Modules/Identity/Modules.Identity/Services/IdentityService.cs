@@ -22,6 +22,7 @@ public sealed class IdentityService : IIdentityService
     private readonly IGroupRoleService _groupRoleService;
     private readonly TimeProvider _timeProvider;
     private readonly IdentityDbContext _dbContext;
+    private readonly IUserPermissionService _userPermissionService;
 
     public IdentityService(
         UserManager<FshUser> userManager,
@@ -29,7 +30,8 @@ public sealed class IdentityService : IIdentityService
         ILogger<IdentityService> logger,
         IGroupRoleService groupRoleService,
         TimeProvider timeProvider,
-        IdentityDbContext dbContext)
+        IdentityDbContext dbContext,
+        IUserPermissionService userPermissionService)
     {
         _userManager = userManager;
         _multiTenantContextAccessor = multiTenantContextAccessor;
@@ -37,6 +39,7 @@ public sealed class IdentityService : IIdentityService
         _groupRoleService = groupRoleService;
         _timeProvider = timeProvider;
         _dbContext = dbContext;
+        _userPermissionService = userPermissionService;
     }
 
     public async Task<(string Subject, IEnumerable<Claim> Claims)?>
@@ -294,7 +297,18 @@ public sealed class IdentityService : IIdentityService
     {
         var claims = CreateBasicClaims(user, tenantId);
         await AddRoleClaimsAsync(claims, user, ct);
+        await AddPermissionClaimsAsync(claims, user.Id, ct);
         return claims;
+    }
+
+    private async Task AddPermissionClaimsAsync(List<Claim> claims, string userId, CancellationToken ct)
+    {
+        var permissions = await _userPermissionService.GetPermissionsAsync(userId, ct)
+            .ConfigureAwait(false);
+        if (permissions is { Count: > 0 })
+        {
+            claims.AddRange(permissions.Select(p => new Claim(ClaimConstants.Permission, p)));
+        }
     }
 
     private static List<Claim> CreateBasicClaims(FshUser user, string tenantId)
