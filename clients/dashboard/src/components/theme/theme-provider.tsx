@@ -230,19 +230,38 @@ export function clearAppearanceCache(): void {
   }
 }
 
-/** Fire-and-forget: persist appearance to the API. Shows a toast when the call fails. */
+/** Fire-and-forget: persist appearance to the API. Retries once on transient timeouts. */
 async function persistAppearanceToApi(config: AppearanceConfig): Promise<void> {
-  try {
-    await updateTenantAppearance(config);
-  } catch (err) {
-    // Skip feedback if not authenticated yet (e.g. theme toggled on the login page)
-    // or offline — localStorage is the fallback until the next successful sync.
-    const status = (err as { status?: number })?.status;
-    if (!status || status === 401) return;
-    toast.error("No se pudo guardar la apariencia", {
-      description: "Revisa tu conexión o vuelve a iniciar sesión.",
-      duration: 5000,
-    });
+  const attemptSave = async (): Promise<boolean> => {
+    try {
+      await updateTenantAppearance(config);
+      return true;
+    } catch (err) {
+      const status = (err as { status?: number })?.status;
+      // Skip feedback if not authenticated yet or offline.
+      if (!status || status === 401) return true; // treated as "done" (no toast)
+      const name = (err as DOMException)?.name;
+      if (name === "TimeoutError" || name === "AbortError") return false; // retriable
+      // Permanent error — show toast immediately.
+      toast.error("No se pudo guardar la apariencia", {
+        description: "Revisa tu conexión o vuelve a iniciar sesión.",
+        duration: 5000,
+      });
+      return true; // done (failed permanently)
+    }
+  };
+
+  const firstAttempt = await attemptSave();
+  if (!firstAttempt) {
+    // One automatic retry after a brief pause for transient timeouts.
+    await new Promise<void>((res) => setTimeout(res, 2000));
+    const retryOk = await attemptSave();
+    if (!retryOk) {
+      toast.error("No se pudo guardar la apariencia", {
+        description: "Revisa tu conexión o vuelve a iniciar sesión.",
+        duration: 5000,
+      });
+    }
   }
 }
 

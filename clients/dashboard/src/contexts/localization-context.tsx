@@ -8,8 +8,8 @@
  *  - Exposes formatDateTime / formatCurrency / formatNumber helpers that all
  *    consume the live config; formatters never need the config directly.
  *
- * Only one row exists per tenant (UserId = null). The API seeds Bogotá/COP/es
- * defaults on first call so the provider always has a valid config.
+ * GET returns defaults from the server if no row exists yet (no DB write on GET).
+ * The first PUT creates the row via the server's upsert logic.
  */
 
 import i18next from "i18next";
@@ -198,6 +198,15 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
 
   const { mutateAsync } = useMutation<LocalizationConfig, Error, LocalizationConfig>({
     mutationFn: updateTenantLocalization,
+    // Retry once on transient timeout errors (name === "TimeoutError" or "AbortError").
+    // Network blips and server cold-start can cause a single slow response —
+    // one automatic retry avoids forcing the user to click Save again.
+    retry: (failureCount, err) => {
+      if (failureCount >= 1) return false;
+      const name = (err as DOMException)?.name;
+      return name === "TimeoutError" || name === "AbortError";
+    },
+    retryDelay: 2000,
     onSuccess: (updated) => {
       queryClient.setQueryData(["identity", "localization"], updated);
       writeCache(updated);

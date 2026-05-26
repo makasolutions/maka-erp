@@ -1,7 +1,6 @@
 ﻿using Asp.Versioning;
 using FSH.Framework.Core.Context;
 using FSH.Framework.Eventing;
-using FSH.Framework.Eventing.Outbox;
 using FSH.Framework.Persistence;
 using FSH.Framework.Quota;
 using FSH.Framework.Storage;
@@ -69,7 +68,6 @@ using FSH.Modules.Identity.Features.v1.Users.ToggleUserStatus;
 using FSH.Modules.Identity.Features.v1.Users.UpdateUser;
 using FSH.Modules.Identity.Services;
 using Hangfire;
-using Hangfire.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -189,16 +187,9 @@ public class IdentityModule : IModule
         group.MapGenerateTokenEndpoint().AllowAnonymous().RequireRateLimiting("auth");
         group.MapRefreshTokenEndpoint().AllowAnonymous().RequireRateLimiting("auth");
 
-        // example Hangfire setup for Identity outbox dispatcher
-        var jobManager = endpoints.ServiceProvider.GetService<IRecurringJobManager>();
-        if (jobManager is not null)
-        {
-            jobManager.AddOrUpdate(
-                "identity-outbox-dispatcher",
-                Job.FromExpression<OutboxDispatcher>(d => d.DispatchAsync(CancellationToken.None)),
-                Cron.Minutely(),
-                new RecurringJobOptions());
-        }
+        // NOTE: The outbox is already dispatched by OutboxDispatcherHostedService
+        // (every 10 seconds by default). A Hangfire recurring job here would be
+        // redundant and add unnecessary background DB + RabbitMQ load.
 
         // roles
         group.MapGetRolesEndpoint();

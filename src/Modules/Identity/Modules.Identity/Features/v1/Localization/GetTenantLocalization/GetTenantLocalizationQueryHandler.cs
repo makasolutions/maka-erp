@@ -11,12 +11,10 @@ namespace FSH.Modules.Identity.Features.v1.Localization.GetTenantLocalization;
 public sealed class GetTenantLocalizationQueryHandler : IQueryHandler<GetTenantLocalizationQuery, TenantLocalizationDto>
 {
     private readonly IdentityDbContext _dbContext;
-    private readonly ICurrentUser _currentUser;
 
-    public GetTenantLocalizationQueryHandler(IdentityDbContext dbContext, ICurrentUser currentUser)
+    public GetTenantLocalizationQueryHandler(IdentityDbContext dbContext)
     {
         _dbContext = dbContext;
-        _currentUser = currentUser;
     }
 
     public async ValueTask<TenantLocalizationDto> Handle(
@@ -24,6 +22,8 @@ public sealed class GetTenantLocalizationQueryHandler : IQueryHandler<GetTenantL
         CancellationToken cancellationToken)
     {
         // Finbuckle global query filter scopes this to the current tenant automatically.
+        // GET is read-only: if no row exists yet, return defaults. The first PUT will
+        // create the row via UpdateTenantLocalizationCommandHandler's upsert logic.
         var localization = await _dbContext.TenantLocalizations
             .AsNoTracking()
             .Where(l => l.UserId == null)   // tenant-wide row only (future: per-user override)
@@ -32,11 +32,14 @@ public sealed class GetTenantLocalizationQueryHandler : IQueryHandler<GetTenantL
 
         if (localization is null)
         {
-            // Seed default row if none exists yet.
-            var userEmail = _currentUser.GetUserEmail();
-            localization = TenantLocalization.CreateDefault(createdBy: userEmail);
-            _dbContext.TenantLocalizations.Add(localization);
-            await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var defaults = TenantLocalization.CreateDefault();
+            return new TenantLocalizationDto(
+                defaults.Timezone,
+                defaults.DateFormat,
+                defaults.TimeFormat,
+                defaults.Currency,
+                defaults.Language,
+                defaults.NumberFormat);
         }
 
         return new TenantLocalizationDto(

@@ -151,6 +151,9 @@ export async function updateTenantLocalization(
   return apiFetch<LocalizationConfig>("/api/v1/identity/localization", {
     method: "PUT",
     body: JSON.stringify(config),
+    // Settings saves can be slow on first call (cold DB connection).
+    // Give the server 60s before surfacing a timeout error.
+    timeoutMs: 60_000,
   });
 }
 
@@ -181,6 +184,9 @@ export async function updateTenantAppearance(
   return apiFetch<AppearanceConfig>("/api/v1/identity/appearance", {
     method: "PUT",
     body: JSON.stringify(config),
+    // Settings saves can be slow on first call (cold DB connection).
+    // Give the server 60s before surfacing a timeout error.
+    timeoutMs: 60_000,
   });
 }
 
