@@ -17,12 +17,14 @@ using FSH.Modules.Files.Features.v1.ListSharedFiles;
 using FSH.Modules.Files.Features.v1.ListTrashedFiles;
 using FSH.Modules.Files.Features.v1.RequestUploadUrl;
 using FSH.Modules.Files.Features.v1.RestoreFile;
+using FSH.Modules.Files.Features.v1.Internal;
 using FSH.Modules.Files.Jobs;
 using FSH.Modules.Files.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -109,5 +111,10 @@ public sealed class FilesModule : IModule
                 "30 3 * * *", // daily 03:30 UTC
                 new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
         }
+
+        // Dev-only: bridges the local:// presigned scheme to a real HTTP PUT endpoint.
+        // MapLocalUploadEndpoint is a no-op when Storage:Provider != "local".
+        var configuration = endpoints.ServiceProvider.GetRequiredService<IConfiguration>();
+        endpoints.MapLocalUploadEndpoint(configuration);
     }
 }

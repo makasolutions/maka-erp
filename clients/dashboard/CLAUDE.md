@@ -164,12 +164,3 @@ Patrón de referencia: `src/components/maka/MakaChart.tsx` — seguirlo exactame
 [data-theme="dark"] .e-schedule { ... }
 ```
 
-## DEUDA TÉCNICA CONOCIDA
-
-### FILE UPLOAD — storage no configurado
-- **Síntoma:** uploads fallan con error CORS local:// o similar
-- **Afecta:** `/files` (Mis Archivos), `/settings/profile` (foto de usuario)
-- **Causa probable:** MinIO fue eliminado del docker-compose. El módulo Files del backend no tiene storage configurado.
-- **Impacto:** bajo en esta fase (no es funcionalidad core)
-- **Resolver en:** auditoría del módulo Files
-- **NO intentar corregir hasta que se audite el módulo completo**

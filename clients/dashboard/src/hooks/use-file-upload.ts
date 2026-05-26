@@ -219,6 +219,21 @@ export function useFileUpload(options: UploadOptions): UseFileUploadResult {
   };
 }
 
+/**
+ * Rewrites `local://upload/{token}` to `/local-upload/{token}` so the
+ * browser can PUT to the dev-only local storage receiver instead of the
+ * custom scheme (which browsers refuse to open).
+ * In staging/production the URL is an S3/MinIO presigned URL and passes through unchanged.
+ */
+function resolveUploadUrl(url: string): string {
+  const LOCAL_PREFIX = "local://upload/";
+  if (url.startsWith(LOCAL_PREFIX)) {
+    const token = url.slice(LOCAL_PREFIX.length);
+    return `/local-upload/${token}`;
+  }
+  return url;
+}
+
 function xhrPut(
   url: string,
   body: Blob,
@@ -228,7 +243,7 @@ function xhrPut(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url, true);
+    xhr.open("PUT", resolveUploadUrl(url), true);
     Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
     hookXhr(xhr);
 

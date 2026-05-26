@@ -30,6 +30,9 @@ export default defineConfig(({ mode }) => {
         // dashboard's /system/health page 404s in dev because Vite serves
         // the request itself instead of proxying to the API.
         "/health": { target: apiBase, changeOrigin: true, secure: false },
+        // Dev-only: local storage presigned upload receiver (PUT /local-upload/{token}).
+        // Only active when Storage:Provider = "local" on the backend.
+        "/local-upload": { target: apiBase, changeOrigin: true, secure: false },
       },
     },
   };
