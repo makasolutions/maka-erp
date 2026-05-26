@@ -27,4 +27,9 @@ public sealed class AuditSummaryDto
     public string? Source { get; set; }
 
     public AuditTag Tags { get; set; }
+
+    // Populated for EntityChange events only; null for other event types.
+    public string? EntityName { get; set; }
+    public string? EntityKey { get; set; }
+    public string? EntityOperation { get; set; }
 }
