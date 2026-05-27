@@ -109,7 +109,12 @@ export function UserDetailPage() {
   });
 
   const user = userQuery.data;
-  const roles = rolesQuery.data ?? [];
+  // useMemo is critical here: `rolesQuery.data ?? []` creates a new array
+  // reference on every render when data is undefined. Without memoization
+  // the useEffect below (which resets pending on [roles] change) fires on
+  // every render → setPending → re-render → new [] → infinite loop (1000+
+  // "Maximum update depth exceeded" errors in the console).
+  const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data]);
 
   // Reset pending changes when fresh data arrives
   useEffect(() => {
