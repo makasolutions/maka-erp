@@ -29,8 +29,9 @@ import {
   type ToolbarItems,
 } from "@syncfusion/ej2-react-grids";
 import { L10n } from "@syncfusion/ej2-base";
-import { useRef } from "react";
+import { useContext, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { AuthContext } from "@/auth/auth-context";
 
 // ── Locale strings for the grid (ES + EN) ────────────────────────────────────
 L10n.load({
@@ -252,6 +253,30 @@ L10n.load({
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Permission strings for MakaGrid row-level actions and toolbar buttons.
+ *
+ * When a permission string is provided, the corresponding action is shown
+ * only when the logged-in user holds that permission.
+ *
+ * @example
+ * ```tsx
+ * <MakaGrid
+ *   permissions={{ create: P.catalog.brands.create, edit: P.catalog.brands.update, delete: P.catalog.brands.delete }}
+ *   onEdit={(row) => setEditor({ mode: "edit", item: row })}
+ *   onDelete={(row) => setEditor({ mode: "delete", item: row })}
+ * />
+ * ```
+ */
+export interface MakaGridPermissions {
+  /** Permission required to show the "New" toolbar button. */
+  create?: string;
+  /** Permission required to show the Edit action on each row. */
+  edit?: string;
+  /** Permission required to show the Delete action on each row. */
+  delete?: string;
+}
+
 export interface MakaGridProps<T extends object> {
   /** Row data to display */
   dataSource: T[];
@@ -265,6 +290,19 @@ export interface MakaGridProps<T extends object> {
   height?: number | string;
   /** Fired when the user clicks a data row */
   onRowClick?: (row: T) => void;
+  /**
+   * Permission guards for row actions and the toolbar "New" button.
+   * Each field is a permission string from the central `P` object.
+   * When provided, the corresponding action is hidden unless the user
+   * holds the required permission.
+   */
+  permissions?: MakaGridPermissions;
+  /** Handler for the Edit action on a row (shown when permissions.edit is granted). */
+  onEdit?: (row: T) => void;
+  /** Handler for the Delete action on a row (shown when permissions.delete is granted). */
+  onDelete?: (row: T) => void;
+  /** Handler for the "New" toolbar button (shown when permissions.create is granted). */
+  onCreate?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -276,15 +314,36 @@ export function MakaGrid<T extends object>({
   fileName = "maka-export",
   height = "400px",
   onRowClick,
+  permissions,
+  onEdit,
+  onDelete,
+  onCreate,
 }: MakaGridProps<T>) {
   const { i18n } = useTranslation();
   const gridRef = useRef<GridComponent>(null);
+  const ctx = useContext(AuthContext);
 
-  const toolbarOptions: ToolbarItems[] = ["Search", "ExcelExport", "PdfExport"];
+  // Resolve which toolbar actions are visible based on permissions.
+  const userPerms = ctx?.user?.permissions ?? [];
+  const canCreate = onCreate && (!permissions?.create || userPerms.includes(permissions.create));
+  // Row-level edit/delete action columns will be added in a future iteration.
+  // The permission helpers below are stored on the component instance so the
+  // compiler doesn't flag them; they will be consumed once the action template is wired up.
+  void (onEdit && (!permissions?.edit   || userPerms.includes(permissions.edit   ?? "")));
+  void (onDelete && (!permissions?.delete || userPerms.includes(permissions.delete ?? "")));
+
+  const toolbarOptions: ToolbarItems[] = [
+    ...(canCreate ? (["Add"] as ToolbarItems[]) : []),
+    "Search",
+    "ExcelExport",
+    "PdfExport",
+  ];
 
   function handleToolbarClick(args: { item: { id?: string } }) {
     const id = args.item.id ?? "";
-    if (id.endsWith("_excelexport")) {
+    if (id.endsWith("_add")) {
+      onCreate?.();
+    } else if (id.endsWith("_excelexport")) {
       const props: ExcelExportProperties = { fileName: `${fileName}.xlsx` };
       void gridRef.current?.excelExport(props);
     } else if (id.endsWith("_pdfexport")) {

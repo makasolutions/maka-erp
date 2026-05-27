@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/auth/use-auth";
+import { P } from "@/auth/permissions";
 import { useTheme } from "@/components/theme/theme-provider";
 import { accents } from "@/components/theme/appearance-options";
 import { cn } from "@/lib/cn";
@@ -47,22 +48,6 @@ import { cn } from "@/lib/cn";
  * lazy-imports this module on first ⌘K, keeping the main shell shipping
  * a smaller bundle for cold start.
  */
-
-// Permission strings — must mirror the backend Permissions.{Resource}.{Action} shape.
-const P = {
-  billingView:           "Permissions.Billing.View",
-  catalogBrandsView:     "Permissions.Catalog.Brands.View",
-  catalogCategoriesView: "Permissions.Catalog.Categories.View",
-  catalogProductsView:   "Permissions.Catalog.Products.View",
-  ticketsView:           "Permissions.Tickets.View",
-  usersView:             "Permissions.Users.View",
-  rolesView:             "Permissions.Roles.View",
-  groupsView:            "Permissions.Groups.View",
-  auditTrailsView:       "Permissions.AuditTrails.View",
-  sessionsViewAll:       "Permissions.Sessions.ViewAll",
-  filesViewTrash:        "Permissions.Files.ViewTrash",
-  chatChannelsView:      "Permissions.Chat.Channels.View",
-} as const;
 
 type ActionItem = {
   id: string;
@@ -146,7 +131,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.chatHint"),
           Icon: MessageSquare,
           keywords: ["messages", "dm", "channel", "conversation"],
-          permission: P.chatChannelsView,
+          permission: P.chat.channels.view,
           perform: go("/chat"),
         },
         {
@@ -163,7 +148,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.usersHint"),
           Icon: Users,
           keywords: ["identity", "people", "members", "team"],
-          permission: P.usersView,
+          permission: P.identity.users.view,
           perform: go("/identity/users"),
         },
         {
@@ -172,7 +157,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.rolesHint"),
           Icon: ShieldCheck,
           keywords: ["identity", "permissions", "rbac"],
-          permission: P.rolesView,
+          permission: P.identity.roles.view,
           perform: go("/identity/roles"),
         },
         {
@@ -181,7 +166,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.groupsHint"),
           Icon: Users,
           keywords: ["identity", "teams", "org"],
-          permission: P.groupsView,
+          permission: P.identity.groups.view,
           perform: go("/identity/groups"),
         },
         {
@@ -190,7 +175,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.productsHint"),
           Icon: Package,
           keywords: ["catalog", "sku", "inventory", "stock"],
-          permission: P.catalogProductsView,
+          permission: P.catalog.products.view,
           perform: go("/catalog/products"),
         },
         {
@@ -199,7 +184,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.brandsHint"),
           Icon: Tag,
           keywords: ["catalog"],
-          permission: P.catalogBrandsView,
+          permission: P.catalog.brands.view,
           perform: go("/catalog/brands"),
         },
         {
@@ -208,7 +193,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.categoriesHint"),
           Icon: Boxes,
           keywords: ["catalog"],
-          permission: P.catalogCategoriesView,
+          permission: P.catalog.categories.view,
           perform: go("/catalog/categories"),
         },
         {
@@ -217,7 +202,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.ticketsHint"),
           Icon: LifeBuoy,
           keywords: ["support", "issues", "helpdesk"],
-          permission: P.ticketsView,
+          permission: P.tickets.view,
           perform: go("/tickets"),
         },
         {
@@ -226,7 +211,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.invoicesHint"),
           Icon: Receipt,
           keywords: ["billing", "payment"],
-          permission: P.billingView,
+          permission: P.billing.view,
           perform: go("/invoices"),
         },
         {
@@ -243,7 +228,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.auditTrailHint"),
           Icon: ScrollText,
           keywords: ["audit", "log", "compliance", "security", "trace", "correlation"],
-          permission: P.auditTrailsView,
+          permission: P.auditTrails.view,
           perform: go("/system/audits"),
         },
         {
@@ -252,7 +237,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.trashHint"),
           Icon: ScrollText,
           keywords: ["recycle", "deleted", "restore"],
-          permission: P.filesViewTrash,
+          permission: P.files.viewTrash,
           perform: go("/system/trash"),
         },
         {
@@ -261,7 +246,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.sessionsHint"),
           Icon: Shield,
           keywords: ["devices", "logins"],
-          permission: P.sessionsViewAll,
+          permission: P.identity.sessions.viewAll,
           perform: go("/system/sessions"),
         },
         {
@@ -279,7 +264,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createUserHint"),
           Icon: Plus,
           keywords: ["new", "invite", "register", "identity"],
-          permission: P.usersView,
+          permission: P.identity.users.view,
           perform: go("/identity/users?action=create"),
         },
         {
@@ -288,7 +273,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createRoleHint"),
           Icon: Plus,
           keywords: ["new", "permissions", "rbac"],
-          permission: P.rolesView,
+          permission: P.identity.roles.view,
           perform: go("/identity/roles?action=create"),
         },
         {
@@ -297,7 +282,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createGroupHint"),
           Icon: Plus,
           keywords: ["new", "team", "org"],
-          permission: P.groupsView,
+          permission: P.identity.groups.view,
           perform: go("/identity/groups?action=create"),
         },
         {
@@ -306,7 +291,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createProductHint"),
           Icon: Plus,
           keywords: ["new", "catalog", "sku"],
-          permission: P.catalogProductsView,
+          permission: P.catalog.products.view,
           perform: go("/catalog/products?action=create"),
         },
         {
@@ -315,7 +300,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createBrandHint"),
           Icon: Plus,
           keywords: ["new", "catalog"],
-          permission: P.catalogBrandsView,
+          permission: P.catalog.brands.view,
           perform: go("/catalog/brands?action=create"),
         },
         {
@@ -324,7 +309,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createCategoryHint"),
           Icon: Plus,
           keywords: ["new", "catalog"],
-          permission: P.catalogCategoriesView,
+          permission: P.catalog.categories.view,
           perform: go("/catalog/categories?action=create"),
         },
         {
@@ -333,7 +318,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createTicketHint"),
           Icon: Plus,
           keywords: ["new", "support", "issue"],
-          permission: P.ticketsView,
+          permission: P.tickets.view,
           perform: go("/tickets?action=create"),
         },
         {
@@ -342,7 +327,7 @@ export function CommandPaletteDialog({
           hint: t("commandPalette.items.createChannelHint"),
           Icon: Plus,
           keywords: ["new", "chat", "channel"],
-          permission: P.chatChannelsView,
+          permission: P.chat.channels.view,
           perform: go("/chat?action=create-channel"),
         },
         {

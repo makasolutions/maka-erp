@@ -68,6 +68,7 @@ import {
 } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
 import { useHasPermission } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 
 const PAGE_SIZE = 50;
 
@@ -104,9 +105,9 @@ type EditorState =
 
 export function CategoriesPage() {
   const { t } = useTranslation("catalog");
-  const canCreate = useHasPermission("Permissions.Catalog.Categories.Create");
-  const canUpdate = useHasPermission("Permissions.Catalog.Categories.Update");
-  const canDelete = useHasPermission("Permissions.Catalog.Categories.Delete");
+  const canCreate = useHasPermission(P.catalog.categories.create);
+  const canUpdate = useHasPermission(P.catalog.categories.update);
+  const canDelete = useHasPermission(P.catalog.categories.delete);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);

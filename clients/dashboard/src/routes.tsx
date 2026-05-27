@@ -3,25 +3,10 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProtectedRoute } from "@/auth/protected-route";
 import { PermissionRoute } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 import { RouteError } from "@/components/route-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
-
-// Permission strings — must match Permissions.{Resource}.{Action} in the backend.
-const PERM = {
-  billingView:           "Permissions.Billing.View",
-  catalogBrandsView:     "Permissions.Catalog.Brands.View",
-  catalogCategoriesView: "Permissions.Catalog.Categories.View",
-  catalogProductsView:   "Permissions.Catalog.Products.View",
-  ticketsView:           "Permissions.Tickets.View",
-  usersView:             "Permissions.Users.View",
-  rolesView:             "Permissions.Roles.View",
-  groupsView:            "Permissions.Groups.View",
-  auditTrailsView:       "Permissions.AuditTrails.View",
-  sessionsViewAll:       "Permissions.Sessions.ViewAll",
-  filesViewTrash:        "Permissions.Files.ViewTrash",
-  chatChannelsView:      "Permissions.Chat.Channels.View",
-} as const;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Lazy route boundaries
@@ -194,25 +179,25 @@ export const router = createBrowserRouter([
           // ── System ────────────────────────────────────────────────────────
           { path: "system/health", element: withSuspense(<HealthPage />) },
           {
-            element: <PermissionRoute permission={PERM.auditTrailsView} />,
+            element: <PermissionRoute permission={P.auditTrails.view} />,
             children: [{ path: "system/audits", element: withSuspense(<AuditsPage />) }],
           },
           {
-            element: <PermissionRoute permission={PERM.sessionsViewAll} />,
+            element: <PermissionRoute permission={P.identity.sessions.viewAll} />,
             children: [{ path: "system/sessions", element: withSuspense(<SessionsPage />) }],
           },
           {
-            element: <PermissionRoute permission={PERM.filesViewTrash} />,
+            element: <PermissionRoute permission={P.files.viewTrash} />,
             children: [{ path: "system/trash", element: withSuspense(<TrashPage />) }],
           },
           // ── Operations ────────────────────────────────────────────────────
           {
-            element: <PermissionRoute permission={PERM.billingView} />,
+            element: <PermissionRoute permission={P.billing.view} />,
             children: [{ path: "invoices", element: withSuspense(<InvoicesPage />) }],
           },
           // ── Chat ──────────────────────────────────────────────────────────
           {
-            element: <PermissionRoute permission={PERM.chatChannelsView} />,
+            element: <PermissionRoute permission={P.chat.channels.view} />,
             children: [
               { path: "chat", element: withSuspense(<ChatPage />) },
               { path: "chat/:channelId", element: withSuspense(<ChatPage />) },
@@ -224,7 +209,7 @@ export const router = createBrowserRouter([
           { path: "maka-components", element: withSuspense(<MakaComponentsPage />) },
           // ── Tickets ───────────────────────────────────────────────────────
           {
-            element: <PermissionRoute permission={PERM.ticketsView} />,
+            element: <PermissionRoute permission={P.tickets.view} />,
             children: [
               { path: "tickets", element: withSuspense(<TicketsPage />) },
               { path: "tickets/:ticketId", element: withSuspense(<TicketDetailPage />) },
@@ -233,21 +218,21 @@ export const router = createBrowserRouter([
           // ── Identity ──────────────────────────────────────────────────────
           { path: "identity", element: <Navigate to="/identity/users" replace /> },
           {
-            element: <PermissionRoute permission={PERM.usersView} />,
+            element: <PermissionRoute permission={P.identity.users.view} />,
             children: [
               { path: "identity/users", element: withSuspense(<UsersPage />) },
               { path: "identity/users/:userId", element: withSuspense(<UserDetailPage />) },
             ],
           },
           {
-            element: <PermissionRoute permission={PERM.rolesView} />,
+            element: <PermissionRoute permission={P.identity.roles.view} />,
             children: [
               { path: "identity/roles", element: withSuspense(<RolesPage />) },
               { path: "identity/roles/:roleId", element: withSuspense(<RoleDetailPage />) },
             ],
           },
           {
-            element: <PermissionRoute permission={PERM.groupsView} />,
+            element: <PermissionRoute permission={P.identity.groups.view} />,
             children: [
               { path: "identity/groups", element: withSuspense(<GroupsPage />) },
               { path: "identity/groups/:groupId", element: withSuspense(<GroupDetailPage />) },
@@ -256,19 +241,19 @@ export const router = createBrowserRouter([
           // ── Catalog ───────────────────────────────────────────────────────
           { path: "catalog", element: <Navigate to="/catalog/brands" replace /> },
           {
-            element: <PermissionRoute permission={PERM.catalogBrandsView} />,
+            element: <PermissionRoute permission={P.catalog.brands.view} />,
             children: [
               { path: "catalog/brands", element: withSuspense(<BrandsPage />) },
             ],
           },
           {
-            element: <PermissionRoute permission={PERM.catalogCategoriesView} />,
+            element: <PermissionRoute permission={P.catalog.categories.view} />,
             children: [
               { path: "catalog/categories", element: withSuspense(<CategoriesPage />) },
             ],
           },
           {
-            element: <PermissionRoute permission={PERM.catalogProductsView} />,
+            element: <PermissionRoute permission={P.catalog.products.view} />,
             children: [
               { path: "catalog/products", element: withSuspense(<ProductsPage />) },
               { path: "catalog/products/:productId", element: withSuspense(<ProductDetailPage />) },

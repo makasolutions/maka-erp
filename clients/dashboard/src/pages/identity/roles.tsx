@@ -37,6 +37,7 @@ import {
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
 import { useHasPermission } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 
 const SYSTEM_ROLE_NAMES = new Set(["admin", "administrator", "basic", "user"]);
 
@@ -55,7 +56,7 @@ function newGuid(): string {
 
 export function RolesPage() {
   const { t } = useTranslation("identity");
-  const canCreate = useHasPermission("Permissions.Roles.Create");
+  const canCreate = useHasPermission(P.identity.roles.create);
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");

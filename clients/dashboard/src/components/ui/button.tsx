@@ -2,6 +2,7 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
+import { AuthContext } from "@/auth/auth-context";
 
 /**
  * Button — refined warm-paper variants. The default solid button reads
@@ -61,10 +62,29 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /**
+   * When provided, the button renders as `null` if the logged-in user does
+   * not hold this permission string. Safe to use outside `AuthProvider`
+   * (ctx will be null and the button always renders).
+   *
+   * @example
+   * <Button perm={P.catalog.brands.create} onClick={onCreate}>
+   *   Create brand
+   * </Button>
+   */
+  perm?: string;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, perm, ...props }, ref) => {
+    // Permission check — null-safe: useContext returns null outside AuthProvider,
+    // in which case we always render (e.g. in Storybook or tests).
+    const ctx = React.useContext(AuthContext);
+    if (perm && ctx) {
+      const allowed = ctx.user?.permissions.includes(perm) ?? false;
+      if (!allowed) return null;
+    }
+
     const Comp = asChild ? Slot : "button";
     return (
       <Comp

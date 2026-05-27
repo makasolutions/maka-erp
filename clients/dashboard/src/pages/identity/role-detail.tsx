@@ -31,6 +31,7 @@ import {
   type PermissionDescriptor,
 } from "@/api/permissions-catalog";
 import { useAuth } from "@/auth/use-auth";
+import { P } from "@/auth/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -77,7 +78,7 @@ export function RoleDetailPage() {
   // Roles.View is IsBasic (everyone can see roles) but Roles.Update is not
   // — basic users can view the editor but cannot save, so we mirror the
   // backend guard here and make the editor read-only for them.
-  const canEditRoles = (actor?.permissions ?? []).includes("Permissions.Roles.Update");
+  const canEditRoles = (actor?.permissions ?? []).includes(P.identity.roles.update);
 
   const roleQuery = useQuery({
     queryKey: ["identity", "roles", roleId],

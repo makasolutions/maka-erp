@@ -48,12 +48,13 @@ import {
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
 import { useHasPermission } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 
 const DESKTOP_COLUMNS = "grid-cols-[1fr_160px_120px_24px]";
 
 export function GroupsPage() {
   const { t } = useTranslation("identity");
-  const canCreate = useHasPermission("Permissions.Groups.Create");
+  const canCreate = useHasPermission(P.identity.groups.create);
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");

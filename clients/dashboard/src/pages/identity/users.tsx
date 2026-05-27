@@ -57,6 +57,7 @@ import {
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
 import { useHasPermission } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 
 const PAGE_SIZE = 20;
 
@@ -79,7 +80,7 @@ function fullName(u: UserDto, fallback = "Unnamed user"): string {
 
 export function UsersPage() {
   const { t } = useTranslation("identity");
-  const canCreate = useHasPermission("Permissions.Users.Create");
+  const canCreate = useHasPermission(P.identity.users.create);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);

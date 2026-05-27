@@ -70,6 +70,7 @@ import {
   formatMoney,
 } from "@/lib/list-helpers";
 import { useHasPermission } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 
 const PAGE_SIZE = 25;
 const LOW_STOCK = 10;
@@ -179,10 +180,10 @@ function ActivePill({
 
 export function ProductsPage() {
   const { t } = useTranslation("catalog");
-  const canCreate = useHasPermission("Permissions.Catalog.Products.Create");
-  const canUpdate = useHasPermission("Permissions.Catalog.Products.Update");
-  const canDelete = useHasPermission("Permissions.Catalog.Products.Delete");
-  const canAdjustStock = useHasPermission("Permissions.Catalog.Products.AdjustStock");
+  const canCreate = useHasPermission(P.catalog.products.create);
+  const canUpdate = useHasPermission(P.catalog.products.update);
+  const canDelete = useHasPermission(P.catalog.products.delete);
+  const canAdjustStock = useHasPermission(P.catalog.products.adjustStock);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);

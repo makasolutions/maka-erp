@@ -18,6 +18,7 @@ import {
   UsersRound,
   Wifi,
 } from "lucide-react";
+import { P } from "@/auth/permissions";
 
 export type NavSpec = {
   to: string;
@@ -40,38 +41,12 @@ export type NavSection = {
   items: NavSpec[];
 };
 
-// ── Permission constants ──────────────────────────────────────────────────
-// Mirror of the backend Permissions.{Resource}.{Action} strings.
-// Keep in sync with the .Contracts/Authorization/*.cs files.
-const P = {
-  // Catalog
-  catalogBrandsView:      "Permissions.Catalog.Brands.View",
-  catalogCategoriesView:  "Permissions.Catalog.Categories.View",
-  catalogProductsView:    "Permissions.Catalog.Products.View",
-  // Billing
-  billingView:            "Permissions.Billing.View",
-  // Tickets
-  ticketsView:            "Permissions.Tickets.View",
-  // Identity
-  usersView:              "Permissions.Users.View",
-  rolesView:              "Permissions.Roles.View",
-  groupsView:             "Permissions.Groups.View",
-  // Auditing
-  auditTrailsView:        "Permissions.AuditTrails.View",
-  // Sessions (requires "ViewAll" to see other users' sessions)
-  sessionsViewAll:        "Permissions.Sessions.ViewAll",
-  // Files
-  filesViewTrash:         "Permissions.Files.ViewTrash",
-  // Chat
-  chatChannelsView:       "Permissions.Chat.Channels.View",
-} as const;
-
 // Top-level items live OUTSIDE any section. Overview opens the app;
 // Settings is account-scoped and lives at the very bottom.
 export const topNavTop: NavSpec[] = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   // Chat requires at least View-Channels permission
-  { to: "/chat", label: "Chat", icon: MessageCircle, permission: P.chatChannelsView },
+  { to: "/chat", label: "Chat", icon: MessageCircle, permission: P.chat.channels.view },
   // Files: Upload + DeleteOwn are IsBasic → every authenticated user has access
   { to: "/files", label: "My Files", icon: FolderOpen },
 ];
@@ -91,7 +66,7 @@ export const sections: NavSection[] = [
     items: [
       // Live activity: operational stream — no specific permission required
       { to: "/activity", label: "Live activity", icon: Activity },
-      { to: "/invoices", label: "Invoices", icon: Receipt, permission: P.billingView },
+      { to: "/invoices", label: "Invoices", icon: Receipt, permission: P.billing.view },
     ],
   },
   {
@@ -99,9 +74,9 @@ export const sections: NavSection[] = [
     caption: "Catalog",
     icon: Package,
     items: [
-      { to: "/catalog/products",   label: "Products",   icon: Package,    permission: P.catalogProductsView },
-      { to: "/catalog/brands",     label: "Brands",     icon: Tags,       permission: P.catalogBrandsView },
-      { to: "/catalog/categories", label: "Categories", icon: FolderTree, permission: P.catalogCategoriesView },
+      { to: "/catalog/products",   label: "Products",   icon: Package,    permission: P.catalog.products.view },
+      { to: "/catalog/brands",     label: "Brands",     icon: Tags,       permission: P.catalog.brands.view },
+      { to: "/catalog/categories", label: "Categories", icon: FolderTree, permission: P.catalog.categories.view },
     ],
   },
   {
@@ -109,7 +84,7 @@ export const sections: NavSection[] = [
     caption: "Helpdesk",
     icon: Ticket,
     items: [
-      { to: "/tickets", label: "Tickets", icon: Ticket, permission: P.ticketsView },
+      { to: "/tickets", label: "Tickets", icon: Ticket, permission: P.tickets.view },
     ],
   },
   {
@@ -117,9 +92,9 @@ export const sections: NavSection[] = [
     caption: "Identity",
     icon: Users,
     items: [
-      { to: "/identity/users",  label: "Users",  icon: Users,       permission: P.usersView },
-      { to: "/identity/roles",  label: "Roles",  icon: ShieldCheck, permission: P.rolesView },
-      { to: "/identity/groups", label: "Groups", icon: UsersRound,  permission: P.groupsView },
+      { to: "/identity/users",  label: "Users",  icon: Users,       permission: P.identity.users.view },
+      { to: "/identity/roles",  label: "Roles",  icon: ShieldCheck, permission: P.identity.roles.view },
+      { to: "/identity/groups", label: "Groups", icon: UsersRound,  permission: P.identity.groups.view },
     ],
   },
   {
@@ -129,10 +104,10 @@ export const sections: NavSection[] = [
     items: [
       // Health: operational dashboard — no specific permission required
       { to: "/system/health",   label: "Health",       icon: HeartPulse },
-      { to: "/system/audits",   label: "Audit trail",  icon: ScrollText, permission: P.auditTrailsView },
+      { to: "/system/audits",   label: "Audit trail",  icon: ScrollText, permission: P.auditTrails.view },
       // Sessions list requires ViewAll (ordinary users only see their own via Settings > Security)
-      { to: "/system/sessions", label: "Sessions",     icon: Wifi,       permission: P.sessionsViewAll },
-      { to: "/system/trash",    label: "Trash",        icon: Trash2,     permission: P.filesViewTrash },
+      { to: "/system/sessions", label: "Sessions",     icon: Wifi,       permission: P.identity.sessions.viewAll },
+      { to: "/system/trash",    label: "Trash",        icon: Trash2,     permission: P.files.viewTrash },
       // DEV tool — remove before first production release
       { to: "/maka-components", label: "Maka Components", icon: LayoutGrid },
     ],
