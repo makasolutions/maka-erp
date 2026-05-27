@@ -30,6 +30,7 @@ import {
   groupPermissions,
   type PermissionDescriptor,
 } from "@/api/permissions-catalog";
+import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,13 @@ export function RoleDetailPage() {
   const { roleId = "" } = useParams<{ roleId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user: actor } = useAuth();
+
+  // Only users with Roles.Update permission can edit custom roles.
+  // Roles.View is IsBasic (everyone can see roles) but Roles.Update is not
+  // — basic users can view the editor but cannot save, so we mirror the
+  // backend guard here and make the editor read-only for them.
+  const canEditRoles = (actor?.permissions ?? []).includes("Permissions.Roles.Update");
 
   const roleQuery = useQuery({
     queryKey: ["identity", "roles", roleId],
@@ -306,6 +314,10 @@ export function RoleDetailPage() {
   const totalSelected = selected.size;
   const totalCatalog = catalog.length;
   const isSystem = isSystemRoleName(role.name);
+  // Read-only when: the role is a system role (Admin/Basic) OR the current
+  // user doesn't have Roles.Update. Both cases prevent the Save button from
+  // appearing and lock all inputs/checkboxes.
+  const isReadOnly = isSystem || !canEditRoles;
 
   return (
     <div className="space-y-5 pb-12">
@@ -347,7 +359,10 @@ export function RoleDetailPage() {
         }
       />
 
-      {isSystem && (
+      {/* Read-only banner — shown for system roles OR when the user lacks
+          Roles.Update permission. The message differs by reason so the user
+          understands why the editor is locked. */}
+      {isReadOnly && (
         <div
           role="status"
           aria-live="polite"
@@ -361,10 +376,14 @@ export function RoleDetailPage() {
           </span>
           <div className="min-w-0 text-sm leading-relaxed">
             <p className="font-medium text-[var(--color-foreground)]">
-              {t("roles.detail.systemRoleReadOnly")}
+              {isSystem
+                ? t("roles.detail.systemRoleReadOnly")
+                : t("roles.detail.noEditPermission")}
             </p>
             <p className="mt-0.5 text-[12.5px] text-[var(--color-muted-foreground)]">
-              {t("roles.detail.systemRoleDesc", { name: role.name })}
+              {isSystem
+                ? t("roles.detail.systemRoleDesc", { name: role.name })
+                : t("roles.detail.noEditPermissionDesc")}
             </p>
           </div>
         </div>
@@ -383,9 +402,9 @@ export function RoleDetailPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={128}
-              readOnly={isSystem}
-              aria-readonly={isSystem || undefined}
-              className={cn(isSystem && "cursor-not-allowed opacity-70")}
+              readOnly={isReadOnly}
+              aria-readonly={isReadOnly || undefined}
+              className={cn(isReadOnly && "cursor-not-allowed opacity-70")}
             />
           </Field>
           <Field id="role-desc" label={t("roles.fields.description")}>
@@ -395,9 +414,9 @@ export function RoleDetailPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t("roles.detail.descPlaceholder")}
               maxLength={512}
-              readOnly={isSystem}
-              aria-readonly={isSystem || undefined}
-              className={cn(isSystem && "cursor-not-allowed opacity-70")}
+              readOnly={isReadOnly}
+              aria-readonly={isReadOnly || undefined}
+              className={cn(isReadOnly && "cursor-not-allowed opacity-70")}
             />
           </Field>
         </div>
@@ -414,15 +433,15 @@ export function RoleDetailPage() {
               onClick={presetBasic}
               icon={<Sparkles className="h-3 w-3" />}
               label={t("roles.detail.presetBasic")}
-              disabled={isSystem}
+              disabled={isReadOnly}
             />
-            <PresetButton onClick={presetAll} label={t("roles.detail.filterAll")} disabled={isSystem} />
-            <PresetButton onClick={presetClear} label={t("roles.detail.presetClear")} disabled={isSystem} />
+            <PresetButton onClick={presetAll} label={t("roles.detail.filterAll")} disabled={isReadOnly} />
+            <PresetButton onClick={presetClear} label={t("roles.detail.presetClear")} disabled={isReadOnly} />
           </div>
         }
         padded={false}
         footer={
-          !isSystem ? (
+          !isReadOnly ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-[11.5px] font-medium text-[var(--color-muted-foreground)]">
                 {isDirty ? (
@@ -629,7 +648,7 @@ export function RoleDetailPage() {
                   onTogglePerm={togglePerm}
                   selected={selected}
                   initial={initial}
-                  disabled={isSystem}
+                  disabled={isReadOnly}
                 />
               );
             })}

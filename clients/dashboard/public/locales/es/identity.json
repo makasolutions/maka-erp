@@ -203,6 +203,8 @@
       "systemCannotDelete": "Los roles del sistema no se pueden eliminar.",
       "systemRoleReadOnly": "Rol integrado — solo lectura",
       "systemRoleDesc": "{{name}} viene con el framework. Su nombre, descripción y permisos se gestionan centralmente para mantener el contrato de seed y el sincronizador de permisos en acuerdo. Crea un rol personalizado si necesitas un conjunto de permisos diferente.",
+      "noEditPermission": "Sin permiso de edición",
+      "noEditPermissionDesc": "Tu cuenta no tiene el permiso «Roles: Actualizar». Puedes consultar los permisos asignados a este rol, pero no puedes guardar cambios. Contacta a un administrador para solicitar acceso de edición.",
       "detailsTitle": "Detalles del rol",
       "detailsDesc": "La etiqueta y un resumen de una línea que los admins verán al asignar.",
       "descPlaceholder": "Descripción breve de este rol",

@@ -203,6 +203,8 @@
       "systemCannotDelete": "System roles cannot be deleted.",
       "systemRoleReadOnly": "Built-in role — read only",
       "systemRoleDesc": "{{name}} ships with the framework. Its name, description, and permissions are managed centrally so the seed contract and the runtime permission syncer stay in agreement. Create a custom role if you need a different set of grants.",
+      "noEditPermission": "No edit permission",
+      "noEditPermissionDesc": "Your account does not have the «Roles: Update» permission. You can view this role's permissions but cannot save changes. Contact an administrator to request edit access.",
       "detailsTitle": "Role details",
       "detailsDesc": "The display label and a one-line summary admins will see at assignment time.",
       "descPlaceholder": "Short description for this role",
