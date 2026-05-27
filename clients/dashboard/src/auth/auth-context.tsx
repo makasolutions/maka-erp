@@ -151,6 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    // Mark this as an intentional logout so ProtectedRoute knows NOT to
+    // attach `from: location` state to the /login redirect — otherwise the
+    // next user that logs in would be sent straight to the previous user's
+    // last-visited URL (e.g. /identity/roles/<id>) which causes a 403/404
+    // and a visible broken state.
+    sessionStorage.setItem("_app_intentional_logout", "1");
     tokenStore.clear();
     // Clear appearance/locale localStorage on logout so the next user
     // (or a re-login to a different tenant) starts from a clean slate.

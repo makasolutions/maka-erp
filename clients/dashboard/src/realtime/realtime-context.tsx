@@ -126,6 +126,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       };
       // Pre-register every known server event so subscribers added before any
       // payload arrives don't miss the first message.
+      // NOTE: SignalR JS client lowercases method names internally, so
+      // registering "PresenceChanged" here also handles the backend emitting
+      // "presencechanged" (lowercase). Without this entry the hub logs
+      // "No client method with the name 'presencechanged' found" warnings.
       for (const event of [
         "ChatMessageCreated",
         "ChatMessageEdited",
@@ -138,6 +142,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         "ChatReactionChanged",
         "ChatTypingStarted",
         "NotificationCreated",
+        "PresenceChanged",
       ]) {
         wire(event);
       }
