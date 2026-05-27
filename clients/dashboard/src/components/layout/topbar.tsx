@@ -129,6 +129,11 @@ export function Topbar() {
   const onConfirmSignOut = () => {
     setConfirmOpen(false);
     logout();
+    // Navigate to /login WITHOUT location state so the next user that logs in
+    // always lands on the dashboard root ("/") instead of the previous user's
+    // last visited page. If we rely on ProtectedRoute's redirect it would
+    // capture the current pathname as "from" and pass it to the login page.
+    navigate("/login", { replace: true });
   };
 
   const presence = (() => {
