@@ -47,11 +47,13 @@ import {
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
+import { useHasPermission } from "@/auth/permission-guard";
 
 const DESKTOP_COLUMNS = "grid-cols-[1fr_160px_120px_24px]";
 
 export function GroupsPage() {
   const { t } = useTranslation("identity");
+  const canCreate = useHasPermission("Permissions.Groups.Create");
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -79,13 +81,15 @@ export function GroupsPage() {
         unit={t("groups.singular")}
         description={t("groups.description")}
       >
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-        >
-          <Plus className="size-4" />
-          {t("groups.actions.create")}
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+          >
+            <Plus className="size-4" />
+            {t("groups.actions.create")}
+          </Button>
+        )}
       </EntityPageHeader>
 
       <EntitySearch

@@ -69,6 +69,7 @@ import {
   formatDate,
   formatMoney,
 } from "@/lib/list-helpers";
+import { useHasPermission } from "@/auth/permission-guard";
 
 const PAGE_SIZE = 25;
 const LOW_STOCK = 10;
@@ -178,6 +179,10 @@ function ActivePill({
 
 export function ProductsPage() {
   const { t } = useTranslation("catalog");
+  const canCreate = useHasPermission("Permissions.Catalog.Products.Create");
+  const canUpdate = useHasPermission("Permissions.Catalog.Products.Update");
+  const canDelete = useHasPermission("Permissions.Catalog.Products.Delete");
+  const canAdjustStock = useHasPermission("Permissions.Catalog.Products.AdjustStock");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -265,13 +270,15 @@ export function ProductsPage() {
         unit={t("products.singular")}
         description={t("products.description")}
       >
-        <Button
-          onClick={() => setEditor({ mode: "create" })}
-          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-        >
-          <Plus className="size-4" />
-          {t("products.actions.create")}
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => setEditor({ mode: "create" })}
+            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+          >
+            <Plus className="size-4" />
+            {t("products.actions.create")}
+          </Button>
+        )}
       </EntityPageHeader>
 
       {/* Search */}
@@ -320,7 +327,7 @@ export function ProductsPage() {
         <EmptyResults
           searchActive={searchActive}
           search={debouncedSearch}
-          onCreate={() => setEditor({ mode: "create" })}
+          onCreate={canCreate ? () => setEditor({ mode: "create" }) : undefined}
           onClear={() => {
             setSearch("");
             setBrandFilter(null);
@@ -344,7 +351,7 @@ export function ProductsPage() {
                 product={product}
                 brand={brandsById.get(product.brandId)}
                 category={categoriesById.get(product.categoryId)}
-                onEdit={() => setEditor({ mode: "edit", product })}
+                onEdit={canUpdate ? () => setEditor({ mode: "edit", product }) : undefined}
               />
             ))}
           </div>
@@ -368,10 +375,10 @@ export function ProductsPage() {
                 brand={brandsById.get(product.brandId)}
                 category={categoriesById.get(product.categoryId)}
                 isLast={i === items.length - 1}
-                onEdit={() => setEditor({ mode: "edit", product })}
-                onDelete={() => setEditor({ mode: "delete", product })}
-                onPriceChange={() => setEditor({ mode: "price", product })}
-                onStockAdjust={() => setEditor({ mode: "stock", product })}
+                onEdit={canUpdate ? () => setEditor({ mode: "edit", product }) : undefined}
+                onDelete={canDelete ? () => setEditor({ mode: "delete", product }) : undefined}
+                onPriceChange={canUpdate ? () => setEditor({ mode: "price", product }) : undefined}
+                onStockAdjust={canAdjustStock ? () => setEditor({ mode: "stock", product }) : undefined}
               />
             ))}
           </div>
@@ -441,7 +448,7 @@ function MobileCard({
   product: ProductDto;
   brand: BrandDto | undefined;
   category: CategoryDto | undefined;
-  onEdit: () => void;
+  onEdit?: () => void;
 }) {
   const { t } = useTranslation("catalog");
   return (
@@ -481,18 +488,20 @@ function MobileCard({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            aria-label={t("products.editAria", { name: product.name })}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-          >
-            <Pencil className="size-3.5" />
-          </button>
+          {onEdit && (
+            <button
+              type="button"
+              aria-label={t("products.editAria", { name: product.name })}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+          )}
           <ChevronRight className="size-4 text-[var(--color-border)]" />
         </div>
       </div>
@@ -534,10 +543,10 @@ function DesktopRow({
   brand: BrandDto | undefined;
   category: CategoryDto | undefined;
   isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  onPriceChange: () => void;
-  onStockAdjust: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onPriceChange?: () => void;
+  onStockAdjust?: () => void;
 }) {
   const { t } = useTranslation("catalog");
   return (
@@ -598,35 +607,45 @@ function DesktopRow({
 
       {/* Price + stock (lg+) */}
       <div className="hidden items-center gap-2 lg:flex">
-        <button
-          type="button"
-          onClick={onPriceChange}
-          title={t("products.changePriceRowTitle")}
-          className="cursor-pointer rounded-md px-1.5 py-0.5 text-left font-display text-[14px] font-semibold tabular-nums transition-colors hover:bg-[var(--color-muted)]"
-        >
-          {formatMoney(product.price.amount, product.price.currency)}
-        </button>
+        {onPriceChange ? (
+          <button
+            type="button"
+            onClick={onPriceChange}
+            title={t("products.changePriceRowTitle")}
+            className="cursor-pointer rounded-md px-1.5 py-0.5 text-left font-display text-[14px] font-semibold tabular-nums transition-colors hover:bg-[var(--color-muted)]"
+          >
+            {formatMoney(product.price.amount, product.price.currency)}
+          </button>
+        ) : (
+          <span className="px-1.5 py-0.5 font-display text-[14px] font-semibold tabular-nums">
+            {formatMoney(product.price.amount, product.price.currency)}
+          </span>
+        )}
         <StockChip stock={product.stock} onClick={onStockAdjust} adjustTitle={t("products.adjustStockRowTitle")} />
       </div>
 
       {/* Trailing actions + chevron */}
       <div className="flex items-center justify-end gap-1">
-        <button
-          type="button"
-          aria-label={t("products.editAria", { name: product.name })}
-          onClick={onEdit}
-          className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
-        >
-          <Pencil className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          aria-label={t("products.deleteAria", { name: product.name })}
-          onClick={onDelete}
-          className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        {onEdit && (
+          <button
+            type="button"
+            aria-label={t("products.editAria", { name: product.name })}
+            onClick={onEdit}
+            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            aria-label={t("products.deleteAria", { name: product.name })}
+            onClick={onDelete}
+            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        )}
         <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
       </div>
     </div>
@@ -645,7 +664,7 @@ function EmptyResults({
 }: {
   searchActive: boolean;
   search: string;
-  onCreate: () => void;
+  onCreate?: () => void;
   onClear: () => void;
 }) {
   const { t } = useTranslation("catalog");
@@ -672,12 +691,12 @@ function EmptyResults({
         <Button variant="outline" onClick={onClear} className="h-9 rounded-lg px-4 text-[13px]">
           {t("products.empty.clearFilters")}
         </Button>
-      ) : (
+      ) : onCreate ? (
         <Button onClick={onCreate} className="h-9 rounded-lg px-4 text-[13px]">
           <Plus className="mr-1.5 size-4" />
           {t("products.actions.add")}
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }

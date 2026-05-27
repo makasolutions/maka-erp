@@ -67,6 +67,7 @@ import {
   slugify,
 } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
+import { useHasPermission } from "@/auth/permission-guard";
 
 const PAGE_SIZE = 50;
 
@@ -103,6 +104,9 @@ type EditorState =
 
 export function CategoriesPage() {
   const { t } = useTranslation("catalog");
+  const canCreate = useHasPermission("Permissions.Catalog.Categories.Create");
+  const canUpdate = useHasPermission("Permissions.Catalog.Categories.Update");
+  const canDelete = useHasPermission("Permissions.Catalog.Categories.Delete");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
@@ -165,13 +169,15 @@ export function CategoriesPage() {
         unit={t("categories.singular")}
         description={t("categories.description")}
       >
-        <Button
-          onClick={() => setEditor({ mode: "create" })}
-          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-        >
-          <Plus className="size-4" />
-          {t("categories.actions.create")}
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => setEditor({ mode: "create" })}
+            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+          >
+            <Plus className="size-4" />
+            {t("categories.actions.create")}
+          </Button>
+        )}
       </EntityPageHeader>
 
       <EntitySearch
@@ -202,7 +208,7 @@ export function CategoriesPage() {
               >
                 {t("categories.empty.clearSearch")}
               </Button>
-            ) : (
+            ) : canCreate ? (
               <Button
                 onClick={() => setEditor({ mode: "create" })}
                 className="h-9 rounded-lg px-4 text-[13px]"
@@ -210,7 +216,7 @@ export function CategoriesPage() {
                 <Plus className="mr-1.5 size-4" />
                 {t("categories.actions.add")}
               </Button>
-            )
+            ) : undefined
           }
         />
       ) : (
@@ -232,7 +238,7 @@ export function CategoriesPage() {
                     ? nameById.get(category.parentCategoryId)
                     : undefined
                 }
-                onEdit={() => setEditor({ mode: "edit", category })}
+                onEdit={canUpdate ? () => setEditor({ mode: "edit", category }) : undefined}
               />
             ))}
           </div>
@@ -256,8 +262,8 @@ export function CategoriesPage() {
                     : undefined
                 }
                 isLast={i === items.length - 1}
-                onEdit={() => setEditor({ mode: "edit", category })}
-                onDelete={() => setEditor({ mode: "delete", category })}
+                onEdit={canUpdate ? () => setEditor({ mode: "edit", category }) : undefined}
+                onDelete={canDelete ? () => setEditor({ mode: "delete", category }) : undefined}
               />
             ))}
           </EntityListCard>
@@ -306,18 +312,22 @@ function MobileCard({
 }: {
   category: CategoryDto;
   parentName: string | undefined;
-  onEdit: () => void;
+  onEdit?: () => void;
 }) {
   const { t } = useTranslation("catalog");
 
   return (
     <EntityMobileCard
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        onEdit();
-      }}
-      aria-label={t("categories.openCategoryAria", { name: category.name })}
+      {...(onEdit
+        ? {
+            href: "#",
+            onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
+              e.preventDefault();
+              onEdit();
+            },
+            "aria-label": t("categories.openCategoryAria", { name: category.name }),
+          }
+        : {})}
     >
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-3">
@@ -372,8 +382,8 @@ function DesktopRow({
   category: CategoryDto;
   parentName: string | undefined;
   isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const { t } = useTranslation("catalog");
 
@@ -433,22 +443,26 @@ function DesktopRow({
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-1">
-        <button
-          type="button"
-          aria-label={t("categories.editAria", { name: category.name })}
-          onClick={onEdit}
-          className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
-        >
-          <Pencil className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          aria-label={t("categories.deleteAria", { name: category.name })}
-          onClick={onDelete}
-          className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        {onEdit && (
+          <button
+            type="button"
+            aria-label={t("categories.editAria", { name: category.name })}
+            onClick={onEdit}
+            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            aria-label={t("categories.deleteAria", { name: category.name })}
+            onClick={onDelete}
+            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        )}
         <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
       </div>
     </EntityListRow>

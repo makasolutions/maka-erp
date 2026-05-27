@@ -62,6 +62,7 @@ import {
   slugify,
 } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
+import { useHasPermission } from "@/auth/permission-guard";
 
 const PAGE_SIZE = 20;
 
@@ -77,6 +78,9 @@ type EditorState =
 
 export function BrandsPage() {
   const { t } = useTranslation("catalog");
+  const canCreate = useHasPermission("Permissions.Catalog.Brands.Create");
+  const canUpdate = useHasPermission("Permissions.Catalog.Brands.Update");
+  const canDelete = useHasPermission("Permissions.Catalog.Brands.Delete");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
@@ -121,13 +125,15 @@ export function BrandsPage() {
         unit={t("brands.singular")}
         description={t("brands.description")}
       >
-        <Button
-          onClick={() => setEditor({ mode: "create" })}
-          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-        >
-          <Plus className="size-4" />
-          {t("brands.actions.create")}
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => setEditor({ mode: "create" })}
+            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+          >
+            <Plus className="size-4" />
+            {t("brands.actions.create")}
+          </Button>
+        )}
       </EntityPageHeader>
 
       <EntitySearch
@@ -158,7 +164,7 @@ export function BrandsPage() {
               >
                 {t("brands.empty.clearSearch")}
               </Button>
-            ) : (
+            ) : canCreate ? (
               <Button
                 onClick={() => setEditor({ mode: "create" })}
                 className="h-9 rounded-lg px-4 text-[13px]"
@@ -166,7 +172,7 @@ export function BrandsPage() {
                 <Plus className="mr-1.5 size-4" />
                 {t("brands.actions.add")}
               </Button>
-            )
+            ) : undefined
           }
         />
       ) : (
@@ -183,7 +189,7 @@ export function BrandsPage() {
               <MobileCard
                 key={brand.id}
                 brand={brand}
-                onEdit={() => setEditor({ mode: "edit", brand })}
+                onEdit={canUpdate ? () => setEditor({ mode: "edit", brand }) : undefined}
               />
             ))}
           </div>
@@ -202,8 +208,8 @@ export function BrandsPage() {
                 key={brand.id}
                 brand={brand}
                 isLast={i === items.length - 1}
-                onEdit={() => setEditor({ mode: "edit", brand })}
-                onDelete={() => setEditor({ mode: "delete", brand })}
+                onEdit={canUpdate ? () => setEditor({ mode: "edit", brand }) : undefined}
+                onDelete={canDelete ? () => setEditor({ mode: "delete", brand }) : undefined}
               />
             ))}
           </EntityListCard>
@@ -249,17 +255,21 @@ function MobileCard({
   onEdit,
 }: {
   brand: BrandDto;
-  onEdit: () => void;
+  onEdit?: () => void;
 }) {
   const { t } = useTranslation("catalog");
   return (
     <EntityMobileCard
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        onEdit();
-      }}
-      aria-label={t("brands.editAria", { name: brand.name })}
+      {...(onEdit
+        ? {
+            href: "#",
+            onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
+              e.preventDefault();
+              onEdit();
+            },
+            "aria-label": t("brands.editAria", { name: brand.name }),
+          }
+        : {})}
     >
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-3">
@@ -298,8 +308,8 @@ function DesktopRow({
 }: {
   brand: BrandDto;
   isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const { t } = useTranslation("catalog");
   return (
@@ -343,22 +353,26 @@ function DesktopRow({
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-1">
-        <button
-          type="button"
-          aria-label={t("brands.editAria", { name: brand.name })}
-          onClick={onEdit}
-          className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
-        >
-          <Pencil className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          aria-label={t("brands.deleteAria", { name: brand.name })}
-          onClick={onDelete}
-          className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        {onEdit && (
+          <button
+            type="button"
+            aria-label={t("brands.editAria", { name: brand.name })}
+            onClick={onEdit}
+            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            aria-label={t("brands.deleteAria", { name: brand.name })}
+            onClick={onDelete}
+            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        )}
         <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
       </div>
     </EntityListRow>
