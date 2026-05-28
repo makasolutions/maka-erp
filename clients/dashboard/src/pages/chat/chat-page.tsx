@@ -35,6 +35,8 @@ import {
 } from "@/pages/chat/message-list";
 import { TypingIndicator } from "@/pages/chat/typing-indicator";
 import { channelTitle } from "@/pages/chat/chat-utils";
+import { Perm } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 import { useUserDisplay } from "@/lib/use-user-display";
 
@@ -331,15 +333,18 @@ function ActiveChannel({
       <TypingIndicator channelId={channelId} selfUserId={selfUserId} />
 
       {/* Composer plinth — brand-tinted on focus. Renders a quoted preview
-          when replyTo is set; clearing it returns the composer to normal. */}
-      <Composer
-        channelId={channelId}
-        channelTitle={title}
-        channelType={channel.type}
-        selfUserId={selfUserId}
-        replyTo={replyTo}
-        onClearReply={() => setReplyTo(null)}
-      />
+          when replyTo is set; clearing it returns the composer to normal.
+          Hidden for users without chat.messages.send permission. */}
+      <Perm need={P.chat.messages.send}>
+        <Composer
+          channelId={channelId}
+          channelTitle={title}
+          channelType={channel.type}
+          selfUserId={selfUserId}
+          replyTo={replyTo}
+          onClearReply={() => setReplyTo(null)}
+        />
+      </Perm>
     </div>
   );
 }

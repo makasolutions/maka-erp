@@ -15,6 +15,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/auth/use-auth";
+import { usePerm } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 import {
   Visibility,
   listMyFiles,
@@ -124,6 +126,9 @@ export function MyFilesPage() {
   void useAuth();
   const { t } = useTranslation("files");
   const queryClient = useQueryClient();
+  const { can } = usePerm();
+  const canUpload = can(P.files.upload);
+  const canDelete = can(P.files.deleteOwn) || can(P.files.deleteAny);
   const [tab, setTab] = useState<TabId>("mine");
   const [searchQuery, setSearchQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
@@ -217,7 +222,7 @@ export function MyFilesPage() {
         />
       </div>
 
-      {tab === "mine" && (
+      {tab === "mine" && canUpload && (
         <FileDropzone
           options={{
             ownerType: "MyFiles",
@@ -319,7 +324,7 @@ export function MyFilesPage() {
         fileAssetId={selectedFileId}
         initial={selectedFile}
         onClose={() => setSelectedFileId(null)}
-        onDeleted={onDeletedOrVisibilityChanged}
+        onDeleted={canDelete ? onDeletedOrVisibilityChanged : undefined}
       />
     </div>
   );

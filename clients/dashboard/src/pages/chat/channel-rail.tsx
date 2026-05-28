@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePerm } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 import { useTranslation } from "react-i18next";
 import { Hash, Lock, MessageCircle, Plus, Search, Users2, X } from "lucide-react";
 import {
@@ -54,6 +56,8 @@ export function ChannelRail({
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
   const [newDmOpen, setNewDmOpen] = useState(false);
   const { t } = useTranslation("chat");
+  const { can } = usePerm();
+  const canCreateChannel = can(P.chat.channels.create);
 
   const channelsQuery = useQuery({
     queryKey: ["chat", "my-channels"],
@@ -141,7 +145,7 @@ export function ChannelRail({
       </div>
 
       <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto px-2 py-2">
-        <Section caption={t("rail.channels")} onAction={() => setCreateChannelOpen(true)} actionLabel={t("rail.newChannel")}>
+        <Section caption={t("rail.channels")} onAction={() => setCreateChannelOpen(true)} actionLabel={t("rail.newChannel")} showAction={canCreateChannel}>
           {channelsQuery.isLoading ? (
             <EmptyHint>{t("rail.loading")}</EmptyHint>
           ) : namedChannels.length === 0 ? (
@@ -203,11 +207,14 @@ function Section({
   caption,
   actionLabel,
   onAction,
+  showAction = true,
   children,
 }: {
   caption: string;
   actionLabel: string;
   onAction: () => void;
+  /** Hide the + button when the user lacks the required permission. */
+  showAction?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -216,20 +223,22 @@ function Section({
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
           {caption}
         </span>
-        <button
-          type="button"
-          onClick={onAction}
-          title={actionLabel}
-          aria-label={actionLabel}
-          className={cn(
-            "grid h-6 w-6 cursor-pointer place-items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
-            "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
-            "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
-          )}
-        >
-          <Plus className="h-3 w-3" aria-hidden />
-        </button>
+        {showAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            title={actionLabel}
+            aria-label={actionLabel}
+            className={cn(
+              "grid h-6 w-6 cursor-pointer place-items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+              "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
+              "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+            )}
+          >
+            <Plus className="h-3 w-3" aria-hidden />
+          </button>
+        )}
       </div>
       <div className="space-y-0.5">{children}</div>
     </div>

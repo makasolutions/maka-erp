@@ -29,6 +29,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/use-auth";
+import { usePerm } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 import {
   addTicketComment,
   assignTicket,
@@ -122,6 +124,8 @@ export function TicketDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogState>({ mode: "closed" });
+  const { can } = usePerm();
+  const canComment = can(P.tickets.comment);
 
   const ticketQuery = useQuery({
     queryKey: ["tickets", "detail", ticketId],
@@ -178,7 +182,7 @@ export function TicketDetailPage() {
                   void queryClient.invalidateQueries({ queryKey: ["tickets", "comments", ticket.id] });
                   void queryClient.invalidateQueries({ queryKey: ["tickets", "detail", ticket.id] });
                 }}
-                disabled={ticket.status === "Closed"}
+                disabled={ticket.status === "Closed" || !canComment}
               />
             </div>
             <PropertiesSection ticket={ticket} />
@@ -278,7 +282,7 @@ function Hero({
             <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
             <span className="hidden sm:inline">{t("actions.refresh")}</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onAssign} className="gap-1.5">
+          <Button perm={P.tickets.assign} variant="outline" size="sm" onClick={onAssign} className="gap-1.5">
             {ticket.assignedToUserId ? (
               <UserCheck className="h-3.5 w-3.5" />
             ) : (
@@ -289,13 +293,13 @@ function Hero({
             </span>
           </Button>
           {canResolve && (
-            <Button onClick={onResolve} size="sm" className="gap-1.5">
+            <Button perm={P.tickets.resolve} onClick={onResolve} size="sm" className="gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5" />
               {t("actions.resolve")}
             </Button>
           )}
           {canReopen && (
-            <Button onClick={onReopen} size="sm" variant="outline" className="gap-1.5">
+            <Button perm={P.tickets.reopen} onClick={onReopen} size="sm" variant="outline" className="gap-1.5">
               <RotateCcw className="h-3.5 w-3.5" />
               {t("actions.reopen")}
             </Button>

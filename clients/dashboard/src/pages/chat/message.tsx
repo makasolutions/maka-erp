@@ -34,6 +34,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usePerm } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 import { useUserByUsername, useUserDisplay } from "@/lib/use-user-display";
 import { usePresence } from "@/realtime/use-presence";
@@ -707,6 +709,9 @@ function MessageActions({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const queryClient = useQueryClient();
   const isDeleted = message.deletedAtUtc !== null && message.deletedAtUtc !== undefined;
+  const { can } = usePerm();
+  const canEditOwn   = can(P.chat.messages.editOwn);
+  const canDeleteOwn = can(P.chat.messages.deleteOwn);
 
   const reactMutation = useMutation({
     mutationFn: (emoji: string) => addReaction(message.id, emoji),
@@ -771,12 +776,12 @@ function MessageActions({
             <Pin className="h-3.5 w-3.5" />
           )}
         </ActionButton>
-        {isOwn && (
+        {isOwn && canEditOwn && (
           <ActionButton title={t("message.edit")} onClick={() => setEditing(true)}>
             <Pencil className="h-3.5 w-3.5" />
           </ActionButton>
         )}
-        {isOwn && (
+        {isOwn && canDeleteOwn && (
           <ActionButton
             title={t("message.delete")}
             onClick={() => setConfirmingDelete(true)}

@@ -30,6 +30,7 @@ import {
   type TicketStatus,
 } from "@/api/tickets";
 import { Button } from "@/components/ui/button";
+import { P } from "@/auth/permissions";
 import {
   Dialog,
   DialogBody,
@@ -177,6 +178,7 @@ export function TicketsPage() {
         description={t("description")}
       >
         <Button
+          perm={P.tickets.create}
           onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
@@ -236,6 +238,7 @@ export function TicketsPage() {
               </Button>
             ) : (
               <Button
+                perm={P.tickets.create}
                 onClick={() => setEditor({ mode: "create" })}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
