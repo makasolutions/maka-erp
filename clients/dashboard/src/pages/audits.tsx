@@ -22,10 +22,8 @@ import {
 import {
   AuditEventType,
   AuditSeverity,
-  AUDIT_EVENT_TYPE_LABELS,
-  AUDIT_SEVERITY_LABELS,
+  AuditTag,
   AUDIT_TAG_LABELS,
-  decodeTags,
   getAuditById,
   getAuditsByCorrelation,
   getAuditSummary,
@@ -113,6 +111,56 @@ function eventTypeIcon(eventType: number): React.ComponentType<React.SVGProps<SV
   if (eventType === AuditEventType.EntityChange) return Database;
   if (eventType === AuditEventType.Activity) return Activity;
   return Hash;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// i18n label helpers — each accepts t from useTranslation("common") so
+// labels update when the UI language changes instead of being hardcoded.
+// ────────────────────────────────────────────────────────────────────────
+
+type TranslateFn = (key: string) => string;
+
+function fmtEventType(t: TranslateFn, eventType: number): string {
+  switch (eventType) {
+    case AuditEventType.EntityChange: return t("audits.eventTypes.entity");
+    case AuditEventType.Security:     return t("audits.eventTypes.security");
+    case AuditEventType.Activity:     return t("audits.eventTypes.activity");
+    case AuditEventType.Exception:    return t("audits.eventTypes.exception");
+    default:                          return t("audits.eventTypes.unknown");
+  }
+}
+
+function fmtSeverity(t: TranslateFn, severity: number): string {
+  switch (severity) {
+    case AuditSeverity.Trace:       return t("audits.severities.trace");
+    case AuditSeverity.Debug:       return t("audits.severities.debug");
+    case AuditSeverity.Information: return t("audits.severities.information");
+    case AuditSeverity.Warning:     return t("audits.severities.warning");
+    case AuditSeverity.Error:       return t("audits.severities.error");
+    case AuditSeverity.Critical:    return t("audits.severities.critical");
+    default:                        return "—";
+  }
+}
+
+const TAG_I18N_KEY: Partial<Record<number, string>> = {
+  [AuditTag.PiiMasked]:      "audits.tagLabels.piiMasked",
+  [AuditTag.OutOfQuota]:     "audits.tagLabels.outOfQuota",
+  [AuditTag.Sampled]:        "audits.tagLabels.sampled",
+  [AuditTag.RetainedLong]:   "audits.tagLabels.retainedLong",
+  [AuditTag.HealthCheck]:    "audits.tagLabels.healthCheck",
+  [AuditTag.Authentication]: "audits.tagLabels.authentication",
+  [AuditTag.Authorization]:  "audits.tagLabels.authorization",
+};
+
+function fmtTagName(t: TranslateFn, flag: number): string {
+  const key = TAG_I18N_KEY[flag];
+  return key ? t(key) : String(flag);
+}
+
+function fmtDecodedTags(t: TranslateFn, mask: number): string[] {
+  return AUDIT_TAG_LABELS
+    .filter((tl) => (mask & tl.flag) !== 0)
+    .map((tl) => fmtTagName(t, tl.flag));
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -436,6 +484,7 @@ function AuditMobileCard({
   row: AuditSummaryDto;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation("common");
   const { formatDate, formatTime } = useLocalization();
   const Icon = eventTypeIcon(row.eventType);
   const tone = severityTone(row.severity);
@@ -463,12 +512,12 @@ function AuditMobileCard({
               <EntityStatusBadge
                 tone={tone === "danger" ? "danger" : tone === "warning" ? "warning" : tone === "info" ? "info" : "default"}
               >
-                {AUDIT_SEVERITY_LABELS[row.severity]}
+                {fmtSeverity(t, row.severity)}
               </EntityStatusBadge>
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--color-muted-foreground)]">
               <Icon className="size-3" style={{ color: toneColor }} aria-hidden />
-              <span>{AUDIT_EVENT_TYPE_LABELS[row.eventType]}</span>
+              <span>{fmtEventType(t, row.eventType)}</span>
             </div>
           </div>
         </div>
@@ -554,7 +603,7 @@ function AuditDesktopRow({
   const tone = severityTone(row.severity);
   const toneColor = severityColorVar(row.severity);
   const actor = row.userName ?? (row.userId ? `${row.userId.slice(0, 8)}…` : "System");
-  const tags = decodeTags(row.tags);
+  const tags = fmtDecodedTags(t, row.tags);
 
   // Entity column: show entity name prominently for EntityChange events.
   const isEntityChange = row.eventType === AuditEventType.EntityChange;
@@ -584,12 +633,12 @@ function AuditDesktopRow({
         <Icon className="size-3.5 shrink-0" style={{ color: toneColor }} aria-hidden />
         <div className="min-w-0">
           <div className="truncate text-[12.5px] font-medium tracking-tight">
-            {AUDIT_EVENT_TYPE_LABELS[row.eventType]}
+            {fmtEventType(t, row.eventType)}
           </div>
           <EntityStatusBadge
             tone={tone === "danger" ? "danger" : tone === "warning" ? "warning" : tone === "info" ? "info" : "default"}
           >
-            {AUDIT_SEVERITY_LABELS[row.severity]}
+            {fmtSeverity(t, row.severity)}
           </EntityStatusBadge>
         </div>
       </div>
@@ -873,15 +922,15 @@ function FilterBar({
           <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
             {t("audits.type")}
           </span>
-          {[AuditEventType.Activity, AuditEventType.Security, AuditEventType.EntityChange, AuditEventType.Exception].map((t) => (
+          {[AuditEventType.Activity, AuditEventType.Security, AuditEventType.EntityChange, AuditEventType.Exception].map((evType) => (
             <Chip
-              key={t}
-              active={filters.eventType === t}
+              key={evType}
+              active={filters.eventType === evType}
               onClick={() =>
-                onPatch({ eventType: filters.eventType === t ? null : t })
+                onPatch({ eventType: filters.eventType === evType ? null : evType })
               }
             >
-              {AUDIT_EVENT_TYPE_LABELS[t]}
+              {fmtEventType(t, evType)}
             </Chip>
           ))}
 
@@ -899,7 +948,7 @@ function FilterBar({
                 onPatch({ severity: filters.severity === s ? null : s })
               }
             >
-              {AUDIT_SEVERITY_LABELS[s]}
+              {fmtSeverity(t, s)}
             </Chip>
           ))}
         </div>
@@ -950,7 +999,7 @@ function FilterBar({
                         })
                       }
                     >
-                      {tl.name}
+                      {fmtTagName(t, tl.flag)}
                     </Chip>
                   );
                 })}
@@ -1250,7 +1299,7 @@ function DrawerHeader({ detail, loading }: { detail?: AuditDetailDto; loading: b
   const tone = severityTone(detail.severity);
   const toneColor = severityColorVar(detail.severity);
   const ts = fmtIsoDense(detail.occurredAtUtc);
-  const tags = decodeTags(detail.tags);
+  const tags = fmtDecodedTags(t, detail.tags);
 
   return (
     <div className="relative border-b border-[var(--color-border)] px-6 py-5">
@@ -1275,10 +1324,10 @@ function DrawerHeader({ detail, loading }: { detail?: AuditDetailDto; loading: b
             <Icon className="h-3.5 w-3.5" />
           </span>
           <Badge variant={tone === "danger" ? "danger" : tone === "warning" ? "warning" : tone === "info" ? "info" : "default"}>
-            {AUDIT_SEVERITY_LABELS[detail.severity]}
+            {fmtSeverity(t, detail.severity)}
           </Badge>
           <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-muted-foreground)]">
-            {AUDIT_EVENT_TYPE_LABELS[detail.eventType]}
+            {fmtEventType(t, detail.eventType)}
           </span>
         </div>
         <div className="mt-2 flex items-baseline gap-3">
@@ -1293,13 +1342,13 @@ function DrawerHeader({ detail, loading }: { detail?: AuditDetailDto; loading: b
         </div>
         {tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {tags.map((t) => (
+            {tags.map((tag) => (
               <span
-                key={t}
+                key={tag}
                 className="inline-flex items-center gap-1 rounded-full bg-[var(--color-muted)] px-2 py-0.5 font-mono text-[10.5px]"
               >
                 <Tag className="h-2.5 w-2.5" />
-                {t}
+                {tag}
               </span>
             ))}
           </div>
@@ -1562,10 +1611,10 @@ function RelatedEventsSection({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
                       <span className={cn("truncate text-[12px] font-medium tracking-tight", isCurrent && "text-[var(--color-primary)]")}>
-                        {row.source ?? AUDIT_EVENT_TYPE_LABELS[row.eventType]}
+                        {row.source ?? fmtEventType(t, row.eventType)}
                       </span>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted-foreground)]">
-                        {AUDIT_SEVERITY_LABELS[row.severity]}
+                        {fmtSeverity(t, row.severity)}
                       </span>
                     </span>
                     <span className="font-mono text-[10.5px] tabular-nums text-[var(--color-muted-foreground)]">

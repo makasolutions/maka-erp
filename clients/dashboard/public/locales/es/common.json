@@ -510,6 +510,30 @@
       "warn": "Adv",
       "err": "Error",
       "topSources": "Principales fuentes"
+    },
+    "eventTypes": {
+      "unknown": "Desconocido",
+      "entity": "Entidad",
+      "security": "Seguridad",
+      "activity": "Actividad",
+      "exception": "Excepción"
+    },
+    "severities": {
+      "trace": "Trace",
+      "debug": "Debug",
+      "information": "Info",
+      "warning": "Adv",
+      "error": "Error",
+      "critical": "Crítico"
+    },
+    "tagLabels": {
+      "piiMasked": "PII enmascarado",
+      "outOfQuota": "Cuota excedida",
+      "sampled": "Muestreado",
+      "retainedLong": "Retenido",
+      "healthCheck": "Health check",
+      "authentication": "Autenticación",
+      "authorization": "Autorización"
     }
   },
   "invoices": {

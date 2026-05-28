@@ -510,6 +510,30 @@
       "warn": "Warn",
       "err": "Err",
       "topSources": "Top sources"
+    },
+    "eventTypes": {
+      "unknown": "Unknown",
+      "entity": "Entity",
+      "security": "Security",
+      "activity": "Activity",
+      "exception": "Exception"
+    },
+    "severities": {
+      "trace": "Trace",
+      "debug": "Debug",
+      "information": "Info",
+      "warning": "Warn",
+      "error": "Error",
+      "critical": "Critical"
+    },
+    "tagLabels": {
+      "piiMasked": "PII masked",
+      "outOfQuota": "Quota exceeded",
+      "sampled": "Sampled",
+      "retainedLong": "Retained",
+      "healthCheck": "Health check",
+      "authentication": "Auth",
+      "authorization": "Authz"
     }
   },
   "invoices": {
