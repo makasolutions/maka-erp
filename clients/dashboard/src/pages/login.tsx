@@ -2,7 +2,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -30,8 +30,6 @@ import { cn } from "@/lib/cn";
 import { env } from "@/env";
 import { LoginDemoPanel } from "@/pages/login.demo-panel";
 import type { DemoAccount } from "@/pages/login.demo-accounts";
-
-type LocationState = { from?: { pathname: string } };
 
 // ────────────────────────────────────────────────────────────────────────
 // Demo popup — DEV only. Click "Demo accounts" under the form, the
@@ -82,9 +80,7 @@ function DemoDialog({
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const { t } = useTranslation("common");
-  const from = (location.state as LocationState | null)?.from?.pathname ?? "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -95,7 +91,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to="/" replace />;
   }
 
   const performLogin = async (creds: { email: string; password: string; tenant: string }) => {
@@ -103,7 +99,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login(creds);
-      navigate(from, { replace: true });
+      navigate("/", { replace: true });
     } catch (err) {
       const message =
         err instanceof ApiRequestError

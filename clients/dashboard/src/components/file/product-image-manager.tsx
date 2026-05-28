@@ -33,6 +33,9 @@ type Props = {
   /** Cache key to invalidate after mutations (typically the product detail query). */
   invalidateKey: readonly unknown[];
   className?: string;
+  /** When true the upload / remove / set-thumbnail controls are hidden.
+   *  The gallery and preview remain fully functional. */
+  readOnly?: boolean;
 };
 
 /**
@@ -43,7 +46,7 @@ type Props = {
  *   - Renders the existing images as a grid; each tile has Set-as-cover, Remove, and click-to-preview.
  *   - Clicking an image opens a fullscreen preview modal.
  */
-export function ProductImageManager({ productId, images, invalidateKey, className }: Props) {
+export function ProductImageManager({ productId, images, invalidateKey, className, readOnly = false }: Props) {
   const { t } = useTranslation("files");
   const queryClient = useQueryClient();
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -120,18 +123,20 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
     <div className={cn("space-y-4", className)}>
       {/* Upload row */}
       <div className="flex items-center gap-3">
-        <Button type="button" onClick={handlePick} disabled={isUploading || attachMutation.isPending}>
-          {isUploading || attachMutation.isPending
-            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            : <Upload className="h-3.5 w-3.5" />}
-          {t("productImages.upload")}
-        </Button>
-        {progress && progress.status !== "done" && (
+        {!readOnly && (
+          <Button type="button" onClick={handlePick} disabled={isUploading || attachMutation.isPending}>
+            {isUploading || attachMutation.isPending
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Upload className="h-3.5 w-3.5" />}
+            {t("productImages.upload")}
+          </Button>
+        )}
+        {!readOnly && progress && progress.status !== "done" && (
           <span className="text-[11.5px] tabular-nums text-[var(--color-muted-foreground)]">
             {progress.fileName} · {progress.percent}%
           </span>
         )}
-        <span className="ml-auto text-[11.5px] text-[var(--color-muted-foreground)]">
+        <span className={cn("text-[11.5px] text-[var(--color-muted-foreground)]", !readOnly && "ml-auto")}>
           {t("productImages.count", { count: sorted.length })} · {t("productImages.hint")}
         </span>
       </div>
@@ -151,6 +156,7 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
               onSetThumbnail={() => thumbnailMutation.mutate(image.id)}
               onRemove={() => setPendingRemove(image)}
               busy={thumbnailMutation.isPending || removeMutation.isPending}
+              readOnly={readOnly}
             />
           ))}
         </div>
@@ -173,12 +179,14 @@ function ImageTile({
   onSetThumbnail,
   onRemove,
   busy,
+  readOnly = false,
 }: {
   image: ProductImageDto;
   onPreview: () => void;
   onSetThumbnail: () => void;
   onRemove: () => void;
   busy: boolean;
+  readOnly?: boolean;
 }) {
   const { t } = useTranslation("files");
   return (
@@ -211,40 +219,42 @@ function ImageTile({
         </span>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-[oklch(0_0_0/0.65)] to-transparent p-2 opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover:opacity-100 focus-within:opacity-100">
-        {!image.isThumbnail && (
+      {!readOnly && (
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-[oklch(0_0_0/0.65)] to-transparent p-2 opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover:opacity-100 focus-within:opacity-100">
+          {!image.isThumbnail && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSetThumbnail();
+              }}
+              disabled={busy}
+              title={t("productImages.setCoverTitle")}
+              aria-label={t("productImages.setCoverAria")}
+              className="bg-[oklch(0_0_0/0.45)] text-white hover:bg-[oklch(0_0_0/0.65)]"
+            >
+              <StarOff className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             type="button"
             size="icon"
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              onSetThumbnail();
+              onRemove();
             }}
             disabled={busy}
-            title={t("productImages.setCoverTitle")}
-            aria-label={t("productImages.setCoverAria")}
-            className="bg-[oklch(0_0_0/0.45)] text-white hover:bg-[oklch(0_0_0/0.65)]"
+            title={t("productImages.removeTitle")}
+            aria-label={t("productImages.removeAria")}
+            className="bg-[oklch(0_0_0/0.45)] text-white hover:bg-[var(--color-destructive)]"
           >
-            <StarOff className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           </Button>
-        )}
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          disabled={busy}
-          title={t("productImages.removeTitle")}
-          aria-label={t("productImages.removeAria")}
-          className="bg-[oklch(0_0_0/0.45)] text-white hover:bg-[var(--color-destructive)]"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

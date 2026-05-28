@@ -73,6 +73,7 @@ import {
   Field,
 } from "@/components/list";
 import { ProductImageManager } from "@/components/file/product-image-manager";
+import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 import {
@@ -101,6 +102,8 @@ export function ProductDetailPage() {
   const { productId = "" } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogState>({ mode: "closed" });
+  const { can } = usePerm();
+  const canUpdate = can(P.catalog.products.update);
 
   const productQuery = useQuery({
     queryKey: ["catalog", "products", productId],
@@ -185,6 +188,7 @@ export function ProductDetailPage() {
                 description={t("products.detail.descSectionDesc")}
                 action={
                   <Button
+                    perm={P.catalog.products.update}
                     variant="outline"
                     size="sm"
                     onClick={() => setDialog({ mode: "edit" })}
@@ -207,6 +211,7 @@ export function ProductDetailPage() {
                   productId={product.id}
                   images={product.images}
                   invalidateKey={["catalog", "products", productId]}
+                  readOnly={!canUpdate}
                 />
               </EntityDetailSection>
 
@@ -432,6 +437,7 @@ function PricingPanel({
         </div>
       </div>
       <Button
+        perm={P.catalog.products.update}
         variant="outline"
         size="sm"
         onClick={onPriceChange}
