@@ -73,6 +73,7 @@ import {
   Field,
 } from "@/components/list";
 import { ProductImageManager } from "@/components/file/product-image-manager";
+import { P } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 import {
   describe,
@@ -328,11 +329,12 @@ function ProductHero({
             <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
             <span className="hidden sm:inline">{t("common:actions.refresh")}</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onEdit} className="gap-1.5">
+          <Button perm={P.catalog.products.update} variant="outline" size="sm" onClick={onEdit} className="gap-1.5">
             <Pencil className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{t("common:actions.edit")}</span>
           </Button>
           <Button
+            perm={P.catalog.products.delete}
             variant="outline"
             size="sm"
             onClick={onDelete}
@@ -486,6 +488,7 @@ function InventoryPanel({
         </div>
       </div>
       <Button
+        perm={P.catalog.products.adjustStock}
         variant="outline"
         size="sm"
         onClick={onStockAdjust}

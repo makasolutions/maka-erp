@@ -60,6 +60,8 @@ import {
 import { describe, pad2 } from "@/lib/list-helpers";
 import { cn } from "@/lib/cn";
 import { EntityAuditSection } from "@/components/entity-audit-section";
+import { usePerm } from "@/auth/permission-guard";
+import { P } from "@/auth/permissions";
 
 function memberDisplay(m: GroupMemberDto, fallback: string): string {
   const parts = [m.firstName, m.lastName].filter(Boolean);
@@ -78,6 +80,8 @@ export function GroupDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useTranslation("identity");
+  const { can } = usePerm();
+  const canUpdate = can(P.identity.groups.update);
 
   const groupQuery = useQuery({
     queryKey: ["identity", "groups", groupId],
@@ -241,7 +245,7 @@ export function GroupDetailPage() {
         subtitle={group.description || t("groups.detail.cohortSubtitle")}
         actions={
           !group.isSystemGroup ? (
-            <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
+            <Button perm={P.identity.groups.delete} variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>
               <Trash2 className="mr-1 h-3.5 w-3.5" /> {t("groups.detail.deleteGroupBtn")}
             </Button>
           ) : undefined
@@ -270,23 +274,25 @@ export function GroupDetailPage() {
           icon={UsersIcon}
           description={t("groups.detail.detailsDesc")}
           footer={
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={reset}
-                disabled={!isDirty || save.isPending}
-              >
-                {t("common:actions.discard")}
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => save.mutate()}
-                disabled={!isDirty || save.isPending}
-              >
-                {save.isPending ? t("common:feedback.saving") : t("common:actions.saveChanges")}
-              </Button>
-            </div>
+            canUpdate ? (
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={reset}
+                  disabled={!isDirty || save.isPending}
+                >
+                  {t("common:actions.discard")}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => save.mutate()}
+                  disabled={!isDirty || save.isPending}
+                >
+                  {save.isPending ? t("common:feedback.saving") : t("common:actions.saveChanges")}
+                </Button>
+              </div>
+            ) : undefined
           }
         >
           <div className="space-y-4">
@@ -295,7 +301,7 @@ export function GroupDetailPage() {
                 id="g-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                disabled={group.isSystemGroup}
+                disabled={group.isSystemGroup || !canUpdate}
                 maxLength={128}
               />
             </Field>
@@ -305,6 +311,7 @@ export function GroupDetailPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t("groups.detail.descPlaceholder")}
+                disabled={!canUpdate}
                 maxLength={512}
               />
             </Field>
@@ -320,6 +327,7 @@ export function GroupDetailPage() {
               <Switch
                 checked={isDefault}
                 onCheckedChange={setIsDefault}
+                disabled={!canUpdate}
                 aria-label={t("groups.defaultGroupLabel")}
               />
             </div>
@@ -355,6 +363,7 @@ export function GroupDetailPage() {
                       role={role}
                       selected={selectedRoleIds.has(role.id)}
                       onToggle={() => toggleRole(role.id)}
+                      disabled={!canUpdate}
                     />
                   ))}
                 </ul>
@@ -369,7 +378,7 @@ export function GroupDetailPage() {
           icon={UsersIcon}
           description={t("groups.detail.membersDesc")}
           action={
-            <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
+            <Button perm={P.identity.groups.manageMembers} size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
               <UserPlus className="h-3.5 w-3.5" /> {t("groups.detail.addMembersBtn")}
             </Button>
           }
@@ -416,6 +425,7 @@ export function GroupDetailPage() {
                     </div>
                   </Link>
                   <Button
+                    perm={P.identity.groups.manageMembers}
                     variant="ghost"
                     size="sm"
                     onClick={() => removeMember.mutate(member.userId)}
@@ -479,10 +489,12 @@ function RoleToggleRow({
   role,
   selected,
   onToggle,
+  disabled = false,
 }: {
   role: RoleDto;
   selected: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   const { t } = useTranslation("identity");
   return (
@@ -514,6 +526,7 @@ function RoleToggleRow({
       <Switch
         checked={selected}
         onCheckedChange={onToggle}
+        disabled={disabled}
         aria-label={t("groups.detail.attachRoleAria", { name: role.name })}
       />
     </li>

@@ -98,6 +98,7 @@ export function UserDetailPage() {
   const canImpersonate = can(P.identity.users.impersonate);
   const canViewSessions = can(P.identity.sessions.viewAll);
   const canRevokeSessions = can(P.identity.sessions.revokeAll);
+  const canUpdateUser = can(P.identity.users.update);
 
   const userQuery = useQuery({
     queryKey: ["identity", "users", userId],
@@ -346,6 +347,7 @@ export function UserDetailPage() {
               </Button>
             )}
             <Button
+              perm={P.identity.users.update}
               variant="outline"
               size="sm"
               onClick={() => setDialog({ mode: "toggle-status" })}
@@ -361,6 +363,7 @@ export function UserDetailPage() {
               )}
             </Button>
             <Button
+              perm={P.identity.users.delete}
               variant="destructive"
               size="sm"
               onClick={() => setDialog({ mode: "delete" })}
@@ -435,7 +438,7 @@ export function UserDetailPage() {
           }
           padded={false}
           footer={
-            roles.length > 0 ? (
+            roles.length > 0 && canUpdateUser ? (
               <div className="flex items-center justify-end gap-2">
                 <Button
                   variant="outline"
@@ -508,6 +511,7 @@ export function UserDetailPage() {
                     <Switch
                       checked={isOn}
                       onCheckedChange={() => toggle(role)}
+                      disabled={!canUpdateUser}
                       aria-label={t("users.detail.toggleRoleAria", { name: role.roleName ?? "" })}
                     />
                   </li>

@@ -339,6 +339,7 @@ export function RoleDetailPage() {
         subtitle={role.description || (isSystem ? t("roles.detail.systemSubtitle") : t("roles.detail.customSubtitle"))}
         actions={
           <Button
+            perm={P.identity.roles.delete}
             variant="destructive"
             size="sm"
             onClick={() => setConfirmDelete(true)}
