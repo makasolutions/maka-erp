@@ -62,7 +62,7 @@ import {
   slugify,
 } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
-import { useHasPermission } from "@/auth/permission-guard";
+import { Perm, usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
 const PAGE_SIZE = 20;
@@ -79,9 +79,7 @@ type EditorState =
 
 export function BrandsPage() {
   const { t } = useTranslation("catalog");
-  const canCreate = useHasPermission(P.catalog.brands.create);
-  const canUpdate = useHasPermission(P.catalog.brands.update);
-  const canDelete = useHasPermission(P.catalog.brands.delete);
+  const { can } = usePerm();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
@@ -126,15 +124,14 @@ export function BrandsPage() {
         unit={t("brands.singular")}
         description={t("brands.description")}
       >
-        {canCreate && (
-          <Button
-            onClick={() => setEditor({ mode: "create" })}
-            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-          >
-            <Plus className="size-4" />
-            {t("brands.actions.create")}
-          </Button>
-        )}
+        <Button
+          perm={P.catalog.brands.create}
+          onClick={() => setEditor({ mode: "create" })}
+          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+        >
+          <Plus className="size-4" />
+          {t("brands.actions.create")}
+        </Button>
       </EntityPageHeader>
 
       <EntitySearch
@@ -165,15 +162,16 @@ export function BrandsPage() {
               >
                 {t("brands.empty.clearSearch")}
               </Button>
-            ) : canCreate ? (
+            ) : (
               <Button
+                perm={P.catalog.brands.create}
                 onClick={() => setEditor({ mode: "create" })}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
                 <Plus className="mr-1.5 size-4" />
                 {t("brands.actions.add")}
               </Button>
-            ) : undefined
+            )
           }
         />
       ) : (
@@ -190,7 +188,7 @@ export function BrandsPage() {
               <MobileCard
                 key={brand.id}
                 brand={brand}
-                onEdit={canUpdate ? () => setEditor({ mode: "edit", brand }) : undefined}
+                onEdit={can(P.catalog.brands.update) ? () => setEditor({ mode: "edit", brand }) : undefined}
               />
             ))}
           </div>
@@ -209,8 +207,8 @@ export function BrandsPage() {
                 key={brand.id}
                 brand={brand}
                 isLast={i === items.length - 1}
-                onEdit={canUpdate ? () => setEditor({ mode: "edit", brand }) : undefined}
-                onDelete={canDelete ? () => setEditor({ mode: "delete", brand }) : undefined}
+                onEdit={() => setEditor({ mode: "edit", brand })}
+                onDelete={() => setEditor({ mode: "delete", brand })}
               />
             ))}
           </EntityListCard>
@@ -309,8 +307,8 @@ function DesktopRow({
 }: {
   brand: BrandDto;
   isLast: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useTranslation("catalog");
   return (
@@ -354,7 +352,7 @@ function DesktopRow({
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-1">
-        {onEdit && (
+        <Perm need={P.catalog.brands.update}>
           <button
             type="button"
             aria-label={t("brands.editAria", { name: brand.name })}
@@ -363,8 +361,8 @@ function DesktopRow({
           >
             <Pencil className="size-3.5" />
           </button>
-        )}
-        {onDelete && (
+        </Perm>
+        <Perm need={P.catalog.brands.delete}>
           <button
             type="button"
             aria-label={t("brands.deleteAria", { name: brand.name })}
@@ -373,7 +371,7 @@ function DesktopRow({
           >
             <Trash2 className="size-3.5" />
           </button>
-        )}
+        </Perm>
         <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
       </div>
     </EntityListRow>

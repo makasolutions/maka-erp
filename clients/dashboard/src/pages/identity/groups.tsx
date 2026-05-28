@@ -47,14 +47,12 @@ import {
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
-import { useHasPermission } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
 const DESKTOP_COLUMNS = "grid-cols-[1fr_160px_120px_24px]";
 
 export function GroupsPage() {
   const { t } = useTranslation("identity");
-  const canCreate = useHasPermission(P.identity.groups.create);
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -82,15 +80,14 @@ export function GroupsPage() {
         unit={t("groups.singular")}
         description={t("groups.description")}
       >
-        {canCreate && (
-          <Button
-            onClick={() => setCreateOpen(true)}
-            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-          >
-            <Plus className="size-4" />
-            {t("groups.actions.create")}
-          </Button>
-        )}
+        <Button
+          perm={P.identity.groups.create}
+          onClick={() => setCreateOpen(true)}
+          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+        >
+          <Plus className="size-4" />
+          {t("groups.actions.create")}
+        </Button>
       </EntityPageHeader>
 
       <EntitySearch
@@ -116,7 +113,7 @@ export function GroupsPage() {
                 {t("groups.clearSearch")}
               </Button>
             ) : (
-              <Button onClick={() => setCreateOpen(true)} className="h-9 rounded-lg px-4 text-[13px]">
+              <Button perm={P.identity.groups.create} onClick={() => setCreateOpen(true)} className="h-9 rounded-lg px-4 text-[13px]">
                 <Plus className="mr-1.5 size-4" />
                 {t("groups.addGroup")}
               </Button>

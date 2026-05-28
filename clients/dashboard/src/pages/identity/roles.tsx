@@ -36,7 +36,6 @@ import {
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
-import { useHasPermission } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
 const SYSTEM_ROLE_NAMES = new Set(["admin", "administrator", "basic", "user"]);
@@ -56,7 +55,6 @@ function newGuid(): string {
 
 export function RolesPage() {
   const { t } = useTranslation("identity");
-  const canCreate = useHasPermission(P.identity.roles.create);
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -94,15 +92,14 @@ export function RolesPage() {
         unitPlural={t("roles.plural")}
         description={t("roles.description")}
       >
-        {canCreate && (
-          <Button
-            onClick={() => setCreateOpen(true)}
-            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-          >
-            <Plus className="size-4" />
-            {t("roles.actions.create")}
-          </Button>
-        )}
+        <Button
+          perm={P.identity.roles.create}
+          onClick={() => setCreateOpen(true)}
+          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+        >
+          <Plus className="size-4" />
+          {t("roles.actions.create")}
+        </Button>
       </EntityPageHeader>
 
       <EntitySearch
@@ -133,6 +130,7 @@ export function RolesPage() {
               </Button>
             ) : (
               <Button
+                perm={P.identity.roles.create}
                 onClick={() => setCreateOpen(true)}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >

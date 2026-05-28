@@ -56,7 +56,6 @@ import {
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
-import { useHasPermission } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
 const PAGE_SIZE = 20;
@@ -80,7 +79,6 @@ function fullName(u: UserDto, fallback = "Unnamed user"): string {
 
 export function UsersPage() {
   const { t } = useTranslation("identity");
-  const canCreate = useHasPermission(P.identity.users.create);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
@@ -150,15 +148,14 @@ export function UsersPage() {
         unit={t("users.singular")}
         description={t("users.description")}
       >
-        {canCreate && (
-          <Button
-            onClick={() => setRegisterOpen(true)}
-            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-          >
-            <Plus className="size-4" />
-            {t("users.register")}
-          </Button>
-        )}
+        <Button
+          perm={P.identity.users.create}
+          onClick={() => setRegisterOpen(true)}
+          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+        >
+          <Plus className="size-4" />
+          {t("users.register")}
+        </Button>
       </EntityPageHeader>
 
       <EntitySearch
@@ -226,6 +223,7 @@ export function UsersPage() {
               </Button>
             ) : (
               <Button
+                perm={P.identity.users.create}
                 onClick={() => setRegisterOpen(true)}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >

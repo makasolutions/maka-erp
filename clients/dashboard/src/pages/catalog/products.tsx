@@ -69,7 +69,7 @@ import {
   formatDate,
   formatMoney,
 } from "@/lib/list-helpers";
-import { useHasPermission } from "@/auth/permission-guard";
+import { Perm, usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
 const PAGE_SIZE = 25;
@@ -180,10 +180,7 @@ function ActivePill({
 
 export function ProductsPage() {
   const { t } = useTranslation("catalog");
-  const canCreate = useHasPermission(P.catalog.products.create);
-  const canUpdate = useHasPermission(P.catalog.products.update);
-  const canDelete = useHasPermission(P.catalog.products.delete);
-  const canAdjustStock = useHasPermission(P.catalog.products.adjustStock);
+  const { can } = usePerm();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -271,15 +268,14 @@ export function ProductsPage() {
         unit={t("products.singular")}
         description={t("products.description")}
       >
-        {canCreate && (
-          <Button
-            onClick={() => setEditor({ mode: "create" })}
-            className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
-          >
-            <Plus className="size-4" />
-            {t("products.actions.create")}
-          </Button>
-        )}
+        <Button
+          perm={P.catalog.products.create}
+          onClick={() => setEditor({ mode: "create" })}
+          className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
+        >
+          <Plus className="size-4" />
+          {t("products.actions.create")}
+        </Button>
       </EntityPageHeader>
 
       {/* Search */}
@@ -328,7 +324,7 @@ export function ProductsPage() {
         <EmptyResults
           searchActive={searchActive}
           search={debouncedSearch}
-          onCreate={canCreate ? () => setEditor({ mode: "create" }) : undefined}
+          onCreate={can(P.catalog.products.create) ? () => setEditor({ mode: "create" }) : undefined}
           onClear={() => {
             setSearch("");
             setBrandFilter(null);
@@ -352,7 +348,7 @@ export function ProductsPage() {
                 product={product}
                 brand={brandsById.get(product.brandId)}
                 category={categoriesById.get(product.categoryId)}
-                onEdit={canUpdate ? () => setEditor({ mode: "edit", product }) : undefined}
+                onEdit={can(P.catalog.products.update) ? () => setEditor({ mode: "edit", product }) : undefined}
               />
             ))}
           </div>
@@ -376,10 +372,10 @@ export function ProductsPage() {
                 brand={brandsById.get(product.brandId)}
                 category={categoriesById.get(product.categoryId)}
                 isLast={i === items.length - 1}
-                onEdit={canUpdate ? () => setEditor({ mode: "edit", product }) : undefined}
-                onDelete={canDelete ? () => setEditor({ mode: "delete", product }) : undefined}
-                onPriceChange={canUpdate ? () => setEditor({ mode: "price", product }) : undefined}
-                onStockAdjust={canAdjustStock ? () => setEditor({ mode: "stock", product }) : undefined}
+                onEdit={() => setEditor({ mode: "edit", product })}
+                onDelete={() => setEditor({ mode: "delete", product })}
+                onPriceChange={can(P.catalog.products.update) ? () => setEditor({ mode: "price", product }) : undefined}
+                onStockAdjust={can(P.catalog.products.adjustStock) ? () => setEditor({ mode: "stock", product }) : undefined}
               />
             ))}
           </div>
@@ -544,8 +540,8 @@ function DesktopRow({
   brand: BrandDto | undefined;
   category: CategoryDto | undefined;
   isLast: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
   onPriceChange?: () => void;
   onStockAdjust?: () => void;
 }) {
@@ -627,7 +623,7 @@ function DesktopRow({
 
       {/* Trailing actions + chevron */}
       <div className="flex items-center justify-end gap-1">
-        {onEdit && (
+        <Perm need={P.catalog.products.update}>
           <button
             type="button"
             aria-label={t("products.editAria", { name: product.name })}
@@ -636,8 +632,8 @@ function DesktopRow({
           >
             <Pencil className="size-3.5" />
           </button>
-        )}
-        {onDelete && (
+        </Perm>
+        <Perm need={P.catalog.products.delete}>
           <button
             type="button"
             aria-label={t("products.deleteAria", { name: product.name })}
@@ -646,7 +642,7 @@ function DesktopRow({
           >
             <Trash2 className="size-3.5" />
           </button>
-        )}
+        </Perm>
         <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
       </div>
     </div>
