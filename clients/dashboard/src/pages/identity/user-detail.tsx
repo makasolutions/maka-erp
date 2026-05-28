@@ -39,6 +39,7 @@ import {
   type UserRoleDto,
 } from "@/api/identity";
 import { useAuth } from "@/auth/use-auth";
+import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,9 +94,10 @@ export function UserDetailPage() {
   const [impersonationReason, setImpersonationReason] = useState("");
   const [pending, setPending] = useState<Map<string, boolean>>(new Map());
 
-  const canImpersonate = (actor?.permissions ?? []).includes(P.identity.users.impersonate);
-  const canViewSessions = (actor?.permissions ?? []).includes(P.identity.sessions.viewAll);
-  const canRevokeSessions = (actor?.permissions ?? []).includes(P.identity.sessions.revokeAll);
+  const { can } = usePerm();
+  const canImpersonate = can(P.identity.users.impersonate);
+  const canViewSessions = can(P.identity.sessions.viewAll);
+  const canRevokeSessions = can(P.identity.sessions.revokeAll);
 
   const userQuery = useQuery({
     queryKey: ["identity", "users", userId],
