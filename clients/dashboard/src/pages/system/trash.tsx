@@ -35,6 +35,7 @@ import {
   type FileAssetDto,
 } from "@/api/files";
 import { Button } from "@/components/ui/button";
+import { P } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 import {
   EntityEmpty,
@@ -180,6 +181,7 @@ function ProductsTab({
         deletedBy: p.deletedBy,
         isRestoring: restore.isPending && restore.variables === p.id,
         onRestore: () => restore.mutate(p.id),
+        restorePerm: P.catalog.products.restore,
       })}
     />
   );
@@ -221,6 +223,7 @@ function BrandsTab({
         deletedBy: b.deletedBy,
         isRestoring: restore.isPending && restore.variables === b.id,
         onRestore: () => restore.mutate(b.id),
+        restorePerm: P.catalog.brands.restore,
       })}
     />
   );
@@ -262,6 +265,7 @@ function CategoriesTab({
         deletedBy: c.deletedBy,
         isRestoring: restore.isPending && restore.variables === c.id,
         onRestore: () => restore.mutate(c.id),
+        restorePerm: P.catalog.categories.restore,
       })}
     />
   );
@@ -303,6 +307,7 @@ function TicketsTab({
         deletedBy: ticket.deletedBy,
         isRestoring: restore.isPending && restore.variables === ticket.id,
         onRestore: () => restore.mutate(ticket.id),
+        restorePerm: P.tickets.restore,
       })}
     />
   );
@@ -344,6 +349,7 @@ function FilesTab({
         deletedBy: f.deletedBy,
         isRestoring: restore.isPending && restore.variables === f.id,
         onRestore: () => restore.mutate(f.id),
+        restorePerm: P.files.restore,
       })}
     />
   );
@@ -361,6 +367,8 @@ type RowVm = {
   deletedBy: string | null | undefined;
   isRestoring: boolean;
   onRestore: () => void;
+  /** Permission required to show the Restore button. */
+  restorePerm: string;
 };
 
 type TrashQuery<T> = {
@@ -499,6 +507,7 @@ function TrashMobileCard({ row }: { row: RowVm }) {
           </div>
         </div>
         <Button
+          perm={row.restorePerm}
           variant="outline"
           size="sm"
           onClick={row.onRestore}
@@ -565,6 +574,7 @@ function TrashDesktopRow({ row, isLast }: { row: RowVm; isLast: boolean }) {
       {/* Actions */}
       <div className="flex items-center justify-end">
         <Button
+          perm={row.restorePerm}
           variant="outline"
           size="sm"
           onClick={row.onRestore}

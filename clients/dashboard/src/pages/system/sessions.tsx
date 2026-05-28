@@ -25,6 +25,7 @@ import {
   type UserSessionDto,
 } from "@/api/sessions";
 import { Button } from "@/components/ui/button";
+import { P } from "@/auth/permissions";
 import {
   EntityEmpty,
   EntityFilterPill,
@@ -361,6 +362,7 @@ function SessionMobileCard({
         <div className="mt-3 ml-[52px] flex items-center gap-1.5">
           {session.userId && (
             <Button
+              perm={P.identity.sessions.revokeAll}
               variant="ghost"
               size="sm"
               disabled={isRevokingAllForUser}
@@ -372,6 +374,7 @@ function SessionMobileCard({
             </Button>
           )}
           <Button
+            perm={P.identity.sessions.revokeAll}
             variant="outline"
             size="sm"
             disabled={isRevoking}
@@ -465,6 +468,7 @@ function SessionDesktopRow({
           <>
             {session.userId && (
               <Button
+                perm={P.identity.sessions.revokeAll}
                 variant="ghost"
                 size="sm"
                 disabled={isRevokingAllForUser}
@@ -477,6 +481,7 @@ function SessionDesktopRow({
               </Button>
             )}
             <Button
+              perm={P.identity.sessions.revokeAll}
               variant="outline"
               size="sm"
               disabled={isRevoking}
