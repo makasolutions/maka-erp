@@ -757,11 +757,24 @@ export function MakaGrid<T extends object>({
     const pager = grid.element.querySelector<HTMLElement>(".e-pager");
     if (!pager) return;
 
-    // Only meaningful with more than one page. When there's a single page,
-    // remove any previously-injected control and bail — there's nowhere to go.
-    const total = grid.pageSettings?.totalRecordsCount ?? 0;
-    const size = grid.pageSettings?.pageSize ?? 0;
-    const totalPages = size > 0 ? Math.ceil(total / size) : 1;
+    // Resolve the REAL page count. Prefer totalRecordsCount; fall back to the
+    // bound array length when it hasn't been populated yet for local data.
+    const rowCount =
+      grid.pageSettings?.totalRecordsCount ||
+      (Array.isArray(grid.dataSource) ? grid.dataSource.length : 0);
+    const size = grid.pageSettings?.pageSize || 1;
+    const totalPages = Math.max(1, Math.ceil(rowCount / size));
+
+    // Keep the numeric strip no larger than the real page count (cap 10) so a
+    // single-page dataset shows exactly one numeric button — never a fixed run.
+    const desiredCount = Math.min(totalPages, 10);
+    if (grid.pageSettings && grid.pageSettings.pageCount !== desiredCount) {
+      grid.pageSettings.pageCount = desiredCount;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      try { (grid as any).pagerModule?.refresh?.(); } catch { /* pager not ready */ }
+    }
+
+    // The go-to-page control is only meaningful with more than one page.
     if (totalPages <= 1) {
       pager.querySelector(".maka-goto")?.remove();
       return;
