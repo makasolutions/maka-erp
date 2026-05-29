@@ -326,33 +326,29 @@ export interface MakaGridPermissions {
 }
 
 /**
- * Opt-in server-side pagination. When provided, the grid stops paginating the
- * `dataSource` array locally and instead treats it as the CURRENT page only;
- * the pager is driven by `totalCount`, and `onChange` fires when the user
- * navigates pages or changes the page size so the page can refetch.
+ * Opt-in server-side pagination. When provided, `dataSource` is the CURRENT
+ * page only; the grid's own pager is disabled and a fully-controlled Maka pager
+ * is rendered instead (numbered pages, page-size, go-to-page) driven by
+ * `totalCount`/`page`/`pageSize`. Column sorting is captured and reported via
+ * `onSortChange` so the page can sort server-side. In-grid column filtering /
+ * grouping stay off — the page's filter panel is the single source of filtering.
  *
- * In this mode in-grid sorting / filtering / grouping are disabled — the page's
- * own filter panel is the single source of filtering.
+ * This avoids Syncfusion's custom-binding (DataResult + dataStateChange), whose
+ * controlled page/pageSize props desync with its internal pager state.
  */
 export interface MakaGridServerPaging {
-  /** Total matching rows on the server (drives the pager + go-to-page). */
+  /** Total matching rows on the server (drives the pager). */
   totalCount: number;
   /** Rows per page. */
   pageSize: number;
   /** Current 1-based page. */
   page: number;
   /** Page-size options. Default [20, 50, 100]. */
-  pageSizes?: (number | string)[];
-  /**
-   * Fires when the user pages, changes page size, or sorts a column. `sort`
-   * carries the grid column field + direction (null when sorting cleared) so
-   * the page can translate it to its API's sort parameter.
-   */
-  onChange: (next: {
-    page: number;
-    pageSize: number;
-    sort?: { field: string; dir: "asc" | "desc" } | null;
-  }) => void;
+  pageSizes?: number[];
+  /** Fires when the user navigates pages or changes the page size. */
+  onChange: (next: { page: number; pageSize: number }) => void;
+  /** Fires when the user sorts a column (null when sorting is cleared). */
+  onSortChange?: (sort: { field: string; dir: "asc" | "desc" } | null) => void;
 }
 
 export interface MakaGridProps<T extends object> {
@@ -858,43 +854,31 @@ export function MakaGrid<T extends object>({
   }, [goToLabel]);
 
   // ── Server-side pagination wiring ──────────────────────────────────────────
+  // In server mode the grid renders ONLY the current page (allowPaging off) and
+  // a controlled Maka pager (below) drives navigation. Column sorts are captured
+  // and reported so the page can sort server-side.
   const serverMode = !!serverPaging;
-  // In server mode Syncfusion expects a DataResult ({ result, count }); it then
-  // treats `result` as the current page and uses `count` for the pager.
-  const gridData: unknown = serverMode
-    ? { result: dataSource, count: serverPaging!.totalCount }
-    : dataSource;
 
-  const handleDataStateChange = useCallback(
-    (state: {
-      skip?: number;
-      take?: number;
-      sorted?: Array<{ name?: string; direction?: string }>;
-    }) => {
-      if (!serverPaging) return;
-      const take = state.take || serverPaging.pageSize;
-      const skip = state.skip || 0;
-      const nextPage = Math.floor(skip / take) + 1;
-      const sortDesc = state.sorted?.[0];
-      const sort = sortDesc?.name
-        ? {
-            field: sortDesc.name,
-            dir: (sortDesc.direction ?? "ascending").toLowerCase().startsWith("desc")
-              ? ("desc" as const)
-              : ("asc" as const),
-          }
-        : null;
-      serverPaging.onChange({ page: nextPage, pageSize: take, sort });
+  // Drive a server-side sort from the grid's sort action. We let Syncfusion keep
+  // its sort indicator (arrow) and read the requested direction here, then the
+  // page refetches the globally-sorted page. actionBegin fires reliably for
+  // sorting (actionComplete does not, with paging disabled).
+  const handleActionBegin = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (args: any) => {
+      if (!serverPaging?.onSortChange || args?.requestType !== "sorting") return;
+      const field: string | undefined = args.columnName;
+      if (!field) return;
+      const dir: "asc" | "desc" = String(args.direction).toLowerCase().startsWith("desc")
+        ? "desc"
+        : "asc";
+      serverPaging.onSortChange({ field, dir });
     },
     [serverPaging],
   );
 
-  // In server mode Syncfusion uses custom binding ({ result, count }). External
-  // filter changes swap the dataSource WITHOUT firing dataBound/actionComplete,
-  // and the built-in spinner is left showing on empty results. We drive the
-  // loading indicator with our own overlay (isLoading), so keep Syncfusion's
-  // spinner suppressed once the data settles (immediately + a deferred backup
-  // in case the grid re-shows it during its async refresh).
+  // In server mode the grid can briefly show its own spinner when the page swaps
+  // the dataSource; we drive loading via our overlay, so keep it suppressed.
   useEffect(() => {
     if (!serverMode) return;
     const hide = () => {
@@ -907,16 +891,9 @@ export function MakaGrid<T extends object>({
     hide();
     const id = window.setTimeout(hide, 80);
     return () => window.clearTimeout(id);
-  }, [serverMode, dataSource, serverPaging?.totalCount, serverPaging?.page, isLoading]);
+  }, [serverMode, dataSource]);
 
-  const pageSettings = serverMode
-    ? {
-        pageSize: serverPaging!.pageSize,
-        pageSizes: serverPaging!.pageSizes ?? [20, 50, 100],
-        currentPage: serverPaging!.page,
-        pageCount: 10,
-      }
-    : { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: 5 };
+  const pageSettings = { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: 5 };
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -935,14 +912,13 @@ export function MakaGrid<T extends object>({
       <GridComponent
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={gridRef as any}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        dataSource={gridData as any}
+        dataSource={dataSource}
         height={gridHeight}
         locale={locale}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         emptyRecordTemplate={emptyTemplate as any}
         /* ── Features ── */
-        allowPaging
+        allowPaging={!serverMode}
         allowSorting
         allowFiltering={!serverMode}
         allowGrouping={!serverMode}
@@ -963,7 +939,7 @@ export function MakaGrid<T extends object>({
         toolbarClick={handleToolbarClick}
         /* ── Interaction ── */
         recordClick={handleRecordClick}
-        {...(serverMode ? { dataStateChange: handleDataStateChange } : {})}
+        {...(serverMode ? { actionBegin: handleActionBegin } : {})}
         created={injectGoToPage}
         dataBound={injectGoToPage}
         rowDataBound={(args) => {
@@ -988,6 +964,118 @@ export function MakaGrid<T extends object>({
           ]}
         />
       </GridComponent>
+
+      {serverPaging && (
+        <MakaServerPager
+          totalCount={serverPaging.totalCount}
+          page={serverPaging.page}
+          pageSize={serverPaging.pageSize}
+          pageSizes={serverPaging.pageSizes ?? [20, 50, 100]}
+          onChange={serverPaging.onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Controlled server-side pager ────────────────────────────────────────────
+// Fully controlled (no Syncfusion internal page state) so it never desyncs:
+// first/prev, a windowed run of numeric buttons, next/last, a go-to-page input,
+// the page-size selector and the "Page X of Y · N records" summary.
+function MakaServerPager({
+  totalCount,
+  page,
+  pageSize,
+  pageSizes,
+  onChange,
+}: {
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  pageSizes: number[];
+  onChange: (next: { page: number; pageSize: number }) => void;
+}) {
+  const { t } = useTranslation("common");
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const current = Math.min(Math.max(1, page), totalPages);
+
+  // Windowed numeric run (max 7 buttons) centred on the current page.
+  const windowSize = 7;
+  let start = Math.max(1, current - Math.floor(windowSize / 2));
+  const end = Math.min(totalPages, start + windowSize - 1);
+  start = Math.max(1, end - windowSize + 1);
+  const pages: number[] = [];
+  for (let p = start; p <= end; p++) pages.push(p);
+
+  const go = (p: number) => {
+    const target = Math.min(Math.max(1, p), totalPages);
+    if (target !== current) onChange({ page: target, pageSize });
+  };
+
+  const navBtn =
+    "grid h-8 min-w-8 place-items-center rounded-md border border-[var(--color-border)] px-2 text-[12.5px] " +
+    "text-[var(--color-foreground)] hover:bg-[var(--color-accent)] disabled:opacity-40 disabled:pointer-events-none " +
+    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]";
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button type="button" className={navBtn} onClick={() => go(1)} disabled={current <= 1} aria-label={t("grid.firstPage")}>«</button>
+        <button type="button" className={navBtn} onClick={() => go(current - 1)} disabled={current <= 1} aria-label={t("grid.previousPage")}>‹</button>
+        {start > 1 && <span className="px-1 text-[12.5px] text-[var(--color-muted-foreground)]">…</span>}
+        {pages.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => go(p)}
+            aria-current={p === current}
+            className={
+              p === current
+                ? "grid h-8 min-w-8 place-items-center rounded-md border border-[var(--color-primary)] bg-[var(--color-primary)] px-2 text-[12.5px] font-semibold text-[var(--color-primary-foreground)]"
+                : navBtn
+            }
+          >
+            {p}
+          </button>
+        ))}
+        {end < totalPages && <span className="px-1 text-[12.5px] text-[var(--color-muted-foreground)]">…</span>}
+        <button type="button" className={navBtn} onClick={() => go(current + 1)} disabled={current >= totalPages} aria-label={t("grid.nextPage")}>›</button>
+        <button type="button" className={navBtn} onClick={() => go(totalPages)} disabled={current >= totalPages} aria-label={t("grid.lastPage")}>»</button>
+
+        <span className="ml-2 text-[12.5px] text-[var(--color-muted-foreground)]">{t("grid.goToPage")}</span>
+        <input
+          type="number"
+          min={1}
+          max={totalPages}
+          placeholder="#"
+          className="h-8 w-16 rounded-md border border-[var(--color-input)] bg-transparent px-2 text-[12.5px] text-[var(--color-foreground)] outline-none focus-visible:border-[var(--color-ring)] focus-visible:ring-2 focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.4)]"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const n = parseInt((e.target as HTMLInputElement).value, 10);
+              if (!Number.isNaN(n)) {
+                go(n);
+                (e.target as HTMLInputElement).value = "";
+              }
+            }
+          }}
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span className="text-[12.5px] text-[var(--color-muted-foreground)]">
+          {t("grid.pageOf", { page: current, total: totalPages })} · {t("grid.totalRecords", { count: totalCount })}
+        </span>
+        <select
+          value={pageSize}
+          onChange={(e) => onChange({ page: 1, pageSize: Number(e.target.value) })}
+          className="h-8 rounded-md border border-[var(--color-input)] bg-transparent px-2 text-[12.5px] text-[var(--color-foreground)] outline-none focus-visible:border-[var(--color-ring)] dark:bg-[oklch(from_var(--color-input)_l_c_h_/_0.3)]"
+          aria-label={t("grid.itemsPerPage")}
+        >
+          {pageSizes.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }

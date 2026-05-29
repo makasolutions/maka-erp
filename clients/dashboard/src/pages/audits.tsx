@@ -350,12 +350,14 @@ function AuditsMakaSection() {
     queryFn: ({ signal }) => listAudits({ pageNumber: page, pageSize, sort, ...filterParams }, signal),
     placeholderData: keepPreviousData,
     staleTime: 5_000,
+    refetchOnWindowFocus: false,
   });
 
   const summaryQuery = useQuery({
     queryKey: ["audits", "maka-summary", filterParams],
     queryFn: ({ signal }) => getAuditSummary(filterParams, signal),
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   // Users for the user filter dropdown.
@@ -596,16 +598,17 @@ function AuditsMakaSection() {
           page,
           pageSize,
           pageSizes: [20, 50, 100],
-          onChange: ({ page: p, pageSize: ps, sort: s }) => {
+          onChange: ({ page: p, pageSize: ps }) => {
             setPage(p);
             setPageSize(ps);
-            if (s !== undefined) {
-              if (!s) {
-                setSort(undefined);
-              } else {
-                const apiField = sortFieldFor(s.field);
-                setSort(apiField ? `${apiField} ${s.dir}` : undefined);
-              }
+          },
+          onSortChange: (s) => {
+            setPage(1);
+            if (!s) {
+              setSort(undefined);
+            } else {
+              const apiField = sortFieldFor(s.field);
+              setSort(apiField ? `${apiField} ${s.dir}` : undefined);
             }
           },
         }}
