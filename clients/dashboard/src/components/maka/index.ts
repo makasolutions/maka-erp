@@ -17,6 +17,9 @@ export type { MakaGridProps, MakaGridPermissions, MakaGridAction } from "./MakaG
 export { MakaDateRangePicker, makaPresetRange } from "./MakaDateRangePicker";
 export type { MakaDateRangePickerProps, MakaDateRange, MakaRangePreset } from "./MakaDateRangePicker";
 
+export { MakaGridFilters, MakaFilterField } from "./MakaGridFilters";
+export type { MakaGridFiltersProps } from "./MakaGridFilters";
+
 export { MakaChart } from "./MakaChart";
 export type { MakaChartProps, MakaChartType } from "./MakaChart";
 

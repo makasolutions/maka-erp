@@ -756,5 +756,9 @@
     "month": "Mes",
     "custom": "Rango personalizado",
     "placeholder": "Elige un rango de fechas"
+  },
+  "gridFilters": {
+    "filtersTab": "Filtros",
+    "kpisTab": "Indicadores"
   }
 }

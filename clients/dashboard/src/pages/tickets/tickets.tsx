@@ -16,7 +16,6 @@ import {
   Eye,
   Plus,
   Ticket as TicketIcon,
-  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -52,7 +51,7 @@ import {
   Field,
   type EntityStatusTone,
 } from "@/components/list";
-import { MakaGrid, MakaDateRangePicker, makaPresetRange } from "@/components/maka";
+import { MakaGrid, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { getUserById } from "@/api/identity";
@@ -121,9 +120,8 @@ export function TicketsPage() {
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | null>(null);
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
-  // Collapsible filters/KPIs panel + which tab is active.
+  // Collapsible filters/KPIs panel (MakaGridFilters manages its own tab).
   const [panelOpen, setPanelOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<"filters" | "kpis">("filters");
 
   // ── Data — fetched in bulk (same general filters) so MakaGrid can
   // paginate / sort / group / filter client-side over the full set.
@@ -309,114 +307,63 @@ export function TicketsPage() {
         </Button>
       </EntityPageHeader>
 
-      {/* Collapsible panel — Tab 1: filters · Tab 2: KPIs */}
-      {panelOpen && (
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
-          {/* Tab strip */}
-          <div className="flex items-center gap-1 border-b border-[var(--color-border)] px-3 pt-2">
-            {(["filters", "kpis"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "relative -mb-px rounded-t-md px-3.5 py-2 text-[13px] font-medium transition-colors",
-                  activeTab === tab
-                    ? "border-b-2 border-[var(--color-primary)] text-[var(--color-foreground)]"
-                    : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
-                )}
-              >
-                {tab === "filters" ? t("tabs.filters") : t("tabs.kpis")}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab 1 — basic filters: # Ticket · Created · Updated · Status · Priority
-              (labels match the grid column headers) */}
-          {activeTab === "filters" && (
-            <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
-              {/* # Ticket — first filter */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  {t("cols.number")}
-                </span>
-                <Input
-                  value={numberFilter}
-                  onChange={(e) => setNumberFilter(e.target.value)}
-                  placeholder={t("cols.number")}
-                  className="h-8 w-40"
-                />
-              </div>
+      {/* Filters / KPIs panel (generic MakaGridFilters) */}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={resetFilters}
+        filters={
+          <>
+            <MakaFilterField label={t("cols.number")}>
+              <Input
+                value={numberFilter}
+                onChange={(e) => setNumberFilter(e.target.value)}
+                placeholder={t("cols.number")}
+                className="h-8 w-40"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("cols.created")}>
               <MakaDateRangePicker
                 key={`created-${filtersResetKey}`}
-                label={t("cols.created")}
                 defaultPreset="today"
                 value={createdRange}
                 onChange={setCreatedRange}
               />
+            </MakaFilterField>
+            <MakaFilterField label={t("cols.updated")}>
               <MakaDateRangePicker
                 key={`updated-${filtersResetKey}`}
-                label={t("cols.updated")}
                 value={updatedRange}
                 onChange={setUpdatedRange}
               />
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  {t("cols.status")}
-                </span>
-                <EntityFilterPill<TicketStatus | null>
-                  label={t("cols.status")}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={statusOptions}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  {t("cols.priority")}
-                </span>
-                <EntityFilterPill<TicketPriority | null>
-                  label={t("cols.priority")}
-                  value={priorityFilter}
-                  onChange={setPriorityFilter}
-                  options={priorityOptions}
-                />
-              </div>
-
-              {/* Clear all — resets to the initial state (Created = today) */}
-              <div className="ml-auto flex flex-col justify-end gap-1.5 self-stretch">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-transparent" aria-hidden>
-                  {t("clearFilters")}
-                </span>
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  title={t("clearFilters")}
-                  aria-label={t("clearFilters")}
-                  className={cn(
-                    "grid size-8 place-items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card)]",
-                    "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
-                    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
-                  )}
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2 — KPI dashboard (reflects the date-range filters) */}
-          {activeTab === "kpis" && (
-            <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
-              <KpiCard label={t("kpi.total")} value={kpis.total} tone="default" />
-              <KpiCard label={t("status.open")} value={kpis.byStatus.Open} tone="info" />
-              <KpiCard label={t("status.inProgress")} value={kpis.byStatus.InProgress} tone="warning" />
-              <KpiCard label={t("status.resolved")} value={kpis.byStatus.Resolved} tone="success" />
-              <KpiCard label={t("status.closed")} value={kpis.byStatus.Closed} tone="default" />
-            </div>
-          )}
-        </div>
-      )}
+            </MakaFilterField>
+            <MakaFilterField label={t("cols.status")}>
+              <EntityFilterPill<TicketStatus | null>
+                label={t("cols.status")}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={statusOptions}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("cols.priority")}>
+              <EntityFilterPill<TicketPriority | null>
+                label={t("cols.priority")}
+                value={priorityFilter}
+                onChange={setPriorityFilter}
+                options={priorityOptions}
+              />
+            </MakaFilterField>
+          </>
+        }
+        kpis={
+          <>
+            <KpiCard label={t("kpi.total")} value={kpis.total} tone="default" />
+            <KpiCard label={t("status.open")} value={kpis.byStatus.Open} tone="info" />
+            <KpiCard label={t("status.inProgress")} value={kpis.byStatus.InProgress} tone="warning" />
+            <KpiCard label={t("status.resolved")} value={kpis.byStatus.Resolved} tone="success" />
+            <KpiCard label={t("status.closed")} value={kpis.byStatus.Closed} tone="default" />
+          </>
+        }
+      />
 
       <MakaGrid<TicketRow>
         dataSource={makaRows}

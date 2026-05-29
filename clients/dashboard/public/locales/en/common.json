@@ -755,5 +755,9 @@
     "month": "Month",
     "custom": "Custom range",
     "placeholder": "Choose a date range"
+  },
+  "gridFilters": {
+    "filtersTab": "Filters",
+    "kpisTab": "KPIs"
   }
 }
