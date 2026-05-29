@@ -2,25 +2,57 @@
  * MakaDateRangePicker — quick-preset chips + Syncfusion DateRangePicker.
  *
  * Layout (mirrors the audit page's range chips):
- *   [ 24h ] [ 7d ] [ 30d ] [ 📅 ]
+ *   [ 24h ] [ 7d ] [ 30d ] | [ 📅 ]
  *
  * - Clicking 24h / 7d / 30d selects a window from now backwards and emits it.
  *   Clicking the active preset again clears the filter.
- * - Clicking the calendar icon reveals a Syncfusion DateRangePicker for an
- *   arbitrary range; picking a range clears any active preset.
+ * - Clicking the calendar icon opens the Syncfusion range popup directly with
+ *   the two month calendars — the picker's own input + button are hidden, so
+ *   the icon IS the only trigger.
  * - Theme-aware (CSS tokens, light/dark), i18n + localization aware
- *   (date format + locale come from the tenant config).
+ *   (date format + locale + popup labels come from the tenant config).
  *
  * Controlled: pass `value` + `onChange`. Setting `value` to null resets the
  * chip/calendar highlight (e.g. when the page clears all filters).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarDays } from "lucide-react";
+import { L10n } from "@syncfusion/ej2-base";
 import { DateRangePickerComponent } from "@syncfusion/ej2-react-calendars";
 import { useLocalization } from "@/contexts/localization-context";
 import { cn } from "@/lib/cn";
 import "./maka-daterangepicker.css";
+
+// ── Popup label localization (Apply / Cancel / labels / presets) ──────────────
+L10n.load({
+  en: {
+    daterangepicker: {
+      placeholder: "Choose a date range",
+      startLabel: "Start",
+      endLabel: "End",
+      applyText: "Apply",
+      cancelText: "Cancel",
+      selectedDays: "Selected days",
+      days: "days",
+      customRange: "Custom range",
+    },
+    calendar: { today: "Today" },
+  },
+  es: {
+    daterangepicker: {
+      placeholder: "Elige un rango de fechas",
+      startLabel: "Inicio",
+      endLabel: "Fin",
+      applyText: "Aplicar",
+      cancelText: "Cancelar",
+      selectedDays: "Días seleccionados",
+      days: "días",
+      customRange: "Rango personalizado",
+    },
+    calendar: { today: "Hoy" },
+  },
+});
 
 export interface MakaDateRange {
   start: Date;
@@ -43,7 +75,7 @@ export interface MakaDateRangePickerProps {
   onChange: (range: MakaDateRange | null) => void;
   /** Quick presets to show. Default ["24h", "7d", "30d"]. */
   presets?: MakaRangePreset[];
-  /** Optional leading label (e.g. "Creado"). */
+  /** Optional leading label. */
   label?: string;
   className?: string;
 }
@@ -57,6 +89,7 @@ export function MakaDateRangePicker({
 }: MakaDateRangePickerProps) {
   const { t } = useTranslation("common");
   const { config } = useLocalization();
+  const pickerRef = useRef<DateRangePickerComponent>(null);
 
   const sfFormat =
     config.dateFormat === "MM/DD/YYYY" ? "MM/dd/yyyy"
@@ -71,7 +104,6 @@ export function MakaDateRangePicker({
   useEffect(() => {
     if (!value) {
       setActivePreset(null);
-      setPickerOpen(false);
     }
   }, [value]);
 
@@ -94,10 +126,17 @@ export function MakaDateRangePicker({
       return;
     }
     setActivePreset(key);
-    setPickerOpen(false);
+    pickerRef.current?.hide();
     const end = new Date();
     const start = new Date(end.getTime() - PRESET_MS[key]);
     onChange({ start, end });
+  };
+
+  const toggleCustom = () => {
+    const picker = pickerRef.current;
+    if (!picker) return;
+    if (pickerOpen) picker.hide();
+    else picker.show();
   };
 
   const onPickerChange = (e: { startDate?: Date; endDate?: Date }) => {
@@ -141,7 +180,7 @@ export function MakaDateRangePicker({
           type="button"
           aria-label={t("dateRange.custom")}
           title={t("dateRange.custom")}
-          onClick={() => setPickerOpen((v) => !v)}
+          onClick={toggleCustom}
           className={cn(
             "grid size-7 place-items-center rounded-md transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
@@ -152,23 +191,23 @@ export function MakaDateRangePicker({
         >
           <CalendarDays className="size-4" />
         </button>
-      </div>
 
-      {/* Custom range picker — revealed by the calendar icon */}
-      {pickerOpen && (
-        <div className="maka-drp-wrap">
+        {/* Hidden anchor — the Syncfusion input/button are visually removed;
+            the icon above opens this picker's two-calendar popup directly. */}
+        <span className="maka-drp-anchor" aria-hidden>
           <DateRangePickerComponent
+            ref={pickerRef}
             locale={sfLocale}
             format={sfFormat}
             placeholder={t("dateRange.placeholder")}
-            width={250}
-            openOnFocus
             startDate={isCustom ? value?.start : undefined}
             endDate={isCustom ? value?.end : undefined}
             change={onPickerChange}
+            open={() => setPickerOpen(true)}
+            close={() => setPickerOpen(false)}
           />
-        </div>
-      )}
+        </span>
+      </div>
     </div>
   );
 }

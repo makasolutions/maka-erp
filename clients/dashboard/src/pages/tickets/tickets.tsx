@@ -309,30 +309,31 @@ export function TicketsPage() {
             ))}
           </div>
 
-          {/* Tab 1 — basic filters */}
+          {/* Tab 1 — basic filters: Created · Updated · Status · Priority
+              (labels match the grid column headers) */}
           {activeTab === "filters" && (
             <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
+              <MakaDateRangePicker
+                label={t("cols.created")}
+                value={createdRange}
+                onChange={setCreatedRange}
+              />
+              <MakaDateRangePicker
+                label={t("cols.updated")}
+                value={updatedRange}
+                onChange={setUpdatedRange}
+              />
               <EntityFilterPill<TicketStatus | null>
-                label={t("filter.status")}
+                label={t("cols.status")}
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={statusOptions}
               />
               <EntityFilterPill<TicketPriority | null>
-                label={t("filter.priority")}
+                label={t("cols.priority")}
                 value={priorityFilter}
                 onChange={setPriorityFilter}
                 options={priorityOptions}
-              />
-              <MakaDateRangePicker
-                label={t("filter.createdRange")}
-                value={createdRange}
-                onChange={setCreatedRange}
-              />
-              <MakaDateRangePicker
-                label={t("filter.updatedRange")}
-                value={updatedRange}
-                onChange={setUpdatedRange}
               />
             </div>
           )}

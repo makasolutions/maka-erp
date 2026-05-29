@@ -6,33 +6,27 @@
  * MakaGrid bridge approach.
  */
 
-/* ── Input field ─────────────────────────────────────────────────────────── */
-.maka-drp-wrap .e-daterangepicker.e-input-group,
-.maka-drp-wrap .e-control-wrapper.e-daterangepicker {
-  background-color: var(--color-input) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 0.5rem !important;
+/* ── Hidden anchor — the picker's input + button are removed from view; the
+   chip-row calendar icon is the only trigger. The 1px wrapper stays in flow so
+   the popup still anchors near the icon. ───────────────────────────────────── */
+.maka-drp-anchor {
+  position: relative;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  align-self: center;
 }
-.maka-drp-wrap .e-daterangepicker .e-range,
-.maka-drp-wrap .e-daterangepicker input,
-.maka-drp-wrap .e-input-group input.e-input {
-  background-color: transparent !important;
-  color: var(--color-foreground) !important;
-  font-family: inherit !important;
-  font-size: 0.8125rem !important;
-}
-.maka-drp-wrap .e-daterangepicker .e-input-group-icon.e-icons,
-.maka-drp-wrap .e-daterangepicker .e-range-icon {
-  color: var(--color-muted-foreground) !important;
-  background-color: transparent !important;
-}
-.maka-drp-wrap .e-daterangepicker.e-input-group::before,
-.maka-drp-wrap .e-daterangepicker.e-input-group::after {
-  display: none !important;
-}
-.maka-drp-wrap .e-daterangepicker.e-input-focus {
-  border-color: var(--color-ring) !important;
-  box-shadow: 0 0 0 2px oklch(from var(--color-ring) l c h / 0.2) !important;
+.maka-drp-anchor .e-control-wrapper,
+.maka-drp-anchor .e-daterangepicker.e-input-group {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+  width: 1px !important;
+  min-width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border: none !important;
 }
 
 /* ── Popup calendar (portal on <body>) ───────────────────────────────────── */
@@ -151,8 +145,67 @@ html body .e-daterangepicker .e-change-icon {
 .dark .e-daterangepicker .e-calendar .e-cell .e-day {
   color: var(--color-foreground) !important;
 }
+/* Weekday header row + nav icons */
+.dark .e-daterangepicker .e-calendar th,
+.dark .e-daterangepicker .e-calendar .e-header .e-icons,
+.dark .e-daterangepicker .e-calendar .e-header .e-date-icon-prev,
+.dark .e-daterangepicker .e-calendar .e-header .e-date-icon-next {
+  color: var(--color-muted-foreground) !important;
+}
+/* Hover + focus day */
+.dark .e-daterangepicker .e-calendar .e-cell:hover .e-day,
+.dark .e-daterangepicker .e-calendar .e-cell.e-focused-date .e-day {
+  background-color: oklch(from var(--color-accent) l c h / 0.7) !important;
+  color: var(--color-foreground) !important;
+}
+/* In-range fill */
+.dark .e-daterangepicker .e-calendar .e-range-hover:not(.e-selected) span.e-day {
+  background-color: oklch(from var(--color-primary) l c h / 0.22) !important;
+  color: var(--color-foreground) !important;
+}
+/* Selected start/end */
+.dark .e-daterangepicker .e-calendar .e-selected .e-day,
+.dark .e-daterangepicker .e-calendar .e-startdate .e-day,
+.dark .e-daterangepicker .e-calendar .e-enddate .e-day {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+}
+/* Presets list */
+.dark .e-daterangepicker .e-presets,
+.dark .e-daterangepicker .e-presets .e-list-parent {
+  background-color: var(--color-popover) !important;
+}
+.dark .e-daterangepicker .e-presets .e-list-item {
+  color: var(--color-foreground) !important;
+}
+.dark .e-daterangepicker .e-presets .e-list-item.e-active,
+.dark .e-daterangepicker .e-presets .e-list-item:hover {
+  background-color: oklch(from var(--color-primary) l c h / 0.22) !important;
+}
+/* Start/End label bar + labels */
+.dark .e-daterangepicker .e-start-end,
+.dark .e-daterangepicker .e-day-span {
+  background-color: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  border-color: var(--color-border) !important;
+}
+.dark .e-daterangepicker .e-start-label,
+.dark .e-daterangepicker .e-end-label,
+.dark .e-daterangepicker .e-change-icon {
+  color: var(--color-foreground) !important;
+}
+.dark .e-daterangepicker .e-footer {
+  background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
+}
 .dark .e-daterangepicker .e-footer .e-btn:not(.e-primary) {
   background-color: var(--color-card) !important;
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
+}
+.dark .e-daterangepicker .e-footer .e-btn.e-primary,
+.dark .e-daterangepicker .e-footer .e-apply {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+  border-color: var(--color-primary) !important;
 }
