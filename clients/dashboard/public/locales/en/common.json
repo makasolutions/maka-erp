@@ -731,5 +731,18 @@
     "browseCatalogStepDesc": "Sample products, brands, categories ready to go.",
     "watchLive": "Watch live",
     "watchLiveDesc": "SSE stream right into the dashboard."
+  },
+  "grid": {
+    "newRecord": "New",
+    "actions": "Actions",
+    "duplicate": "Duplicate",
+    "exportExcelRow": "Export row (Excel)",
+    "exportPdfRow": "Export row (PDF)",
+    "noRecords": "No records",
+    "loading": "Loading…",
+    "columnChooser": "Columns",
+    "rowsPerPage": "Rows per page",
+    "of": "of",
+    "selectColumns": "Select columns"
   }
 }

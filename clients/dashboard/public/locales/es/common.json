@@ -732,5 +732,18 @@
       "noOtherSessions": "Sin otras sesiones activas",
       "noOtherSessionsDesc": "Solo tienes una sesión activa en este dispositivo."
     }
+  },
+  "grid": {
+    "newRecord": "Nuevo",
+    "actions": "Acciones",
+    "duplicate": "Duplicar",
+    "exportExcelRow": "Exportar fila (Excel)",
+    "exportPdfRow": "Exportar fila (PDF)",
+    "noRecords": "Sin registros",
+    "loading": "Cargando…",
+    "columnChooser": "Columnas",
+    "rowsPerPage": "Filas por página",
+    "of": "de",
+    "selectColumns": "Seleccionar columnas"
   }
 }

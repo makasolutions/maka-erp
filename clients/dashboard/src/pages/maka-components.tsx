@@ -23,16 +23,108 @@ interface Product {
   status: string;
 }
 
-const MOCK_PRODUCTS: Product[] = [
-  { id: 1, sku: "SON-FX3-001", name: "Sony FX3 Full-Frame Cinema Camera", brand: "Sony", price: 28900000, stock: 4, status: "Activo" },
-  { id: 2, sku: "DJI-MV3-PRO", name: "DJI Mavic 3 Pro Cine", brand: "DJI", price: 12500000, stock: 7, status: "Activo" },
-  { id: 3, sku: "CAN-R5C-001", name: "Canon EOS R5 C Cinema", brand: "Canon", price: 22000000, stock: 3, status: "Activo" },
-  { id: 4, sku: "NIK-Z9-001",  name: "Nikon Z9 Mirrorless", brand: "Nikon", price: 26500000, stock: 2, status: "Activo" },
-  { id: 5, sku: "BMD-URSA-G2", name: "Blackmagic URSA Mini Pro G2", brand: "Blackmagic", price: 18700000, stock: 5, status: "Activo" },
-  { id: 6, sku: "NAN-FS-200B", name: "Nanlite FS-200B Bi-Color LED", brand: "Nanlite", price: 3200000, stock: 12, status: "Activo" },
-  { id: 7, sku: "GOD-AD600-P", name: "Godox AD600 Pro Witstro", brand: "Godox", price: 4800000, stock: 9, status: "Activo" },
-  { id: 8, sku: "DZO-PAVO-50", name: "DZOFilm Pavo 2x Anamorphic 50mm T2.1", brand: "DZOFilm", price: 8900000, stock: 1, status: "Agotado" },
+// ── Seed catalogue ─────────────────────────────────────────────────────────
+// Real Tecnoimportaciones product families + variants. Generator creates
+// 1 200 rows so MakaGrid's virtual-scrolling path is exercised.
+
+const SEED_PRODUCTS = [
+  { brand: "Sony",        prefix: "SON", name: "FX3 Full-Frame Cinema Camera",       basePrice: 28900000 },
+  { brand: "Sony",        prefix: "SON", name: "FX6 Full-Frame Cinema Camera",       basePrice: 32500000 },
+  { brand: "Sony",        prefix: "SON", name: "FX9 Full-Frame Camera",              basePrice: 78000000 },
+  { brand: "Sony",        prefix: "SON", name: "A7 IV Mirrorless",                   basePrice: 14200000 },
+  { brand: "Sony",        prefix: "SON", name: "A7R V Mirrorless",                   basePrice: 24800000 },
+  { brand: "Sony",        prefix: "SON", name: "A1 Mirrorless",                      basePrice: 48000000 },
+  { brand: "Sony",        prefix: "SON", name: "ZV-E1 Vlog Camera",                  basePrice: 9800000  },
+  { brand: "DJI",         prefix: "DJI", name: "Mavic 3 Pro Cine Premium Combo",     basePrice: 16500000 },
+  { brand: "DJI",         prefix: "DJI", name: "Mavic 3 Classic",                    basePrice: 9200000  },
+  { brand: "DJI",         prefix: "DJI", name: "Mini 4 Pro",                         basePrice: 4800000  },
+  { brand: "DJI",         prefix: "DJI", name: "Ronin 4D 6K Combo",                  basePrice: 62000000 },
+  { brand: "DJI",         prefix: "DJI", name: "RS 3 Pro Gimbal",                    basePrice: 3200000  },
+  { brand: "DJI",         prefix: "DJI", name: "Inspire 3",                          basePrice: 115000000},
+  { brand: "Canon",       prefix: "CAN", name: "EOS R5 C Cinema",                    basePrice: 22000000 },
+  { brand: "Canon",       prefix: "CAN", name: "EOS R5 Mark II",                     basePrice: 25000000 },
+  { brand: "Canon",       prefix: "CAN", name: "EOS R6 Mark II",                     basePrice: 14500000 },
+  { brand: "Canon",       prefix: "CAN", name: "EOS R3",                             basePrice: 52000000 },
+  { brand: "Canon",       prefix: "CAN", name: "Cinema EOS C70",                     basePrice: 36000000 },
+  { brand: "Canon",       prefix: "CAN", name: "Cinema EOS C300 Mark III",           basePrice: 89000000 },
+  { brand: "Nikon",       prefix: "NIK", name: "Z9 Mirrorless",                      basePrice: 26500000 },
+  { brand: "Nikon",       prefix: "NIK", name: "Z8 Mirrorless",                      basePrice: 18900000 },
+  { brand: "Nikon",       prefix: "NIK", name: "Z6 III",                             basePrice: 13500000 },
+  { brand: "Blackmagic",  prefix: "BMD", name: "URSA Mini Pro 12K",                  basePrice: 24500000 },
+  { brand: "Blackmagic",  prefix: "BMD", name: "Pocket Cinema Camera 6K G2",         basePrice: 9800000  },
+  { brand: "Blackmagic",  prefix: "BMD", name: "Pocket Cinema Camera 4K",            basePrice: 4200000  },
+  { brand: "Blackmagic",  prefix: "BMD", name: "Cinema Camera 6K Full Frame",        basePrice: 18500000 },
+  { brand: "Nanlite",     prefix: "NAN", name: "FS-200B Bi-Color LED Panel",         basePrice: 3200000  },
+  { brand: "Nanlite",     prefix: "NAN", name: "Forza 500B II Bi-Color LED",         basePrice: 5800000  },
+  { brand: "Nanlite",     prefix: "NAN", name: "Pavotube II 15C RGBWW Tube",         basePrice: 1200000  },
+  { brand: "Nanlite",     prefix: "NAN", name: "MixPanel 150 RGBWW LED Panel",       basePrice: 7200000  },
+  { brand: "Godox",       prefix: "GOD", name: "AD600 Pro Witstro",                  basePrice: 4800000  },
+  { brand: "Godox",       prefix: "GOD", name: "V1 Round Head Flash",                basePrice: 1450000  },
+  { brand: "Godox",       prefix: "GOD", name: "SL200W III LED Video Light",         basePrice: 1800000  },
+  { brand: "Godox",       prefix: "GOD", name: "AD300 Pro",                          basePrice: 2900000  },
+  { brand: "Godox",       prefix: "GOD", name: "MF12 Macro Flash",                   basePrice: 890000   },
+  { brand: "DZOFilm",     prefix: "DZO", name: "Pavo 2x Anamorphic 50mm T2.1",      basePrice: 8900000  },
+  { brand: "DZOFilm",     prefix: "DZO", name: "Pictor Zoom 20-55mm T2.8 S35",      basePrice: 6500000  },
+  { brand: "DZOFilm",     prefix: "DZO", name: "Vespid FF Prime 75mm T2.1",         basePrice: 7200000  },
+  { brand: "DZOFilm",     prefix: "DZO", name: "Arles FF/VV 6× Prime Set",          basePrice: 62000000 },
+  { brand: "DZOFilm",     prefix: "DZO", name: "Catta Ace 35-80mm T2.9 Zoom",       basePrice: 12800000 },
 ];
+
+const VARIANTS = [
+  { suffix: "", skuSuffix: "", priceAdj: 1.00, stockMod: 0  },
+  { suffix: " — Kit con accesorios", skuSuffix: "-KIT",  priceAdj: 1.15, stockMod: -1 },
+  { suffix: " — Body Only",          skuSuffix: "-BOD",  priceAdj: 0.88, stockMod:  2 },
+  { suffix: " — Refurbished",        skuSuffix: "-RFB",  priceAdj: 0.72, stockMod:  1 },
+  { suffix: " — Open Box",           skuSuffix: "-OBX",  priceAdj: 0.80, stockMod:  1 },
+  { suffix: " — Bundle Profesional", skuSuffix: "-BND",  priceAdj: 1.25, stockMod: -2 },
+  { suffix: " — Con garantía extendida", skuSuffix: "-GEX", priceAdj: 1.08, stockMod: 0 },
+  { suffix: " — Demo",               skuSuffix: "-DMO",  priceAdj: 0.65, stockMod:  1 },
+  { suffix: " — Edición Colombia",   skuSuffix: "-COL",  priceAdj: 1.05, stockMod:  3 },
+  { suffix: " — Kit Studio Pro",     skuSuffix: "-STU",  priceAdj: 1.35, stockMod: -1 },
+  { suffix: " — Con estuche",        skuSuffix: "-ESC",  priceAdj: 1.12, stockMod:  1 },
+  { suffix: " — Combo Vlog",         skuSuffix: "-VLG",  priceAdj: 1.18, stockMod:  2 },
+  { suffix: " — Kit Wedding",        skuSuffix: "-WED",  priceAdj: 1.22, stockMod:  0 },
+  { suffix: " — Versión Cinema",     skuSuffix: "-CIN",  priceAdj: 1.30, stockMod: -2 },
+  { suffix: " — Edición Limitada",   skuSuffix: "-LTD",  priceAdj: 1.45, stockMod: -3 },
+  { suffix: " — Pack Viajero",       skuSuffix: "-TRV",  priceAdj: 1.10, stockMod:  1 },
+  { suffix: " — Kit Broadcast",      skuSuffix: "-BRD",  priceAdj: 1.40, stockMod: -1 },
+  { suffix: " — Con batería extra",  skuSuffix: "-BAT",  priceAdj: 1.09, stockMod:  2 },
+  { suffix: " — Versión Blanca",     skuSuffix: "-WHT",  priceAdj: 1.03, stockMod:  1 },
+  { suffix: " — Edición Especial",   skuSuffix: "-SPC",  priceAdj: 1.20, stockMod:  0 },
+  { suffix: " — Pack Escolar",       skuSuffix: "-SCL",  priceAdj: 0.92, stockMod:  4 },
+  { suffix: " — Kit Producción",     skuSuffix: "-PRO",  priceAdj: 1.50, stockMod: -3 },
+  { suffix: " — Versión Compacta",   skuSuffix: "-CMP",  priceAdj: 0.95, stockMod:  2 },
+  { suffix: " — Edición Bogotá",     skuSuffix: "-BOG",  priceAdj: 1.02, stockMod:  3 },
+  { suffix: " — Super Bundle",       skuSuffix: "-SUP",  priceAdj: 1.60, stockMod: -4 },
+  { suffix: " — Versión SE",         skuSuffix: "-SE",   priceAdj: 1.06, stockMod:  1 },
+  { suffix: " — Combo Foto+Video",   skuSuffix: "-FV",   priceAdj: 1.28, stockMod: -1 },
+  { suffix: " — Kit Deportivo",      skuSuffix: "-DEP",  priceAdj: 1.16, stockMod:  2 },
+  { suffix: " — Con mochila",        skuSuffix: "-MOC",  priceAdj: 1.07, stockMod:  1 },
+  { suffix: " — Versión Professional", skuSuffix: "-PRF", priceAdj: 1.38, stockMod: -2 },
+];
+
+function _generateDemoProducts(): Product[] {
+  const rows: Product[] = [];
+  let id = 1;
+  for (const seed of SEED_PRODUCTS) {
+    for (const v of VARIANTS) {
+      const rawStock = Math.max(0, Math.floor(Math.random() * 15) + v.stockMod + 2);
+      rows.push({
+        id,
+        sku: `${seed.prefix}-${String(id).padStart(4, "0")}${v.skuSuffix}`,
+        name: `${seed.name}${v.suffix}`,
+        brand: seed.brand,
+        price: Math.round(seed.basePrice * v.priceAdj / 1000) * 1000,
+        stock: rawStock,
+        status: rawStock === 0 ? "Agotado" : rawStock <= 3 ? "Stock bajo" : "Activo",
+      });
+      id++;
+    }
+  }
+  return rows;
+}
+
+const DEMO_PRODUCTS_1200: Product[] = _generateDemoProducts();
 
 const GRID_COLUMNS: ColumnModel[] = [
   { field: "sku", headerText: "SKU", width: 160, isPrimaryKey: true },
@@ -212,10 +304,9 @@ export function MakaComponentsPage() {
         />
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
           <MakaGrid
-            dataSource={MOCK_PRODUCTS}
+            dataSource={DEMO_PRODUCTS_1200}
             columns={GRID_COLUMNS}
             fileName="productos-maka"
-            height="380px"
           />
         </div>
       </section>
