@@ -15,6 +15,9 @@ import "@syncfusion/ej2-react-calendars/styles/bootstrap5.css";
 import "@syncfusion/ej2-react-pivotview/styles/bootstrap5.css";
 import "@syncfusion/ej2-react-schedule/styles/bootstrap5.css";
 
+// ── Syncfusion Spanish CLDR (month/day names for calendar components) ────────
+import "@/lib/syncfusion-cldr";
+
 import { registerLicense } from "@syncfusion/ej2-base";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

@@ -25,34 +25,35 @@ import { cn } from "@/lib/cn";
 import "./maka-daterangepicker.css";
 
 // ── Popup label localization (Apply / Cancel / labels / presets) ──────────────
-L10n.load({
-  en: {
-    daterangepicker: {
-      placeholder: "Choose a date range",
-      startLabel: "Start",
-      endLabel: "End",
-      applyText: "Apply",
-      cancelText: "Cancel",
-      selectedDays: "Selected days",
-      days: "days",
-      customRange: "Custom range",
-    },
-    calendar: { today: "Today" },
+// Registered under the SAME locale strings the component passes to `locale`
+// (es-CO / en-US) — otherwise Syncfusion falls back to English.
+const DRP_EN = {
+  daterangepicker: {
+    placeholder: "Choose a date range",
+    startLabel: "Start date",
+    endLabel: "End date",
+    applyText: "Apply",
+    cancelText: "Cancel",
+    selectedDays: "Selected days",
+    days: "days",
+    customRange: "Custom range",
   },
-  es: {
-    daterangepicker: {
-      placeholder: "Elige un rango de fechas",
-      startLabel: "Inicio",
-      endLabel: "Fin",
-      applyText: "Aplicar",
-      cancelText: "Cancelar",
-      selectedDays: "Días seleccionados",
-      days: "días",
-      customRange: "Rango personalizado",
-    },
-    calendar: { today: "Hoy" },
+  calendar: { today: "Today" },
+};
+const DRP_ES = {
+  daterangepicker: {
+    placeholder: "Elige un rango de fechas",
+    startLabel: "Fecha inicial",
+    endLabel: "Fecha final",
+    applyText: "Aplicar",
+    cancelText: "Cancelar",
+    selectedDays: "Días seleccionados",
+    days: "días",
+    customRange: "Rango personalizado",
   },
-});
+  calendar: { today: "Hoy" },
+};
+L10n.load({ en: DRP_EN, "en-US": DRP_EN, es: DRP_ES, "es-CO": DRP_ES });
 
 export interface MakaDateRange {
   start: Date;
@@ -151,7 +152,7 @@ export function MakaDateRangePicker({
   return (
     <div className={cn("inline-flex flex-col gap-1.5", className)}>
       {label && (
-        <span className="text-[11px] font-medium text-[var(--color-muted-foreground)]">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
           {label}
         </span>
       )}

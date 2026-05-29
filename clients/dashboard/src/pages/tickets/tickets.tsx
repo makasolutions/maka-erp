@@ -323,18 +323,28 @@ export function TicketsPage() {
                 value={updatedRange}
                 onChange={setUpdatedRange}
               />
-              <EntityFilterPill<TicketStatus | null>
-                label={t("cols.status")}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={statusOptions}
-              />
-              <EntityFilterPill<TicketPriority | null>
-                label={t("cols.priority")}
-                value={priorityFilter}
-                onChange={setPriorityFilter}
-                options={priorityOptions}
-              />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                  {t("cols.status")}
+                </span>
+                <EntityFilterPill<TicketStatus | null>
+                  label={t("cols.status")}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={statusOptions}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                  {t("cols.priority")}
+                </span>
+                <EntityFilterPill<TicketPriority | null>
+                  label={t("cols.priority")}
+                  value={priorityFilter}
+                  onChange={setPriorityFilter}
+                  options={priorityOptions}
+                />
+              </div>
             </div>
           )}
 

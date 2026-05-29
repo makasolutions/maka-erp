@@ -117,9 +117,12 @@ html body .e-daterangepicker .e-footer .e-btn:not(.e-primary) {
   border-radius: 0.5rem !important;
 }
 /* Start/End label bar */
+html body .e-daterangepicker .e-range-header,
 html body .e-daterangepicker .e-start-end,
+html body .e-daterangepicker .e-start-btn,
+html body .e-daterangepicker .e-end-btn,
 html body .e-daterangepicker .e-day-span {
-  background-color: var(--color-card) !important;
+  background-color: var(--color-popover) !important;
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
 }
@@ -127,6 +130,7 @@ html body .e-daterangepicker .e-start-label,
 html body .e-daterangepicker .e-end-label,
 html body .e-daterangepicker .e-change-icon {
   color: var(--color-foreground) !important;
+  background-color: transparent !important;
 }
 
 /* ── Dark mode (.dark on <html>) ─────────────────────────────────────────── */
@@ -182,10 +186,16 @@ html body .e-daterangepicker .e-change-icon {
 .dark .e-daterangepicker .e-presets .e-list-item:hover {
   background-color: oklch(from var(--color-primary) l c h / 0.22) !important;
 }
-/* Start/End label bar + labels */
+/* Start/End header bar + the "N days" span — kill the white bands in dark.
+   Covers every chrome element around the start/end labels. */
+.dark .e-daterangepicker .e-range-header,
 .dark .e-daterangepicker .e-start-end,
-.dark .e-daterangepicker .e-day-span {
-  background-color: var(--color-card) !important;
+.dark .e-daterangepicker .e-start-btn,
+.dark .e-daterangepicker .e-end-btn,
+.dark .e-daterangepicker .e-day-span,
+.dark .e-daterangepicker .e-date-range-container,
+.dark .e-daterangepicker .e-calendar-container {
+  background-color: var(--color-popover) !important;
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
 }
@@ -193,6 +203,7 @@ html body .e-daterangepicker .e-change-icon {
 .dark .e-daterangepicker .e-end-label,
 .dark .e-daterangepicker .e-change-icon {
   color: var(--color-foreground) !important;
+  background-color: transparent !important;
 }
 .dark .e-daterangepicker .e-footer {
   background-color: var(--color-card) !important;
