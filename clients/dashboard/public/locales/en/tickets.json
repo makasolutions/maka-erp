@@ -41,6 +41,7 @@
     "tags": "Tags"
   },
   "cols": {
+    "number": "Ticket #",
     "subject": "Subject",
     "priority": "Priority",
     "status": "Status",

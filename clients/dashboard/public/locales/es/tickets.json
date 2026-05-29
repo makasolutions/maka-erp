@@ -41,6 +41,7 @@
     "tags": "Etiquetas"
   },
   "cols": {
+    "number": "# Ticket",
     "subject": "Asunto",
     "priority": "Prioridad",
     "status": "Estado",

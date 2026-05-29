@@ -220,8 +220,12 @@ export function TicketsPage() {
 
   const makaColumns: ColumnModel[] = useMemo(
     () => [
+      // # ticket — first column
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "title", headerText: t("cols.subject"), template: TicketSubjectCell as any, minWidth: 240, clipMode: "EllipsisWithTooltip" },
+      { field: "number", headerText: t("cols.number"), template: TicketNumberCell as any, width: 120 },
+      // Title — second column
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "title", headerText: t("cols.subject"), template: TicketTitleCell as any, minWidth: 240, clipMode: "EllipsisWithTooltip" },
       // field = priorityLabel so filter + grouping show translated labels
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "priorityLabel", headerText: t("cols.priority"), template: TicketPriorityCell as any, width: 130 },
@@ -439,19 +443,19 @@ function KpiCard({
 //  via useUserDisplay (hooks are supported in EJ2 React templates).
 // ───────────────────────────────────────────────────────────────────────
 
-function TicketSubjectCell(ticket: TicketRow) {
+function TicketNumberCell(ticket: TicketRow) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      <EntityInitialsAvatar name={ticket.reporterUserId} size={32} />
-      <div className="min-w-0">
-        <span className="block truncate text-[13px] font-medium text-[var(--color-foreground)]">
-          {ticket.title}
-        </span>
-        <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-          {ticket.number}
-        </code>
-      </div>
-    </div>
+    <code className="font-mono text-[12px] font-medium text-[var(--color-foreground)]">
+      {ticket.number}
+    </code>
+  );
+}
+
+function TicketTitleCell(ticket: TicketRow) {
+  return (
+    <span className="block truncate text-[13px] font-medium text-[var(--color-foreground)]">
+      {ticket.title}
+    </span>
   );
 }
 
