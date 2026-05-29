@@ -133,12 +133,12 @@
 .maka-grid-wrapper .e-grid .e-altrow td.e-rowcell {
   background-color: oklch(from var(--color-muted) l c h / 0.28) !important;
 }
-/* Row hover */
+/* Row hover — soft-accent fill, same as the selected item in the main menu */
 .maka-grid-wrapper .e-grid .e-row:hover td.e-rowcell,
 .maka-grid-wrapper .e-grid .e-row.e-hover td.e-rowcell,
 .maka-grid-wrapper .e-grid .e-altrow:hover td.e-rowcell,
 .maka-grid-wrapper .e-grid .e-altrow.e-hover td.e-rowcell {
-  background-color: var(--color-accent) !important;
+  background-color: var(--color-primary-soft) !important;
   cursor: pointer;
 }
 
@@ -209,7 +209,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PAGER — record count, page numbers, navigation
+   PAGER — flex row, everything vertically centred, one unified text size
 ══════════════════════════════════════════════════════════════════════════════ */
 .maka-grid-wrapper .e-grid .e-gridpager,
 .maka-grid-wrapper .e-pager {
@@ -217,10 +217,62 @@
   border-top: 1px solid var(--color-border) !important;
   border-bottom: none !important;
   color: var(--color-muted-foreground) !important;
-  font-size: 0.8125rem !important;
+  font-size: 0.75rem !important;
+  /* Lay out every pager segment in one centred row */
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  padding: 0.5rem 0.85rem !important;
+  min-height: 2.75rem;
+}
+/* Unify text size across every textual pager element */
+.maka-grid-wrapper .e-pager,
+.maka-grid-wrapper .e-pager .e-numericitem,
+.maka-grid-wrapper .e-pager .e-link,
+.maka-grid-wrapper .e-pager .e-pagerconstant,
+.maka-grid-wrapper .e-pager .e-parentmsgbar,
+.maka-grid-wrapper .e-pager .e-pagesizes,
+.maka-grid-wrapper .e-pager .e-pagerdropdown,
+.maka-grid-wrapper .e-pager .maka-goto-label,
+.maka-grid-wrapper .e-pager .maka-goto-input {
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
 }
 .maka-grid-wrapper .e-pager .e-pagercontainer {
   background-color: transparent !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.15rem;
+  float: none !important;
+  margin: 0 !important;
+}
+/* Page-size group (dropdown + "Registros por página") inline-centred */
+.maka-grid-wrapper .e-pager .e-pagesizes {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem;
+  float: none !important;
+  margin: 0 !important;
+}
+/* Push the "Página X de Y" message to the far right */
+.maka-grid-wrapper .e-pager .e-parentmsgbar {
+  float: none !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+}
+/* Each nav/number button: fixed square, centred glyph */
+.maka-grid-wrapper .e-pager .e-numericitem,
+.maka-grid-wrapper .e-pager div.e-first,
+.maka-grid-wrapper .e-pager div.e-prev,
+.maka-grid-wrapper .e-pager div.e-next,
+.maka-grid-wrapper .e-pager div.e-last {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  margin: 0 !important;
 }
 /* All nav/page links + the first/prev/next/last arrow buttons */
 .maka-grid-wrapper .e-pager .e-link,
@@ -286,14 +338,25 @@
 .maka-grid-wrapper .e-pager .e-lastpagedisabled {
   opacity: 0.35 !important;
 }
-/* Page size selector */
+/* Page size selector — soft-accent fill (matches menu-selected items) */
 .maka-grid-wrapper .e-pager select,
+.maka-grid-wrapper .e-pager .e-pagerdropdown,
 .maka-grid-wrapper .e-pager .e-pagerdropdown .e-input,
-.maka-grid-wrapper .e-pager .e-dropdownlist {
-  background-color: var(--color-input) !important;
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group,
+.maka-grid-wrapper .e-pager .e-dropdownlist,
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-control-wrapper {
+  background-color: var(--color-primary-soft) !important;
   color: var(--color-foreground) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 0.375rem !important;
+  height: 1.75rem !important;
+}
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group::before,
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group::after {
+  display: none !important;
+}
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-ddl-icon {
+  color: var(--color-muted-foreground) !important;
 }
 /* Record count / page info */
 .maka-grid-wrapper .e-pager .e-parentmsgbar,
@@ -305,26 +368,23 @@
 
 /* ── Injected "Go to page" control (sits after the nav buttons) ─────────── */
 .maka-grid-wrapper .e-pager .maka-goto {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   gap: 0.4rem;
-  margin: 0 0.75rem;
-  vertical-align: middle;
+  margin: 0 0.25rem;
 }
 .maka-grid-wrapper .e-pager .maka-goto-label {
-  font-size: 0.72rem;
   color: var(--color-muted-foreground);
   white-space: nowrap;
 }
 .maka-grid-wrapper .e-pager .maka-goto-input {
   width: 3.25rem;
-  height: 1.6rem;
+  height: 1.75rem;
   border: 1px solid var(--color-border);
-  background-color: var(--color-input);
+  background-color: var(--color-primary-soft);
   color: var(--color-foreground);
   border-radius: 0.375rem;
   text-align: center;
-  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   outline: none;
   -moz-appearance: textfield;
@@ -453,15 +513,33 @@ html body .e-checkboxfilter .e-footer-content {
   background-color: var(--color-card) !important;
   border-top: 1px solid var(--color-border) !important;
 }
+/* Whole filter dialog inherits the app font, not Syncfusion's stack */
+html body .e-excelfilter,
+html body .e-checkboxfilter,
+html body .e-excelfilter *,
+html body .e-checkboxfilter * {
+  font-family: inherit !important;
+}
+/* Value-list rows: checkbox ↔ label spacing + readable size */
+html body .e-excelfilter .e-checkbox-wrapper,
+html body .e-checkboxfilter .e-checkbox-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+}
 html body .e-excelfilter .e-checkbox-wrapper .e-label,
 html body .e-checkboxfilter .e-checkbox-wrapper .e-label {
   color: var(--color-foreground) !important;
+  font-size: 0.8125rem !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
 }
+/* Inputs + search box — soft-accent fill (matches menu-selected items) */
 html body .e-excelfilter .e-searchinput,
 html body .e-checkboxfilter .e-searchinput,
 html body .e-excelfilter input,
 html body .e-checkboxfilter input {
-  background-color: var(--color-input) !important;
+  background-color: var(--color-primary-soft) !important;
   border-color: var(--color-border) !important;
   color: var(--color-foreground) !important;
   border-radius: 0.375rem !important;
@@ -471,7 +549,7 @@ html body .e-excelfilter .e-searchcontainer,
 html body .e-checkboxfilter .e-searchcontainer,
 html body .e-excelfilter .e-search,
 html body .e-checkboxfilter .e-search {
-  background-color: var(--color-input) !important;
+  background-color: var(--color-primary-soft) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 0.375rem !important;
 }
@@ -552,6 +630,10 @@ html body .e-xlflmenu input {
 }
 
 /* ── Column chooser dialog ──────────────────────────────────────────────── */
+html body .e-ccdlg,
+html body .e-ccdlg * {
+  font-family: inherit !important;
+}
 html body .e-ccdlg .e-dlg-header-content,
 html body .e-ccdlg .e-footer-content {
   background-color: var(--color-card) !important;
@@ -564,13 +646,26 @@ html body .e-ccdlg .e-dlg-content {
 }
 html body .e-ccdlg .e-cc-searchdiv input,
 html body .e-ccdlg input {
-  background-color: var(--color-input) !important;
+  background-color: var(--color-primary-soft) !important;
   border-color: var(--color-border) !important;
   color: var(--color-foreground) !important;
   border-radius: 0.375rem !important;
 }
+/* Checkbox ↔ label spacing + font size to match the grid */
+html body .e-ccdlg .e-checkbox-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+}
 html body .e-ccdlg .e-checkbox-wrapper .e-label {
   color: var(--color-foreground) !important;
+  font-size: 0.8125rem !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+/* Each chooser row a touch more breathing room */
+html body .e-ccdlg .e-cc-contentdiv .e-cclist {
+  padding: 0.3rem 0.5rem !important;
 }
 
 /* ── Empty record placeholder ───────────────────────────────────────────── */
@@ -617,7 +712,7 @@ html body .e-ccdlg .e-checkbox-wrapper .e-label {
 .dark .maka-grid-wrapper .e-grid .e-row:hover td.e-rowcell,
 .dark .maka-grid-wrapper .e-grid .e-row.e-hover td.e-rowcell,
 .dark .maka-grid-wrapper .e-grid .e-altrow:hover td.e-rowcell {
-  background-color: oklch(from var(--color-accent) l c h / 0.6) !important;
+  background-color: var(--color-primary-soft) !important;
 }
 /* Selected row dark */
 .dark .maka-grid-wrapper .e-grid .e-selectionbackground,
@@ -826,9 +921,11 @@ html body .e-xlflmenu .e-footer-content .e-btn:not(.e-primary):hover {
 .dark .e-checkboxfilter input,
 .dark .e-ccdlg input,
 .dark .e-xlflmenu input,
+.dark .e-excelfilter .e-searchcontainer,
+.dark .e-checkboxfilter .e-searchcontainer,
 .dark .e-excelfilter .e-input-group,
 .dark .e-ccdlg .e-input-group {
-  background-color: var(--color-input) !important;
+  background-color: var(--color-primary-soft) !important;
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
 }
