@@ -42,6 +42,10 @@ public sealed class GetAuditSummaryQueryHandler : IQueryHandler<GetAuditSummaryQ
 
         var scoped = baseQuery.Where(a => a.OccurredAtUtc >= fromUtc && a.OccurredAtUtc <= toUtc);
 
+        // Apply the same optional filters the grid uses so the KPI aggregates
+        // describe exactly the rows the user is currently looking at.
+        scoped = ApplyFilters(scoped, query);
+
         // Four GROUP BYs against the same filtered set. Each one is pushed to
         // SQL — no in-memory materialization of the audit table. Sequential
         // because we share the DbContext; switching to parallel needs four
@@ -93,6 +97,64 @@ public sealed class GetAuditSummaryQueryHandler : IQueryHandler<GetAuditSummaryQ
             EventsByTenant = byTenant.ToDictionary(x => x.Key, x => x.Count, StringComparer.OrdinalIgnoreCase),
             TopEntityNames = topEntityNames,
         };
+    }
+
+    /// <summary>
+    /// Mirrors the optional filters in <c>GetAuditsQueryHandler.Handle</c> so
+    /// the KPI aggregates reflect the same filtered set as the paged grid.
+    /// </summary>
+    private static IQueryable<AuditRecord> ApplyFilters(IQueryable<AuditRecord> audits, GetAuditSummaryQuery query)
+    {
+        if (!string.IsNullOrWhiteSpace(query.UserId))
+        {
+            audits = audits.Where(a => a.UserId == query.UserId);
+        }
+
+        if (query.EventType.HasValue)
+        {
+            audits = audits.Where(a => a.EventType == (int)query.EventType.Value);
+        }
+
+        if (query.Severity.HasValue)
+        {
+            audits = audits.Where(a => a.Severity == (byte)query.Severity.Value);
+        }
+
+        if (query.Tags.HasValue && query.Tags.Value != AuditTag.None)
+        {
+            long tagMask = (long)query.Tags.Value;
+            audits = audits.Where(a => (a.Tags & tagMask) != 0);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Source))
+        {
+            audits = audits.Where(a => a.Source != null && EF.Functions.ILike(a.Source, $"%{query.Source}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string pattern = $"%{query.Search}%";
+            audits = audits.Where(a =>
+                (a.Source != null && EF.Functions.ILike(a.Source, pattern)) ||
+                (a.UserName != null && EF.Functions.ILike(a.UserName, pattern)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.EntityName))
+        {
+            audits = audits.Where(a => a.EntityName != null && EF.Functions.ILike(a.EntityName, $"%{query.EntityName}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.EntityKey))
+        {
+            audits = audits.Where(a => a.EntityKey == query.EntityKey);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.EntityOperation))
+        {
+            audits = audits.Where(a => a.EntityOperation == query.EntityOperation);
+        }
+
+        return audits;
     }
 
     /// <summary>
