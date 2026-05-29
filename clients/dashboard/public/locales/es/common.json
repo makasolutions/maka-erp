@@ -49,7 +49,6 @@
     "unassign": "Desasignar",
     "discard": "Descartar",
     "reactivate": "Reactivar",
-    "deactivate": "Desactivar",
     "clearSearch": "Limpiar búsqueda",
     "clearFilter": "Limpiar filtro",
     "createInline": "Crear \"{{name}}\"",
@@ -752,10 +751,9 @@
     "defaultEntity": "registro"
   },
   "dateRange": {
-    "last24h": "24h",
-    "last7d": "7d",
-    "last30d": "30d",
-    "last90d": "90d",
+    "today": "Hoy",
+    "week": "Semana",
+    "month": "Mes",
     "custom": "Rango personalizado",
     "placeholder": "Elige un rango de fechas"
   }

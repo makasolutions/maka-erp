@@ -60,22 +60,38 @@ export interface MakaDateRange {
   end: Date;
 }
 
-export type MakaRangePreset = "24h" | "7d" | "30d" | "90d";
+export type MakaRangePreset = "today" | "week" | "month";
 
-const PRESET_MS: Record<MakaRangePreset, number> = {
-  "24h": 24 * 60 * 60 * 1000,
-  "7d": 7 * 24 * 60 * 60 * 1000,
-  "30d": 30 * 24 * 60 * 60 * 1000,
-  "90d": 90 * 24 * 60 * 60 * 1000,
-};
+/**
+ * Calendar-period range from the period start (00:00) to NOW:
+ *  - today: today 00:00 → now
+ *  - week:  Monday 00:00 of the current week → now
+ *  - month: the 1st of the current month 00:00 → now
+ */
+export function makaPresetRange(preset: MakaRangePreset): MakaDateRange {
+  const end = new Date();
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  if (preset === "week") {
+    const dow = start.getDay(); // 0=Sun … 6=Sat
+    const sinceMonday = dow === 0 ? 6 : dow - 1;
+    start.setDate(start.getDate() - sinceMonday);
+  } else if (preset === "month") {
+    start.setDate(1);
+  }
+  return { start, end };
+}
 
 export interface MakaDateRangePickerProps {
   /** Current range, or null when no filter is applied. */
   value: MakaDateRange | null;
   /** Fires with the new range, or null when cleared. */
   onChange: (range: MakaDateRange | null) => void;
-  /** Quick presets to show. Default ["24h", "7d", "30d"]. */
+  /** Quick presets to show. Default ["today", "week", "month"]. */
   presets?: MakaRangePreset[];
+  /** Preset highlighted on mount (e.g. "today"). Highlights the chip; the
+   *  parent is responsible for seeding the matching initial value. */
+  defaultPreset?: MakaRangePreset;
   /** Optional leading label. */
   label?: string;
   className?: string;
@@ -84,7 +100,8 @@ export interface MakaDateRangePickerProps {
 export function MakaDateRangePicker({
   value,
   onChange,
-  presets = ["24h", "7d", "30d"],
+  presets = ["today", "week", "month"],
+  defaultPreset,
   label,
   className,
 }: MakaDateRangePickerProps) {
@@ -98,7 +115,7 @@ export function MakaDateRangePicker({
     : "dd/MM/yyyy";
   const sfLocale = config.language === "es" ? "es-CO" : "en-US";
 
-  const [activePreset, setActivePreset] = useState<MakaRangePreset | null>(null);
+  const [activePreset, setActivePreset] = useState<MakaRangePreset | null>(defaultPreset ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // When the parent clears the value, drop any local highlight.
@@ -112,10 +129,9 @@ export function MakaDateRangePicker({
 
   const presetLabel: Record<MakaRangePreset, string> = useMemo(
     () => ({
-      "24h": t("dateRange.last24h"),
-      "7d": t("dateRange.last7d"),
-      "30d": t("dateRange.last30d"),
-      "90d": t("dateRange.last90d"),
+      today: t("dateRange.today"),
+      week: t("dateRange.week"),
+      month: t("dateRange.month"),
     }),
     [t],
   );
@@ -128,9 +144,7 @@ export function MakaDateRangePicker({
     }
     setActivePreset(key);
     pickerRef.current?.hide();
-    const end = new Date();
-    const start = new Date(end.getTime() - PRESET_MS[key]);
-    onChange({ start, end });
+    onChange(makaPresetRange(key));
   };
 
   const toggleCustom = () => {

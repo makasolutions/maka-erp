@@ -16,6 +16,7 @@ import {
   Eye,
   Plus,
   Ticket as TicketIcon,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -51,7 +52,7 @@ import {
   Field,
   type EntityStatusTone,
 } from "@/components/list";
-import { MakaGrid, MakaDateRangePicker } from "@/components/maka";
+import { MakaGrid, MakaDateRangePicker, makaPresetRange } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { getUserById } from "@/api/identity";
@@ -175,9 +176,23 @@ export function TicketsPage() {
     [namesQuery.data],
   );
 
-  // Date-range filters (page-specific) — applied client-side over the bulk set.
-  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(null);
+  // Filters (page-specific) — applied client-side over the bulk set.
+  // The page loads pre-filtered to Created = today.
+  const [numberFilter, setNumberFilter] = useState("");
+  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("today"));
   const [updatedRange, setUpdatedRange] = useState<MakaDateRange | null>(null);
+  // Bumped by "clear all" to remount the date pickers so their internal
+  // preset highlight resets (Created → "today", Updated → none).
+  const [filtersResetKey, setFiltersResetKey] = useState(0);
+
+  const resetFilters = () => {
+    setNumberFilter("");
+    setStatusFilter(null);
+    setPriorityFilter(null);
+    setUpdatedRange(null);
+    setCreatedRange(makaPresetRange("today"));
+    setFiltersResetKey((k) => k + 1);
+  };
 
   const makaRows: TicketRow[] = useMemo(() => {
     const inRange = (iso: string | null | undefined, range: MakaDateRange | null) => {
@@ -199,12 +214,15 @@ export function TicketsPage() {
         createdAt: new Date(tk.createdAtUtc),
         updatedAt: new Date(tk.updatedAtUtc ?? tk.createdAtUtc),
       }))
-      .filter(
-        (r) =>
+      .filter((r) => {
+        const num = numberFilter.trim().toLowerCase();
+        if (num && !r.number.toLowerCase().includes(num)) return false;
+        return (
           inRange(r.createdAtUtc, createdRange) &&
-          inRange(r.updatedAtUtc ?? r.createdAtUtc, updatedRange),
-      );
-  }, [makaQuery.data, t, userNameById, createdRange, updatedRange]);
+          inRange(r.updatedAtUtc ?? r.createdAtUtc, updatedRange)
+        );
+      });
+  }, [makaQuery.data, t, userNameById, numberFilter, createdRange, updatedRange]);
 
   // KPIs — reflect the same (date-range) filtered set the grid shows.
   const kpis = useMemo(() => {
@@ -313,16 +331,31 @@ export function TicketsPage() {
             ))}
           </div>
 
-          {/* Tab 1 — basic filters: Created · Updated · Status · Priority
+          {/* Tab 1 — basic filters: # Ticket · Created · Updated · Status · Priority
               (labels match the grid column headers) */}
           {activeTab === "filters" && (
             <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
+              {/* # Ticket — first filter */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                  {t("cols.number")}
+                </span>
+                <Input
+                  value={numberFilter}
+                  onChange={(e) => setNumberFilter(e.target.value)}
+                  placeholder={t("cols.number")}
+                  className="h-8 w-40"
+                />
+              </div>
               <MakaDateRangePicker
+                key={`created-${filtersResetKey}`}
                 label={t("cols.created")}
+                defaultPreset="today"
                 value={createdRange}
                 onChange={setCreatedRange}
               />
               <MakaDateRangePicker
+                key={`updated-${filtersResetKey}`}
                 label={t("cols.updated")}
                 value={updatedRange}
                 onChange={setUpdatedRange}
@@ -349,6 +382,26 @@ export function TicketsPage() {
                   options={priorityOptions}
                 />
               </div>
+
+              {/* Clear all — resets to the initial state (Created = today) */}
+              <div className="ml-auto flex flex-col justify-end gap-1.5 self-stretch">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-transparent" aria-hidden>
+                  {t("clearFilters")}
+                </span>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  title={t("clearFilters")}
+                  aria-label={t("clearFilters")}
+                  className={cn(
+                    "grid size-8 place-items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card)]",
+                    "text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
+                    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+                  )}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -374,12 +427,7 @@ export function TicketsPage() {
         permissions={{ create: P.tickets.create }}
         onCreate={() => setEditor({ mode: "create" })}
         onRowClick={(row) => navigate(`/tickets/${row.id}`)}
-        onClearFilters={() => {
-          setStatusFilter(null);
-          setPriorityFilter(null);
-          setCreatedRange(null);
-          setUpdatedRange(null);
-        }}
+        onClearFilters={resetFilters}
       />
 
       {makaQuery.isError && (

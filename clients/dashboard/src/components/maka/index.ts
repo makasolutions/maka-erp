@@ -14,7 +14,7 @@
 export { MakaGrid, makaCurrencyColumn, formatCOP } from "./MakaGrid";
 export type { MakaGridProps, MakaGridPermissions, MakaGridAction } from "./MakaGrid";
 
-export { MakaDateRangePicker } from "./MakaDateRangePicker";
+export { MakaDateRangePicker, makaPresetRange } from "./MakaDateRangePicker";
 export type { MakaDateRangePickerProps, MakaDateRange, MakaRangePreset } from "./MakaDateRangePicker";
 
 export { MakaChart } from "./MakaChart";
