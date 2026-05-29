@@ -208,6 +208,42 @@
   filter: brightness(1.08);
 }
 
+/* ── Column-chooser toolbar button — consistent with the other buttons ──── */
+/* Columns icon + "Columnas" text + a chevron that matches the split button. */
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn,
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn:focus {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem;
+  background-color: transparent !important;
+  color: var(--color-foreground) !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.375rem !important;
+  box-shadow: none !important;
+}
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn:hover {
+  background-color: var(--color-accent) !important;
+  color: var(--color-foreground) !important;
+}
+/* Leading columns glyph + the text in foreground */
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-columnchooser-btn,
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-btn-icon,
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-tbar-btn-text {
+  color: var(--color-foreground) !important;
+  opacity: 1 !important;
+}
+/* Chevron-down (same shape as the lucide ChevronDown in the split button) */
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-left: 0.15rem;
+  border-right: 1.6px solid currentColor;
+  border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: 0.7;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    PAGER — flex row, everything vertically centred, one unified text size
 ══════════════════════════════════════════════════════════════════════════════ */
@@ -339,24 +375,42 @@
   opacity: 0.35 !important;
 }
 /* Page size selector — soft-accent fill (matches menu-selected items) */
+.maka-grid-wrapper .e-pager .e-pagerdropdown {
+  margin: 0 !important;
+  vertical-align: middle !important;
+}
 .maka-grid-wrapper .e-pager select,
-.maka-grid-wrapper .e-pager .e-pagerdropdown,
-.maka-grid-wrapper .e-pager .e-pagerdropdown .e-input,
 .maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group,
-.maka-grid-wrapper .e-pager .e-dropdownlist,
 .maka-grid-wrapper .e-pager .e-pagerdropdown .e-control-wrapper {
   background-color: var(--color-primary-soft) !important;
   color: var(--color-foreground) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 0.375rem !important;
   height: 1.75rem !important;
+  /* Vertically centre the displayed value + caret */
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 0.5rem !important;
+  margin: 0 !important;
+}
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-input,
+.maka-grid-wrapper .e-pager .e-dropdownlist {
+  background-color: transparent !important;
+  color: var(--color-foreground) !important;
+  border: none !important;
+  height: auto !important;
+  line-height: 1.75rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 .maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group::before,
 .maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group::after {
   display: none !important;
 }
-.maka-grid-wrapper .e-pager .e-pagerdropdown .e-ddl-icon {
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-ddl-icon,
+.maka-grid-wrapper .e-pager .e-pagerdropdown .e-input-group-icon {
   color: var(--color-muted-foreground) !important;
+  background-color: transparent !important;
 }
 /* Record count / page info */
 .maka-grid-wrapper .e-pager .e-parentmsgbar,
@@ -513,12 +567,19 @@ html body .e-checkboxfilter .e-footer-content {
   background-color: var(--color-card) !important;
   border-top: 1px solid var(--color-border) !important;
 }
-/* Whole filter dialog inherits the app font, not Syncfusion's stack */
+/* Whole filter dialog inherits the app font, not Syncfusion's stack —
+   but NEVER the icon elements, whose glyphs live in the "e-icons" font. */
 html body .e-excelfilter,
 html body .e-checkboxfilter,
-html body .e-excelfilter *,
-html body .e-checkboxfilter * {
+html body .e-excelfilter *:not(.e-icons):not([class*="e-icon"]):not([class*="e-btn-icon"]),
+html body .e-checkboxfilter *:not(.e-icons):not([class*="e-icon"]):not([class*="e-btn-icon"]) {
   font-family: inherit !important;
+}
+html body .e-excelfilter .e-icons,
+html body .e-excelfilter [class*="e-icon"],
+html body .e-checkboxfilter .e-icons,
+html body .e-checkboxfilter [class*="e-icon"] {
+  font-family: "e-icons" !important;
 }
 /* Value-list rows: checkbox ↔ label spacing + readable size */
 html body .e-excelfilter .e-checkbox-wrapper,
@@ -631,8 +692,12 @@ html body .e-xlflmenu input {
 
 /* ── Column chooser dialog ──────────────────────────────────────────────── */
 html body .e-ccdlg,
-html body .e-ccdlg * {
+html body .e-ccdlg *:not(.e-icons):not([class*="e-icon"]):not([class*="e-btn-icon"]) {
   font-family: inherit !important;
+}
+html body .e-ccdlg .e-icons,
+html body .e-ccdlg [class*="e-icon"] {
+  font-family: "e-icons" !important;
 }
 html body .e-ccdlg .e-dlg-header-content,
 html body .e-ccdlg .e-footer-content {
@@ -804,14 +869,12 @@ html body .e-dropdownbase .e-list-item {
 }
 html body .e-ddl.e-popup .e-list-item.e-item-focus,
 html body .e-ddl.e-popup .e-list-item.e-hover,
-html body .e-dropdownbase .e-list-item.e-hover {
-  background-color: var(--color-accent) !important;
-  color: var(--color-foreground) !important;
-}
+html body .e-dropdownbase .e-list-item.e-hover,
 html body .e-ddl.e-popup .e-list-item.e-active,
+html body .e-ddl.e-popup .e-list-item.e-active.e-hover,
 html body .e-dropdownbase .e-list-item.e-active {
-  background-color: var(--color-primary) !important;
-  color: var(--color-primary-foreground) !important;
+  background-color: var(--color-primary-soft) !important;
+  color: var(--color-foreground) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -909,13 +972,12 @@ html body .e-xlflmenu .e-footer-content .e-btn:not(.e-primary):hover {
 }
 .dark .e-ddl.e-popup .e-list-item.e-hover,
 .dark .e-ddl.e-popup .e-list-item.e-item-focus,
-.dark .e-dropdownbase .e-list-item.e-hover {
-  background-color: oklch(from var(--color-accent) l c h / 0.7) !important;
-}
+.dark .e-dropdownbase .e-list-item.e-hover,
 .dark .e-ddl.e-popup .e-list-item.e-active,
+.dark .e-ddl.e-popup .e-list-item.e-active.e-hover,
 .dark .e-dropdownbase .e-list-item.e-active {
-  background-color: var(--color-primary) !important;
-  color: var(--color-primary-foreground) !important;
+  background-color: var(--color-primary-soft) !important;
+  color: var(--color-foreground) !important;
 }
 .dark .e-excelfilter input,
 .dark .e-checkboxfilter input,
