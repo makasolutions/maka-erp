@@ -745,6 +745,10 @@
     "rowsPerPage": "Filas por página",
     "of": "de",
     "selectColumns": "Seleccionar columnas",
-    "goToPage": "Ir a página"
+    "goToPage": "Ir a página",
+    "noRecordsTitle": "Sin registros para mostrar",
+    "noMatch": "Ningún {{item}} coincide con los filtros actuales.",
+    "clearFilters": "Limpiar filtros",
+    "defaultEntity": "registro"
   }
 }

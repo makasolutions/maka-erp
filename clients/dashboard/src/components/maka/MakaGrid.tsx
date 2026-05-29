@@ -68,9 +68,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AuthContext } from "@/auth/auth-context";
+import { useLocalization } from "@/contexts/localization-context";
 import "./maka-grid.css";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Maps the tenant's dateFormat token to a Syncfusion date format string. */
+function syncfusionDateFormat(token: string): string {
+  switch (token) {
+    case "MM/DD/YYYY": return "MM/dd/yyyy";
+    case "YYYY-MM-DD": return "yyyy-MM-dd";
+    case "DD/MM/YYYY":
+    default:           return "dd/MM/yyyy";
+  }
+}
 
 /** Sentinel field name for the actions column — excluded from row-click navigation. */
 const ACTIONS_FIELD = "__maka_actions__";
@@ -327,6 +338,18 @@ export interface MakaGridProps<T extends object> {
   gridHeight?: number | string;
   /** Show Column Chooser button in toolbar. Default true. */
   showColumnChooser?: boolean;
+  /**
+   * Singular entity name used in the empty-state message
+   * ("Ningún {entityName} coincide con los filtros actuales").
+   * e.g. "ticket", "producto". Defaults to a generic "registro".
+   */
+  entityName?: string;
+  /**
+   * Optional page-level filter reset. Called by the empty-state "Clear filters"
+   * button AFTER the grid clears its own column filters / search, so the page
+   * can also reset its general filters (search box, status pills, date ranges).
+   */
+  onClearFilters?: () => void;
 
   // ── Navigation ──────────────────────────────────────────────────────────
   /** Fires when user clicks a data row (action column excluded). */
@@ -380,6 +403,8 @@ export function MakaGrid<T extends object>({
   fileName = "maka-export",
   gridHeight = "auto",
   showColumnChooser = true,
+  entityName,
+  onClearFilters,
   onRowClick,
   permissions,
   onCreate,
@@ -392,6 +417,8 @@ export function MakaGrid<T extends object>({
   const gridRef = useRef<GridComponent | null>(null);
   const authCtx = useContext(AuthContext);
   const goToLabel = t("grid.goToPage");
+  const { config } = useLocalization();
+  const dateFormat = syncfusionDateFormat(config.dateFormat);
 
   // ── Permission resolution ────────────────────────────────────────────────
   const userPerms = authCtx?.user?.permissions ?? [];
@@ -607,7 +634,16 @@ export function MakaGrid<T extends object>({
       }
     : null;
 
-  const allColumns: ColumnModel[] = actionColumn ? [...columns, actionColumn] : columns;
+  // Inject the tenant's localized date format into any date column that
+  // didn't specify its own — so cell display, the date filter UI and exports
+  // all follow the user's chosen format.
+  const localizedColumns: ColumnModel[] = columns.map((col) =>
+    col.type === "date" && !col.format
+      ? { ...col, format: dateFormat }
+      : col,
+  );
+
+  const allColumns: ColumnModel[] = actionColumn ? [...localizedColumns, actionColumn] : localizedColumns;
 
   // ── Toolbar ───────────────────────────────────────────────────────────────
   type CustomItem = {
@@ -661,6 +697,54 @@ export function MakaGrid<T extends object>({
     [onRowClick],
   );
 
+  // ── Clear filters (empty-state button) ─────────────────────────────────────
+  const clearGridFilters = useCallback(() => {
+    const g = gridRef.current;
+    try { g?.clearFiltering(); } catch { /* no active filters */ }
+    try { g?.search(""); } catch { /* search not active */ }
+    onClearFilters?.(); // let the page reset its own general filters too
+  }, [onClearFilters]);
+
+  // ── Empty-state template ───────────────────────────────────────────────────
+  // Stable function reference; reads latest copy from a ref at render time so
+  // the strings stay localized and the handler current without re-mounting.
+  const emptyCtxRef = useRef({ title: "", message: "", clearLabel: "", onClear: clearGridFilters });
+  emptyCtxRef.current = {
+    title: t("grid.noRecordsTitle"),
+    message: t("grid.noMatch", { item: entityName ?? t("grid.defaultEntity") }),
+    clearLabel: t("grid.clearFilters"),
+    onClear: clearGridFilters,
+  };
+  const emptyTemplate = useMemo(() => {
+    // eslint-disable-next-line react/display-name
+    return function EmptyState() {
+      const ctx = emptyCtxRef.current;
+      return (
+        <div className="flex flex-col items-center justify-center gap-1.5 px-6 py-12 text-center">
+          <p className="text-[14px] font-semibold text-[var(--color-foreground)]">
+            {ctx.title}
+          </p>
+          <p className="max-w-sm text-[12.5px] leading-relaxed text-[var(--color-muted-foreground)]">
+            {ctx.message}
+          </p>
+          <button
+            type="button"
+            onClick={ctx.onClear}
+            className={[
+              "mt-3 inline-flex h-9 items-center rounded-lg px-4 text-[13px] font-medium",
+              "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-foreground)]",
+              "hover:bg-[var(--color-accent)] transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+            ].join(" ")}
+          >
+            {ctx.clearLabel}
+          </button>
+        </div>
+      );
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Go-to-page control — injected INTO the Syncfusion pager ────────────────
   //
   // Syncfusion has no built-in "jump to page" input, so we imperatively insert
@@ -672,6 +756,17 @@ export function MakaGrid<T extends object>({
     if (!grid?.element) return;
     const pager = grid.element.querySelector<HTMLElement>(".e-pager");
     if (!pager) return;
+
+    // Only meaningful with more than one page. When there's a single page,
+    // remove any previously-injected control and bail — there's nowhere to go.
+    const total = grid.pageSettings?.totalRecordsCount ?? 0;
+    const size = grid.pageSettings?.pageSize ?? 0;
+    const totalPages = size > 0 ? Math.ceil(total / size) : 1;
+    if (totalPages <= 1) {
+      pager.querySelector(".maka-goto")?.remove();
+      return;
+    }
+
     if (pager.querySelector(".maka-goto")) return; // already present
     const container = pager.querySelector<HTMLElement>(".e-pagercontainer");
     if (!container) return;
@@ -736,6 +831,8 @@ export function MakaGrid<T extends object>({
         dataSource={dataSource}
         height={gridHeight}
         locale={locale}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        emptyRecordTemplate={emptyTemplate as any}
         /* ── Features ── */
         allowPaging
         allowSorting

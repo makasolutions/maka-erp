@@ -744,6 +744,10 @@
     "rowsPerPage": "Rows per page",
     "of": "of",
     "selectColumns": "Select columns",
-    "goToPage": "Go to page"
+    "goToPage": "Go to page",
+    "noRecordsTitle": "No records to display",
+    "noMatch": "No {{item}} matches the current filters.",
+    "clearFilters": "Clear filters",
+    "defaultEntity": "record"
   }
 }
