@@ -131,7 +131,7 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
             audits = audits.Where(a => a.EntityOperation == query.EntityOperation);
         }
 
-        audits = audits.OrderByDescending(a => a.OccurredAtUtc);
+        audits = ApplySort(audits, query.Sort);
 
         IQueryable<AuditSummaryDto> projected = audits.Select(a => new AuditSummaryDto
         {
@@ -153,6 +153,30 @@ public sealed class GetAuditsQueryHandler : IQueryHandler<GetAuditsQuery, PagedR
         });
 
         return await projected.ToPagedResponseAsync(query, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Applies a single-column sort from a "<c>field direction</c>" expression
+    /// (e.g. "severity desc"). Falls back to newest-first when the expression is
+    /// missing or names an unknown field. Only an allow-list of columns is
+    /// sortable so callers can't probe arbitrary expressions.
+    /// </summary>
+    private static IOrderedQueryable<AuditRecord> ApplySort(IQueryable<AuditRecord> audits, string? sort)
+    {
+        var parts = (sort ?? string.Empty).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var field = parts.Length > 0 ? parts[0].ToLowerInvariant() : "occurredatutc";
+        bool desc = parts.Length < 2 || parts[1].StartsWith("desc", StringComparison.OrdinalIgnoreCase);
+
+        return field switch
+        {
+            "severity" => desc ? audits.OrderByDescending(a => a.Severity) : audits.OrderBy(a => a.Severity),
+            "eventtype" => desc ? audits.OrderByDescending(a => a.EventType) : audits.OrderBy(a => a.EventType),
+            "source" => desc ? audits.OrderByDescending(a => a.Source) : audits.OrderBy(a => a.Source),
+            "username" => desc ? audits.OrderByDescending(a => a.UserName) : audits.OrderBy(a => a.UserName),
+            "entityname" => desc ? audits.OrderByDescending(a => a.EntityName) : audits.OrderBy(a => a.EntityName),
+            "entityoperation" => desc ? audits.OrderByDescending(a => a.EntityOperation) : audits.OrderBy(a => a.EntityOperation),
+            _ => desc ? audits.OrderByDescending(a => a.OccurredAtUtc) : audits.OrderBy(a => a.OccurredAtUtc),
+        };
     }
 
     /// <summary>
