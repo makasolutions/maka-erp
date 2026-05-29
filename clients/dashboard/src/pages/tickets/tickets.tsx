@@ -417,15 +417,15 @@ function KpiCard({
     : tone === "success" ? "var(--color-success)"
     : "var(--color-primary)";
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2">
         <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: accent }} />
         <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
           {label}
         </span>
       </div>
       <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value}
+        {value.toLocaleString("es-CO")}
       </div>
     </div>
   );

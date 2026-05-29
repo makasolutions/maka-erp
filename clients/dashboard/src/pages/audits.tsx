@@ -256,25 +256,24 @@ function AuditOperationCell(row: AuditRow) {
 // ── KPI card ──────────────────────────────────────────────────────────────
 function AuditKpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2">
         <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
         <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
           {label}
         </span>
       </div>
       <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value}
+        {value.toLocaleString("es-CO")}
       </div>
     </div>
   );
 }
 
-function AuditsMakaSection() {
+function AuditsMakaSection({ panelOpen }: { panelOpen: boolean }) {
   const { t } = useTranslation("common");
   const { formatDate, formatTime } = useLocalization();
 
-  const [panelOpen, setPanelOpen] = useState(true);
   const [resetKey, setResetKey] = useState(0);
   // Default to today's events.
   const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("today"));
@@ -483,7 +482,7 @@ function AuditsMakaSection() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "occurredAt", headerText: t("audits.columns.date"), template: AuditDateCell as any, width: 130 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "actorName", headerText: t("audits.columns.actor"), template: AuditActorCell as any, minWidth: 180 },
+      { field: "actorName", headerText: t("audits.user"), template: AuditActorCell as any, minWidth: 180 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "eventTypeLabel", headerText: t("audits.columns.action"), template: AuditEventCell as any, width: 150 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -500,18 +499,6 @@ function AuditsMakaSection() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-end gap-3">
-        <Button
-          variant="outline"
-          onClick={() => setPanelOpen((v) => !v)}
-          aria-pressed={panelOpen}
-          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
-        >
-          <Eye className="size-4" />
-          {t("gridFilters.panelToggle")}
-        </Button>
-      </div>
-
       <MakaGridFilters
         open={panelOpen}
         onClear={resetFilters}
@@ -631,6 +618,7 @@ function AuditsMakaSection() {
 
 export function AuditsPage() {
   const { t } = useTranslation("common");
+  const [panelOpen, setPanelOpen] = useState(true);
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
@@ -639,8 +627,18 @@ export function AuditsPage() {
         unit={t("audits.unit")}
         unitPlural={t("audits.unitPlural")}
         description={t("audits.description")}
-      />
-      <AuditsMakaSection />
+      >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {t("gridFilters.panelToggle")}
+        </Button>
+      </EntityPageHeader>
+      <AuditsMakaSection panelOpen={panelOpen} />
     </div>
   );
 }
