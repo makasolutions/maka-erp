@@ -11,8 +11,8 @@
  *   import { MakaGrid, MakaChart } from "@/components/maka";
  */
 
-export { MakaGrid } from "./MakaGrid";
-export type { MakaGridProps } from "./MakaGrid";
+export { MakaGrid, makaCurrencyColumn, formatCOP } from "./MakaGrid";
+export type { MakaGridProps, MakaGridPermissions, MakaGridAction } from "./MakaGrid";
 
 export { MakaChart } from "./MakaChart";
 export type { MakaChartProps, MakaChartType } from "./MakaChart";

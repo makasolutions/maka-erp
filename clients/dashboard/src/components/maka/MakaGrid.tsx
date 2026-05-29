@@ -46,9 +46,9 @@ import { L10n } from "@syncfusion/ej2-base";
 import {
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
-  useState,
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -74,6 +74,47 @@ import "./maka-grid.css";
 
 /** Sentinel field name for the actions column — excluded from row-click navigation. */
 const ACTIONS_FIELD = "__maka_actions__";
+
+// ── Currency helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Formats a number as Colombian pesos with the symbol FIRST: "$ 28.900.000".
+ * Uses the es-CO locale, which places "$" before the value (unlike the bare
+ * "es" locale that Syncfusion's C0 format falls back to → "28.900.000 COP").
+ */
+export function formatCOP(value: number): string {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+/**
+ * Build a right-aligned currency column whose cells always render "$ value"
+ * via a valueAccessor. Sorting / filtering still operate on the raw number.
+ *
+ * @example
+ * columns={[ makaCurrencyColumn("price", t("products.fields.price")) ]}
+ */
+export function makaCurrencyColumn(
+  field: string,
+  headerText: string,
+  extra?: Partial<ColumnModel>,
+): ColumnModel {
+  return {
+    field,
+    headerText,
+    textAlign: "Right",
+    width: 160,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    valueAccessor: ((f: string, data: Record<string, unknown>) => {
+      const v = data?.[f];
+      return typeof v === "number" ? formatCOP(v) : v;
+    }) as any,
+    ...extra,
+  };
+}
 
 // ── Locale strings (ES + EN) ──────────────────────────────────────────────────
 L10n.load({
@@ -133,6 +174,12 @@ L10n.load({
       AddCurrentSelection: "Add current selection to filter",
       SelectAllCheckbox: "Select all",
       True: "Yes", False: "No",
+      SortAtoZ: "Sort A to Z",
+      SortZtoA: "Sort Z to A",
+      SortByOldest: "Sort oldest first",
+      SortByNewest: "Sort newest first",
+      SortSmallestToLargest: "Sort smallest to largest",
+      SortLargestToSmallest: "Sort largest to smallest",
     },
     pager: {
       currentPageInfo: "Page {0} of {1}",
@@ -206,6 +253,12 @@ L10n.load({
       AddCurrentSelection: "Agregar selección al filtro",
       SelectAllCheckbox: "Seleccionar todo",
       True: "Sí", False: "No",
+      SortAtoZ: "Ordenar A → Z",
+      SortZtoA: "Ordenar Z → A",
+      SortByOldest: "Más antiguos primero",
+      SortByNewest: "Más recientes primero",
+      SortSmallestToLargest: "Menor a mayor",
+      SortLargestToSmallest: "Mayor a menor",
     },
     pager: {
       currentPageInfo: "Página {0} de {1}",
@@ -338,7 +391,7 @@ export function MakaGrid<T extends object>({
   const { t, i18n } = useTranslation("common");
   const gridRef = useRef<GridComponent | null>(null);
   const authCtx = useContext(AuthContext);
-  const [goToPageValue, setGoToPageValue] = useState("");
+  const goToLabel = t("grid.goToPage");
 
   // ── Permission resolution ────────────────────────────────────────────────
   const userPerms = authCtx?.user?.permissions ?? [];
@@ -605,14 +658,60 @@ export function MakaGrid<T extends object>({
     [onRowClick],
   );
 
-  // ── Go to page ────────────────────────────────────────────────────────────
-  const handleGoToPage = useCallback(() => {
-    const n = parseInt(goToPageValue, 10);
-    if (!Number.isNaN(n) && n >= 1) {
-      gridRef.current?.goToPage(n);
-      setGoToPageValue("");
-    }
-  }, [goToPageValue]);
+  // ── Go-to-page control — injected INTO the Syncfusion pager ────────────────
+  //
+  // Syncfusion has no built-in "jump to page" input, so we imperatively insert
+  // one between the page-navigation buttons (.e-pagercontainer) and the
+  // page-size dropdown / record count. The pager rebuilds its DOM on every
+  // navigation, so we re-inject on `dataBound` (guarded against duplicates).
+  const injectGoToPage = useCallback(() => {
+    const grid = gridRef.current;
+    if (!grid?.element) return;
+    const pager = grid.element.querySelector<HTMLElement>(".e-pager");
+    if (!pager) return;
+    if (pager.querySelector(".maka-goto")) return; // already present
+    const container = pager.querySelector<HTMLElement>(".e-pagercontainer");
+    if (!container) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "maka-goto";
+
+    const label = document.createElement("span");
+    label.className = "maka-goto-label";
+    label.textContent = goToLabel;
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "1";
+    input.className = "maka-goto-input";
+    input.placeholder = "#";
+
+    const go = () => {
+      const n = parseInt(input.value, 10);
+      const totalPages = grid.pageSettings?.totalRecordsCount && grid.pageSettings.pageSize
+        ? Math.ceil(grid.pageSettings.totalRecordsCount / grid.pageSettings.pageSize)
+        : undefined;
+      if (!Number.isNaN(n) && n >= 1 && (totalPages === undefined || n <= totalPages)) {
+        grid.goToPage(n);
+        input.value = "";
+      }
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); go(); }
+    });
+    input.addEventListener("blur", go);
+
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    container.insertAdjacentElement("afterend", wrap);
+  }, [goToLabel]);
+
+  // Re-inject when the label (language) changes after first mount.
+  useEffect(() => {
+    const grid = gridRef.current;
+    const existing = grid?.element?.querySelector<HTMLElement>(".maka-goto .maka-goto-label");
+    if (existing) existing.textContent = goToLabel;
+  }, [goToLabel]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -659,6 +758,8 @@ export function MakaGrid<T extends object>({
         toolbarClick={handleToolbarClick}
         /* ── Interaction ── */
         recordClick={handleRecordClick}
+        created={injectGoToPage}
+        dataBound={injectGoToPage}
         rowDataBound={(args) => {
           if (onRowClick && args.row) {
             (args.row as HTMLElement).style.cursor = "pointer";
@@ -681,28 +782,6 @@ export function MakaGrid<T extends object>({
           ]}
         />
       </GridComponent>
-
-      {/* Go-to-page control — sits just below the grid's built-in pager */}
-      <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-[12px] text-[var(--color-muted-foreground)]">
-        <span>{t("grid.goToPage") ?? "Ir a página"}</span>
-        <input
-          type="number"
-          min={1}
-          value={goToPageValue}
-          onChange={(e) => setGoToPageValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleGoToPage();
-          }}
-          onBlur={handleGoToPage}
-          className={[
-            "w-16 rounded-md border border-[var(--color-border)] bg-[var(--color-input)]",
-            "px-2 py-1 text-center font-mono text-[12px] text-[var(--color-foreground)]",
-            "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]",
-            "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-          ].join(" ")}
-          placeholder="—"
-        />
-      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@
  * data drawn from Tecnoimportaciones' product catalog.
  */
 import { toast } from "sonner";
-import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler } from "@/components/maka";
+import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler, makaCurrencyColumn } from "@/components/maka";
 import type { KanbanColumn } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { P } from "@/auth/permissions";
@@ -132,13 +132,7 @@ const GRID_COLUMNS: ColumnModel[] = [
   { field: "sku", headerText: "SKU", width: 160, isPrimaryKey: true },
   { field: "name", headerText: "Producto", minWidth: 200 },
   { field: "brand", headerText: "Marca", width: 120 },
-  {
-    field: "price",
-    headerText: "Precio COP",
-    width: 160,
-    format: "C0",
-    textAlign: "Right",
-  },
+  makaCurrencyColumn("price", "Precio COP"),
   { field: "stock", headerText: "Stock", width: 90, textAlign: "Right" },
   { field: "status", headerText: "Estado", width: 110 },
 ];
