@@ -212,12 +212,12 @@
   filter: brightness(1.08);
 }
 
-/* ── Custom column-chooser button (#…maka_columns_btn) ───────────────────── */
-/* Consistent with the other toolbar buttons: lucide Eye icon + "Columnas"
-   text + the same chevron shape the row Split Button uses. Built-in caret is
-   gone because this is now our own custom toolbar item. */
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn,
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn:focus {
+/* ── Built-in column-chooser toolbar button (.e-cc-toolbar) ──────────────── */
+/* Kept as the built-in item so its popup stays anchored to the button. We
+   only restyle it: swap the columns glyph for a lucide Eye, keep the text,
+   and add the same chevron the row Split Button uses. */
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn,
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn:focus {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.4rem;
@@ -227,33 +227,35 @@
   border-radius: 0.375rem !important;
   box-shadow: none !important;
 }
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn:hover {
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn:hover {
   background-color: var(--color-accent) !important;
   color: var(--color-foreground) !important;
 }
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn-text {
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn-text {
   color: var(--color-foreground) !important;
   opacity: 1 !important;
+}
+/* Swap the built-in columns glyph (\e70d) for a lucide Eye via CSS mask.
+   font-size:0 drops the glyph char; the ::before becomes a masked box. */
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-columnchooser-btn,
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-icons {
+  font-size: 0 !important;
+  color: var(--color-foreground) !important;
   display: inline-flex !important;
   align-items: center !important;
 }
-/* Hide any empty icon span the toolbar item may render for prefixIcon="" */
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-icons:empty {
-  display: none !important;
-}
-/* Leading EYE icon (lucide Eye, drawn via CSS mask so it inherits currentColor
-   and matches the lucide icons used everywhere else in the app) */
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn-text::before {
-  content: "";
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-columnchooser-btn::before,
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-icons::before {
+  content: "" !important;
   width: 1rem;
   height: 1rem;
-  margin-right: 0.4rem;
+  display: inline-block;
   background-color: currentColor;
   -webkit-mask: var(--maka-eye-mask) center / contain no-repeat;
   mask: var(--maka-eye-mask) center / contain no-repeat;
 }
 /* Chevron-down — identical shape to the Split Button's lucide ChevronDown */
-.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn::after {
+.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn::after {
   content: "";
   width: 0.45rem;
   height: 0.45rem;
@@ -262,6 +264,7 @@
   border-bottom: 1.6px solid currentColor;
   transform: rotate(45deg) translate(-1px, -1px);
   opacity: 0.7;
+  flex: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
