@@ -61,7 +61,7 @@ import {
 import { MakaGrid } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { DateRangePickerComponent } from "@syncfusion/ej2-react-calendars";
-import { searchUsers } from "@/api/identity";
+import { getUserById } from "@/api/identity";
 import { useLocalization } from "@/contexts/localization-context";
 import { cn } from "@/lib/cn";
 import { describe, formatRelative } from "@/lib/list-helpers";
@@ -75,6 +75,9 @@ type TicketRow = TicketDto & {
   statusLabel: string;
   assigneeName: string;
   reporterName: string;
+  /** Date objects so the grid's date columns format + filter correctly. */
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 const PAGE_SIZE = 20;
@@ -191,22 +194,40 @@ export function TicketsPage() {
     placeholderData: keepPreviousData,
   });
 
-  // Resolve user display names once (id → name) so the assignee/reporter
-  // columns can filter + sort by name instead of GUID.
-  const usersQuery = useQuery({
-    queryKey: ["identity", "users", "name-map"],
-    queryFn: () => searchUsers({ pageNumber: 1, pageSize: 500 }),
-    staleTime: 5 * 60_000,
-  });
-  const userNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const u of usersQuery.data?.items ?? []) {
-      if (!u.id) continue;
-      const full = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
-      map.set(u.id, full || u.userName || u.email || u.id.slice(0, 8));
+  // Resolve display names for exactly the users referenced by these tickets,
+  // via getUserById (same call the original list uses, react-query–cached).
+  const neededUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const tk of makaQuery.data?.items ?? []) {
+      if (tk.assignedToUserId) ids.add(tk.assignedToUserId);
+      if (tk.reporterUserId) ids.add(tk.reporterUserId);
     }
-    return map;
-  }, [usersQuery.data]);
+    return [...ids].sort();
+  }, [makaQuery.data]);
+
+  const namesQuery = useQuery({
+    queryKey: ["identity", "ticket-user-names", neededUserIds],
+    enabled: neededUserIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        neededUserIds.map(async (id) => {
+          try {
+            const u = await getUserById(id);
+            const full = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
+            return [id, full || u.userName || u.email || id.slice(0, 8)] as const;
+          } catch {
+            return [id, id.slice(0, 8)] as const;
+          }
+        }),
+      );
+      return new Map(entries);
+    },
+  });
+  const userNameById = useMemo(
+    () => namesQuery.data ?? new Map<string, string>(),
+    [namesQuery.data],
+  );
 
   // Date-range filters (page-specific) — applied client-side over the bulk set.
   const [createdRange, setCreatedRange] = useState<Date[] | null>(null);
@@ -229,6 +250,8 @@ export function TicketsPage() {
           ? userNameById.get(tk.assignedToUserId) ?? tk.assignedToUserId.slice(0, 8)
           : t("unassigned"),
         reporterName: userNameById.get(tk.reporterUserId) ?? tk.reporterUserId.slice(0, 8),
+        createdAt: new Date(tk.createdAtUtc),
+        updatedAt: new Date(tk.updatedAtUtc ?? tk.createdAtUtc),
       }))
       .filter(
         (r) =>
@@ -241,20 +264,22 @@ export function TicketsPage() {
     () => [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "title", headerText: t("cols.subject"), template: TicketSubjectCell as any, minWidth: 240, clipMode: "EllipsisWithTooltip" },
+      // field = priorityLabel so filter + grouping show translated labels
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "priority", headerText: t("cols.priority"), template: TicketPriorityCell as any, width: 130 },
+      { field: "priorityLabel", headerText: t("cols.priority"), template: TicketPriorityCell as any, width: 130 },
+      // field = statusLabel so filter + grouping show translated labels
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "status", headerText: t("cols.status"), template: TicketStatusCell as any, width: 130 },
+      { field: "statusLabel", headerText: t("cols.status"), template: TicketStatusCell as any, width: 130 },
       // field = assigneeName so the Excel filter lists names, not GUIDs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "assigneeName", headerText: t("cols.assignee"), template: TicketAssigneeCell as any, width: 180 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "createdAtUtc", headerText: t("cols.created"), template: TicketCreatedCell as any, width: 150, type: "date" },
+      // Date column — shows the formatted date (no template) and filters as a date
+      { field: "createdAt", headerText: t("cols.created"), width: 150, type: "date" },
       // field = reporterName so the Excel filter lists names, not GUIDs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "reporterName", headerText: t("cols.reporter"), template: TicketReporterCell as any, width: 180 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "updatedAtUtc", headerText: t("cols.updated"), template: TicketUpdatedCell as any, width: 150, type: "date" },
+      // Date column — shows the formatted date (no template) and filters as a date
+      { field: "updatedAt", headerText: t("cols.updated"), width: 150, type: "date" },
     ],
     [t],
   );
@@ -687,22 +712,6 @@ function TicketReporterCell(ticket: TicketRow) {
         {ticket.reporterName}
       </span>
     </div>
-  );
-}
-
-function TicketCreatedCell(ticket: TicketRow) {
-  return (
-    <span className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
-      {formatRelative(ticket.createdAtUtc)}
-    </span>
-  );
-}
-
-function TicketUpdatedCell(ticket: TicketRow) {
-  return (
-    <span className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
-      {formatRelative(ticket.updatedAtUtc ?? ticket.createdAtUtc)}
-    </span>
   );
 }
 

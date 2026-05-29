@@ -851,6 +851,7 @@ export function MakaGrid<T extends object>({
         pageSettings={{
           pageSize: 20,
           pageSizes: [20, 50, 100, 1000, "All"],
+          pageCount: 5,
         }}
         selectionSettings={{ type: "Single", mode: "Row" }}
         /* ── Toolbar ── */
