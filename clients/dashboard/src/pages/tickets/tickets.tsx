@@ -60,15 +60,21 @@ import {
 } from "@/components/list";
 import { MakaGrid } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
+import { DateRangePickerComponent } from "@syncfusion/ej2-react-calendars";
+import { searchUsers } from "@/api/identity";
+import { useLocalization } from "@/contexts/localization-context";
 import { cn } from "@/lib/cn";
 import { describe, formatRelative } from "@/lib/list-helpers";
 import { useUserDisplay } from "@/lib/use-user-display";
 
-// Row shape fed to MakaGrid — base ticket + pre-translated chip labels so the
-// Syncfusion cell templates stay hook-free for priority/status.
+// Row shape fed to MakaGrid — base ticket + pre-resolved label/name fields so
+// the Syncfusion cell templates stay hook-free and the Excel filters list
+// human-readable text (chip labels, user names) instead of raw enums / GUIDs.
 type TicketRow = TicketDto & {
   priorityLabel: string;
   statusLabel: string;
+  assigneeName: string;
+  reporterName: string;
 };
 
 const PAGE_SIZE = 20;
@@ -120,6 +126,12 @@ export function TicketsPage() {
   const { t } = useTranslation("tickets");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { config } = useLocalization();
+  const sfDateFormat =
+    config.dateFormat === "MM/DD/YYYY" ? "MM/dd/yyyy"
+    : config.dateFormat === "YYYY-MM-DD" ? "yyyy-MM-dd"
+    : "dd/MM/yyyy";
+  const sfLocale = config.language === "es" ? "es-CO" : "en-US";
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -179,15 +191,51 @@ export function TicketsPage() {
     placeholderData: keepPreviousData,
   });
 
-  const makaRows: TicketRow[] = useMemo(
-    () =>
-      (makaQuery.data?.items ?? []).map((tk) => ({
+  // Resolve user display names once (id → name) so the assignee/reporter
+  // columns can filter + sort by name instead of GUID.
+  const usersQuery = useQuery({
+    queryKey: ["identity", "users", "name-map"],
+    queryFn: () => searchUsers({ pageNumber: 1, pageSize: 500 }),
+    staleTime: 5 * 60_000,
+  });
+  const userNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of usersQuery.data?.items ?? []) {
+      if (!u.id) continue;
+      const full = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
+      map.set(u.id, full || u.userName || u.email || u.id.slice(0, 8));
+    }
+    return map;
+  }, [usersQuery.data]);
+
+  // Date-range filters (page-specific) — applied client-side over the bulk set.
+  const [createdRange, setCreatedRange] = useState<Date[] | null>(null);
+  const [updatedRange, setUpdatedRange] = useState<Date[] | null>(null);
+
+  const makaRows: TicketRow[] = useMemo(() => {
+    const inRange = (iso: string | null | undefined, range: Date[] | null) => {
+      if (!range || range.length < 2 || !iso) return true;
+      const d = new Date(iso).getTime();
+      const start = range[0].getTime();
+      const end = range[1].getTime() + 86_399_999; // include the whole end day
+      return d >= start && d <= end;
+    };
+    return (makaQuery.data?.items ?? [])
+      .map((tk) => ({
         ...tk,
         priorityLabel: t(PRIORITY_KEY[tk.priority]),
         statusLabel: t(STATUS_KEY[tk.status]),
-      })),
-    [makaQuery.data, t],
-  );
+        assigneeName: tk.assignedToUserId
+          ? userNameById.get(tk.assignedToUserId) ?? tk.assignedToUserId.slice(0, 8)
+          : t("unassigned"),
+        reporterName: userNameById.get(tk.reporterUserId) ?? tk.reporterUserId.slice(0, 8),
+      }))
+      .filter(
+        (r) =>
+          inRange(r.createdAtUtc, createdRange) &&
+          inRange(r.updatedAtUtc ?? r.createdAtUtc, updatedRange),
+      );
+  }, [makaQuery.data, t, userNameById, createdRange, updatedRange]);
 
   const makaColumns: ColumnModel[] = useMemo(
     () => [
@@ -197,14 +245,16 @@ export function TicketsPage() {
       { field: "priority", headerText: t("cols.priority"), template: TicketPriorityCell as any, width: 130 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "status", headerText: t("cols.status"), template: TicketStatusCell as any, width: 130 },
+      // field = assigneeName so the Excel filter lists names, not GUIDs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "assignedToUserId", headerText: t("cols.assignee"), template: TicketAssigneeCell as any, width: 180, allowSorting: false },
+      { field: "assigneeName", headerText: t("cols.assignee"), template: TicketAssigneeCell as any, width: 180 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "createdAtUtc", headerText: t("cols.created"), template: TicketCreatedCell as any, width: 140 },
+      { field: "createdAtUtc", headerText: t("cols.created"), template: TicketCreatedCell as any, width: 150, type: "date" },
+      // field = reporterName so the Excel filter lists names, not GUIDs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "reporterUserId", headerText: t("cols.reporter"), template: TicketReporterCell as any, width: 180, allowSorting: false },
+      { field: "reporterName", headerText: t("cols.reporter"), template: TicketReporterCell as any, width: 180 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "updatedAtUtc", headerText: t("cols.updated"), template: TicketUpdatedCell as any, width: 140 },
+      { field: "updatedAtUtc", headerText: t("cols.updated"), template: TicketUpdatedCell as any, width: 150, type: "date" },
     ],
     [t],
   );
@@ -374,14 +424,59 @@ export function TicketsPage() {
             {t("experimentalGridDesc")}
           </p>
         </div>
+
+        {/* Date-range filters — Created and Updated */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-medium text-[var(--color-muted-foreground)]">
+              {t("filter.createdRange")}
+            </label>
+            <DateRangePickerComponent
+              locale={sfLocale}
+              format={sfDateFormat}
+              placeholder={t("filter.dateRangePlaceholder")}
+              width={240}
+              startDate={createdRange?.[0]}
+              endDate={createdRange?.[1]}
+              change={(e: { startDate?: Date; endDate?: Date }) =>
+                setCreatedRange(e.startDate && e.endDate ? [e.startDate, e.endDate] : null)
+              }
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-medium text-[var(--color-muted-foreground)]">
+              {t("filter.updatedRange")}
+            </label>
+            <DateRangePickerComponent
+              locale={sfLocale}
+              format={sfDateFormat}
+              placeholder={t("filter.dateRangePlaceholder")}
+              width={240}
+              startDate={updatedRange?.[0]}
+              endDate={updatedRange?.[1]}
+              change={(e: { startDate?: Date; endDate?: Date }) =>
+                setUpdatedRange(e.startDate && e.endDate ? [e.startDate, e.endDate] : null)
+              }
+            />
+          </div>
+        </div>
+
         <MakaGrid<TicketRow>
           dataSource={makaRows}
           columns={makaColumns}
           isLoading={makaQuery.isLoading && makaRows.length === 0}
           fileName="tickets"
+          entityName={t("unit")}
           permissions={{ create: P.tickets.create }}
           onCreate={() => setEditor({ mode: "create" })}
           onRowClick={(row) => navigate(`/tickets/${row.id}`)}
+          onClearFilters={() => {
+            setSearch("");
+            setStatusFilter(null);
+            setPriorityFilter(null);
+            setCreatedRange(null);
+            setUpdatedRange(null);
+          }}
         />
       </section>
 
@@ -561,38 +656,35 @@ function TicketStatusCell(ticket: TicketRow) {
 }
 
 function TicketAssigneeCell(ticket: TicketRow) {
-  const { t } = useTranslation("tickets");
-  const assignee = useUserDisplay(ticket.assignedToUserId);
   if (!ticket.assignedToUserId) {
     return (
       <span className="font-mono text-[11px] uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">
-        {t("unassigned")}
+        {ticket.assigneeName}
       </span>
     );
   }
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <EntityInitialsAvatar name={assignee.name} size={22} />
+      <EntityInitialsAvatar name={ticket.assigneeName} size={22} />
       <span
-        title={assignee.handle ?? ticket.assignedToUserId}
+        title={ticket.assignedToUserId}
         className="truncate text-[12px] text-[var(--color-foreground)]"
       >
-        {assignee.name}
+        {ticket.assigneeName}
       </span>
     </div>
   );
 }
 
 function TicketReporterCell(ticket: TicketRow) {
-  const reporter = useUserDisplay(ticket.reporterUserId);
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <EntityInitialsAvatar name={reporter.name} size={22} />
+      <EntityInitialsAvatar name={ticket.reporterName} size={22} />
       <span
-        title={reporter.handle ?? ticket.reporterUserId}
+        title={ticket.reporterUserId}
         className="truncate text-[12px] text-[var(--color-foreground)]"
       >
-        {reporter.name}
+        {ticket.reporterName}
       </span>
     </div>
   );

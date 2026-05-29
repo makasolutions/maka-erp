@@ -13,7 +13,10 @@
     "status": "Status filter",
     "priority": "Priority filter",
     "allStatuses": "All",
-    "anyPriority": "Any"
+    "anyPriority": "Any",
+    "createdRange": "Filter by created date",
+    "updatedRange": "Filter by updated date",
+    "dateRangePlaceholder": "Choose a date range"
   },
   "found_one": "{{count}} ticket found",
   "found_other": "{{count}} tickets found",

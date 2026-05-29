@@ -13,7 +13,10 @@
     "status": "Filtro de estado",
     "priority": "Filtro de prioridad",
     "allStatuses": "Todos",
-    "anyPriority": "Cualquiera"
+    "anyPriority": "Cualquiera",
+    "createdRange": "Filtrar por fecha de creación",
+    "updatedRange": "Filtrar por fecha de actualización",
+    "dateRangePlaceholder": "Elige un rango de fechas"
   },
   "found_one": "{{count}} ticket encontrado",
   "found_other": "{{count}} tickets encontrados",
