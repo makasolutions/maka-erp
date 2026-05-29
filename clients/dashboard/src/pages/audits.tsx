@@ -8,6 +8,7 @@ import {
   CircleAlert,
   Database,
   ExternalLink,
+  Eye,
   Filter,
   Hash,
   Loader2,
@@ -329,8 +330,10 @@ function AuditsMakaSection() {
   const [source, setSource] = useState("");
   const [userText, setUserText] = useState("");
   const [search, setSearch] = useState("");
-  const [entityName, setEntityName] = useState("");
-  const [operation, setOperation] = useState("");
+  // Entity / operation are dropdowns (like the original screen) → stored as the
+  // selected string value, or null for "all".
+  const [entityName, setEntityName] = useState<string | null>(null);
+  const [operation, setOperation] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
 
   const fromUtc = createdRange?.start.toISOString();
@@ -342,8 +345,8 @@ function AuditsMakaSection() {
     setSource("");
     setUserText("");
     setSearch("");
-    setEntityName("");
-    setOperation("");
+    setEntityName(null);
+    setOperation(null);
     setCreatedRange(makaPresetRange("month"));
     setResetKey((k) => k + 1);
   };
@@ -443,9 +446,31 @@ function AuditsMakaSection() {
     ],
     [t],
   );
+  const entityOptions = useMemo(
+    () => [
+      { value: null as string | null, label: t("audits.allEntities") },
+      ...(summaryQuery.data?.topEntityNames ?? []).map((name) => ({
+        value: name as string | null,
+        label: name,
+      })),
+    ],
+    [t, summaryQuery.data?.topEntityNames],
+  );
+  const operationOptions = useMemo(
+    () => [
+      { value: null as string | null, label: t("audits.allOperations") },
+      { value: "Insert", label: t("audits.operations.insert") },
+      { value: "Update", label: t("audits.operations.update") },
+      { value: "Delete", label: t("audits.operations.delete") },
+      { value: "SoftDelete", label: t("audits.operations.softDelete") },
+      { value: "Restore", label: t("audits.operations.restore") },
+    ],
+    [t],
+  );
 
   const columns: ColumnModel[] = useMemo(
     () => [
+      { field: "occurredAt", headerText: t("audits.columns.timestamp"), width: 160, type: "date", format: sfDateFormat },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "actorName", headerText: t("audits.columns.actor"), template: AuditActorCell as any, minWidth: 180 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -456,7 +481,6 @@ function AuditsMakaSection() {
       { field: "entityText", headerText: t("audits.columns.entity"), template: AuditEntityCell as any, minWidth: 160 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "sourceText", headerText: t("audits.source"), template: AuditSourceCell as any, minWidth: 160 },
-      { field: "occurredAt", headerText: t("audits.columns.timestamp"), width: 160, type: "date", format: sfDateFormat },
     ],
     [t, sfDateFormat],
   );
@@ -472,9 +496,14 @@ function AuditsMakaSection() {
             {t("audits.makaSectionDesc")}
           </p>
         </div>
-        <Button variant="outline" onClick={() => setPanelOpen((v) => !v)} className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold">
-          <Filter className="size-4" />
-          {t("audits.advanced")}
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {t("gridFilters.panelToggle")}
         </Button>
       </div>
 
@@ -507,10 +536,18 @@ function AuditsMakaSection() {
               <Input value={userText} onChange={(e) => setUserText(e.target.value)} placeholder={t("audits.userIdPlaceholder")} className="h-8 w-44" />
             </MakaFilterField>
             <MakaFilterField label={t("audits.entityName")}>
-              <Input value={entityName} onChange={(e) => setEntityName(e.target.value)} className="h-8 w-44" />
+              <FieldSelect value={entityName ?? ""} onChange={(v) => setEntityName(v || null)} className="w-52">
+                {entityOptions.map((o) => (
+                  <option key={o.label} value={o.value ?? ""}>{o.label}</option>
+                ))}
+              </FieldSelect>
             </MakaFilterField>
             <MakaFilterField label={t("audits.entityOperation")}>
-              <Input value={operation} onChange={(e) => setOperation(e.target.value)} className="h-8 w-40" />
+              <FieldSelect value={operation ?? ""} onChange={(v) => setOperation(v || null)} className="w-48">
+                {operationOptions.map((o) => (
+                  <option key={o.label} value={o.value ?? ""}>{o.label}</option>
+                ))}
+              </FieldSelect>
             </MakaFilterField>
           </>
         }
@@ -1435,17 +1472,21 @@ function FieldSelect({
   value,
   onChange,
   children,
+  className,
 }: {
-  label: string;
+  label?: string;
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <label className="block">
-      <div className="mb-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-        {label}
-      </div>
+      {label ? (
+        <div className="mb-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
+          {label}
+        </div>
+      ) : null}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -1456,6 +1497,7 @@ function FieldSelect({
           "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
           "dark:bg-[oklch(from_var(--color-input)_l_c_h_/_0.3)]",
           "focus-visible:border-[var(--color-ring)] focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
+          className,
         )}
       >
         {children}

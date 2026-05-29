@@ -765,6 +765,7 @@
   },
   "gridFilters": {
     "filtersTab": "Filtros",
-    "kpisTab": "Indicadores"
+    "kpisTab": "Indicadores",
+    "panelToggle": "Filtros"
   }
 }
