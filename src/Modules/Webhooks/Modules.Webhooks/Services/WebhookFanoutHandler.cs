@@ -70,9 +70,18 @@ public sealed class WebhookFanoutHandler<TEvent> : IIntegrationEventHandler<TEve
             // Pull active subscriptions for this tenant; filter by event type in memory
             // because EventsCsv stores a CSV blob, not a join table — there are typically
             // 0–20 subscriptions per tenant so in-memory matching is fine.
+            //
+            // IMPORTANT: scope by the event's TenantId explicitly via IgnoreQueryFilters
+            // instead of relying on the WebhookDbContext's Finbuckle filter. In the
+            // background OutboxDispatcher there is no ambient tenant when the DbContext is
+            // constructed, so Finbuckle captures a null TenantInfo and its filter lambda
+            // throws NullReferenceException at query time (TenantInfo.Id on null). Setting
+            // the accessor above does not retro-fix the already-constructed context, so we
+            // filter on the shadow TenantId property ourselves.
             var subscriptions = await _db.Subscriptions
+                .IgnoreQueryFilters()
                 .AsNoTracking()
-                .Where(s => s.IsActive)
+                .Where(s => s.IsActive && EF.Property<string>(s, "TenantId") == @event.TenantId)
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
 
