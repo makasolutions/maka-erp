@@ -7,6 +7,8 @@
   "newTicket": "New ticket",
   "openTicket": "Open ticket",
   "clearFilters": "Clear filters",
+  "experimentalGrid": "MakaGrid view (testing)",
+  "experimentalGridDesc": "The same list rendered with the new MakaGrid control. It coexists with the original list while we validate it.",
   "filter": {
     "status": "Status filter",
     "priority": "Priority filter",
@@ -34,6 +36,8 @@
     "priority": "Priority",
     "status": "Status",
     "assignee": "Assignee",
+    "created": "Created",
+    "reporter": "Reported by",
     "updated": "Updated"
   },
   "actions": {

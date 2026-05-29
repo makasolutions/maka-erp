@@ -4,7 +4,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   keepPreviousData,
   useMutation,
@@ -58,9 +58,18 @@ import {
   Field,
   type EntityStatusTone,
 } from "@/components/list";
+import { MakaGrid } from "@/components/maka";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
 import { describe, formatRelative } from "@/lib/list-helpers";
 import { useUserDisplay } from "@/lib/use-user-display";
+
+// Row shape fed to MakaGrid — base ticket + pre-translated chip labels so the
+// Syncfusion cell templates stay hook-free for priority/status.
+type TicketRow = TicketDto & {
+  priorityLabel: string;
+  statusLabel: string;
+};
 
 const PAGE_SIZE = 20;
 
@@ -110,6 +119,7 @@ const DESKTOP_GRID =
 export function TicketsPage() {
   const { t } = useTranslation("tickets");
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -147,6 +157,57 @@ export function TicketsPage() {
 
   const data = query.data;
   const items = data?.items ?? [];
+
+  // ── MakaGrid (side-by-side test) — same filters, fetched in bulk so the
+  // grid can paginate / sort / group client-side. Coexists with the original.
+  const makaQuery = useQuery({
+    queryKey: [
+      "tickets",
+      "maka-list",
+      { search: debouncedSearch, statusFilter, priorityFilter },
+    ],
+    queryFn: () =>
+      searchTickets({
+        search: debouncedSearch || undefined,
+        status: statusFilter ?? undefined,
+        priority: priorityFilter ?? undefined,
+        pageNumber: 1,
+        pageSize: 1000,
+        sortBy: "createdAtUtc",
+        sortDir: "desc",
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+  const makaRows: TicketRow[] = useMemo(
+    () =>
+      (makaQuery.data?.items ?? []).map((tk) => ({
+        ...tk,
+        priorityLabel: t(PRIORITY_KEY[tk.priority]),
+        statusLabel: t(STATUS_KEY[tk.status]),
+      })),
+    [makaQuery.data, t],
+  );
+
+  const makaColumns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "title", headerText: t("cols.subject"), template: TicketSubjectCell as any, minWidth: 240, clipMode: "EllipsisWithTooltip" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "priority", headerText: t("cols.priority"), template: TicketPriorityCell as any, width: 130 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "status", headerText: t("cols.status"), template: TicketStatusCell as any, width: 130 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "assignedToUserId", headerText: t("cols.assignee"), template: TicketAssigneeCell as any, width: 180, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "createdAtUtc", headerText: t("cols.created"), template: TicketCreatedCell as any, width: 140 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "reporterUserId", headerText: t("cols.reporter"), template: TicketReporterCell as any, width: 180, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "updatedAtUtc", headerText: t("cols.updated"), template: TicketUpdatedCell as any, width: 140 },
+    ],
+    [t],
+  );
 
   const filtersApplied = statusFilter !== null || priorityFilter !== null;
   const searchActive = debouncedSearch.length > 0 || filtersApplied;
@@ -303,6 +364,27 @@ export function TicketsPage() {
         </div>
       )}
 
+      {/* ── MakaGrid view (testing) — coexists with the original list above ── */}
+      <section className="space-y-3 border-t border-[var(--color-border)] pt-6">
+        <div>
+          <h2 className="font-display text-[15px] font-semibold text-[var(--color-foreground)]">
+            {t("experimentalGrid")}
+          </h2>
+          <p className="text-[12.5px] text-[var(--color-muted-foreground)]">
+            {t("experimentalGridDesc")}
+          </p>
+        </div>
+        <MakaGrid<TicketRow>
+          dataSource={makaRows}
+          columns={makaColumns}
+          isLoading={makaQuery.isLoading && makaRows.length === 0}
+          fileName="tickets"
+          permissions={{ create: P.tickets.create }}
+          onCreate={() => setEditor({ mode: "create" })}
+          onRowClick={(row) => navigate(`/tickets/${row.id}`)}
+        />
+      </section>
+
       <CreateTicketDialog
         open={editor.mode === "create"}
         onClose={() => setEditor({ mode: "closed" })}
@@ -436,6 +518,99 @@ function DesktopRow({
       {/* Trailing chevron */}
       <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
     </EntityListRow>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  MakaGrid cell templates — rendered by Syncfusion per row. Each receives
+//  the row object as its props. Priority/Status read the pre-translated
+//  labels on TicketRow (hook-free); Assignee/Reporter resolve display names
+//  via useUserDisplay (hooks are supported in EJ2 React templates).
+// ───────────────────────────────────────────────────────────────────────
+
+function TicketSubjectCell(ticket: TicketRow) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <EntityInitialsAvatar name={ticket.reporterUserId} size={32} />
+      <div className="min-w-0">
+        <span className="block truncate text-[13px] font-medium text-[var(--color-foreground)]">
+          {ticket.title}
+        </span>
+        <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
+          {ticket.number}
+        </code>
+      </div>
+    </div>
+  );
+}
+
+function TicketPriorityCell(ticket: TicketRow) {
+  return (
+    <EntityStatusBadge tone={PRIORITY_TONE[ticket.priority]}>
+      {ticket.priorityLabel}
+    </EntityStatusBadge>
+  );
+}
+
+function TicketStatusCell(ticket: TicketRow) {
+  return (
+    <EntityStatusBadge tone={STATUS_TONE[ticket.status]}>
+      {ticket.statusLabel}
+    </EntityStatusBadge>
+  );
+}
+
+function TicketAssigneeCell(ticket: TicketRow) {
+  const { t } = useTranslation("tickets");
+  const assignee = useUserDisplay(ticket.assignedToUserId);
+  if (!ticket.assignedToUserId) {
+    return (
+      <span className="font-mono text-[11px] uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">
+        {t("unassigned")}
+      </span>
+    );
+  }
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <EntityInitialsAvatar name={assignee.name} size={22} />
+      <span
+        title={assignee.handle ?? ticket.assignedToUserId}
+        className="truncate text-[12px] text-[var(--color-foreground)]"
+      >
+        {assignee.name}
+      </span>
+    </div>
+  );
+}
+
+function TicketReporterCell(ticket: TicketRow) {
+  const reporter = useUserDisplay(ticket.reporterUserId);
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <EntityInitialsAvatar name={reporter.name} size={22} />
+      <span
+        title={reporter.handle ?? ticket.reporterUserId}
+        className="truncate text-[12px] text-[var(--color-foreground)]"
+      >
+        {reporter.name}
+      </span>
+    </div>
+  );
+}
+
+function TicketCreatedCell(ticket: TicketRow) {
+  return (
+    <span className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
+      {formatRelative(ticket.createdAtUtc)}
+    </span>
+  );
+}
+
+function TicketUpdatedCell(ticket: TicketRow) {
+  return (
+    <span className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
+      {formatRelative(ticket.updatedAtUtc ?? ticket.createdAtUtc)}
+    </span>
   );
 }
 
