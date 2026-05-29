@@ -354,7 +354,9 @@ function AuditsMakaSection() {
       listAudits(
         {
           pageNumber: 1,
-          pageSize: 500,
+          // The audit endpoint caps PageSize at 100 (PagedQueryValidator) —
+          // 500 returns 400. Fetch the max single page; the grid paginates it.
+          pageSize: 100,
           fromUtc,
           toUtc,
           eventType: (eventType ? Number(eventType) : undefined) as AuditEventType | undefined,
@@ -396,16 +398,23 @@ function AuditsMakaSection() {
     const byType = s?.eventsByType ?? {};
     const bySev = s?.eventsBySeverity ?? {};
     const grand = Object.values(byType).reduce((a, b) => a + b, 0);
+    // The API serializes enums by name ("Activity", "Information", ...); fall
+    // back to the numeric key in case serialization changes.
+    const pick = (
+      bucket: Record<string, number>,
+      name: string,
+      num: number,
+    ) => bucket[name] ?? bucket[String(num)] ?? 0;
     return {
       grand,
-      activity: byType[String(AuditEventType.Activity)] ?? 0,
-      entity: byType[String(AuditEventType.EntityChange)] ?? 0,
-      security: byType[String(AuditEventType.Security)] ?? 0,
-      exception: byType[String(AuditEventType.Exception)] ?? 0,
-      info: bySev[String(AuditSeverity.Information)] ?? 0,
-      warn: bySev[String(AuditSeverity.Warning)] ?? 0,
-      err: bySev[String(AuditSeverity.Error)] ?? 0,
-      crit: bySev[String(AuditSeverity.Critical)] ?? 0,
+      activity: pick(byType, "Activity", AuditEventType.Activity),
+      entity: pick(byType, "EntityChange", AuditEventType.EntityChange),
+      security: pick(byType, "Security", AuditEventType.Security),
+      exception: pick(byType, "Exception", AuditEventType.Exception),
+      info: pick(bySev, "Information", AuditSeverity.Information),
+      warn: pick(bySev, "Warning", AuditSeverity.Warning),
+      err: pick(bySev, "Error", AuditSeverity.Error),
+      crit: pick(bySev, "Critical", AuditSeverity.Critical),
     };
   }, [summaryQuery.data]);
 

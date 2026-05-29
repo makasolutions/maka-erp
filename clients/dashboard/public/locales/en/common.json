@@ -538,7 +538,8 @@
     "makaSectionDesc": "The same audit log rendered with the new MakaGrid + MakaGridFilters. It coexists with the original view while we validate it.",
     "severityLabel": "Severity",
     "total": "Total events",
-    "system": "System"
+    "system": "System",
+    "search": "Search"
   },
   "invoices": {
     "title": "Invoices",

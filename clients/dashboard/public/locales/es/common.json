@@ -538,7 +538,8 @@
     "makaSectionDesc": "El mismo registro de auditoría con el nuevo control MakaGrid + MakaGridFilters. Coexiste con la vista original mientras se valida.",
     "severityLabel": "Severidad",
     "total": "Eventos totales",
-    "system": "Sistema"
+    "system": "Sistema",
+    "search": "Buscar"
   },
   "invoices": {
     "title": "Facturas",
