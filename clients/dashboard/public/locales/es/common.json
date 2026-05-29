@@ -533,7 +533,12 @@
       "healthCheck": "Health check",
       "authentication": "Autenticación",
       "authorization": "Autorización"
-    }
+    },
+    "makaSectionTitle": "Vista MakaGrid (en validación)",
+    "makaSectionDesc": "El mismo registro de auditoría con el nuevo control MakaGrid + MakaGridFilters. Coexiste con la vista original mientras se valida.",
+    "severityLabel": "Severidad",
+    "total": "Eventos totales",
+    "system": "Sistema"
   },
   "invoices": {
     "title": "Facturas",

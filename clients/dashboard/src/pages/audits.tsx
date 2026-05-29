@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   EntityEmpty,
+  EntityFilterPill,
   EntityInitialsAvatar,
   EntityListCard,
   EntityListHeader,
@@ -47,6 +48,15 @@ import {
   EntityPager,
   EntityStatusBadge,
 } from "@/components/list";
+import {
+  MakaGrid,
+  MakaGridFilters,
+  MakaFilterField,
+  MakaDateRangePicker,
+  makaPresetRange,
+} from "@/components/maka";
+import type { MakaDateRange } from "@/components/maka";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import {
   Dialog,
   DialogClose,
@@ -233,6 +243,302 @@ const INITIAL_FILTERS: FilterState = {
   page: 1,
 };
 
+// ════════════════════════════════════════════════════════════════════════
+// MakaGrid section (validation) — sits ABOVE the original audit UI, fully
+// self-contained: own filter/KPI state, queries, and detail drawer.
+// ════════════════════════════════════════════════════════════════════════
+
+type AuditRow = AuditSummaryDto & {
+  actorName: string;
+  eventTypeLabel: string;
+  severityLabel: string;
+  sourceText: string;
+  entityText: string;
+  occurredAt: Date;
+};
+
+// ── Cell templates (hook-free; read enriched fields) ──────────────────────
+function AuditActorCell(row: AuditRow) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <EntityInitialsAvatar name={row.actorName} size={28} />
+      <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.actorName}</span>
+    </div>
+  );
+}
+function AuditEventCell(row: AuditRow) {
+  const Icon = eventTypeIcon(row.eventType);
+  const color = severityColorVar(row.severity);
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--color-foreground)]">
+      <Icon className="size-3.5 shrink-0" style={{ color }} aria-hidden />
+      {row.eventTypeLabel}
+    </span>
+  );
+}
+function AuditSeverityCell(row: AuditRow) {
+  const tone = severityTone(row.severity);
+  return (
+    <EntityStatusBadge tone={tone === "danger" ? "danger" : tone === "warning" ? "warning" : tone === "info" ? "info" : "default"}>
+      {row.severityLabel}
+    </EntityStatusBadge>
+  );
+}
+function AuditSourceCell(row: AuditRow) {
+  return (
+    <code className="block truncate font-mono text-[11.5px] text-[var(--color-muted-foreground)]">
+      {row.sourceText}
+    </code>
+  );
+}
+function AuditEntityCell(row: AuditRow) {
+  return (
+    <span className="block truncate text-[12.5px] text-[var(--color-foreground)]">{row.entityText}</span>
+  );
+}
+
+// ── KPI card ──────────────────────────────────────────────────────────────
+function AuditKpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
+        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          {label}
+        </span>
+      </div>
+      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function AuditsMakaSection() {
+  const { t } = useTranslation("common");
+  const { config } = useLocalization();
+
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [resetKey, setResetKey] = useState(0);
+  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("today"));
+  // Stored as stringified enum values because EntityFilterPill keys on string.
+  const [eventType, setEventType] = useState<string | null>(null);
+  const [severity, setSeverity] = useState<string | null>(null);
+  const [source, setSource] = useState("");
+  const [userText, setUserText] = useState("");
+  const [search, setSearch] = useState("");
+  const [entityName, setEntityName] = useState("");
+  const [operation, setOperation] = useState("");
+  const [drawerId, setDrawerId] = useState<string | null>(null);
+
+  const fromUtc = createdRange?.start.toISOString();
+  const toUtc = createdRange?.end.toISOString();
+
+  const resetFilters = () => {
+    setEventType(null);
+    setSeverity(null);
+    setSource("");
+    setUserText("");
+    setSearch("");
+    setEntityName("");
+    setOperation("");
+    setCreatedRange(makaPresetRange("today"));
+    setResetKey((k) => k + 1);
+  };
+
+  const listQuery = useQuery({
+    queryKey: ["audits", "maka-list", { fromUtc, toUtc, eventType, severity, source, userText, search, entityName, operation }],
+    queryFn: ({ signal }) =>
+      listAudits(
+        {
+          pageNumber: 1,
+          pageSize: 500,
+          fromUtc,
+          toUtc,
+          eventType: (eventType ? Number(eventType) : undefined) as AuditEventType | undefined,
+          severity: (severity ? Number(severity) : undefined) as AuditSeverity | undefined,
+          source: source || undefined,
+          userId: userText || undefined,
+          search: search || undefined,
+          entityName: entityName || undefined,
+          entityOperation: operation || undefined,
+        },
+        signal,
+      ),
+    placeholderData: keepPreviousData,
+    staleTime: 5_000,
+  });
+
+  const summaryQuery = useQuery({
+    queryKey: ["audits", "maka-summary", { fromUtc, toUtc }],
+    queryFn: ({ signal }) => getAuditSummary({ fromUtc, toUtc }, signal),
+    staleTime: 30_000,
+  });
+
+  const rows: AuditRow[] = useMemo(
+    () =>
+      (listQuery.data?.items ?? []).map((a) => ({
+        ...a,
+        actorName: a.userName ?? (a.userId ? `${a.userId.slice(0, 8)}…` : t("audits.system")),
+        eventTypeLabel: fmtEventType(t, a.eventType),
+        severityLabel: fmtSeverity(t, a.severity),
+        sourceText: a.source ?? "—",
+        entityText: a.entityName ?? lastSegment(a.source),
+        occurredAt: new Date(a.occurredAtUtc),
+      })),
+    [listQuery.data, t],
+  );
+
+  const kpis = useMemo(() => {
+    const s = summaryQuery.data;
+    const byType = s?.eventsByType ?? {};
+    const bySev = s?.eventsBySeverity ?? {};
+    const grand = Object.values(byType).reduce((a, b) => a + b, 0);
+    return {
+      grand,
+      activity: byType[String(AuditEventType.Activity)] ?? 0,
+      entity: byType[String(AuditEventType.EntityChange)] ?? 0,
+      security: byType[String(AuditEventType.Security)] ?? 0,
+      exception: byType[String(AuditEventType.Exception)] ?? 0,
+      info: bySev[String(AuditSeverity.Information)] ?? 0,
+      warn: bySev[String(AuditSeverity.Warning)] ?? 0,
+      err: bySev[String(AuditSeverity.Error)] ?? 0,
+      crit: bySev[String(AuditSeverity.Critical)] ?? 0,
+    };
+  }, [summaryQuery.data]);
+
+  const sfDateFormat =
+    config.dateFormat === "MM/DD/YYYY" ? "MM/dd/yyyy"
+    : config.dateFormat === "YYYY-MM-DD" ? "yyyy-MM-dd"
+    : "dd/MM/yyyy";
+
+  const eventOptions = useMemo(
+    () => [
+      { value: null as string | null, label: t("status.all") },
+      { value: String(AuditEventType.Activity), label: fmtEventType(t, AuditEventType.Activity) },
+      { value: String(AuditEventType.Security), label: fmtEventType(t, AuditEventType.Security) },
+      { value: String(AuditEventType.EntityChange), label: fmtEventType(t, AuditEventType.EntityChange) },
+      { value: String(AuditEventType.Exception), label: fmtEventType(t, AuditEventType.Exception) },
+    ],
+    [t],
+  );
+  const severityOptions = useMemo(
+    () => [
+      { value: null as string | null, label: t("status.all") },
+      { value: String(AuditSeverity.Information), label: fmtSeverity(t, AuditSeverity.Information) },
+      { value: String(AuditSeverity.Warning), label: fmtSeverity(t, AuditSeverity.Warning) },
+      { value: String(AuditSeverity.Error), label: fmtSeverity(t, AuditSeverity.Error) },
+      { value: String(AuditSeverity.Critical), label: fmtSeverity(t, AuditSeverity.Critical) },
+    ],
+    [t],
+  );
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "actorName", headerText: t("audits.columns.actor"), template: AuditActorCell as any, minWidth: 180 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "eventTypeLabel", headerText: t("audits.columns.action"), template: AuditEventCell as any, width: 150 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "severityLabel", headerText: t("audits.severityLabel"), template: AuditSeverityCell as any, width: 120 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "entityText", headerText: t("audits.columns.entity"), template: AuditEntityCell as any, minWidth: 160 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "sourceText", headerText: t("audits.source"), template: AuditSourceCell as any, minWidth: 160 },
+      { field: "occurredAt", headerText: t("audits.columns.timestamp"), width: 160, type: "date", format: sfDateFormat },
+    ],
+    [t, sfDateFormat],
+  );
+
+  return (
+    <section className="space-y-4 rounded-xl border border-dashed border-[var(--color-primary)]/40 bg-[oklch(from_var(--color-primary)_l_c_h_/_0.03)] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-[15px] font-semibold text-[var(--color-foreground)]">
+            {t("audits.makaSectionTitle")}
+          </h2>
+          <p className="text-[12.5px] text-[var(--color-muted-foreground)]">
+            {t("audits.makaSectionDesc")}
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setPanelOpen((v) => !v)} className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold">
+          <Filter className="size-4" />
+          {t("audits.advanced")}
+        </Button>
+      </div>
+
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={resetFilters}
+        filters={
+          <>
+            <MakaFilterField label={t("audits.columns.timestamp")}>
+              <MakaDateRangePicker
+                key={`range-${resetKey}`}
+                defaultPreset="today"
+                value={createdRange}
+                onChange={setCreatedRange}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.columns.action")}>
+              <EntityFilterPill<string | null> label={t("audits.columns.action")} value={eventType} onChange={setEventType} options={eventOptions} />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.severityLabel")}>
+              <EntityFilterPill<string | null> label={t("audits.severityLabel")} value={severity} onChange={setSeverity} options={severityOptions} />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.search")}>
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("audits.searchPlaceholder")} className="h-8 w-52" />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.source")}>
+              <Input value={source} onChange={(e) => setSource(e.target.value)} placeholder={t("audits.sourcePlaceholder")} className="h-8 w-44" />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.userId")}>
+              <Input value={userText} onChange={(e) => setUserText(e.target.value)} placeholder={t("audits.userIdPlaceholder")} className="h-8 w-44" />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.entityName")}>
+              <Input value={entityName} onChange={(e) => setEntityName(e.target.value)} className="h-8 w-44" />
+            </MakaFilterField>
+            <MakaFilterField label={t("audits.entityOperation")}>
+              <Input value={operation} onChange={(e) => setOperation(e.target.value)} className="h-8 w-40" />
+            </MakaFilterField>
+          </>
+        }
+        kpis={
+          <>
+            <AuditKpiCard label={t("audits.total")} value={kpis.grand} tone="var(--color-primary)" />
+            <AuditKpiCard label={fmtEventType(t, AuditEventType.Activity)} value={kpis.activity} tone="var(--color-info)" />
+            <AuditKpiCard label={fmtEventType(t, AuditEventType.EntityChange)} value={kpis.entity} tone="var(--color-chart-2)" />
+            <AuditKpiCard label={fmtEventType(t, AuditEventType.Security)} value={kpis.security} tone="var(--color-warning)" />
+            <AuditKpiCard label={fmtEventType(t, AuditEventType.Exception)} value={kpis.exception} tone="var(--color-destructive)" />
+            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Information)} value={kpis.info} tone="var(--color-info)" />
+            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Warning)} value={kpis.warn} tone="var(--color-warning)" />
+            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Error)} value={kpis.err} tone="var(--color-destructive)" />
+            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Critical)} value={kpis.crit} tone="var(--color-destructive)" />
+          </>
+        }
+      />
+
+      <MakaGrid<AuditRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={listQuery.isLoading && rows.length === 0}
+        fileName="auditoria"
+        entityName={t("audits.unit")}
+        onRowClick={(row) => setDrawerId(row.id)}
+        onClearFilters={resetFilters}
+      />
+
+      <AuditDetailDrawer
+        auditId={drawerId}
+        onClose={() => setDrawerId(null)}
+        onJumpAudit={(id) => setDrawerId(id)}
+        onJumpCorrelation={() => setDrawerId(null)}
+        onJumpTrace={() => setDrawerId(null)}
+      />
+    </section>
+  );
+}
+
 // ────────────────────────────────────────────────────────────────────────
 // Page
 // ────────────────────────────────────────────────────────────────────────
@@ -356,6 +662,9 @@ export function AuditsPage() {
           {t("actions.refresh")}
         </Button>
       </EntityPageHeader>
+
+      {/* ── MakaGrid version (validation) — coexists with the original UI below ── */}
+      <AuditsMakaSection />
 
       {/* Filter bar — search lives inside the bar (Row 1) so there's only one input */}
       <FilterBar

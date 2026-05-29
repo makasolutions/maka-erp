@@ -533,7 +533,12 @@
       "healthCheck": "Health check",
       "authentication": "Auth",
       "authorization": "Authz"
-    }
+    },
+    "makaSectionTitle": "MakaGrid view (validating)",
+    "makaSectionDesc": "The same audit log rendered with the new MakaGrid + MakaGridFilters. It coexists with the original view while we validate it.",
+    "severityLabel": "Severity",
+    "total": "Total events",
+    "system": "System"
   },
   "invoices": {
     "title": "Invoices",
