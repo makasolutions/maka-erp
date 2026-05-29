@@ -750,5 +750,13 @@
     "noMatch": "Ningún {{item}} coincide con los filtros actuales.",
     "clearFilters": "Limpiar filtros",
     "defaultEntity": "registro"
+  },
+  "dateRange": {
+    "last24h": "24h",
+    "last7d": "7d",
+    "last30d": "30d",
+    "last90d": "90d",
+    "custom": "Rango personalizado",
+    "placeholder": "Elige un rango de fechas"
   }
 }

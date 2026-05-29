@@ -749,5 +749,13 @@
     "noMatch": "No {{item}} matches the current filters.",
     "clearFilters": "Clear filters",
     "defaultEntity": "record"
+  },
+  "dateRange": {
+    "last24h": "24h",
+    "last7d": "7d",
+    "last30d": "30d",
+    "last90d": "90d",
+    "custom": "Custom range",
+    "placeholder": "Choose a date range"
   }
 }

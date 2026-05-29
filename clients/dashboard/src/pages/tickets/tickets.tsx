@@ -13,6 +13,7 @@ import {
 } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  Eye,
   Plus,
   Ticket as TicketIcon,
 } from "lucide-react";
@@ -46,16 +47,14 @@ import {
   EntityFilterPill,
   EntityInitialsAvatar,
   EntityPageHeader,
-  EntitySearch,
   EntityStatusBadge,
   Field,
   type EntityStatusTone,
 } from "@/components/list";
-import { MakaGrid } from "@/components/maka";
+import { MakaGrid, MakaDateRangePicker } from "@/components/maka";
+import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
-import { DateRangePickerComponent } from "@syncfusion/ej2-react-calendars";
 import { getUserById } from "@/api/identity";
-import { useLocalization } from "@/contexts/localization-context";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
 
@@ -116,36 +115,21 @@ export function TicketsPage() {
   const { t } = useTranslation("tickets");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { config } = useLocalization();
-  const sfDateFormat =
-    config.dateFormat === "MM/DD/YYYY" ? "MM/dd/yyyy"
-    : config.dateFormat === "YYYY-MM-DD" ? "yyyy-MM-dd"
-    : "dd/MM/yyyy";
-  const sfLocale = config.language === "es" ? "es-CO" : "en-US";
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | null>(null);
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
-  // Debounce search
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => window.clearTimeout(id);
-  }, [search]);
+  // Collapsible filters/KPIs panel + which tab is active.
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<"filters" | "kpis">("filters");
 
   // ── Data — fetched in bulk (same general filters) so MakaGrid can
   // paginate / sort / group / filter client-side over the full set.
   const makaQuery = useQuery({
-    queryKey: [
-      "tickets",
-      "maka-list",
-      { search: debouncedSearch, statusFilter, priorityFilter },
-    ],
+    queryKey: ["tickets", "maka-list", { statusFilter, priorityFilter }],
     queryFn: () =>
       searchTickets({
-        search: debouncedSearch || undefined,
         status: statusFilter ?? undefined,
         priority: priorityFilter ?? undefined,
         pageNumber: 1,
@@ -192,15 +176,15 @@ export function TicketsPage() {
   );
 
   // Date-range filters (page-specific) — applied client-side over the bulk set.
-  const [createdRange, setCreatedRange] = useState<Date[] | null>(null);
-  const [updatedRange, setUpdatedRange] = useState<Date[] | null>(null);
+  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(null);
+  const [updatedRange, setUpdatedRange] = useState<MakaDateRange | null>(null);
 
   const makaRows: TicketRow[] = useMemo(() => {
-    const inRange = (iso: string | null | undefined, range: Date[] | null) => {
-      if (!range || range.length < 2 || !iso) return true;
+    const inRange = (iso: string | null | undefined, range: MakaDateRange | null) => {
+      if (!range || !iso) return true;
       const d = new Date(iso).getTime();
-      const start = range[0].getTime();
-      const end = range[1].getTime() + 86_399_999; // include the whole end day
+      const start = range.start.getTime();
+      const end = range.end.getTime() + 86_399_999; // include the whole end day
       return d >= start && d <= end;
     };
     return (makaQuery.data?.items ?? [])
@@ -221,6 +205,18 @@ export function TicketsPage() {
           inRange(r.updatedAtUtc ?? r.createdAtUtc, updatedRange),
       );
   }, [makaQuery.data, t, userNameById, createdRange, updatedRange]);
+
+  // KPIs — reflect the same (date-range) filtered set the grid shows.
+  const kpis = useMemo(() => {
+    const byStatus: Record<TicketStatus, number> = {
+      Open: 0,
+      InProgress: 0,
+      Resolved: 0,
+      Closed: 0,
+    };
+    for (const r of makaRows) byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+    return { total: makaRows.length, byStatus };
+  }, [makaRows]);
 
   const makaColumns: ColumnModel[] = useMemo(
     () => [
@@ -273,6 +269,15 @@ export function TicketsPage() {
         description={t("description")}
       >
         <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {t("actionsPanel")}
+        </Button>
+        <Button
           perm={P.tickets.create}
           onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
@@ -282,63 +287,68 @@ export function TicketsPage() {
         </Button>
       </EntityPageHeader>
 
-      <EntitySearch
-        value={search}
-        onChange={setSearch}
-        placeholder={t("searchPlaceholder")}
-      />
+      {/* Collapsible panel — Tab 1: filters · Tab 2: KPIs */}
+      {panelOpen && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
+          {/* Tab strip */}
+          <div className="flex items-center gap-1 border-b border-[var(--color-border)] px-3 pt-2">
+            {(["filters", "kpis"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "relative -mb-px rounded-t-md px-3.5 py-2 text-[13px] font-medium transition-colors",
+                  activeTab === tab
+                    ? "border-b-2 border-[var(--color-primary)] text-[var(--color-foreground)]"
+                    : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+                )}
+              >
+                {tab === "filters" ? t("tabs.filters") : t("tabs.kpis")}
+              </button>
+            ))}
+          </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <EntityFilterPill<TicketStatus | null>
-          label={t("filter.status")}
-          value={statusFilter}
-          onChange={setStatusFilter}
-          options={statusOptions}
-        />
-        <EntityFilterPill<TicketPriority | null>
-          label={t("filter.priority")}
-          value={priorityFilter}
-          onChange={setPriorityFilter}
-          options={priorityOptions}
-        />
-      </div>
+          {/* Tab 1 — basic filters */}
+          {activeTab === "filters" && (
+            <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
+              <EntityFilterPill<TicketStatus | null>
+                label={t("filter.status")}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={statusOptions}
+              />
+              <EntityFilterPill<TicketPriority | null>
+                label={t("filter.priority")}
+                value={priorityFilter}
+                onChange={setPriorityFilter}
+                options={priorityOptions}
+              />
+              <MakaDateRangePicker
+                label={t("filter.createdRange")}
+                value={createdRange}
+                onChange={setCreatedRange}
+              />
+              <MakaDateRangePicker
+                label={t("filter.updatedRange")}
+                value={updatedRange}
+                onChange={setUpdatedRange}
+              />
+            </div>
+          )}
 
-      {/* Date-range filters — Created and Updated */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[var(--color-muted-foreground)]">
-            {t("filter.createdRange")}
-          </label>
-          <DateRangePickerComponent
-            locale={sfLocale}
-            format={sfDateFormat}
-            placeholder={t("filter.dateRangePlaceholder")}
-            width={240}
-            startDate={createdRange?.[0]}
-            endDate={createdRange?.[1]}
-            change={(e: { startDate?: Date; endDate?: Date }) =>
-              setCreatedRange(e.startDate && e.endDate ? [e.startDate, e.endDate] : null)
-            }
-          />
+          {/* Tab 2 — KPI dashboard (reflects the date-range filters) */}
+          {activeTab === "kpis" && (
+            <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
+              <KpiCard label={t("kpi.total")} value={kpis.total} tone="default" />
+              <KpiCard label={t("status.open")} value={kpis.byStatus.Open} tone="info" />
+              <KpiCard label={t("status.inProgress")} value={kpis.byStatus.InProgress} tone="warning" />
+              <KpiCard label={t("status.resolved")} value={kpis.byStatus.Resolved} tone="success" />
+              <KpiCard label={t("status.closed")} value={kpis.byStatus.Closed} tone="default" />
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[var(--color-muted-foreground)]">
-            {t("filter.updatedRange")}
-          </label>
-          <DateRangePickerComponent
-            locale={sfLocale}
-            format={sfDateFormat}
-            placeholder={t("filter.dateRangePlaceholder")}
-            width={240}
-            startDate={updatedRange?.[0]}
-            endDate={updatedRange?.[1]}
-            change={(e: { startDate?: Date; endDate?: Date }) =>
-              setUpdatedRange(e.startDate && e.endDate ? [e.startDate, e.endDate] : null)
-            }
-          />
-        </div>
-      </div>
+      )}
 
       <MakaGrid<TicketRow>
         dataSource={makaRows}
@@ -350,7 +360,6 @@ export function TicketsPage() {
         onCreate={() => setEditor({ mode: "create" })}
         onRowClick={(row) => navigate(`/tickets/${row.id}`)}
         onClearFilters={() => {
-          setSearch("");
           setStatusFilter(null);
           setPriorityFilter(null);
           setCreatedRange(null);
@@ -375,6 +384,39 @@ export function TicketsPage() {
           void queryClient.invalidateQueries({ queryKey: ["tickets"] });
         }}
       />
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  KPI card — small metric tile for the dashboard tab
+// ───────────────────────────────────────────────────────────────────────
+
+function KpiCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "default" | "info" | "warning" | "success";
+}) {
+  const accent =
+    tone === "info" ? "var(--color-info)"
+    : tone === "warning" ? "var(--color-warning)"
+    : tone === "success" ? "var(--color-success)"
+    : "var(--color-primary)";
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: accent }} />
+        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          {label}
+        </span>
+      </div>
+      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
+        {value}
+      </div>
     </div>
   );
 }
