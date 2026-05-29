@@ -454,6 +454,8 @@
     "entityOperation": "Operation",
     "allEntities": "All entities",
     "allOperations": "All operations",
+    "allSources": "All sources",
+    "allUsers": "All users",
     "operations": {
       "insert": "Created",
       "update": "Updated",
@@ -465,7 +467,8 @@
       "actor": "Actor",
       "action": "Action",
       "entity": "Entity",
-      "timestamp": "Timestamp"
+      "timestamp": "Timestamp",
+      "date": "Date"
     },
     "empty": {
       "title": "No audits in this window",

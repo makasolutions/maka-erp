@@ -74,12 +74,16 @@ export function MakaGridFilters({
         ))}
       </div>
 
-      {/* Filters tab */}
+      {/* Filters tab — the controls wrap inside the flex-1 container; the
+          clear ✕ is a sibling pinned top-right so it always sits at the end of
+          the FIRST row regardless of how many rows the filters wrap into. */}
       {activeTab === "filters" && (
-        <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
-          {filters}
+        <div className="flex items-start gap-4 p-4">
+          <div className="flex flex-1 flex-wrap items-start gap-x-6 gap-y-4">
+            {filters}
+          </div>
           {onClear && (
-            <MakaFilterField label="" className="ml-auto">
+            <MakaFilterField label="">
               <button
                 type="button"
                 onClick={onClear}

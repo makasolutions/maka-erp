@@ -32,6 +32,7 @@ import {
   type AuditDetailDto,
   type AuditSummaryDto,
 } from "@/api/audits";
+import { searchUsers } from "@/api/identity";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -256,6 +257,8 @@ type AuditRow = AuditSummaryDto & {
   sourceText: string;
   entityText: string;
   occurredAt: Date;
+  timeLabel: string;
+  dateLabel: string;
 };
 
 // ── Cell templates (hook-free; read enriched fields) ──────────────────────
@@ -297,6 +300,14 @@ function AuditEntityCell(row: AuditRow) {
     <span className="block truncate text-[12.5px] text-[var(--color-foreground)]">{row.entityText}</span>
   );
 }
+function AuditDateCell(row: AuditRow) {
+  return (
+    <div className="leading-tight">
+      <div className="text-[12.5px] tabular-nums text-[var(--color-foreground)]">{row.timeLabel}</div>
+      <div className="text-[10.5px] tabular-nums text-[var(--color-muted-foreground)]">{row.dateLabel}</div>
+    </div>
+  );
+}
 
 // ── KPI card ──────────────────────────────────────────────────────────────
 function AuditKpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
@@ -317,7 +328,7 @@ function AuditKpiCard({ label, value, tone }: { label: string; value: number; to
 
 function AuditsMakaSection() {
   const { t } = useTranslation("common");
-  const { config } = useLocalization();
+  const { formatDate, formatTime } = useLocalization();
 
   const [panelOpen, setPanelOpen] = useState(true);
   const [resetKey, setResetKey] = useState(0);
@@ -327,59 +338,74 @@ function AuditsMakaSection() {
   // Stored as stringified enum values because EntityFilterPill keys on string.
   const [eventType, setEventType] = useState<string | null>(null);
   const [severity, setSeverity] = useState<string | null>(null);
-  const [source, setSource] = useState("");
-  const [userText, setUserText] = useState("");
+  // Source / user / entity / operation are dropdowns → selected value or null.
+  const [source, setSource] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  // Entity / operation are dropdowns (like the original screen) → stored as the
-  // selected string value, or null for "all".
   const [entityName, setEntityName] = useState<string | null>(null);
   const [operation, setOperation] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
 
+  // Server-side pagination state (the grid pages against the API).
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   const fromUtc = createdRange?.start.toISOString();
   const toUtc = createdRange?.end.toISOString();
+
+  // Shared filter params for BOTH the paged list and the KPI summary so the
+  // KPIs always describe exactly the rows the grid is showing.
+  const filterParams = useMemo(
+    () => ({
+      fromUtc,
+      toUtc,
+      eventType: (eventType ? Number(eventType) : undefined) as AuditEventType | undefined,
+      severity: (severity ? Number(severity) : undefined) as AuditSeverity | undefined,
+      source: source || undefined,
+      userId: userId || undefined,
+      search: search || undefined,
+      entityName: entityName || undefined,
+      entityOperation: operation || undefined,
+    }),
+    [fromUtc, toUtc, eventType, severity, source, userId, search, entityName, operation],
+  );
+
+  // Any filter change resets paging back to the first page.
+  useEffect(() => {
+    setPage(1);
+  }, [filterParams]);
 
   const resetFilters = () => {
     setEventType(null);
     setSeverity(null);
-    setSource("");
-    setUserText("");
+    setSource(null);
+    setUserId(null);
     setSearch("");
     setEntityName(null);
     setOperation(null);
     setCreatedRange(makaPresetRange("month"));
+    setPage(1);
     setResetKey((k) => k + 1);
   };
 
   const listQuery = useQuery({
-    queryKey: ["audits", "maka-list", { fromUtc, toUtc, eventType, severity, source, userText, search, entityName, operation }],
-    queryFn: ({ signal }) =>
-      listAudits(
-        {
-          pageNumber: 1,
-          // The audit endpoint caps PageSize at 100 (PagedQueryValidator) —
-          // 500 returns 400. Fetch the max single page; the grid paginates it.
-          pageSize: 100,
-          fromUtc,
-          toUtc,
-          eventType: (eventType ? Number(eventType) : undefined) as AuditEventType | undefined,
-          severity: (severity ? Number(severity) : undefined) as AuditSeverity | undefined,
-          source: source || undefined,
-          userId: userText || undefined,
-          search: search || undefined,
-          entityName: entityName || undefined,
-          entityOperation: operation || undefined,
-        },
-        signal,
-      ),
+    queryKey: ["audits", "maka-list", filterParams, page, pageSize],
+    queryFn: ({ signal }) => listAudits({ pageNumber: page, pageSize, ...filterParams }, signal),
     placeholderData: keepPreviousData,
     staleTime: 5_000,
   });
 
   const summaryQuery = useQuery({
-    queryKey: ["audits", "maka-summary", { fromUtc, toUtc }],
-    queryFn: ({ signal }) => getAuditSummary({ fromUtc, toUtc }, signal),
+    queryKey: ["audits", "maka-summary", filterParams],
+    queryFn: ({ signal }) => getAuditSummary(filterParams, signal),
     staleTime: 30_000,
+  });
+
+  // Users for the user filter dropdown.
+  const usersQuery = useQuery({
+    queryKey: ["identity", "users", "audit-filter"],
+    queryFn: () => searchUsers({ pageNumber: 1, pageSize: 100 }),
+    staleTime: 5 * 60_000,
   });
 
   const rows: AuditRow[] = useMemo(
@@ -392,8 +418,10 @@ function AuditsMakaSection() {
         sourceText: a.source ?? "—",
         entityText: a.entityName ?? lastSegment(a.source),
         occurredAt: new Date(a.occurredAtUtc),
+        timeLabel: formatTime(a.occurredAtUtc),
+        dateLabel: formatDate(a.occurredAtUtc),
       })),
-    [listQuery.data, t],
+    [listQuery.data, t, formatTime, formatDate],
   );
 
   const kpis = useMemo(() => {
@@ -420,11 +448,6 @@ function AuditsMakaSection() {
       crit: pick(bySev, "Critical", AuditSeverity.Critical),
     };
   }, [summaryQuery.data]);
-
-  const sfDateFormat =
-    config.dateFormat === "MM/DD/YYYY" ? "MM/dd/yyyy"
-    : config.dateFormat === "YYYY-MM-DD" ? "yyyy-MM-dd"
-    : "dd/MM/yyyy";
 
   const eventOptions = useMemo(
     () => [
@@ -467,10 +490,36 @@ function AuditsMakaSection() {
     ],
     [t],
   );
+  const sourceOptions = useMemo(
+    () => [
+      { value: null as string | null, label: t("audits.allSources") },
+      ...Object.keys(summaryQuery.data?.eventsBySource ?? {})
+        .sort((a, b) => a.localeCompare(b))
+        .map((src) => ({ value: src as string | null, label: src })),
+    ],
+    [t, summaryQuery.data?.eventsBySource],
+  );
+  const userOptions = useMemo(
+    () => [
+      { value: null as string | null, label: t("audits.allUsers") },
+      ...(usersQuery.data?.items ?? [])
+        .filter((u) => u.id)
+        .map((u) => ({
+          value: u.id as string | null,
+          label:
+            [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
+            u.userName ||
+            u.email ||
+            (u.id ?? ""),
+        })),
+    ],
+    [t, usersQuery.data?.items],
+  );
 
   const columns: ColumnModel[] = useMemo(
     () => [
-      { field: "occurredAt", headerText: t("audits.columns.timestamp"), width: 160, type: "date", format: sfDateFormat },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "occurredAt", headerText: t("audits.columns.date"), template: AuditDateCell as any, width: 130 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "actorName", headerText: t("audits.columns.actor"), template: AuditActorCell as any, minWidth: 180 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -482,7 +531,7 @@ function AuditsMakaSection() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "sourceText", headerText: t("audits.source"), template: AuditSourceCell as any, minWidth: 160 },
     ],
-    [t, sfDateFormat],
+    [t],
   );
 
   return (
@@ -512,7 +561,8 @@ function AuditsMakaSection() {
         onClear={resetFilters}
         filters={
           <>
-            <MakaFilterField label={t("audits.columns.timestamp")}>
+            {/* Row 1 — date, action, severity, search (wide) */}
+            <MakaFilterField label={t("audits.columns.date")}>
               <MakaDateRangePicker
                 key={`range-${resetKey}`}
                 defaultPreset="month"
@@ -526,14 +576,27 @@ function AuditsMakaSection() {
             <MakaFilterField label={t("audits.severityLabel")}>
               <EntityFilterPill<string | null> label={t("audits.severityLabel")} value={severity} onChange={setSeverity} options={severityOptions} />
             </MakaFilterField>
-            <MakaFilterField label={t("audits.search")}>
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("audits.searchPlaceholder")} className="h-8 w-52" />
+            <MakaFilterField label={t("audits.search")} className="grow">
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("audits.searchPlaceholder")} className="h-8 w-full min-w-72" />
             </MakaFilterField>
+
+            {/* Force a new row → source, user, entity, operation below */}
+            <div className="basis-full" aria-hidden />
+
+            {/* Row 2 — source, user, entity, operation (all dropdowns) */}
             <MakaFilterField label={t("audits.source")}>
-              <Input value={source} onChange={(e) => setSource(e.target.value)} placeholder={t("audits.sourcePlaceholder")} className="h-8 w-44" />
+              <FieldSelect value={source ?? ""} onChange={(v) => setSource(v || null)} className="w-52">
+                {sourceOptions.map((o) => (
+                  <option key={o.label} value={o.value ?? ""}>{o.label}</option>
+                ))}
+              </FieldSelect>
             </MakaFilterField>
             <MakaFilterField label={t("audits.userId")}>
-              <Input value={userText} onChange={(e) => setUserText(e.target.value)} placeholder={t("audits.userIdPlaceholder")} className="h-8 w-44" />
+              <FieldSelect value={userId ?? ""} onChange={(v) => setUserId(v || null)} className="w-52">
+                {userOptions.map((o) => (
+                  <option key={o.value ?? "all"} value={o.value ?? ""}>{o.label}</option>
+                ))}
+              </FieldSelect>
             </MakaFilterField>
             <MakaFilterField label={t("audits.entityName")}>
               <FieldSelect value={entityName ?? ""} onChange={(v) => setEntityName(v || null)} className="w-52">
@@ -574,6 +637,16 @@ function AuditsMakaSection() {
         entityName={t("audits.unit")}
         onRowClick={(row) => setDrawerId(row.id)}
         onClearFilters={resetFilters}
+        serverPaging={{
+          totalCount: listQuery.data?.totalCount ?? 0,
+          page,
+          pageSize,
+          pageSizes: [20, 50, 100],
+          onChange: ({ page: p, pageSize: ps }) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+        }}
       />
 
       <AuditDetailDrawer

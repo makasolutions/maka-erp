@@ -454,6 +454,8 @@
     "entityOperation": "Operación",
     "allEntities": "Todas las entidades",
     "allOperations": "Todas las operaciones",
+    "allSources": "Todas las fuentes",
+    "allUsers": "Todos los usuarios",
     "operations": {
       "insert": "Creación",
       "update": "Actualización",
@@ -465,7 +467,8 @@
       "actor": "Actor",
       "action": "Acción",
       "entity": "Entidad",
-      "timestamp": "Marca de tiempo"
+      "timestamp": "Marca de tiempo",
+      "date": "Fecha"
     },
     "empty": {
       "title": "Sin auditorías en esta ventana",

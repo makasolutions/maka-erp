@@ -325,9 +325,33 @@ export interface MakaGridPermissions {
   duplicate?: string;
 }
 
+/**
+ * Opt-in server-side pagination. When provided, the grid stops paginating the
+ * `dataSource` array locally and instead treats it as the CURRENT page only;
+ * the pager is driven by `totalCount`, and `onChange` fires when the user
+ * navigates pages or changes the page size so the page can refetch.
+ *
+ * In this mode in-grid sorting / filtering / grouping are disabled — the page's
+ * own filter panel is the single source of filtering.
+ */
+export interface MakaGridServerPaging {
+  /** Total matching rows on the server (drives the pager + go-to-page). */
+  totalCount: number;
+  /** Rows per page. */
+  pageSize: number;
+  /** Current 1-based page. */
+  page: number;
+  /** Page-size options. Default [20, 50, 100]. */
+  pageSizes?: (number | string)[];
+  /** Fires when the user pages or changes page size. */
+  onChange: (next: { page: number; pageSize: number }) => void;
+}
+
 export interface MakaGridProps<T extends object> {
-  /** Row data to display. */
+  /** Row data to display. In serverPaging mode this is the current page only. */
   dataSource: T[];
+  /** Enables server-side pagination (see {@link MakaGridServerPaging}). */
+  serverPaging?: MakaGridServerPaging;
   /** Column definitions (ColumnModel from @syncfusion/ej2-react-grids). */
   columns: ColumnModel[];
   /** Overlays a loading spinner when true. */
@@ -398,6 +422,7 @@ interface ActionsCtx<T> {
 
 export function MakaGrid<T extends object>({
   dataSource,
+  serverPaging,
   columns,
   isLoading = false,
   fileName = "maka-export",
@@ -824,6 +849,36 @@ export function MakaGrid<T extends object>({
     if (existing) existing.textContent = goToLabel;
   }, [goToLabel]);
 
+  // ── Server-side pagination wiring ──────────────────────────────────────────
+  const serverMode = !!serverPaging;
+  // In server mode Syncfusion expects a DataResult ({ result, count }); it then
+  // treats `result` as the current page and uses `count` for the pager.
+  const gridData: unknown = serverMode
+    ? { result: dataSource, count: serverPaging!.totalCount }
+    : dataSource;
+
+  const handleDataStateChange = useCallback(
+    (state: { skip?: number; take?: number }) => {
+      if (!serverPaging) return;
+      const take = state.take || serverPaging.pageSize;
+      const skip = state.skip || 0;
+      const nextPage = Math.floor(skip / take) + 1;
+      if (nextPage !== serverPaging.page || take !== serverPaging.pageSize) {
+        serverPaging.onChange({ page: nextPage, pageSize: take });
+      }
+    },
+    [serverPaging],
+  );
+
+  const pageSettings = serverMode
+    ? {
+        pageSize: serverPaging!.pageSize,
+        pageSizes: serverPaging!.pageSizes ?? [20, 50, 100],
+        currentPage: serverPaging!.page,
+        pageCount: 10,
+      }
+    : { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: 5 };
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="maka-grid-wrapper relative flex flex-col gap-0">
@@ -841,16 +896,17 @@ export function MakaGrid<T extends object>({
       <GridComponent
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={gridRef as any}
-        dataSource={dataSource}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dataSource={gridData as any}
         height={gridHeight}
         locale={locale}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         emptyRecordTemplate={emptyTemplate as any}
         /* ── Features ── */
         allowPaging
-        allowSorting
-        allowFiltering
-        allowGrouping
+        allowSorting={!serverMode}
+        allowFiltering={!serverMode}
+        allowGrouping={!serverMode}
         allowExcelExport
         allowPdfExport
         allowResizing
@@ -861,17 +917,14 @@ export function MakaGrid<T extends object>({
         enablePersistence={false}
         /* ── Settings ── */
         filterSettings={{ type: "Excel" }}
-        pageSettings={{
-          pageSize: 20,
-          pageSizes: [20, 50, 100, 1000, "All"],
-          pageCount: 5,
-        }}
+        pageSettings={pageSettings}
         selectionSettings={{ type: "Single", mode: "Row" }}
         /* ── Toolbar ── */
         toolbar={toolbarItems as ToolbarItems[]}
         toolbarClick={handleToolbarClick}
         /* ── Interaction ── */
         recordClick={handleRecordClick}
+        {...(serverMode ? { dataStateChange: handleDataStateChange } : {})}
         created={injectGoToPage}
         dataBound={injectGoToPage}
         rowDataBound={(args) => {

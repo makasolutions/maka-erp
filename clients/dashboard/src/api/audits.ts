@@ -187,8 +187,23 @@ export async function getAuditById(
   return apiFetch<AuditDetailDto>(`/api/v1/audits/${id}`, { signal });
 }
 
+export type AuditSummaryQuery = {
+  fromUtc?: string;
+  toUtc?: string;
+  tenantId?: string;
+  userId?: string;
+  eventType?: AuditEventType;
+  severity?: AuditSeverity;
+  tags?: number;
+  source?: string;
+  search?: string;
+  entityName?: string;
+  entityKey?: string;
+  entityOperation?: string;
+};
+
 export async function getAuditSummary(
-  query: { fromUtc?: string; toUtc?: string; tenantId?: string },
+  query: AuditSummaryQuery,
   signal?: AbortSignal,
 ): Promise<AuditSummaryAggregateDto> {
   const qs = toQueryString(query);
