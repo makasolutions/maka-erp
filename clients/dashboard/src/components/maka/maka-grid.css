@@ -19,6 +19,10 @@
    Bootstrap5 (which Syncfusion's theme extends) reads --bs-* variables.
    Overriding them on the grid root cascades to most Syncfusion components.
 ══════════════════════════════════════════════════════════════════════════════ */
+.maka-grid-wrapper {
+  /* lucide "Eye" SVG, used as a CSS mask for the column-chooser button icon */
+  --maka-eye-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
 .maka-grid-wrapper .e-grid {
   --bs-body-bg:       var(--color-card);
   --bs-body-color:    var(--color-foreground);
@@ -208,10 +212,12 @@
   filter: brightness(1.08);
 }
 
-/* ── Column-chooser toolbar button — consistent with the other buttons ──── */
-/* Columns icon + "Columnas" text + a chevron that matches the split button. */
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn,
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn:focus {
+/* ── Custom column-chooser button (#…maka_columns_btn) ───────────────────── */
+/* Consistent with the other toolbar buttons: lucide Eye icon + "Columnas"
+   text + the same chevron shape the row Split Button uses. Built-in caret is
+   gone because this is now our own custom toolbar item. */
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn,
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn:focus {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.4rem;
@@ -221,23 +227,37 @@
   border-radius: 0.375rem !important;
   box-shadow: none !important;
 }
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn:hover {
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn:hover {
   background-color: var(--color-accent) !important;
   color: var(--color-foreground) !important;
 }
-/* Leading columns glyph + the text in foreground */
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-columnchooser-btn,
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-btn-icon,
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-tbar-btn-text {
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn-text {
   color: var(--color-foreground) !important;
   opacity: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
-/* Chevron-down (same shape as the lucide ChevronDown in the split button) */
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn::after {
+/* Hide any empty icon span the toolbar item may render for prefixIcon="" */
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-icons:empty {
+  display: none !important;
+}
+/* Leading EYE icon (lucide Eye, drawn via CSS mask so it inherits currentColor
+   and matches the lucide icons used everywhere else in the app) */
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn-text::before {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.4rem;
+  background-color: currentColor;
+  -webkit-mask: var(--maka-eye-mask) center / contain no-repeat;
+  mask: var(--maka-eye-mask) center / contain no-repeat;
+}
+/* Chevron-down — identical shape to the Split Button's lucide ChevronDown */
+.maka-grid-wrapper .e-grid .e-toolbar [id$="maka_columns_btn"] .e-tbar-btn::after {
   content: "";
   width: 0.45rem;
   height: 0.45rem;
-  margin-left: 0.15rem;
+  margin-left: 0.2rem;
   border-right: 1.6px solid currentColor;
   border-bottom: 1.6px solid currentColor;
   transform: rotate(45deg) translate(-1px, -1px);
@@ -709,12 +729,33 @@ html body .e-ccdlg .e-dlg-content {
   background-color: var(--color-popover) !important;
   color: var(--color-foreground) !important;
 }
-html body .e-ccdlg .e-cc-searchdiv input,
-html body .e-ccdlg input {
+/* Search box — identical to the per-column filter search:
+   bordered soft-accent container, borderless input inside, lupa on the right */
+html body .e-ccdlg .e-cc-searchdiv {
+  display: flex !important;
+  align-items: center !important;
   background-color: var(--color-primary-soft) !important;
-  border-color: var(--color-border) !important;
-  color: var(--color-foreground) !important;
+  border: 1px solid var(--color-border) !important;
   border-radius: 0.375rem !important;
+  padding: 0 0.5rem !important;
+  height: 2rem !important;
+}
+html body .e-ccdlg .e-cc-searchdiv input,
+html body .e-ccdlg .e-ccsearch {
+  flex: 1 !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--color-foreground) !important;
+  font-size: 0.8125rem !important;
+  height: 100% !important;
+  padding: 0 !important;
+}
+html body .e-ccdlg .e-cc-searchdiv .e-ccsearch-icon,
+html body .e-ccdlg .e-cc-searchdiv .e-icons {
+  background-color: transparent !important;
+  border: none !important;
+  color: var(--color-muted-foreground) !important;
 }
 /* Checkbox ↔ label spacing + font size to match the grid */
 html body .e-ccdlg .e-checkbox-wrapper {
@@ -1012,3 +1053,68 @@ html body .e-xlflmenu .e-footer-content .e-btn:not(.e-primary):hover {
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — mobile-first. The grid keeps its own horizontal scroll inside
+   .e-content, so columns never push the page wider than the viewport. These
+   rules tighten chrome (toolbar, pager, header) on small screens and ensure
+   nothing overflows. Tablet (≥768) and desktop (≥1024) keep the full layout.
+══════════════════════════════════════════════════════════════════════════════ */
+.maka-grid-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+.maka-grid-wrapper .e-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+/* Header/content share one horizontal scroll; never overflow the page */
+.maka-grid-wrapper .e-grid .e-gridheader,
+.maka-grid-wrapper .e-grid .e-gridcontent {
+  max-width: 100% !important;
+}
+
+@media (max-width: 640px) {
+  /* Toolbar: let items wrap instead of clipping */
+  .maka-grid-wrapper .e-grid .e-toolbar,
+  .maka-grid-wrapper .e-grid .e-toolbar .e-toolbar-items {
+    height: auto !important;
+    flex-wrap: wrap !important;
+  }
+  .maka-grid-wrapper .e-grid .e-toolbar .e-toolbar-item {
+    height: 2.25rem !important;
+  }
+  /* Pager: compact, wraps to multiple rows; count drops to its own line */
+  .maka-grid-wrapper .e-pager {
+    padding: 0.4rem 0.5rem !important;
+    gap: 0.25rem 0.4rem;
+    justify-content: center;
+  }
+  .maka-grid-wrapper .e-pager .e-parentmsgbar {
+    margin: 0.15rem auto 0 !important;
+    width: 100%;
+    text-align: center;
+    order: 10;
+  }
+  .maka-grid-wrapper .e-pager .maka-goto {
+    margin: 0 !important;
+  }
+  /* Slightly smaller, denser header + cells on phones */
+  .maka-grid-wrapper .e-grid .e-headercell {
+    font-size: 0.625rem !important;
+    letter-spacing: 0.04em !important;
+  }
+  .maka-grid-wrapper .e-grid .e-row td.e-rowcell {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  /* Filter / chooser dialogs: cap width to the viewport with a margin */
+  html body .e-excelfilter,
+  html body .e-checkboxfilter,
+  html body .e-ccdlg {
+    max-width: calc(100vw - 1.5rem) !important;
+  }
+}
+
+/* Tablet and up — split-button shows its text label (handled in TSX via the
+   `hidden xl:inline` class); nothing extra needed here, the defaults apply. */

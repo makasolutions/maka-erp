@@ -623,20 +623,41 @@ export function MakaGrid<T extends object>({
     align: "Left",
   };
 
+  // Custom column-chooser button — replaces Syncfusion's built-in toolbar item
+  // so we fully control its look (eye icon + text + split-button chevron) and
+  // avoid the duplicate caret the built-in renders. Opened programmatically.
+  const customColumnsBtn: CustomItem = {
+    text: t("grid.columnChooser"),
+    tooltipText: t("grid.columnChooser"),
+    prefixIcon: "",
+    id: "maka_columns_btn",
+    align: "Right",
+  };
+
   // No "Search" (pages have their own search) and no "Separator" clutter.
   const toolbarItems: (ToolbarItems | CustomItem)[] = [
     ...(canCreate ? [customNewBtn] : []),
     "ExcelExport" as ToolbarItems,
     "PdfExport"   as ToolbarItems,
-    ...(showColumnChooser ? ["ColumnChooser" as ToolbarItems] : []),
+    ...(showColumnChooser ? [customColumnsBtn] : []),
   ];
 
   // ── Toolbar click handler ─────────────────────────────────────────────────
   const handleToolbarClick = useCallback(
-    (args: { item?: { id?: string } }) => {
+    (args: { item?: { id?: string }; originalEvent?: Event }) => {
       const id = args.item?.id ?? "";
       if (id === "maka_create_btn") {
         onCreate?.();
+      } else if (id === "maka_columns_btn") {
+        // Open the column chooser anchored near the clicked button.
+        const target = (args.originalEvent?.target as HTMLElement | undefined)
+          ?.closest(".e-tbar-btn") as HTMLElement | undefined;
+        const rect = target?.getBoundingClientRect();
+        if (rect) {
+          gridRef.current?.openColumnChooser(rect.left, rect.bottom + 4);
+        } else {
+          gridRef.current?.openColumnChooser();
+        }
       } else if (id.endsWith("_excelexport")) {
         const props: ExcelExportProperties = { fileName: `${fileName}.xlsx` };
         void gridRef.current?.excelExport(props);
