@@ -744,6 +744,7 @@
     "columnChooser": "Columnas",
     "rowsPerPage": "Filas por página",
     "of": "de",
-    "selectColumns": "Seleccionar columnas"
+    "selectColumns": "Seleccionar columnas",
+    "goToPage": "Ir a página"
   }
 }

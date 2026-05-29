@@ -1,11 +1,11 @@
 /*
  * maka-grid.css — Syncfusion EJ2 Grid ↔ Maka design-token bridge
  *
- * Maps Syncfusion Bootstrap-5 class selectors to var(--color-*) tokens so
- * the grid inherits every theme, accent and dark-mode change automatically.
- * Imported once from MakaGrid.tsx (Vite handles the scoping).
- *
- * Naming convention:  .e-*  = Syncfusion   var(--color-*) = Maka tokens
+ * • Header background = accent/primary colour (changes with every theme accent).
+ * • Selected row     = full-width accent highlight.
+ * • All other colours reference var(--color-*) tokens.
+ * • Dark mode overrides via [data-theme="dark"] selectors.
+ * Imported once from MakaGrid.tsx.
  */
 
 /* ─── Wrapper ────────────────────────────────────────────────────────────── */
@@ -16,51 +16,56 @@
   border-radius: 0.75rem !important;
   overflow: hidden !important;
   font-family: inherit !important;
+  font-size: 0.8125rem !important;
 }
 
-/* ─── Header ─────────────────────────────────────────────────────────────── */
+/* ─── Header — Accent/Primary background ─────────────────────────────────── */
 .e-grid .e-gridheader {
-  background-color: var(--color-card) !important;
-  border-bottom: 1px solid var(--color-border) !important;
+  background-color: var(--color-primary) !important;
+  border-bottom: none !important;
 }
 .e-grid .e-headercell,
 .e-grid .e-detailheadercell {
-  background-color: oklch(from var(--color-muted) l c h / 0.6) !important;
-  color: var(--color-muted-foreground) !important;
-  border-right-color: var(--color-border) !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+  border-right: 1px solid oklch(from var(--color-primary) l c h / 0.3) !important;
   font-size: 0.6875rem !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.07em !important;
 }
+/* Hover on header cell */
 .e-grid .e-headercell:hover,
 .e-grid .e-headercell.e-hover {
-  background-color: oklch(from var(--color-muted) l c h / 0.9) !important;
+  background-color: oklch(from var(--color-primary) calc(l - 0.04) c h) !important;
+  color: var(--color-primary-foreground) !important;
 }
+/* Column resize handle */
 .e-grid .e-rhandler {
-  border-right-color: var(--color-border) !important;
+  border-right-color: oklch(from var(--color-primary) l c h / 0.4) !important;
 }
-/* Sort icons */
+/* Sort icons — use a light tint so they're visible on the dark header */
 .e-grid .e-icons.e-ascending::before,
-.e-grid .e-icons.e-descending::before {
-  color: var(--color-primary) !important;
+.e-grid .e-icons.e-descending::before,
+.e-grid .e-sortfilterdiv {
+  color: var(--color-primary-foreground) !important;
+  opacity: 0.85;
 }
 /* Header checkbox */
 .e-grid .e-headerchkcelldiv .e-checkbox-wrapper .e-frame {
-  border-color: var(--color-border) !important;
-  background-color: var(--color-input) !important;
+  border-color: var(--color-primary-foreground) !important;
+  background-color: transparent !important;
 }
-.e-grid .e-headerchkcelldiv .e-checkbox-wrapper .e-check {
-  background-color: var(--color-primary) !important;
+.e-grid .e-headerchkcelldiv .e-checkbox-wrapper .e-frame.e-check {
+  background-color: var(--color-primary-foreground) !important;
 }
 
 /* ─── Rows & Cells ───────────────────────────────────────────────────────── */
 .e-grid .e-row td.e-rowcell {
   background-color: var(--color-card) !important;
   color: var(--color-foreground) !important;
-  border-bottom: 1px solid oklch(from var(--color-border) l c h / 0.6) !important;
+  border-bottom: 1px solid oklch(from var(--color-border) l c h / 0.55) !important;
   border-right-color: transparent !important;
-  font-size: 0.8125rem !important;
   padding-top: 0.625rem !important;
   padding-bottom: 0.625rem !important;
 }
@@ -68,25 +73,28 @@
 .e-grid .e-altrow td.e-rowcell {
   background-color: oklch(from var(--color-muted) l c h / 0.3) !important;
 }
-/* Hover */
+/* Row hover */
 .e-grid .e-row:hover td.e-rowcell,
 .e-grid .e-row.e-hover td.e-rowcell {
   background-color: var(--color-accent) !important;
   cursor: pointer;
 }
-/* Selected row */
+
+/* ─── Selected row — FULL ROW accent highlight ───────────────────────────── */
+/* Syncfusion adds .e-selectionbackground to every td in the selected row.    */
 .e-grid .e-selectionbackground,
 .e-grid td.e-selectionbackground {
-  background-color: oklch(from var(--color-primary) l c h / 0.10) !important;
+  background-color: oklch(from var(--color-primary) l c h / 0.14) !important;
   color: var(--color-foreground) !important;
 }
-.e-grid .e-selectionbackground:hover,
-.e-grid .e-row:hover td.e-selectionbackground {
-  background-color: oklch(from var(--color-primary) l c h / 0.16) !important;
+/* Selected + hover */
+.e-grid .e-row:hover td.e-selectionbackground,
+.e-grid .e-row.e-hover td.e-selectionbackground {
+  background-color: oklch(from var(--color-primary) l c h / 0.22) !important;
 }
 /* Cell focus outline */
 .e-grid td.e-active {
-  box-shadow: inset 0 0 0 1px var(--color-ring) !important;
+  box-shadow: inset 0 0 0 2px oklch(from var(--color-ring) l c h / 0.6) !important;
 }
 
 /* ─── Toolbar ────────────────────────────────────────────────────────────── */
@@ -106,35 +114,18 @@
 .e-grid .e-toolbar .e-toolbar-item .e-tbar-btn:hover {
   background-color: var(--color-accent) !important;
   color: var(--color-foreground) !important;
-  border-color: transparent !important;
 }
-/* Custom "New" button  */
-.e-grid .e-toolbar #maka_create_btn {
+/* "New" button — primary colour */
+.e-grid .e-toolbar #maka_create_btn,
+.e-grid .e-toolbar [id$="maka_create_btn"] {
   background-color: var(--color-primary) !important;
   color: var(--color-primary-foreground) !important;
   border-radius: 0.375rem !important;
   border: none !important;
+  font-weight: 600 !important;
 }
 .e-grid .e-toolbar #maka_create_btn:hover {
-  background-color: var(--color-primary-hover) !important;
-}
-/* Search box */
-.e-grid .e-toolbar .e-search-wrapper {
-  background-color: transparent !important;
-}
-.e-grid .e-toolbar .e-search-wrapper .e-search {
-  background-color: var(--color-input) !important;
-  color: var(--color-foreground) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 0.375rem !important;
-  font-size: 0.8125rem !important;
-}
-.e-grid .e-toolbar .e-search-wrapper .e-search:focus-within {
-  border-color: var(--color-ring) !important;
-  box-shadow: 0 0 0 2px oklch(from var(--color-ring) l c h / 0.20) !important;
-}
-.e-grid .e-toolbar .e-search-wrapper .e-search-icon {
-  color: var(--color-muted-foreground) !important;
+  filter: brightness(1.08);
 }
 
 /* ─── Pager ──────────────────────────────────────────────────────────────── */
@@ -144,6 +135,8 @@
   border-top: 1px solid var(--color-border) !important;
   color: var(--color-muted-foreground) !important;
   font-size: 0.8125rem !important;
+  /* Remove the double border since our go-to-page bar follows it */
+  border-bottom: none !important;
 }
 .e-pager .e-numericcontainer .e-link,
 .e-pager .e-prev .e-link,
@@ -157,37 +150,56 @@
 }
 .e-pager .e-numericcontainer .e-link:hover,
 .e-pager .e-prev .e-link:hover,
-.e-pager .e-next .e-link:hover {
+.e-pager .e-next .e-link:hover,
+.e-pager .e-first .e-link:hover,
+.e-pager .e-last .e-link:hover {
   background-color: var(--color-accent) !important;
   color: var(--color-foreground) !important;
 }
+/* Active page */
 .e-pager .e-currentitem,
 .e-pager .e-currentitem:hover {
   background-color: var(--color-primary) !important;
   color: var(--color-primary-foreground) !important;
   border-radius: 0.375rem !important;
 }
-.e-pager select.e-pagerdropdown {
+/* Page size dropdown */
+.e-pager select.e-pagerdropdown,
+.e-pager .e-pagerdropdown .e-input {
   background-color: var(--color-input) !important;
   color: var(--color-foreground) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 0.375rem !important;
 }
-
-/* ─── Group drop area ────────────────────────────────────────────────────── */
-.e-grid .e-groupdroparea {
-  background-color: oklch(from var(--color-muted) l c h / 0.5) !important;
+/* Total items info */
+.e-pager .e-parentmsgbar {
   color: var(--color-muted-foreground) !important;
-  border-bottom: 1px solid var(--color-border) !important;
   font-size: 0.75rem !important;
 }
-.e-grid .e-groupdroparea .e-icon-drag {
+
+/* ─── Grouping area ──────────────────────────────────────────────────────── */
+.e-grid .e-groupdroparea {
+  background-color: oklch(from var(--color-primary) l c h / 0.06) !important;
   color: var(--color-muted-foreground) !important;
+  border-bottom: 1px dashed oklch(from var(--color-primary) l c h / 0.35) !important;
+  font-size: 0.75rem !important;
+  font-style: italic;
 }
 .e-grid .e-groupcaption td {
-  background-color: oklch(from var(--color-muted) l c h / 0.4) !important;
+  background-color: oklch(from var(--color-primary) l c h / 0.08) !important;
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
+  font-weight: 600 !important;
+}
+/* Group header chip */
+.e-grid .e-groupheadercell {
+  background-color: oklch(from var(--color-primary) l c h / 0.12) !important;
+  border: 1px solid oklch(from var(--color-primary) l c h / 0.3) !important;
+  color: var(--color-foreground) !important;
+  border-radius: 0.75rem !important;
+}
+.e-grid .e-groupheadercell .e-grouptext {
+  color: var(--color-foreground) !important;
 }
 
 /* ─── Filter row ─────────────────────────────────────────────────────────── */
@@ -202,17 +214,16 @@
   color: var(--color-foreground) !important;
   border-color: var(--color-border) !important;
   border-radius: 0.25rem !important;
-  font-size: 0.8125rem !important;
 }
 
-/* ─── Excel filter popup ─────────────────────────────────────────────────── */
+/* ─── Excel / Checkbox filter popup ─────────────────────────────────────── */
 .e-excelfilter,
 .e-checkboxfilter,
 .e-filterdiv {
   background-color: var(--color-popover) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 0.5rem !important;
-  box-shadow: var(--shadow-lg, 0 10px 25px -5px rgb(0 0 0 / .15)) !important;
+  box-shadow: 0 10px 30px -5px rgb(0 0 0 / .15) !important;
   color: var(--color-foreground) !important;
 }
 .e-excelfilter .e-dlg-header,
@@ -229,11 +240,6 @@
 .e-excelfilter .e-checkbox-wrapper .e-label,
 .e-checkboxfilter .e-checkbox-wrapper .e-label {
   color: var(--color-foreground) !important;
-  font-size: 0.8125rem !important;
-}
-.e-excelfilter .e-checkbox-wrapper:hover .e-label,
-.e-checkboxfilter .e-checkbox-wrapper:hover .e-label {
-  color: var(--color-primary) !important;
 }
 .e-excelfilter .e-searchinput,
 .e-checkboxfilter .e-searchinput {
@@ -259,15 +265,11 @@
   color: var(--color-foreground) !important;
   border-radius: 0.375rem !important;
 }
-.e-ccdlg .e-cclist-elements {
-  color: var(--color-foreground) !important;
-}
 
 /* ─── Empty record ───────────────────────────────────────────────────────── */
 .e-grid .e-emptyrow td {
   background-color: var(--color-card) !important;
   color: var(--color-muted-foreground) !important;
-  font-size: 0.875rem !important;
   text-align: center;
   padding: 3rem 0 !important;
 }
@@ -284,42 +286,50 @@
 }
 .e-grid .e-content::-webkit-scrollbar-thumb,
 .e-grid .e-headercontent::-webkit-scrollbar-thumb {
-  background-color: var(--color-border);
+  background-color: oklch(from var(--color-border) l c h / 0.8);
   border-radius: 3px;
 }
 .e-grid .e-content::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-muted-foreground);
 }
 
-/* ─── Row action column (no divider, centered) ───────────────────────────── */
-.e-grid td[data-colindex].maka-actions-cell {
-  padding: 0 !important;
+/* ─── Action column cell ─────────────────────────────────────────────────── */
+.e-grid td[data-colindex].maka-actions-cell,
+.e-grid td.maka-actions-cell {
+  padding: 0.25rem !important;
   text-align: center !important;
+  overflow: visible !important;
 }
 
 /* ─── Dark mode overrides ────────────────────────────────────────────────── */
-[data-theme="dark"] .e-grid,
-[data-theme="dark"] .e-grid .e-gridheader,
+[data-theme="dark"] .e-grid {
+  border-color: var(--color-border) !important;
+}
 [data-theme="dark"] .e-grid .e-gridcontent,
 [data-theme="dark"] .e-grid .e-gridfooter {
   background-color: var(--color-card) !important;
-  color: var(--color-foreground) !important;
-  border-color: var(--color-border) !important;
-}
-[data-theme="dark"] .e-grid .e-headercell {
-  background-color: oklch(from var(--color-muted) l c h / 0.5) !important;
-  color: var(--color-muted-foreground) !important;
 }
 [data-theme="dark"] .e-grid .e-row td.e-rowcell {
   background-color: var(--color-card) !important;
   color: var(--color-foreground) !important;
-  border-bottom-color: oklch(from var(--color-border) l c h / 0.5) !important;
+  border-bottom-color: oklch(from var(--color-border) l c h / 0.45) !important;
 }
 [data-theme="dark"] .e-grid .e-altrow td.e-rowcell {
-  background-color: oklch(from var(--color-muted) l c h / 0.25) !important;
+  background-color: oklch(from var(--color-muted) l c h / 0.22) !important;
 }
-[data-theme="dark"] .e-grid .e-row:hover td.e-rowcell {
-  background-color: oklch(from var(--color-accent) l c h / 0.7) !important;
+[data-theme="dark"] .e-grid .e-row:hover td.e-rowcell,
+[data-theme="dark"] .e-grid .e-row.e-hover td.e-rowcell {
+  background-color: oklch(from var(--color-accent) l c h / 0.65) !important;
+}
+/* Selected row in dark mode */
+[data-theme="dark"] .e-grid .e-selectionbackground,
+[data-theme="dark"] .e-grid td.e-selectionbackground {
+  background-color: oklch(from var(--color-primary) l c h / 0.20) !important;
+}
+/* Header stays the same in dark mode (primary colour is theme-aware) */
+[data-theme="dark"] .e-grid .e-headercell {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
 }
 [data-theme="dark"] .e-grid .e-toolbar {
   background-color: var(--color-card) !important;
@@ -329,19 +339,28 @@
   color: var(--color-muted-foreground) !important;
 }
 [data-theme="dark"] .e-grid .e-toolbar .e-tbar-btn:hover {
-  background-color: oklch(from var(--color-accent) l c h / 0.7) !important;
+  background-color: oklch(from var(--color-accent) l c h / 0.65) !important;
   color: var(--color-foreground) !important;
 }
 [data-theme="dark"] .e-pager {
   background-color: var(--color-card) !important;
-  color: var(--color-muted-foreground) !important;
   border-top-color: var(--color-border) !important;
+  color: var(--color-muted-foreground) !important;
 }
 [data-theme="dark"] .e-excelfilter,
 [data-theme="dark"] .e-checkboxfilter {
   background-color: var(--color-popover) !important;
   border-color: var(--color-border) !important;
 }
-[data-theme="dark"] .e-ccdlg .e-dlg-content {
+[data-theme="dark"] .e-ccdlg .e-dlg-content,
+[data-theme="dark"] .e-ccdlg .e-dlg-header-content,
+[data-theme="dark"] .e-ccdlg .e-footer-content {
   background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
+}
+[data-theme="dark"] .e-grid .e-groupdroparea {
+  background-color: oklch(from var(--color-primary) l c h / 0.10) !important;
+}
+[data-theme="dark"] .e-grid .e-groupcaption td {
+  background-color: oklch(from var(--color-primary) l c h / 0.12) !important;
 }

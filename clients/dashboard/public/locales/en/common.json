@@ -743,6 +743,7 @@
     "columnChooser": "Columns",
     "rowsPerPage": "Rows per page",
     "of": "of",
-    "selectColumns": "Select columns"
+    "selectColumns": "Select columns",
+    "goToPage": "Go to page"
   }
 }

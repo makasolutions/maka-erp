@@ -1,18 +1,22 @@
 /**
- * MakaGrid v2 — Syncfusion GridComponent pre-configured for Maka ERP.
+ * MakaGrid v3 — Syncfusion GridComponent pre-configured for Maka ERP.
  *
- * What's new in v2
- * ─────────────────
- * • Action column: Radix DropdownMenu with Edit, Delete, Duplicate, per-row
- *   Excel/PDF export, and arbitrary extra actions — all gated by permissions.
- * • Virtual scrolling auto-enabled when dataSource.length > VIRTUAL_THRESHOLD.
- * • Excel-like filter popup (type: "Excel") + clipboard support.
- * • Column resizing and reordering.
- * • Column chooser (show/hide columns) in toolbar.
- * • Full dark-mode + accent-colour theme integration via CSS vars (maka-grid.css).
- * • Reactive to i18n language switches.
- * • Toolbar "New" button calls onCreate() instead of Syncfusion's built-in editor.
- * • Row-click fires onRowClick (action column excluded from navigation).
+ * Features
+ * ─────────
+ * • Split-button action column: primary action fires on left click; chevron
+ *   opens full dropdown (Edit · Duplicate · Export Excel · Export PDF · extras · Delete).
+ * • All actions gated by permission strings from the central P object.
+ * • Column reordering (drag header), resizing (drag edge), chooser (toolbar).
+ * • Grouping (drag header to the drop-area above the grid).
+ * • Excel-style filter popup (checkboxes + search per column).
+ * • Clipboard support (Ctrl+C copies selected rows).
+ * • Pager: default 20 rows, options 20 / 50 / 100 / 1000 / Todos.
+ *   Shows total records, current page indicator, "Go to page" input.
+ * • Header background = accent (var --color-primary) + white foreground.
+ * • Selected row = full-width accent highlight.
+ * • Full dark-mode + every accent colour via maka-grid.css.
+ * • Reactive to i18n language switches (es / en).
+ * • Currency helper: pass format:"C0" on columns to get "$  28.900.000".
  *
  * NEVER instantiate GridComponent directly in pages — always use MakaGrid.
  */
@@ -27,8 +31,6 @@ import {
   Toolbar,
   ExcelExport,
   PdfExport,
-  Search,
-  VirtualScroll,
   Resize,
   Reorder,
   ColumnChooser,
@@ -41,13 +43,19 @@ import {
   type ToolbarItems,
 } from "@syncfusion/ej2-react-grids";
 import { L10n } from "@syncfusion/ej2-base";
-import { useCallback, useContext, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ChevronDown,
   Copy,
   FileSpreadsheet,
   FileText,
-  MoreHorizontal,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -64,10 +72,7 @@ import "./maka-grid.css";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-/** Rows above this count use pagination; at or above it, virtual scrolling. */
-const VIRTUAL_THRESHOLD = 1000;
-
-/** Field name used for the actions column — excluded from row-click navigation. */
+/** Sentinel field name for the actions column — excluded from row-click navigation. */
 const ACTIONS_FIELD = "__maka_actions__";
 
 // ── Locale strings (ES + EN) ──────────────────────────────────────────────────
@@ -75,17 +80,17 @@ L10n.load({
   en: {
     grid: {
       EmptyRecord: "No records to display",
-      GroupDropArea: "Drag a column header here to group",
+      GroupDropArea: "Drag a column header here to group by that column",
       UnGroup: "Click here to ungroup",
       EmptyDataSourceError: "DataSource must not be empty on initial load",
-      Add: "Add", Edit: "Edit", Cancel: "Cancel", Update: "Update",
+      Add: "Add",  Edit: "Edit", Cancel: "Cancel", Update: "Update",
       Delete: "Delete", Print: "Print",
       Pdfexport: "Export PDF", Excelexport: "Export Excel",
       Wordexport: "Export Word", Csvexport: "Export CSV",
       Search: "Search", Columnchooser: "Columns", Save: "Save",
       Item: "record", Items: "records",
-      EditOperationAlert: "No records selected for edit",
-      DeleteOperationAlert: "No records selected for delete",
+      EditOperationAlert: "No records selected for edit operation",
+      DeleteOperationAlert: "No records selected for delete operation",
       SaveButton: "Save", OKButton: "OK", CancelButton: "Cancel",
       EditFormTitle: "Details of ", AddFormTitle: "Add New Record",
       BatchSaveConfirm: "Save the changes?",
@@ -100,40 +105,45 @@ L10n.load({
       LessThan: "Less Than", LessThanOrEqual: "Less Than Or Equal",
       GreaterThan: "Greater Than", GreaterThanOrEqual: "Greater Than Or Equal",
       ChooseDate: "Choose a Date", EnterValue: "Enter the value",
-      Copy: "Copy", Group: "Group by this column",
+      Copy: "Copy",
+      Group: "Group by this column",
       Ungroup: "Ungroup by this column",
+      GroupCaption: "drop the column here to group",
       autoFitAll: "Auto Fit all columns", autoFit: "Auto Fit this column",
-      Export: "Export", FirstPage: "First Page", LastPage: "Last Page",
-      PreviousPage: "Previous Page", NextPage: "Next Page",
-      SortAscending: "Sort Ascending", SortDescending: "Sort Descending",
-      EditRecord: "Edit Record", DeleteRecord: "Delete Record",
-      FilterMenu: "Filter", SelectAll: "Select All", Blanks: "Blanks",
-      FilterTrue: "True", FilterFalse: "False",
-      NoResult: "No results", ClearFilter: "Clear Filter",
-      NumberFilter: "Number Filter", TextFilter: "Text Filter",
-      DateFilter: "Date Filter", DateTimeFilter: "DateTime Filter",
-      MatchCase: "Match Case", Between: "Between",
-      CustomFilter: "Custom Filter",
-      CustomFilterPlaceHolder: "Enter the value",
-      CustomFilterDatePlaceHolder: "Choose a date",
-      AND: "AND", OR: "OR", ShowRowsWhere: "Show rows where:",
-      NotStartsWith: "Does Not Start With", Like: "Like",
-      NotEndsWith: "Does Not End With", NotContains: "Does Not Contain",
-      IsNull: "Is Null", NotNull: "Is Not Null",
-      IsEmpty: "Is Empty", IsNotEmpty: "Is Not Empty",
+      Export: "Export",
+      FirstPage: "First page", LastPage: "Last page",
+      PreviousPage: "Previous page", NextPage: "Next page",
+      SortAscending: "Sort ascending", SortDescending: "Sort descending",
+      EditRecord: "Edit record", DeleteRecord: "Delete record",
+      FilterMenu: "Filter", SelectAll: "Select all",
+      Blanks: "Blanks", FilterTrue: "True", FilterFalse: "False",
+      NoResult: "No results", ClearFilter: "Clear filter",
+      NumberFilter: "Number filter", TextFilter: "Text filter",
+      DateFilter: "Date filter", DateTimeFilter: "Date-time filter",
+      MatchCase: "Match case", Between: "Between",
+      CustomFilter: "Custom filter",
+      CustomFilterPlaceHolder: "Enter value",
+      CustomFilterDatePlaceHolder: "Choose date",
+      AND: "AND", OR: "OR",
+      ShowRowsWhere: "Show rows where:",
+      NotStartsWith: "Does not start with", Like: "Like",
+      NotEndsWith: "Does not end with", NotContains: "Does not contain",
+      IsNull: "Is null", NotNull: "Not null",
+      IsEmpty: "Is empty", IsNotEmpty: "Not empty",
       AddCurrentSelection: "Add current selection to filter",
-      SelectAllCheckbox: "Select All",
+      SelectAllCheckbox: "Select all",
+      True: "Yes", False: "No",
     },
     pager: {
-      currentPageInfo: "{0} of {1} pages",
-      totalItemsInfo: "({0} items)",
-      totalItemInfo: "({0} item)",
-      firstPageTooltip: "Go to first page",
-      lastPageTooltip: "Go to last page",
-      nextPageTooltip: "Go to next page",
-      previousPageTooltip: "Go to previous page",
-      nextPagerTooltip: "Go to next pager",
-      previousPagerTooltip: "Go to previous pager",
+      currentPageInfo: "Page {0} of {1}",
+      totalItemsInfo: "{0} records",
+      totalItemInfo: "{0} record",
+      firstPageTooltip: "First page",
+      lastPageTooltip: "Last page",
+      nextPageTooltip: "Next page",
+      previousPageTooltip: "Previous page",
+      nextPagerTooltip: "Next pages",
+      previousPagerTooltip: "Previous pages",
       pagerDropDown: "Items per page",
       pagerAllDropDown: "Items",
       All: "All",
@@ -141,10 +151,10 @@ L10n.load({
   },
   es: {
     grid: {
-      EmptyRecord: "No hay registros para mostrar",
+      EmptyRecord: "Sin registros para mostrar",
       GroupDropArea: "Arrastra una columna aquí para agrupar",
       UnGroup: "Haz clic aquí para desagrupar",
-      EmptyDataSourceError: "El origen de datos no debe estar vacío en la carga inicial",
+      EmptyDataSourceError: "El origen de datos no puede estar vacío en la carga inicial",
       Add: "Agregar", Edit: "Editar", Cancel: "Cancelar",
       Update: "Actualizar", Delete: "Eliminar", Print: "Imprimir",
       Pdfexport: "Exportar PDF", Excelexport: "Exportar Excel",
@@ -157,7 +167,7 @@ L10n.load({
       EditFormTitle: "Detalles de ", AddFormTitle: "Agregar nuevo registro",
       BatchSaveConfirm: "¿Guardar los cambios?",
       BatchSaveLostChanges: "Se perderán los cambios. ¿Continuar?",
-      ConfirmDelete: "¿Seguro que deseas eliminar el registro?",
+      ConfirmDelete: "¿Seguro que deseas eliminar este registro?",
       CancelEdit: "¿Cancelar los cambios?",
       ChooseColumns: "Elige columnas", SearchColumns: "Buscar columnas",
       Matchs: "No se encontraron coincidencias",
@@ -167,17 +177,19 @@ L10n.load({
       LessThan: "Menor que", LessThanOrEqual: "Menor o igual",
       GreaterThan: "Mayor que", GreaterThanOrEqual: "Mayor o igual",
       ChooseDate: "Elige una fecha", EnterValue: "Ingresa el valor",
-      Copy: "Copiar", Group: "Agrupar por esta columna",
+      Copy: "Copiar",
+      Group: "Agrupar por esta columna",
       Ungroup: "Desagrupar por esta columna",
+      GroupCaption: "suelta la columna aquí para agrupar",
       autoFitAll: "Ajustar todas las columnas",
       autoFit: "Ajustar esta columna",
-      Export: "Exportar", FirstPage: "Primera página",
-      LastPage: "Última página", PreviousPage: "Página anterior",
-      NextPage: "Página siguiente",
+      Export: "Exportar",
+      FirstPage: "Primera página", LastPage: "Última página",
+      PreviousPage: "Página anterior", NextPage: "Siguiente página",
       SortAscending: "Orden ascendente", SortDescending: "Orden descendente",
       EditRecord: "Editar registro", DeleteRecord: "Eliminar registro",
-      FilterMenu: "Filtro", SelectAll: "Seleccionar todo", Blanks: "En blanco",
-      FilterTrue: "Verdadero", FilterFalse: "Falso",
+      FilterMenu: "Filtro", SelectAll: "Seleccionar todo",
+      Blanks: "En blanco", FilterTrue: "Verdadero", FilterFalse: "Falso",
       NoResult: "Sin resultados", ClearFilter: "Limpiar filtro",
       NumberFilter: "Filtro numérico", TextFilter: "Filtro de texto",
       DateFilter: "Filtro de fecha", DateTimeFilter: "Filtro de fecha y hora",
@@ -185,24 +197,26 @@ L10n.load({
       CustomFilter: "Filtro personalizado",
       CustomFilterPlaceHolder: "Ingresa el valor",
       CustomFilterDatePlaceHolder: "Elige una fecha",
-      AND: "Y", OR: "O", ShowRowsWhere: "Mostrar filas donde:",
-      NotStartsWith: "No empieza con", Like: "Parecido a",
+      AND: "Y", OR: "O",
+      ShowRowsWhere: "Mostrar filas donde:",
+      NotStartsWith: "No empieza con", Like: "Similar a",
       NotEndsWith: "No termina con", NotContains: "No contiene",
       IsNull: "Es nulo", NotNull: "No es nulo",
       IsEmpty: "Está vacío", IsNotEmpty: "No está vacío",
-      AddCurrentSelection: "Agregar selección actual al filtro",
+      AddCurrentSelection: "Agregar selección al filtro",
       SelectAllCheckbox: "Seleccionar todo",
+      True: "Sí", False: "No",
     },
     pager: {
-      currentPageInfo: "{0} de {1} páginas",
-      totalItemsInfo: "({0} registros)",
-      totalItemInfo: "({0} registro)",
+      currentPageInfo: "Página {0} de {1}",
+      totalItemsInfo: "{0} registros",
+      totalItemInfo: "{0} registro",
       firstPageTooltip: "Primera página",
       lastPageTooltip: "Última página",
       nextPageTooltip: "Siguiente página",
       previousPageTooltip: "Página anterior",
-      nextPagerTooltip: "Ir a los siguientes elementos",
-      previousPagerTooltip: "Ir a los anteriores elementos",
+      nextPagerTooltip: "Siguientes páginas",
+      previousPagerTooltip: "Páginas anteriores",
       pagerDropDown: "Registros por página",
       pagerAllDropDown: "Registros",
       All: "Todos",
@@ -213,38 +227,37 @@ L10n.load({
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 /**
- * Arbitrary action that can be injected into the per-row action menu
- * from the parent page (e.g. "View history", "Generate invoice", etc.).
+ * Extra module-specific action injected into the per-row Split Button dropdown.
  */
 export interface MakaGridAction<T> {
-  /** Unique key (used as React key). */
+  /** Unique key (React key). */
   key: string;
   /** Already-translated display label. */
   label: string;
   /** Lucide icon component. */
   icon?: LucideIcon;
-  /** Permission string from P.* — hides the item when the user lacks it. */
+  /** Permission from P.* — hides the item when user lacks it. */
   perm?: string;
   /** Called when the user selects this action. */
   onClick: (row: T) => void;
-  /** Render a separator line before this item. */
+  /** Render a separator BEFORE this item. */
   dividerBefore?: boolean;
-  /** Red / destructive style. */
+  /** Red / destructive visual style. */
   destructive?: boolean;
 }
 
 /**
- * Permission strings for built-in MakaGrid actions.
- * Use values from the central `P` object.
+ * Permission strings for the built-in MakaGrid actions.
+ * Supply values from the central `P` object.
  */
 export interface MakaGridPermissions {
   /** Shows the "New" toolbar button. */
   create?: string;
-  /** Shows Edit in the row action menu. */
+  /** Shows "Edit" as the Split Button primary action. */
   edit?: string;
-  /** Shows Delete in the row action menu. */
+  /** Shows "Delete" in the dropdown (destructive). */
   delete?: string;
-  /** Shows Duplicate in the row action menu. */
+  /** Shows "Duplicate" in the dropdown. */
   duplicate?: string;
 }
 
@@ -255,40 +268,34 @@ export interface MakaGridProps<T extends object> {
   columns: ColumnModel[];
   /** Overlays a loading spinner when true. */
   isLoading?: boolean;
-  /** Base filename for Excel / PDF exports (without extension). */
+  /** Base filename for exports (without extension). Default "maka-export". */
   fileName?: string;
-  /**
-   * Grid body height.
-   * Defaults to "auto" for <1000 rows and "600px" for ≥1000 rows.
-   * Override with an explicit value if needed.
-   */
+  /** Grid body height. Defaults to "auto". */
   gridHeight?: number | string;
-  /** Force virtual scrolling regardless of dataset size. */
-  forceVirtual?: boolean;
-  /** Show Column Chooser button in toolbar (default: true). */
+  /** Show Column Chooser button in toolbar. Default true. */
   showColumnChooser?: boolean;
 
   // ── Navigation ──────────────────────────────────────────────────────────
-  /** Fired when a data row is clicked (the actions column is excluded). */
+  /** Fires when user clicks a data row (action column excluded). */
   onRowClick?: (row: T) => void;
 
-  // ── Permission guards ────────────────────────────────────────────────────
+  // ── Permissions ──────────────────────────────────────────────────────────
   permissions?: MakaGridPermissions;
 
-  // ── Built-in CRUD handlers ───────────────────────────────────────────────
-  /** Called by the toolbar "New" button when permissions.create is satisfied. */
+  // ── Built-in handlers ────────────────────────────────────────────────────
+  /** Called by the toolbar "New" button. */
   onCreate?: () => void;
-  /** Called by the Edit row action when permissions.edit is satisfied. */
+  /** Called by the Split Button primary / Edit dropdown item. */
   onEdit?: (row: T) => void;
-  /** Called by the Delete row action when permissions.delete is satisfied. */
+  /** Called by the Delete dropdown item. */
   onDelete?: (row: T) => void;
-  /** Called by the Duplicate row action when permissions.duplicate is satisfied. */
+  /** Called by the Duplicate dropdown item. */
   onDuplicate?: (row: T) => void;
 
-  // ── Extras ──────────────────────────────────────────────────────────────
+  // ── Extensibility ────────────────────────────────────────────────────────
   /**
-   * Additional module-specific actions appended to the per-row dropdown.
-   * Respect `dividerBefore` and `perm` on each action.
+   * Additional module-specific actions added to the row dropdown.
+   * Use `dividerBefore: true` to separate sections.
    */
   extraActions?: MakaGridAction<T>[];
 }
@@ -302,7 +309,6 @@ interface ActionsCtx<T> {
   onDelete: ((row: T) => void) | undefined;
   onDuplicate: ((row: T) => void) | undefined;
   extraActions: MakaGridAction<T>[];
-  tNew: string;
   tEdit: string;
   tDuplicate: string;
   tDelete: string;
@@ -319,8 +325,7 @@ export function MakaGrid<T extends object>({
   columns,
   isLoading = false,
   fileName = "maka-export",
-  gridHeight,
-  forceVirtual = false,
+  gridHeight = "auto",
   showColumnChooser = true,
   onRowClick,
   permissions,
@@ -333,29 +338,21 @@ export function MakaGrid<T extends object>({
   const { t, i18n } = useTranslation("common");
   const gridRef = useRef<GridComponent | null>(null);
   const authCtx = useContext(AuthContext);
+  const [goToPageValue, setGoToPageValue] = useState("");
 
   // ── Permission resolution ────────────────────────────────────────────────
   const userPerms = authCtx?.user?.permissions ?? [];
+  const canCreate  = !!onCreate && (!permissions?.create || userPerms.includes(permissions.create));
+  const hasActions = !!(onEdit || onDelete || onDuplicate || (extraActions && extraActions.length > 0));
 
-  const canCreate    = !!onCreate    && (!permissions?.create    || userPerms.includes(permissions.create));
-  const hasActions   = !!(onEdit || onDelete || onDuplicate || (extraActions && extraActions.length > 0));
-
-  // ── Virtual scrolling decision ───────────────────────────────────────────
-  const useVirtual = forceVirtual || dataSource.length >= VIRTUAL_THRESHOLD;
-
-  // When virtual, fix height; when paginated, allow auto-grow or use provided value.
-  const resolvedHeight = gridHeight ?? (useVirtual ? "600px" : "auto");
-
-  // ── Locale normalisation ─────────────────────────────────────────────────
-  // i18next may return "es-CO", "es-419" etc. — normalise to the keys in L10n.
+  // ── Locale normalisation (es-CO → es, en-US → en) ────────────────────────
   const locale = i18n.language.startsWith("es") ? "es" : "en";
 
-  // ── Actions context ref (stable template reads latest values) ─────────────
+  // ── Actions context ref ───────────────────────────────────────────────────
   //
-  // The template function is created ONCE (useMemo, empty deps) so Syncfusion
-  // receives the same function reference across renders, preventing unnecessary
-  // grid re-initialisation. It reads from this ref at *call time*, so it always
-  // has the current permissions/handlers.
+  // The template function is created ONCE (empty useMemo deps) so Syncfusion
+  // receives the same function reference across renders. Values read from the
+  // ref at call-time → always current.
   const actionsCtxRef = useRef<ActionsCtx<T>>({
     userPerms: [],
     permissions,
@@ -363,17 +360,12 @@ export function MakaGrid<T extends object>({
     onDelete,
     onDuplicate,
     extraActions: extraActions ?? [],
-    tNew: "",
-    tEdit: "",
-    tDuplicate: "",
-    tDelete: "",
-    tExcelRow: "",
-    tPdfRow: "",
+    tEdit: "", tDuplicate: "", tDelete: "", tExcelRow: "", tPdfRow: "",
     gridRef,
     fileName,
   });
 
-  // Sync the ref before every render (synchronous — before GridComponent sees props).
+  // Sync ref before every render (sync, before GridComponent sees props).
   actionsCtxRef.current = {
     userPerms,
     permissions,
@@ -381,20 +373,19 @@ export function MakaGrid<T extends object>({
     onDelete,
     onDuplicate,
     extraActions: extraActions ?? [],
-    tNew:        t("grid.newRecord"),
-    tEdit:       t("actions.edit"),
-    tDuplicate:  t("grid.duplicate"),
-    tDelete:     t("actions.delete"),
-    tExcelRow:   t("grid.exportExcelRow"),
-    tPdfRow:     t("grid.exportPdfRow"),
+    tEdit:     t("actions.edit"),
+    tDuplicate:t("grid.duplicate"),
+    tDelete:   t("actions.delete"),
+    tExcelRow: t("grid.exportExcelRow"),
+    tPdfRow:   t("grid.exportPdfRow"),
     gridRef,
     fileName,
   };
 
-  // ── Per-row actions dropdown template ─────────────────────────────────────
+  // ── Split Button action column template ───────────────────────────────────
   const actionColumnTemplate = useMemo(() => {
     // eslint-disable-next-line react/display-name
-    return function ActionCell(rowData: Record<string, unknown>) {
+    return function SplitActionCell(rowData: Record<string, unknown>) {
       const ctx = actionsCtxRef.current;
       const up  = ctx.userPerms;
 
@@ -405,139 +396,159 @@ export function MakaGrid<T extends object>({
 
       if (!canEdit && !canDelete && !canDuplicate && visExtras.length === 0) return null;
 
-      const topItems    = visExtras.filter(a => !a.dividerBefore);
-      const bottomItems = visExtras.filter(a =>  a.dividerBefore);
-      const hasSep1     = (canEdit || canDuplicate || topItems.length > 0) && (canDelete || bottomItems.length > 0);
+      // ── Primary action (left button of the split) ──────────────────────
+      // Priority: Edit → first non-destructive extra → Duplicate → Delete
+      const firstExtra     = visExtras.find(a => !a.destructive);
+      const PrimaryIcon    = canEdit ? Pencil : (firstExtra?.icon ?? null);
+      const primaryLabel   = canEdit ? ctx.tEdit : (firstExtra?.label ?? "");
+      const primaryAction  = canEdit
+        ? () => ctx.onEdit?.(rowData as T)
+        : firstExtra
+          ? () => firstExtra.onClick(rowData as T)
+          : null;
+
+      // ── Dropdown items ─────────────────────────────────────────────────
+      // Always include ALL actions in the dropdown for discoverability.
+      const hasTopItems = canEdit || canDuplicate || visExtras.some(a => !a.dividerBefore);
+      const hasBottomItems = canDelete || visExtras.some(a => a.dividerBefore);
 
       return (
         <div
           className="flex items-center justify-center"
-          // Prevent row-click from firing when interacting with the dropdown.
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <div className="inline-flex rounded-md border border-[var(--color-border)] overflow-hidden">
+
+            {/* Primary action button (left) */}
+            {primaryAction && (
               <button
                 type="button"
-                aria-label={ctx.tNew}
+                title={primaryLabel}
+                onClick={primaryAction}
                 className={[
-                  "grid h-7 w-7 cursor-pointer place-items-center rounded-md",
-                  "text-[var(--color-muted-foreground)]",
-                  "hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+                  "flex h-[1.75rem] items-center gap-1 px-2",
+                  "text-[0.75rem] font-medium text-[var(--color-muted-foreground)]",
+                  "bg-[var(--color-card)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
+                  "border-r border-[var(--color-border)]",
                   "transition-colors duration-[var(--duration-fast,150ms)]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-ring)]",
                 ].join(" ")}
               >
-                <MoreHorizontal className="size-4" />
+                {PrimaryIcon && <PrimaryIcon className="size-3.5 shrink-0" />}
+                <span className="hidden xl:inline">{primaryLabel}</span>
               </button>
-            </DropdownMenuTrigger>
+            )}
 
-            <DropdownMenuContent align="end" className="min-w-[10rem]">
-              {/* Edit */}
-              {canEdit && (
-                <DropdownMenuItem onClick={() => ctx.onEdit?.(rowData as T)}>
-                  <Pencil className="size-3.5" />
-                  {ctx.tEdit}
-                </DropdownMenuItem>
-              )}
-
-              {/* Duplicate */}
-              {canDuplicate && (
-                <DropdownMenuItem onClick={() => ctx.onDuplicate?.(rowData as T)}>
-                  <Copy className="size-3.5" />
-                  {ctx.tDuplicate}
-                </DropdownMenuItem>
-              )}
-
-              {/* Module-specific extras (no divider) */}
-              {topItems.map(a => (
-                <DropdownMenuItem
-                  key={a.key}
-                  destructive={a.destructive}
-                  onClick={() => a.onClick(rowData as T)}
+            {/* Dropdown trigger (right arrow) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("grid.actions")}
+                  className={[
+                    "flex h-[1.75rem] w-[1.625rem] items-center justify-center",
+                    "bg-[var(--color-card)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]",
+                    "text-[var(--color-muted-foreground)]",
+                    "transition-colors duration-[var(--duration-fast,150ms)]",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-ring)]",
+                  ].join(" ")}
                 >
-                  {a.icon && <a.icon className="size-3.5" />}
-                  {a.label}
-                </DropdownMenuItem>
-              ))}
+                  <ChevronDown className="size-3.5" />
+                </button>
+              </DropdownMenuTrigger>
 
-              {/* Export row as Excel */}
-              <DropdownMenuItem
-                onClick={() => {
-                  const props: ExcelExportProperties = {
-                    dataSource: [rowData],
-                    fileName: `${ctx.fileName}-row.xlsx`,
-                  };
+              <DropdownMenuContent align="end" className="min-w-[11rem]">
+
+                {/* Edit */}
+                {canEdit && (
+                  <DropdownMenuItem onClick={() => ctx.onEdit?.(rowData as T)}>
+                    <Pencil className="size-3.5" />
+                    {ctx.tEdit}
+                  </DropdownMenuItem>
+                )}
+
+                {/* Duplicate */}
+                {canDuplicate && (
+                  <DropdownMenuItem onClick={() => ctx.onDuplicate?.(rowData as T)}>
+                    <Copy className="size-3.5" />
+                    {ctx.tDuplicate}
+                  </DropdownMenuItem>
+                )}
+
+                {/* Non-divider extras */}
+                {visExtras.filter(a => !a.dividerBefore).map(a => (
+                  <DropdownMenuItem key={a.key} destructive={a.destructive} onClick={() => a.onClick(rowData as T)}>
+                    {a.icon && <a.icon className="size-3.5" />}
+                    {a.label}
+                  </DropdownMenuItem>
+                ))}
+
+                {/* Export row */}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {
+                  const props: ExcelExportProperties = { dataSource: [rowData], fileName: `${ctx.fileName}-row.xlsx` };
                   void ctx.gridRef.current?.excelExport(props);
-                }}
-              >
-                <FileSpreadsheet className="size-3.5" />
-                {ctx.tExcelRow}
-              </DropdownMenuItem>
-
-              {/* Export row as PDF */}
-              <DropdownMenuItem
-                onClick={() => {
-                  const props: PdfExportProperties = {
-                    dataSource: { result: [rowData], count: 1 },
-                    fileName: `${ctx.fileName}-row.pdf`,
-                  };
+                }}>
+                  <FileSpreadsheet className="size-3.5" />
+                  {ctx.tExcelRow}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const props: PdfExportProperties = { dataSource: { result: [rowData], count: 1 }, fileName: `${ctx.fileName}-row.pdf` };
                   void ctx.gridRef.current?.pdfExport(props);
-                }}
-              >
-                <FileText className="size-3.5" />
-                {ctx.tPdfRow}
-              </DropdownMenuItem>
-
-              {/* Separator before destructive zone */}
-              {hasSep1 && <DropdownMenuSeparator />}
-
-              {/* Module-specific extras (with divider) */}
-              {bottomItems.map(a => (
-                <DropdownMenuItem
-                  key={a.key}
-                  destructive={a.destructive}
-                  onClick={() => a.onClick(rowData as T)}
-                >
-                  {a.icon && <a.icon className="size-3.5" />}
-                  {a.label}
+                }}>
+                  <FileText className="size-3.5" />
+                  {ctx.tPdfRow}
                 </DropdownMenuItem>
-              ))}
 
-              {/* Delete (always last, destructive) */}
-              {canDelete && (
-                <DropdownMenuItem
-                  destructive
-                  onClick={() => ctx.onDelete?.(rowData as T)}
-                >
-                  <Trash2 className="size-3.5" />
-                  {ctx.tDelete}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {/* Divider-before extras */}
+                {visExtras.filter(a => a.dividerBefore).map(a => (
+                  <span key={a.key}>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem destructive={a.destructive} onClick={() => a.onClick(rowData as T)}>
+                      {a.icon && <a.icon className="size-3.5" />}
+                      {a.label}
+                    </DropdownMenuItem>
+                  </span>
+                ))}
+
+                {/* Delete (last, destructive) */}
+                {canDelete && (
+                  <>
+                    {(hasTopItems) && <DropdownMenuSeparator />}
+                    <DropdownMenuItem destructive onClick={() => ctx.onDelete?.(rowData as T)}>
+                      <Trash2 className="size-3.5" />
+                      {ctx.tDelete}
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {void hasBottomItems /* suppress unused warning */}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       );
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Stable reference — reads from actionsCtxRef.current at call time.
+  }, []); // Stable reference — reads actionsCtxRef.current at call time.
 
   // ── Action column definition ──────────────────────────────────────────────
   const actionColumn: ColumnModel | null = hasActions
     ? {
         field: ACTIONS_FIELD,
-        headerText: "",
-        width: 56,
-        minWidth: 56,
-        maxWidth: 56,
+        headerText: t("grid.actions"),
+        width: 110,
+        minWidth: 88,
+        maxWidth: 140,
         allowSorting: false,
         allowFiltering: false,
         allowGrouping: false,
-        allowResizing: false,
+        allowResizing: true,
         allowReordering: false,
         template: actionColumnTemplate as unknown as string,
         textAlign: "Center",
+        headerTextAlign: "Center",
         customAttributes: { class: "maka-actions-cell" },
       }
     : null;
@@ -545,7 +556,10 @@ export function MakaGrid<T extends object>({
   const allColumns: ColumnModel[] = actionColumn ? [...columns, actionColumn] : columns;
 
   // ── Toolbar ───────────────────────────────────────────────────────────────
-  type CustomItem = { text: string; tooltipText: string; prefixIcon: string; id: string; align: "Left" | "Right" | "Center" };
+  type CustomItem = {
+    text: string; tooltipText: string; prefixIcon: string;
+    id: string; align: "Left" | "Right" | "Center";
+  };
 
   const customNewBtn: CustomItem = {
     text: t("grid.newRecord"),
@@ -555,53 +569,58 @@ export function MakaGrid<T extends object>({
     align: "Left",
   };
 
+  // No "Search" (pages have their own search) and no "Separator" clutter.
   const toolbarItems: (ToolbarItems | CustomItem)[] = [
     ...(canCreate ? [customNewBtn] : []),
-    "Search" as ToolbarItems,
-    "Separator" as ToolbarItems,
     "ExcelExport" as ToolbarItems,
-    "PdfExport" as ToolbarItems,
+    "PdfExport"   as ToolbarItems,
     ...(showColumnChooser ? ["ColumnChooser" as ToolbarItems] : []),
   ];
 
   // ── Toolbar click handler ─────────────────────────────────────────────────
-  const handleToolbarClick = useCallback((args: { item?: { id?: string; text?: string } }) => {
-    const id = args.item?.id ?? "";
-    if (id === "maka_create_btn" || id.endsWith("_add")) {
-      onCreate?.();
-    } else if (id.endsWith("_excelexport")) {
-      const props: ExcelExportProperties = { fileName: `${fileName}.xlsx` };
-      void gridRef.current?.excelExport(props);
-    } else if (id.endsWith("_pdfexport")) {
-      const props: PdfExportProperties = { fileName: `${fileName}.pdf` };
-      void gridRef.current?.pdfExport(props);
-    }
-  }, [onCreate, fileName]);
+  const handleToolbarClick = useCallback(
+    (args: { item?: { id?: string } }) => {
+      const id = args.item?.id ?? "";
+      if (id === "maka_create_btn") {
+        onCreate?.();
+      } else if (id.endsWith("_excelexport")) {
+        const props: ExcelExportProperties = { fileName: `${fileName}.xlsx` };
+        void gridRef.current?.excelExport(props);
+      } else if (id.endsWith("_pdfexport")) {
+        const props: PdfExportProperties = { fileName: `${fileName}.pdf` };
+        void gridRef.current?.pdfExport(props);
+      }
+    },
+    [onCreate, fileName],
+  );
 
   // ── Row click → navigation ────────────────────────────────────────────────
-  const handleRecordClick = useCallback((args: RecordClickEventArgs) => {
-    // Skip if user clicked the actions column.
-    const clickedField = (args.column as { field?: string } | undefined)?.field;
-    if (clickedField === ACTIONS_FIELD) return;
-    if (onRowClick && args.rowData) {
-      onRowClick(args.rowData as T);
-    }
-  }, [onRowClick]);
+  const handleRecordClick = useCallback(
+    (args: RecordClickEventArgs) => {
+      const clickedField = (args.column as { field?: string } | undefined)?.field;
+      if (clickedField === ACTIONS_FIELD) return;
+      if (onRowClick && args.rowData) onRowClick(args.rowData as T);
+    },
+    [onRowClick],
+  );
 
-  // ── Services to inject ────────────────────────────────────────────────────
-  // Group is incompatible with virtual scrolling.
-  const services = useVirtual
-    ? [Page, Sort, Filter, Toolbar, ExcelExport, PdfExport, Search, VirtualScroll, Resize, Reorder, ColumnChooser, Clipboard]
-    : [Page, Sort, Filter, Group, Toolbar, ExcelExport, PdfExport, Search, Resize, Reorder, ColumnChooser, Clipboard];
+  // ── Go to page ────────────────────────────────────────────────────────────
+  const handleGoToPage = useCallback(() => {
+    const n = parseInt(goToPageValue, 10);
+    if (!Number.isNaN(n) && n >= 1) {
+      gridRef.current?.goToPage(n);
+      setGoToPageValue("");
+    }
+  }, [goToPageValue]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative">
+    <div className="relative flex flex-col gap-0">
       {/* Loading overlay */}
       {isLoading && (
         <div
           className="absolute inset-0 z-20 flex items-center justify-center rounded-[0.75rem] bg-[var(--color-card)]/70 backdrop-blur-sm"
-          aria-busy="true"
+          aria-busy
           aria-label={t("grid.loading")}
         >
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent" />
@@ -612,33 +631,33 @@ export function MakaGrid<T extends object>({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={gridRef as any}
         dataSource={dataSource}
-        height={resolvedHeight}
+        height={gridHeight}
         locale={locale}
         /* ── Features ── */
-        allowPaging={!useVirtual}
+        allowPaging
         allowSorting
         allowFiltering
-        allowGrouping={!useVirtual}
+        allowGrouping
         allowExcelExport
         allowPdfExport
         allowResizing
         allowReordering
-        allowTextWrap={false}
         showColumnChooser={showColumnChooser}
-        enableVirtualization={useVirtual}
         enableAltRow
         clipMode="EllipsisWithTooltip"
         enablePersistence={false}
         /* ── Settings ── */
         filterSettings={{ type: "Excel" }}
-        pageSettings={{ pageSize: 20, pageSizes: [10, 20, 50, 100] }}
+        pageSettings={{
+          pageSize: 20,
+          pageSizes: [20, 50, 100, 1000, "All"],
+        }}
         selectionSettings={{ type: "Single", mode: "Row" }}
         /* ── Toolbar ── */
         toolbar={toolbarItems as ToolbarItems[]}
         toolbarClick={handleToolbarClick}
-        /* ── Row interaction ── */
+        /* ── Interaction ── */
         recordClick={handleRecordClick}
-        /* ── Row cursor hint ── */
         rowDataBound={(args) => {
           if (onRowClick && args.row) {
             (args.row as HTMLElement).style.cursor = "pointer";
@@ -653,8 +672,36 @@ export function MakaGrid<T extends object>({
             />
           ))}
         </ColumnsDirective>
-        <Inject services={services} />
+        <Inject
+          services={[
+            Page, Sort, Filter, Group, Toolbar,
+            ExcelExport, PdfExport,
+            Resize, Reorder, ColumnChooser, Clipboard,
+          ]}
+        />
       </GridComponent>
+
+      {/* Go-to-page control — sits just below the grid's built-in pager */}
+      <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-[12px] text-[var(--color-muted-foreground)]">
+        <span>{t("grid.goToPage") ?? "Ir a página"}</span>
+        <input
+          type="number"
+          min={1}
+          value={goToPageValue}
+          onChange={(e) => setGoToPageValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleGoToPage();
+          }}
+          onBlur={handleGoToPage}
+          className={[
+            "w-16 rounded-md border border-[var(--color-border)] bg-[var(--color-input)]",
+            "px-2 py-1 text-center font-mono text-[12px] text-[var(--color-foreground)]",
+            "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]",
+            "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          ].join(" ")}
+          placeholder="—"
+        />
+      </div>
     </div>
   );
 }
