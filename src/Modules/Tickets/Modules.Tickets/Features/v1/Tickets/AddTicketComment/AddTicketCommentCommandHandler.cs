@@ -36,8 +36,13 @@ public sealed class AddTicketCommentCommandHandler(
             .ConfigureAwait(false)
             ?? throw new NotFoundException($"Ticket {command.TicketId} not found.");
 
-        var commentId = ticket.AddComment(authorId, command.Body);
+        var comment = ticket.AddComment(authorId, command.Body);
+        // Register the new comment with the DbSet so EF tracks it as Added.
+        // The aggregate also holds it in its Comments navigation, but the
+        // client-generated Guid key makes EF mis-detect a navigation-only add
+        // as Modified (→ UPDATE 0 rows → DbUpdateConcurrencyException).
+        await dbContext.TicketComments.AddAsync(comment, cancellationToken).ConfigureAwait(false);
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        return commentId;
+        return comment.Id;
     }
 }

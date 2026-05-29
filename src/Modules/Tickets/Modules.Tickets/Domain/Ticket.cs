@@ -151,7 +151,7 @@ public sealed class Ticket : AggregateRoot<Guid>, ISoftDeletable
         TransitionStatus(AssignedToUserId is null ? TicketStatus.Open : TicketStatus.InProgress);
     }
 
-    public Guid AddComment(Guid authorUserId, string body)
+    public TicketComment AddComment(Guid authorUserId, string body)
     {
         if (Status == TicketStatus.Closed)
         {
@@ -168,7 +168,12 @@ public sealed class Ticket : AggregateRoot<Guid>, ISoftDeletable
         AddDomainEvent(DomainEvent.Create<TicketCommentAddedDomainEvent>(
             (id, ts) => new TicketCommentAddedDomainEvent(Id, comment.Id, authorUserId, id, ts)));
 
-        return comment.Id;
+        // Return the new comment so the handler can register it with the DbSet
+        // explicitly (EntityState.Added). Relying only on the navigation
+        // collection lets EF mis-detect the client-generated key (the Guid set
+        // in Create) as Modified, producing an UPDATE that affects 0 rows and
+        // throws DbUpdateConcurrencyException.
+        return comment;
     }
 
     private void TransitionStatus(TicketStatus next)
