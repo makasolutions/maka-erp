@@ -889,20 +889,25 @@ export function MakaGrid<T extends object>({
     [serverPaging],
   );
 
-  // In server mode the grid can leave its own loading spinner up when an
-  // external filter change swaps the dataSource (no dataStateChange round-trip)
-  // or when the result is empty — hide it once data is bound.
-  const handleDataBound = useCallback(() => {
-    injectGoToPage();
-    if (serverMode) {
+  // In server mode Syncfusion uses custom binding ({ result, count }). External
+  // filter changes swap the dataSource WITHOUT firing dataBound/actionComplete,
+  // and the built-in spinner is left showing on empty results. We drive the
+  // loading indicator with our own overlay (isLoading), so keep Syncfusion's
+  // spinner suppressed once the data settles (immediately + a deferred backup
+  // in case the grid re-shows it during its async refresh).
+  useEffect(() => {
+    if (!serverMode) return;
+    const hide = () => {
       try {
         gridRef.current?.hideSpinner();
       } catch {
         /* grid not ready */
       }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [injectGoToPage, serverMode]);
+    };
+    hide();
+    const id = window.setTimeout(hide, 80);
+    return () => window.clearTimeout(id);
+  }, [serverMode, dataSource, serverPaging?.totalCount, serverPaging?.page, isLoading]);
 
   const pageSettings = serverMode
     ? {
@@ -960,7 +965,7 @@ export function MakaGrid<T extends object>({
         recordClick={handleRecordClick}
         {...(serverMode ? { dataStateChange: handleDataStateChange } : {})}
         created={injectGoToPage}
-        dataBound={handleDataBound}
+        dataBound={injectGoToPage}
         rowDataBound={(args) => {
           if (onRowClick && args.row) {
             (args.row as HTMLElement).style.cursor = "pointer";

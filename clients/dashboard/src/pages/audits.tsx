@@ -586,7 +586,7 @@ function AuditsMakaSection() {
       <MakaGrid<AuditRow>
         dataSource={rows}
         columns={columns}
-        isLoading={listQuery.isLoading && rows.length === 0}
+        isLoading={listQuery.isFetching}
         fileName="auditoria"
         entityName={t("audits.unit")}
         onRowClick={(row) => setDrawerId(row.id)}
