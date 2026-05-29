@@ -546,7 +546,8 @@ export function MakaGrid<T extends object>({
         allowGrouping: false,
         allowResizing: true,
         allowReordering: false,
-        template: actionColumnTemplate as unknown as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        template: actionColumnTemplate as any,
         textAlign: "Center",
         headerTextAlign: "Center",
         customAttributes: { class: "maka-actions-cell" },
@@ -615,7 +616,7 @@ export function MakaGrid<T extends object>({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex flex-col gap-0">
+    <div className="maka-grid-wrapper relative flex flex-col gap-0">
       {/* Loading overlay */}
       {isLoading && (
         <div

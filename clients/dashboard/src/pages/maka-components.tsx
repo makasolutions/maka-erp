@@ -7,9 +7,11 @@
  * Demonstrates all five Maka* Syncfusion wrappers with realistic mock
  * data drawn from Tecnoimportaciones' product catalog.
  */
+import { toast } from "sonner";
 import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler } from "@/components/maka";
 import type { KanbanColumn } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
+import { P } from "@/auth/permissions";
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -307,6 +309,17 @@ export function MakaComponentsPage() {
             dataSource={DEMO_PRODUCTS_1200}
             columns={GRID_COLUMNS}
             fileName="productos-maka"
+            permissions={{
+              create:    P.catalog.products.create,
+              edit:      P.catalog.products.update,
+              delete:    P.catalog.products.delete,
+              duplicate: P.catalog.products.create,
+            }}
+            onCreate={() => toast.info("Demo: crear producto")}
+            onEdit={(row) => toast.info(`Demo: editar ${(row as { name: string }).name}`)}
+            onDelete={(row) => toast.warning(`Demo: eliminar ${(row as { name: string }).name}`)}
+            onDuplicate={(row) => toast.info(`Demo: duplicar ${(row as { name: string }).name}`)}
+            onRowClick={(row) => toast.info(`Demo: clic en fila — ${(row as { sku: string }).sku}`)}
           />
         </div>
       </section>
