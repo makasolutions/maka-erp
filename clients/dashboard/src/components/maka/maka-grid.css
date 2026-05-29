@@ -19,10 +19,6 @@
    Bootstrap5 (which Syncfusion's theme extends) reads --bs-* variables.
    Overriding them on the grid root cascades to most Syncfusion components.
 ══════════════════════════════════════════════════════════════════════════════ */
-.maka-grid-wrapper {
-  /* lucide "Eye" SVG, used as a CSS mask for the column-chooser button icon */
-  --maka-eye-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
-}
 .maka-grid-wrapper .e-grid {
   --bs-body-bg:       var(--color-card);
   --bs-body-color:    var(--color-foreground);
@@ -235,24 +231,10 @@
   color: var(--color-foreground) !important;
   opacity: 1 !important;
 }
-/* Swap the built-in columns glyph (\e70d) for a lucide Eye via CSS mask.
-   font-size:0 drops the glyph char; the ::before becomes a masked box. */
+/* No leading icon — just "Columnas" text + chevron. Hide the built-in glyph. */
 .maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-columnchooser-btn,
 .maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-icons {
-  font-size: 0 !important;
-  color: var(--color-foreground) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-}
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-columnchooser-btn::before,
-.maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn .e-icons::before {
-  content: "" !important;
-  width: 1rem;
-  height: 1rem;
-  display: inline-block;
-  background-color: currentColor;
-  -webkit-mask: var(--maka-eye-mask) center / contain no-repeat;
-  mask: var(--maka-eye-mask) center / contain no-repeat;
+  display: none !important;
 }
 /* Chevron-down — identical shape to the Split Button's lucide ChevronDown */
 .maka-grid-wrapper .e-grid .e-toolbar .e-cc-toolbar .e-tbar-btn::after {
@@ -669,6 +651,14 @@ html body .e-excelfilter .e-contextmenu-wrapper ul li.e-menu-item.e-focused {
 html body .e-excel-menu li.e-disabled {
   opacity: 0.4 !important;
 }
+/* Value-list row hover — soft-accent fill (matches grid rows + menu-selected) */
+html body .e-excelfilter .e-checkboxlist .e-ftrchk:hover,
+html body .e-checkboxfilter .e-checkboxlist .e-ftrchk:hover,
+html body .e-excelfilter .e-ftrchk:hover,
+html body .e-checkboxfilter .e-ftrchk:hover {
+  background-color: var(--color-primary-soft) !important;
+  cursor: pointer;
+}
 /* Checkbox marks inside the value list */
 html body .e-excelfilter .e-checkbox-wrapper .e-frame,
 html body .e-checkboxfilter .e-checkbox-wrapper .e-frame {
@@ -775,6 +765,12 @@ html body .e-ccdlg .e-checkbox-wrapper .e-label {
 /* Each chooser row a touch more breathing room */
 html body .e-ccdlg .e-cc-contentdiv .e-cclist {
   padding: 0.3rem 0.5rem !important;
+}
+/* Chooser row hover — soft-accent fill (matches filter list + grid rows) */
+html body .e-ccdlg .e-cclist:hover,
+html body .e-ccdlg .e-ccul-ele .e-cclist:hover {
+  background-color: var(--color-primary-soft) !important;
+  cursor: pointer;
 }
 
 /* ── Empty record placeholder ───────────────────────────────────────────── */
