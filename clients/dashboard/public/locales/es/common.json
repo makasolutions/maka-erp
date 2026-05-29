@@ -441,6 +441,7 @@
     "source": "Fuente",
     "sourcePlaceholder": "api.identity.RegisterUser",
     "userId": "ID de usuario",
+    "user": "Usuario",
     "userIdPlaceholder": "00000000-0000-…",
     "correlation": "Correlación",
     "correlationPlaceholder": "0HMxxxx…",

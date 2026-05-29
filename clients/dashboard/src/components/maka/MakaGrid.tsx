@@ -343,8 +343,16 @@ export interface MakaGridServerPaging {
   page: number;
   /** Page-size options. Default [20, 50, 100]. */
   pageSizes?: (number | string)[];
-  /** Fires when the user pages or changes page size. */
-  onChange: (next: { page: number; pageSize: number }) => void;
+  /**
+   * Fires when the user pages, changes page size, or sorts a column. `sort`
+   * carries the grid column field + direction (null when sorting cleared) so
+   * the page can translate it to its API's sort parameter.
+   */
+  onChange: (next: {
+    page: number;
+    pageSize: number;
+    sort?: { field: string; dir: "asc" | "desc" } | null;
+  }) => void;
 }
 
 export interface MakaGridProps<T extends object> {
@@ -858,17 +866,43 @@ export function MakaGrid<T extends object>({
     : dataSource;
 
   const handleDataStateChange = useCallback(
-    (state: { skip?: number; take?: number }) => {
+    (state: {
+      skip?: number;
+      take?: number;
+      sorted?: Array<{ name?: string; direction?: string }>;
+    }) => {
       if (!serverPaging) return;
       const take = state.take || serverPaging.pageSize;
       const skip = state.skip || 0;
       const nextPage = Math.floor(skip / take) + 1;
-      if (nextPage !== serverPaging.page || take !== serverPaging.pageSize) {
-        serverPaging.onChange({ page: nextPage, pageSize: take });
-      }
+      const sortDesc = state.sorted?.[0];
+      const sort = sortDesc?.name
+        ? {
+            field: sortDesc.name,
+            dir: (sortDesc.direction ?? "ascending").toLowerCase().startsWith("desc")
+              ? ("desc" as const)
+              : ("asc" as const),
+          }
+        : null;
+      serverPaging.onChange({ page: nextPage, pageSize: take, sort });
     },
     [serverPaging],
   );
+
+  // In server mode the grid can leave its own loading spinner up when an
+  // external filter change swaps the dataSource (no dataStateChange round-trip)
+  // or when the result is empty — hide it once data is bound.
+  const handleDataBound = useCallback(() => {
+    injectGoToPage();
+    if (serverMode) {
+      try {
+        gridRef.current?.hideSpinner();
+      } catch {
+        /* grid not ready */
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [injectGoToPage, serverMode]);
 
   const pageSettings = serverMode
     ? {
@@ -904,7 +938,7 @@ export function MakaGrid<T extends object>({
         emptyRecordTemplate={emptyTemplate as any}
         /* ── Features ── */
         allowPaging
-        allowSorting={!serverMode}
+        allowSorting
         allowFiltering={!serverMode}
         allowGrouping={!serverMode}
         allowExcelExport
@@ -926,7 +960,7 @@ export function MakaGrid<T extends object>({
         recordClick={handleRecordClick}
         {...(serverMode ? { dataStateChange: handleDataStateChange } : {})}
         created={injectGoToPage}
-        dataBound={injectGoToPage}
+        dataBound={handleDataBound}
         rowDataBound={(args) => {
           if (onRowClick && args.row) {
             (args.row as HTMLElement).style.cursor = "pointer";

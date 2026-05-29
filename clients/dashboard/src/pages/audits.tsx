@@ -259,6 +259,7 @@ type AuditRow = AuditSummaryDto & {
   occurredAt: Date;
   timeLabel: string;
   dateLabel: string;
+  operationLabel: string;
 };
 
 // ── Cell templates (hook-free; read enriched fields) ──────────────────────
@@ -308,6 +309,19 @@ function AuditDateCell(row: AuditRow) {
     </div>
   );
 }
+function AuditOperationCell(row: AuditRow) {
+  if (!row.entityOperation) {
+    return <span className="text-[12.5px] text-[var(--color-muted-foreground)]">—</span>;
+  }
+  return (
+    <span
+      className="inline-flex items-center rounded-md px-2 py-0.5 text-[11.5px] font-medium"
+      style={operationBadgeStyle(row.entityOperation)}
+    >
+      {row.operationLabel}
+    </span>
+  );
+}
 
 // ── KPI card ──────────────────────────────────────────────────────────────
 function AuditKpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
@@ -332,9 +346,8 @@ function AuditsMakaSection() {
 
   const [panelOpen, setPanelOpen] = useState(true);
   const [resetKey, setResetKey] = useState(0);
-  // Default to the current month — audit review spans a wider window than a
-  // single day, and not every tenant has events "today".
-  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("month"));
+  // Default to today's events.
+  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("today"));
   // Stored as stringified enum values because EntityFilterPill keys on string.
   const [eventType, setEventType] = useState<string | null>(null);
   const [severity, setSeverity] = useState<string | null>(null);
@@ -346,9 +359,10 @@ function AuditsMakaSection() {
   const [operation, setOperation] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
 
-  // Server-side pagination state (the grid pages against the API).
+  // Server-side pagination + sort state (the grid pages/sorts against the API).
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sort, setSort] = useState<string | undefined>(undefined);
 
   const fromUtc = createdRange?.start.toISOString();
   const toUtc = createdRange?.end.toISOString();
@@ -383,14 +397,27 @@ function AuditsMakaSection() {
     setSearch("");
     setEntityName(null);
     setOperation(null);
-    setCreatedRange(makaPresetRange("month"));
+    setCreatedRange(makaPresetRange("today"));
     setPage(1);
+    setSort(undefined);
     setResetKey((k) => k + 1);
   };
 
+  // Maps a grid column field to the API sort field.
+  const sortFieldFor = (field: string): string | undefined =>
+    ({
+      occurredAt: "occurredAtUtc",
+      actorName: "userName",
+      eventTypeLabel: "eventType",
+      severityLabel: "severity",
+      entityText: "entityName",
+      sourceText: "source",
+      operationLabel: "entityOperation",
+    })[field];
+
   const listQuery = useQuery({
-    queryKey: ["audits", "maka-list", filterParams, page, pageSize],
-    queryFn: ({ signal }) => listAudits({ pageNumber: page, pageSize, ...filterParams }, signal),
+    queryKey: ["audits", "maka-list", filterParams, page, pageSize, sort],
+    queryFn: ({ signal }) => listAudits({ pageNumber: page, pageSize, sort, ...filterParams }, signal),
     placeholderData: keepPreviousData,
     staleTime: 5_000,
   });
@@ -420,6 +447,9 @@ function AuditsMakaSection() {
         occurredAt: new Date(a.occurredAtUtc),
         timeLabel: formatTime(a.occurredAtUtc),
         dateLabel: formatDate(a.occurredAtUtc),
+        operationLabel: a.entityOperation
+          ? t(`audits.operations.${a.entityOperation.charAt(0).toLowerCase()}${a.entityOperation.slice(1)}`)
+          : "—",
       })),
     [listQuery.data, t, formatTime, formatDate],
   );
@@ -529,6 +559,8 @@ function AuditsMakaSection() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "entityText", headerText: t("audits.columns.entity"), template: AuditEntityCell as any, minWidth: 160 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "operationLabel", headerText: t("audits.entityOperation"), template: AuditOperationCell as any, width: 130 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "sourceText", headerText: t("audits.source"), template: AuditSourceCell as any, minWidth: 160 },
     ],
     [t],
@@ -565,7 +597,7 @@ function AuditsMakaSection() {
             <MakaFilterField label={t("audits.columns.date")}>
               <MakaDateRangePicker
                 key={`range-${resetKey}`}
-                defaultPreset="month"
+                defaultPreset="today"
                 value={createdRange}
                 onChange={setCreatedRange}
               />
@@ -591,7 +623,7 @@ function AuditsMakaSection() {
                 ))}
               </FieldSelect>
             </MakaFilterField>
-            <MakaFilterField label={t("audits.userId")}>
+            <MakaFilterField label={t("audits.user")}>
               <FieldSelect value={userId ?? ""} onChange={(v) => setUserId(v || null)} className="w-52">
                 {userOptions.map((o) => (
                   <option key={o.value ?? "all"} value={o.value ?? ""}>{o.label}</option>
@@ -642,9 +674,17 @@ function AuditsMakaSection() {
           page,
           pageSize,
           pageSizes: [20, 50, 100],
-          onChange: ({ page: p, pageSize: ps }) => {
+          onChange: ({ page: p, pageSize: ps, sort: s }) => {
             setPage(p);
             setPageSize(ps);
+            if (s !== undefined) {
+              if (!s) {
+                setSort(undefined);
+              } else {
+                const apiField = sortFieldFor(s.field);
+                setSort(apiField ? `${apiField} ${s.dir}` : undefined);
+              }
+            }
           },
         }}
       />
