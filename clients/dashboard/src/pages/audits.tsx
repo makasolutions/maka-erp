@@ -320,7 +320,9 @@ function AuditsMakaSection() {
 
   const [panelOpen, setPanelOpen] = useState(true);
   const [resetKey, setResetKey] = useState(0);
-  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("today"));
+  // Default to the current month — audit review spans a wider window than a
+  // single day, and not every tenant has events "today".
+  const [createdRange, setCreatedRange] = useState<MakaDateRange | null>(() => makaPresetRange("month"));
   // Stored as stringified enum values because EntityFilterPill keys on string.
   const [eventType, setEventType] = useState<string | null>(null);
   const [severity, setSeverity] = useState<string | null>(null);
@@ -342,7 +344,7 @@ function AuditsMakaSection() {
     setSearch("");
     setEntityName("");
     setOperation("");
-    setCreatedRange(makaPresetRange("today"));
+    setCreatedRange(makaPresetRange("month"));
     setResetKey((k) => k + 1);
   };
 
@@ -475,7 +477,7 @@ function AuditsMakaSection() {
             <MakaFilterField label={t("audits.columns.timestamp")}>
               <MakaDateRangePicker
                 key={`range-${resetKey}`}
-                defaultPreset="today"
+                defaultPreset="month"
                 value={createdRange}
                 onChange={setCreatedRange}
               />
