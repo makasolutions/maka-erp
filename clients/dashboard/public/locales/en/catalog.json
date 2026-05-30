@@ -164,7 +164,10 @@
       "total": "Total products",
       "active": "Active",
       "visible": "Visible"
-    }
+    },
+    "createBrand": "Create brand",
+    "createCategory": "Create category",
+    "quickCreateDesc": "Create the record and keep editing the product without leaving this screen."
   },
   "brands": {
     "title": "Brands",

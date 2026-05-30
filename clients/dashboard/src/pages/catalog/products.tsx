@@ -25,6 +25,8 @@ import { useTranslation } from "react-i18next";
 import {
   adjustProductStock,
   changeProductPrice,
+  createBrand,
+  createCategory,
   createProduct,
   deleteProduct,
   searchBrands,
@@ -558,6 +560,7 @@ function ProductEditorDialog({
   const [stock, setStock] = useState(String(initial.stock));
   const [isActive, setIsActive] = useState(initial.isActive);
   const [isVisible, setIsVisible] = useState(initial.isVisible);
+  const [quickCreate, setQuickCreate] = useState<{ type: "brand" | "category"; name: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -572,7 +575,11 @@ function ProductEditorDialog({
       setIsActive(initial.isActive);
       setIsVisible(initial.isVisible);
     }
-  }, [isOpen, initial]);
+    // Reset only when the dialog opens or the edited product changes — NOT when
+    // brands/categories refetch (e.g. after inline create), which would clobber
+    // a just-created selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, product?.id]);
 
   const createMutation = useMutation({
     mutationFn: (input: CreateProductInput) => createProduct(input),
@@ -641,6 +648,7 @@ function ProductEditorDialog({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent className="!max-w-xl">
         <form onSubmit={onSubmit}>
@@ -698,6 +706,8 @@ function ProductEditorDialog({
                   options={brands.map((b) => ({ value: b.id, label: b.name }))}
                   searchable
                   required
+                  onCreate={(q) => setQuickCreate({ type: "brand", name: q })}
+                  createLabel={t("products.createBrand")}
                 />
               </Field>
               <Field id="product-category" label={t("products.fields.category")} required>
@@ -710,6 +720,8 @@ function ProductEditorDialog({
                   options={categories.map((c) => ({ value: c.id, label: c.name }))}
                   searchable
                   required
+                  onCreate={(q) => setQuickCreate({ type: "category", name: q })}
+                  createLabel={t("products.createCategory")}
                 />
               </Field>
             </div>
@@ -799,6 +811,103 @@ function ProductEditorDialog({
                 : product
                   ? t("common:actions.saveChanges")
                   : t("products.actions.add")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+      {quickCreate && (
+        <QuickCreateDialog
+          type={quickCreate.type}
+          name={quickCreate.name}
+          onClose={() => setQuickCreate(null)}
+          onCreated={(newId) => {
+            if (quickCreate.type === "brand") setBrandId(newId);
+            else setCategoryId(newId);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  Quick-create dialog — create a brand/category inline from the product form
+//  (the combo's "+ Crear" action). Refreshes the option list (hot reload) and
+//  selects the new record so the user can keep creating the product.
+// ───────────────────────────────────────────────────────────────────────
+
+function QuickCreateDialog({
+  type,
+  name,
+  onClose,
+  onCreated,
+}: {
+  type: "brand" | "category";
+  name: string;
+  onClose: () => void;
+  onCreated: (id: string) => void;
+}) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+  const [n, setN] = useState(name);
+  const [code, setCode] = useState(
+    name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32),
+  );
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      type === "brand"
+        ? createBrand({ code: code.trim(), name: n.trim(), isActive: true, isVisible: true })
+        : createCategory({ code: code.trim(), name: n.trim(), isActive: true, isVisible: true }),
+    onSuccess: (newId) => {
+      toast.success(tc("feedback.created"));
+      queryClient.invalidateQueries({
+        queryKey: ["catalog", type === "brand" ? "brands" : "categories"],
+      });
+      onCreated(newId);
+      onClose();
+    },
+    onError: (err) => toast.error(tc("feedback.createFailed"), { description: describe(err) }),
+  });
+
+  const canSubmit = !!n.trim() && !!code.trim();
+
+  return (
+    <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (canSubmit) mutation.mutate();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {type === "brand" ? t("products.createBrand") : t("products.createCategory")}
+            </DialogTitle>
+            <DialogDescription>{t("products.quickCreateDesc")}</DialogDescription>
+          </DialogHeader>
+          <DialogBody className="space-y-4">
+            <div className="grid grid-cols-[160px_1fr] gap-4">
+              <Field id="qc-code" label={t("brands.fields.code")} required>
+                <Input id="qc-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={32} />
+              </Field>
+              <Field id="qc-name" label={t("brands.fields.name")} required>
+                <Input id="qc-name" value={n} onChange={(e) => setN(e.target.value)} required maxLength={128} autoFocus />
+              </Field>
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={mutation.isPending}>
+                {tc("actions.cancel")}
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={mutation.isPending || !canSubmit}>
+              {mutation.isPending ? tc("feedback.saving") : tc("actions.create")}
             </Button>
           </DialogFooter>
         </form>

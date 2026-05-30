@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, Search, X } from "lucide-react";
+import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +47,8 @@ export function Combobox({
   required,
   id,
   className,
+  onCreate,
+  createLabel,
 }: {
   label: string;
   value: string | null;
@@ -63,6 +65,13 @@ export function Combobox({
   required?: boolean;
   id?: string;
   className?: string;
+  /**
+   * When provided, a "+ {createLabel} «query»" action appears at the bottom of
+   * the list (always with an active filter, or when no option matches) so users
+   * can create the missing item inline without leaving the screen.
+   */
+  onCreate?: (query: string) => void;
+  createLabel?: string;
 }) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
@@ -179,7 +188,7 @@ export function Combobox({
             </Option>
           )}
 
-          {filtered.length === 0 ? (
+          {filtered.length === 0 && !(onCreate && filter.trim()) ? (
             <li className="px-3 py-3 text-center text-[12px] text-[var(--color-muted-foreground)]">
               {t("feedback.noResults")}
             </li>
@@ -202,6 +211,27 @@ export function Combobox({
                 )}
               </Option>
             ))
+          )}
+
+          {onCreate && filter.trim() && (
+            <li className="border-t border-[var(--color-border)]">
+              <button
+                type="button"
+                onClick={() => {
+                  onCreate(filter.trim());
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm",
+                  "text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent)]",
+                )}
+              >
+                <Plus className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">
+                  {createLabel ?? t("actions.create")} «{filter.trim()}»
+                </span>
+              </button>
+            </li>
           )}
         </ul>
       </DropdownMenuContent>

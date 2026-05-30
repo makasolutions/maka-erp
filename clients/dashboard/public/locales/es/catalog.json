@@ -164,7 +164,10 @@
       "total": "Productos totales",
       "active": "Activos",
       "visible": "Visibles"
-    }
+    },
+    "createBrand": "Crear marca",
+    "createCategory": "Crear categoría",
+    "quickCreateDesc": "Crea el registro y continúa con el producto sin salir de esta pantalla."
   },
   "brands": {
     "title": "Marcas",
