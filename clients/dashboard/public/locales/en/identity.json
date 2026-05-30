@@ -13,7 +13,7 @@
     "searchPlaceholder": "Search by name, username, or email…",
     "accountStatus": "Account status",
     "emailStatus": "Email status",
-    "anyEmail": "Any email",
+    "anyEmail": "All",
     "noEmail": "no email",
     "noEmailOnFile": "no email on file",
     "noName": "Unnamed user",
@@ -51,7 +51,7 @@
       "allStatus": "All",
       "active": "Active",
       "inactive": "Inactive",
-      "allEmail": "Any email",
+      "allEmail": "All",
       "confirmed": "Confirmed",
       "unconfirmed": "Pending"
     },

@@ -142,20 +142,19 @@
   cursor: pointer;
 }
 
-/* ── Selected row — FULL ROW highlight ──────────────────────────────────── */
+/* ── Selected row — soft-accent fill, identical to the hover state, no border
+   or per-cell focus ring (the accent fill is the only selection affordance). */
 .maka-grid-wrapper .e-grid .e-selectionbackground,
 .maka-grid-wrapper .e-grid td.e-selectionbackground,
 .maka-grid-wrapper .e-grid .e-row.e-selectedrow td.e-rowcell {
-  background-color: oklch(from var(--color-primary) l c h / 0.13) !important;
+  background-color: var(--color-primary-soft) !important;
   color: var(--color-foreground) !important;
 }
-.maka-grid-wrapper .e-grid .e-row.e-selectedrow:hover td.e-rowcell,
-.maka-grid-wrapper .e-grid .e-row:hover td.e-selectionbackground {
-  background-color: oklch(from var(--color-primary) l c h / 0.20) !important;
-}
-/* Cell focus outline */
-.maka-grid-wrapper .e-grid td.e-active {
-  box-shadow: inset 0 0 0 2px oklch(from var(--color-ring) l c h / 0.6) !important;
+/* No inset ring / border on the active (clicked) cell. */
+.maka-grid-wrapper .e-grid td.e-active,
+.maka-grid-wrapper .e-grid .e-row.e-selectedrow td.e-active {
+  box-shadow: none !important;
+  border-color: transparent !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

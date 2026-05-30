@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Combobox,
   EntityFilterPill,
   EntityInitialsAvatar,
   EntityPageHeader,
@@ -58,6 +59,12 @@ import {
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/cn";
 import { useLocalization } from "@/contexts/localization-context";
+
+// Filter dropdowns: same surface/size as the rest of the filter row (card bg,
+// hairline border, accent hover, h-8) — mirrors the catalog filter combos.
+const AUDIT_FILTER_COMBO =
+  "h-8 w-52 rounded-md border-[var(--color-border)] bg-[var(--color-card)] shadow-none " +
+  "hover:border-[var(--color-border)] hover:bg-[var(--color-accent)]";
 
 // ────────────────────────────────────────────────────────────────────────
 // Severity / event-type tone — keep visual language consistent across
@@ -526,34 +533,61 @@ function AuditsMakaSection({ panelOpen }: { panelOpen: boolean }) {
             {/* Force a new row → source, user, entity, operation below */}
             <div className="basis-full" aria-hidden />
 
-            {/* Row 2 — source, user, entity, operation (all dropdowns) */}
+            {/* Row 2 — source, user, entity, operation (clearable dropdowns) */}
             <MakaFilterField label={t("audits.source")}>
-              <FieldSelect value={source ?? ""} onChange={(v) => setSource(v || null)} className="w-52">
-                {sourceOptions.map((o) => (
-                  <option key={o.label} value={o.value ?? ""}>{o.label}</option>
-                ))}
-              </FieldSelect>
+              <Combobox
+                id="audit-source"
+                label={t("audits.source")}
+                placeholder={t("audits.allSources")}
+                value={source}
+                onChange={setSource}
+                options={sourceOptions.filter((o) => o.value !== null).map((o) => ({ value: o.value as string, label: o.label }))}
+                searchable
+                clearable
+                emptyOptionLabel={t("audits.allSources")}
+                className={AUDIT_FILTER_COMBO}
+              />
             </MakaFilterField>
             <MakaFilterField label={t("audits.user")}>
-              <FieldSelect value={userId ?? ""} onChange={(v) => setUserId(v || null)} className="w-52">
-                {userOptions.map((o) => (
-                  <option key={o.value ?? "all"} value={o.value ?? ""}>{o.label}</option>
-                ))}
-              </FieldSelect>
+              <Combobox
+                id="audit-user"
+                label={t("audits.user")}
+                placeholder={t("audits.allUsers")}
+                value={userId}
+                onChange={setUserId}
+                options={userOptions.filter((o) => o.value !== null).map((o) => ({ value: o.value as string, label: o.label }))}
+                searchable
+                clearable
+                emptyOptionLabel={t("audits.allUsers")}
+                className={AUDIT_FILTER_COMBO}
+              />
             </MakaFilterField>
             <MakaFilterField label={t("audits.entityName")}>
-              <FieldSelect value={entityName ?? ""} onChange={(v) => setEntityName(v || null)} className="w-52">
-                {entityOptions.map((o) => (
-                  <option key={o.label} value={o.value ?? ""}>{o.label}</option>
-                ))}
-              </FieldSelect>
+              <Combobox
+                id="audit-entity"
+                label={t("audits.entityName")}
+                placeholder={t("audits.allEntities")}
+                value={entityName}
+                onChange={setEntityName}
+                options={entityOptions.filter((o) => o.value !== null).map((o) => ({ value: o.value as string, label: o.label }))}
+                searchable
+                clearable
+                emptyOptionLabel={t("audits.allEntities")}
+                className={AUDIT_FILTER_COMBO}
+              />
             </MakaFilterField>
             <MakaFilterField label={t("audits.entityOperation")}>
-              <FieldSelect value={operation ?? ""} onChange={(v) => setOperation(v || null)} className="w-48">
-                {operationOptions.map((o) => (
-                  <option key={o.label} value={o.value ?? ""}>{o.label}</option>
-                ))}
-              </FieldSelect>
+              <Combobox
+                id="audit-operation"
+                label={t("audits.entityOperation")}
+                placeholder={t("audits.allOperations")}
+                value={operation}
+                onChange={setOperation}
+                options={operationOptions.filter((o) => o.value !== null).map((o) => ({ value: o.value as string, label: o.label }))}
+                clearable
+                emptyOptionLabel={t("audits.allOperations")}
+                className={AUDIT_FILTER_COMBO}
+              />
             </MakaFilterField>
           </>
         }
@@ -693,45 +727,6 @@ function operationBadgeStyle(op: string | null | undefined): React.CSSProperties
         borderColor: "oklch(from var(--color-muted-foreground) l c h / 0.20)",
       };
   }
-}
-
-function FieldSelect({
-  label,
-  value,
-  onChange,
-  children,
-  className,
-}: {
-  label?: string;
-  value: string;
-  onChange: (v: string) => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <label className="block">
-      {label ? (
-        <div className="mb-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted-foreground)]">
-          {label}
-        </div>
-      ) : null}
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "h-8 w-full min-w-0 rounded-lg border border-[var(--color-input)] bg-transparent px-2 py-0",
-          "font-mono text-[12px] text-[var(--color-foreground)] shadow-xs outline-none",
-          "transition-[color,box-shadow,border-color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
-          "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
-          "dark:bg-[oklch(from_var(--color-input)_l_c_h_/_0.3)]",
-          "focus-visible:border-[var(--color-ring)] focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
-          className,
-        )}
-      >
-        {children}
-      </select>
-    </label>
-  );
 }
 
 // ────────────────────────────────────────────────────────────────────────

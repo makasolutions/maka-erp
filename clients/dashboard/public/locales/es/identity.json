@@ -13,7 +13,7 @@
     "searchPlaceholder": "Buscar por nombre, usuario o correo…",
     "accountStatus": "Estado de cuenta",
     "emailStatus": "Estado de correo",
-    "anyEmail": "Cualquier correo",
+    "anyEmail": "Todos",
     "noEmail": "sin correo",
     "noEmailOnFile": "sin correo registrado",
     "noName": "Usuario sin nombre",
@@ -51,7 +51,7 @@
       "allStatus": "Todos",
       "active": "Activos",
       "inactive": "Inactivos",
-      "allEmail": "Cualquier correo",
+      "allEmail": "Todos",
       "confirmed": "Confirmados",
       "unconfirmed": "Pendientes"
     },

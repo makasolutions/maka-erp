@@ -292,9 +292,12 @@ export async function adminRevokeUserSession(userId: string, sessionId: string):
 export async function adminRevokeAllUserSessions(
   userId: string,
 ): Promise<{ revokedCount: number }> {
+  // Send the userId in the body: the endpoint binds AdminRevokeAllSessionsCommand
+  // from the body, and an empty `{}` would deserialize to UserId = Guid.Empty
+  // (failing validation). The route userId is the source of truth.
   return apiFetch<{ revokedCount: number }>(
     `/api/v1/identity/users/${encodeURIComponent(userId)}/sessions/revoke-all`,
-    { method: "POST", body: JSON.stringify({}) },
+    { method: "POST", body: JSON.stringify({ userId }) },
   );
 }
 

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Field } from "@/components/list";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -385,53 +387,52 @@ function ChangePasswordDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={onSubmit} className="space-y-3" noValidate>
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-current">{t("security.currentPassword")}</Label>
-            <Input
-              id="cp-current"
-              type="password"
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-next">{t("security.newPassword")}</Label>
-            <Input
-              id="cp-next"
-              type="password"
-              autoComplete="new-password"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-              required
-              minLength={8}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-confirm">{t("security.confirmPassword")}</Label>
-            <Input
-              id="cp-confirm"
-              type="password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              minLength={8}
-            />
-          </div>
+        <form onSubmit={onSubmit} noValidate>
+          <DialogBody className="space-y-4">
+            <Field id="cp-current" label={t("security.currentPassword")} required>
+              <Input
+                id="cp-current"
+                type="password"
+                autoComplete="current-password"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+                required
+                autoFocus
+              />
+            </Field>
+            <Field id="cp-next" label={t("security.newPassword")} required>
+              <Input
+                id="cp-next"
+                type="password"
+                autoComplete="new-password"
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                required
+                minLength={8}
+              />
+            </Field>
+            <Field id="cp-confirm" label={t("security.confirmPassword")} required>
+              <Input
+                id="cp-confirm"
+                type="password"
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                minLength={8}
+              />
+            </Field>
 
-          {localError && (
-            <div
-              role="alert"
-              className="flex items-start gap-2 rounded-md border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.40)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.08)] px-3 py-2 text-sm text-[var(--color-destructive)]"
-            >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="leading-snug">{localError}</span>
-            </div>
-          )}
+            {localError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.40)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.08)] px-3 py-2 text-sm text-[var(--color-destructive)]"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="leading-snug">{localError}</span>
+              </div>
+            )}
+          </DialogBody>
 
           <DialogFooter>
             <Button
