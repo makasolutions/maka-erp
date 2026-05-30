@@ -205,10 +205,17 @@ Todo filtro nuevo DEBE reutilizar estos componentes; no reimplementar la lógica
 - Dar `span` a cada `Field` (Bootstrap-style). Convención de la casa:
   **código → 4, nombre → 8, slug → 6, descripción → 12**, la mayoría de los demás → **6**.
   Bloques que no son `Field` (switches, secciones) usan `col-span-1 sm:col-span-N` literal.
-- Ancho del diálogo de formulario de 2 columnas: **`!max-w-[720px]`** (responsive; full-width en
-  móvil). Forms triviales de 1 campo pueden seguir con `max-w-md`/`max-w-lg`.
 - Las clases de span son estáticas en `field.tsx` (`SPAN_CLASS`) para que el JIT de Tailwind las
   detecte — **nunca** construir `sm:col-span-${n}` dinámicamente.
 
-Referencia: `pages/catalog/{brands,categories,products}.tsx`.
+**Ancho del diálogo — prop `size` de `DialogContent`:**
+- `size="form"` para **forms multi-campo de 2 columnas** → 90vw, cap `sm:max-w-[2048px]` (~2K),
+  full-width en móvil, `max-h-[92vh]` con scroll interno. Es el ancho por defecto de todo
+  editor con varios campos.
+- `size="default"` (o sin prop) para **diálogos de confirmación** (eliminar, impersonar, revocar),
+  **forms de 1 campo** y **formularios sensibles angostos por convención** (cambio de contraseña /
+  2FA en `settings/security`): NO se ensanchan a 90vw.
+
+Referencia: `pages/catalog/{brands,categories,products}.tsx`, `identity/{users,roles,groups}.tsx`,
+`tickets/tickets.tsx`.
 

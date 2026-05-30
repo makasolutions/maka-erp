@@ -49,6 +49,7 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormGrid,
   type EntityStatusTone,
 } from "@/components/list";
 import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField, MakaFilterInput } from "@/components/maka";
@@ -565,7 +566,7 @@ function CreateTicketDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -576,43 +577,45 @@ function CreateTicketDialog({
               {t("dialog.openDesc")}
             </DialogDescription>
           </DialogHeader>
-          <DialogBody className="space-y-4">
-            <Field id="ticket-title" label={t("dialog.titleLabel")} required>
-              <Input
-                id="ticket-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("dialog.titlePlaceholder")}
-                maxLength={160}
-                autoFocus
-                required
-              />
-            </Field>
-            <Field id="ticket-description" label={t("dialog.descLabel")}>
-              <textarea
-                id="ticket-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("dialog.descPlaceholder")}
-                rows={4}
-                className={cn(
-                  "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
-                  "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
-                  "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
-                )}
-                maxLength={4096}
-              />
-            </Field>
-            <Field id="ticket-priority" label={t("dialog.priorityLabel")}>
-              <Combobox
-                id="ticket-priority"
-                variant="field"
-                label={t("dialog.priorityLabel")}
-                value={priority}
-                onChange={(v) => setPriority((v as TicketPriority) ?? "Medium")}
-                options={priorityOptions}
-              />
-            </Field>
+          <DialogBody>
+            <FormGrid>
+              <Field id="ticket-title" span={8} label={t("dialog.titleLabel")} required>
+                <Input
+                  id="ticket-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={t("dialog.titlePlaceholder")}
+                  maxLength={160}
+                  autoFocus
+                  required
+                />
+              </Field>
+              <Field id="ticket-priority" span={4} label={t("dialog.priorityLabel")}>
+                <Combobox
+                  id="ticket-priority"
+                  variant="field"
+                  label={t("dialog.priorityLabel")}
+                  value={priority}
+                  onChange={(v) => setPriority((v as TicketPriority) ?? "Medium")}
+                  options={priorityOptions}
+                />
+              </Field>
+              <Field id="ticket-description" span={12} label={t("dialog.descLabel")}>
+                <textarea
+                  id="ticket-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t("dialog.descPlaceholder")}
+                  rows={4}
+                  className={cn(
+                    "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
+                    "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
+                    "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
+                  )}
+                  maxLength={4096}
+                />
+              </Field>
+            </FormGrid>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>

@@ -44,6 +44,7 @@ import {
   EntitySearch,
   EntityStatusBadge,
   Field,
+  FormGrid,
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
@@ -331,38 +332,40 @@ function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent>
+      <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{t("groups.createTitle")}</DialogTitle>
             <DialogDescription>{t("groups.createDesc")}</DialogDescription>
           </DialogHeader>
-          <DialogBody className="space-y-4">
-            <Field id="group-name" label={t("groups.fields.name")} required>
-              <Input
-                id="group-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("groups.groupNamePlaceholder")}
-                required
-                autoFocus
-                maxLength={128}
-              />
-            </Field>
-            <Field
-              id="group-description"
-              label={t("groups.fields.description")}
-              hint={t("groups.descriptionHint")}
-            >
-              <Input
+          <DialogBody>
+            <FormGrid>
+              <Field id="group-name" span={4} label={t("groups.fields.name")} required>
+                <Input
+                  id="group-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("groups.groupNamePlaceholder")}
+                  required
+                  autoFocus
+                  maxLength={128}
+                />
+              </Field>
+              <Field
                 id="group-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("groups.groupDescPlaceholder")}
-                maxLength={512}
-              />
-            </Field>
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
+                span={8}
+                label={t("groups.fields.description")}
+                hint={t("groups.descriptionHint")}
+              >
+                <Input
+                  id="group-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t("groups.groupDescPlaceholder")}
+                  maxLength={512}
+                />
+              </Field>
+              <div className="col-span-1 flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3 sm:col-span-12">
               <div className="min-w-0">
                 <span className="block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
                   {t("groups.defaultGroupLabel")}
@@ -376,7 +379,8 @@ function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => vo
                 onCheckedChange={setIsDefault}
                 aria-label={t("groups.defaultGroupLabel")}
               />
-            </div>
+              </div>
+            </FormGrid>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>

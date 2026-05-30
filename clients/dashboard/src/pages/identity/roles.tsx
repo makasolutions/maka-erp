@@ -33,6 +33,7 @@ import {
   EntitySearch,
   EntityStatusBadge,
   Field,
+  FormGrid,
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
@@ -334,37 +335,40 @@ function CreateRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent>
+      <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{t("roles.createTitle")}</DialogTitle>
             <DialogDescription>{t("roles.createDesc")}</DialogDescription>
           </DialogHeader>
-          <DialogBody className="space-y-4">
-            <Field id="role-name" label={t("roles.fields.name")} required>
-              <Input
-                id="role-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("roles.namePlaceholder")}
-                required
-                autoFocus
-                maxLength={128}
-              />
-            </Field>
-            <Field
-              id="role-description"
-              label={t("roles.fields.description")}
-              hint={t("roles.descriptionHint")}
-            >
-              <Input
+          <DialogBody>
+            <FormGrid>
+              <Field id="role-name" span={4} label={t("roles.fields.name")} required>
+                <Input
+                  id="role-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("roles.namePlaceholder")}
+                  required
+                  autoFocus
+                  maxLength={128}
+                />
+              </Field>
+              <Field
                 id="role-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("roles.descriptionPlaceholder")}
-                maxLength={512}
-              />
-            </Field>
+                span={8}
+                label={t("roles.fields.description")}
+                hint={t("roles.descriptionHint")}
+              >
+                <Input
+                  id="role-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t("roles.descriptionPlaceholder")}
+                  maxLength={512}
+                />
+              </Field>
+            </FormGrid>
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>

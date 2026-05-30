@@ -53,6 +53,7 @@ import {
   EntitySearch,
   EntityStatusBadge,
   Field,
+  FormGrid,
 } from "@/components/list";
 import { cn } from "@/lib/cn";
 import { describe } from "@/lib/list-helpers";
@@ -452,16 +453,16 @@ function RegisterUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="!max-w-lg">
+      <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{t("users.registerMember")}</DialogTitle>
             <DialogDescription>{t("users.registerDesc")}</DialogDescription>
           </DialogHeader>
 
-          <DialogBody className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field id="reg-first" label={t("users.fields.firstName")} required>
+          <DialogBody>
+            <FormGrid>
+              <Field id="reg-first" span={6} label={t("users.fields.firstName")} required>
                 <Input
                   id="reg-first"
                   value={firstName}
@@ -471,7 +472,7 @@ function RegisterUserDialog({
                   required
                 />
               </Field>
-              <Field id="reg-last" label={t("users.fields.lastName")} required>
+              <Field id="reg-last" span={6} label={t("users.fields.lastName")} required>
                 <Input
                   id="reg-last"
                   value={lastName}
@@ -480,46 +481,45 @@ function RegisterUserDialog({
                   required
                 />
               </Field>
-            </div>
 
-            <Field
-              id="reg-username"
-              label={t("users.fields.username")}
-              required
-              hint={t("users.fields.usernameHint")}
-            >
-              <Input
+              <Field
                 id="reg-username"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="ada.lovelace"
-                autoComplete="off"
+                span={6}
+                label={t("users.fields.username")}
                 required
-              />
-            </Field>
+                hint={t("users.fields.usernameHint")}
+              >
+                <Input
+                  id="reg-username"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="ada.lovelace"
+                  autoComplete="off"
+                  required
+                />
+              </Field>
 
-            <Field id="reg-email" label={t("users.fields.email")} required>
-              <Input
-                id="reg-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ada@example.com"
-                required
-              />
-            </Field>
+              <Field id="reg-email" span={6} label={t("users.fields.email")} required>
+                <Input
+                  id="reg-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ada@example.com"
+                  required
+                />
+              </Field>
 
-            <Field id="reg-phone" label={t("users.fields.phone")} hint={t("users.fields.phoneHint")}>
-              <Input
-                id="reg-phone"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="+44 …"
-              />
-            </Field>
+              <Field id="reg-phone" span={12} label={t("users.fields.phone")} hint={t("users.fields.phoneHint")}>
+                <Input
+                  id="reg-phone"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+44 …"
+                />
+              </Field>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field id="reg-pwd" label={t("users.fields.password")} required>
+              <Field id="reg-pwd" span={6} label={t("users.fields.password")} required>
                 <Input
                   id="reg-pwd"
                   type="password"
@@ -531,6 +531,7 @@ function RegisterUserDialog({
               </Field>
               <Field
                 id="reg-pwd2"
+                span={6}
                 label={t("users.fields.confirmPassword")}
                 required
                 hint={passwordMismatch ? t("users.fields.passwordMismatch") : undefined}
@@ -545,7 +546,7 @@ function RegisterUserDialog({
                   aria-invalid={passwordMismatch || undefined}
                 />
               </Field>
-            </div>
+            </FormGrid>
           </DialogBody>
 
           <DialogFooter>

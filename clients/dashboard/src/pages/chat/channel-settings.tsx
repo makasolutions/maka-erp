@@ -126,7 +126,7 @@ export function ChannelSettingsDialog({
     <>
       {/* ── Settings dialog ─────────────────────────────────────────── */}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl">
+        <DialogContent size="form">
           <DialogHeader>
             <DialogTitle>{t("settings.title")}</DialogTitle>
             <DialogDescription>
@@ -137,26 +137,28 @@ export function ChannelSettingsDialog({
             {/* ── General ─────────────────────────────────────────────── */}
             <section className="space-y-3">
               <SectionTitle>{t("settings.sectionGeneral")}</SectionTitle>
-              <div className="space-y-1.5">
-                <Label htmlFor="channel-settings-name">{t("settings.nameLabel")}</Label>
-                <Input
-                  id="channel-settings-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={!isAdmin}
-                  maxLength={80}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="channel-settings-description">{t("settings.descLabel")}</Label>
-                <Input
-                  id="channel-settings-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  disabled={!isAdmin}
-                  placeholder={t("settings.descPlaceholder")}
-                  maxLength={200}
-                />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-12">
+                <div className="space-y-1.5 sm:col-span-4">
+                  <Label htmlFor="channel-settings-name">{t("settings.nameLabel")}</Label>
+                  <Input
+                    id="channel-settings-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={!isAdmin}
+                    maxLength={80}
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-8">
+                  <Label htmlFor="channel-settings-description">{t("settings.descLabel")}</Label>
+                  <Input
+                    id="channel-settings-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={!isAdmin}
+                    placeholder={t("settings.descPlaceholder")}
+                    maxLength={200}
+                  />
+                </div>
               </div>
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label
