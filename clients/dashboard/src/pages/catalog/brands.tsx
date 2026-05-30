@@ -44,7 +44,7 @@ import {
   Field,
 } from "@/components/list";
 import {
-  MakaGrid,
+  MakaGridClient,
   MakaGridFilters,
   MakaFilterField,
 } from "@/components/maka";
@@ -62,8 +62,6 @@ type EditorState =
   | { mode: "delete"; brand: BrandDto };
 
 type BrandRow = BrandDto & { activeLabel: string; visibleLabel: string };
-
-const PAGE_SIZES = [20, 50, 100];
 
 // Boolean tri-state pill value: null = all, "true" / "false".
 function triToBool(v: string | null): boolean | undefined {
@@ -144,9 +142,6 @@ export function BrandsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "createdAtUtc", dir: "desc" });
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
   useEffect(() => {
@@ -163,13 +158,11 @@ export function BrandsPage() {
     [debouncedSearch, activeFilter, visibleFilter],
   );
 
-  // Reset to page 1 when filters change.
-  useEffect(() => setPage(1), [filters]);
-
+  // Client-side grid: fetch the full (filtered) set in one page; MakaGridClient
+  // handles paging, Excel column filtering, grouping and sorting locally.
   const query = useQuery({
-    queryKey: ["catalog", "brands", filters, page, pageSize, sort],
-    queryFn: () =>
-      searchBrands({ ...filters, pageNumber: page, pageSize, sortBy: sort.by, sortDir: sort.dir }),
+    queryKey: ["catalog", "brands", filters],
+    queryFn: () => searchBrands({ ...filters, pageNumber: 1, pageSize: 200 }),
     placeholderData: keepPreviousData,
   });
 
@@ -200,9 +193,6 @@ export function BrandsPage() {
     [query.data, t, tc],
   );
 
-  const sortFieldFor = (field: string): string | undefined =>
-    ({ name: "name", slug: "slug", createdAtUtc: "createdAtUtc" })[field];
-
   const columns: ColumnModel[] = useMemo(
     () => [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -226,7 +216,6 @@ export function BrandsPage() {
     setSearch("");
     setActiveFilter(null);
     setVisibleFilter(null);
-    setPage(1);
   };
 
   return (
@@ -305,7 +294,7 @@ export function BrandsPage() {
         }
       />
 
-      <MakaGrid<BrandRow>
+      <MakaGridClient<BrandRow>
         dataSource={rows}
         columns={columns}
         isLoading={query.isFetching}
@@ -316,24 +305,6 @@ export function BrandsPage() {
         permissions={{ edit: P.catalog.brands.update, delete: P.catalog.brands.delete }}
         onEdit={(row) => setEditor({ mode: "edit", brand: row })}
         onDelete={(row) => setEditor({ mode: "delete", brand: row })}
-        serverPaging={{
-          totalCount: query.data?.totalCount ?? 0,
-          page,
-          pageSize,
-          pageSizes: PAGE_SIZES,
-          onChange: ({ page: p, pageSize: ps }) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-          onSortChange: (s) => {
-            setPage(1);
-            if (!s) setSort({ by: "createdAtUtc", dir: "desc" });
-            else {
-              const by = sortFieldFor(s.field);
-              setSort(by ? { by, dir: s.dir } : { by: "createdAtUtc", dir: "desc" });
-            }
-          },
-        }}
       />
 
       <BrandEditorDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />

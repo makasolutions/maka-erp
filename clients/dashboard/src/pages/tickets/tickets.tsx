@@ -51,7 +51,7 @@ import {
   Field,
   type EntityStatusTone,
 } from "@/components/list";
-import { MakaGrid, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField } from "@/components/maka";
+import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { getUserById } from "@/api/identity";
@@ -365,7 +365,7 @@ export function TicketsPage() {
         }
       />
 
-      <MakaGrid<TicketRow>
+      <MakaGridClient<TicketRow>
         dataSource={makaRows}
         columns={makaColumns}
         isLoading={makaQuery.isLoading && makaRows.length === 0}

@@ -47,7 +47,7 @@ import {
   Field,
 } from "@/components/list";
 import {
-  MakaGrid,
+  MakaGridClient,
   MakaGridFilters,
   MakaFilterField,
 } from "@/components/maka";
@@ -57,8 +57,6 @@ import { describe, formatDate, slugify } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
-
-const PAGE_SIZES = [20, 50, 100];
 
 type FlatNode = { id: string; name: string; slug: string; depth: number; ancestorIds: string[] };
 function flattenTree(nodes: CategoryTreeNodeDto[], depth = 0, ancestors: string[] = []): FlatNode[] {
@@ -149,9 +147,6 @@ export function CategoriesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "name", dir: "asc" });
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
   useEffect(() => {
@@ -167,12 +162,10 @@ export function CategoriesPage() {
     }),
     [debouncedSearch, activeFilter, visibleFilter],
   );
-  useEffect(() => setPage(1), [filters]);
 
   const query = useQuery({
-    queryKey: ["catalog", "categories", filters, page, pageSize, sort],
-    queryFn: () =>
-      searchCategories({ ...filters, pageNumber: page, pageSize, sortBy: sort.by, sortDir: sort.dir }),
+    queryKey: ["catalog", "categories", filters],
+    queryFn: () => searchCategories({ ...filters, pageNumber: 1, pageSize: 200, sortBy: "name", sortDir: "asc" }),
     placeholderData: keepPreviousData,
   });
 
@@ -223,9 +216,6 @@ export function CategoriesPage() {
     [query.data, nameById, t, tc],
   );
 
-  const sortFieldFor = (field: string): string | undefined =>
-    ({ name: "name", slug: "slug", createdAtUtc: "createdAtUtc" })[field];
-
   const columns: ColumnModel[] = useMemo(
     () => [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,7 +239,6 @@ export function CategoriesPage() {
     setSearch("");
     setActiveFilter(null);
     setVisibleFilter(null);
-    setPage(1);
   };
 
   return (
@@ -328,7 +317,7 @@ export function CategoriesPage() {
         }
       />
 
-      <MakaGrid<CategoryRow>
+      <MakaGridClient<CategoryRow>
         dataSource={rows}
         columns={columns}
         isLoading={query.isFetching}
@@ -339,24 +328,6 @@ export function CategoriesPage() {
         permissions={{ edit: P.catalog.categories.update, delete: P.catalog.categories.delete }}
         onEdit={(row) => setEditor({ mode: "edit", category: row })}
         onDelete={(row) => setEditor({ mode: "delete", category: row })}
-        serverPaging={{
-          totalCount: query.data?.totalCount ?? 0,
-          page,
-          pageSize,
-          pageSizes: PAGE_SIZES,
-          onChange: ({ page: p, pageSize: ps }) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-          onSortChange: (s) => {
-            setPage(1);
-            if (!s) setSort({ by: "name", dir: "asc" });
-            else {
-              const by = sortFieldFor(s.field);
-              setSort(by ? { by, dir: s.dir } : { by: "name", dir: "asc" });
-            }
-          },
-        }}
       />
 
       <CategoryEditorDialog

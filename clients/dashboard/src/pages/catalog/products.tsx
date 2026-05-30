@@ -62,7 +62,7 @@ import {
   Field,
 } from "@/components/list";
 import {
-  MakaGrid,
+  MakaGridServer,
   MakaGridFilters,
   MakaFilterField,
 } from "@/components/maka";
@@ -385,7 +385,7 @@ export function ProductsPage() {
         }
       />
 
-      <MakaGrid<ProductRow>
+      <MakaGridServer<ProductRow>
         dataSource={rows}
         columns={columns}
         isLoading={query.isFetching}

@@ -893,6 +893,30 @@ export function MakaGrid<T extends object>({
     return () => window.clearTimeout(id);
   }, [serverMode, dataSource]);
 
+  // EJ2-React occasionally fails to re-bind when the grid was first mounted with
+  // an empty array (rows still loading) and the data arrives afterwards — the
+  // prop swap is silently missed and the grid stays empty. In client mode, push
+  // the dataSource imperatively on the empty→populated transition so late rows
+  // always render. Only that transition is nudged, so normal updates keep the
+  // user's current page / filter / grouping intact.
+  const prevLenRef = useRef(0);
+  useEffect(() => {
+    if (serverMode) return;
+    const len = dataSource.length;
+    if (prevLenRef.current === 0 && len > 0) {
+      const g = gridRef.current;
+      if (g) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          g.dataSource = dataSource as any;
+        } catch {
+          /* grid not ready */
+        }
+      }
+    }
+    prevLenRef.current = len;
+  }, [serverMode, dataSource]);
+
   const pageSettings = { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: 5 };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1078,4 +1102,32 @@ function MakaServerPager({
       </div>
     </div>
   );
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Public surface — two intent-revealing wrappers over the shared MakaGrid core.
+// Use these in pages instead of MakaGrid directly:
+//
+//   • MakaGridClient — everything client-side over the full dataSource: native
+//     paging, Excel column filtering, grouping and sorting (Tickets-style).
+//     Use when the whole result set is already loaded (small lists).
+//
+//   • MakaGridServer — server-driven: a controlled pager + server-side sort
+//     (via onSortChange); in-grid filtering/grouping are off because they
+//     can't enumerate values across paged data (Auditoría-style). Use for
+//     large datasets paged on the server.
+// ════════════════════════════════════════════════════════════════════════
+
+export type MakaGridClientProps<T extends object> = Omit<MakaGridProps<T>, "serverPaging">;
+
+export function MakaGridClient<T extends object>(props: MakaGridClientProps<T>) {
+  return <MakaGrid<T> {...props} />;
+}
+
+export type MakaGridServerProps<T extends object> = Omit<MakaGridProps<T>, "serverPaging"> & {
+  serverPaging: MakaGridServerPaging;
+};
+
+export function MakaGridServer<T extends object>(props: MakaGridServerProps<T>) {
+  return <MakaGrid<T> {...props} />;
 }

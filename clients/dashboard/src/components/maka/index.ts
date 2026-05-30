@@ -11,8 +11,15 @@
  *   import { MakaGrid, MakaChart } from "@/components/maka";
  */
 
-export { MakaGrid, makaCurrencyColumn, formatCOP } from "./MakaGrid";
-export type { MakaGridProps, MakaGridPermissions, MakaGridAction } from "./MakaGrid";
+export { MakaGrid, MakaGridClient, MakaGridServer, makaCurrencyColumn, formatCOP } from "./MakaGrid";
+export type {
+  MakaGridProps,
+  MakaGridClientProps,
+  MakaGridServerProps,
+  MakaGridServerPaging,
+  MakaGridPermissions,
+  MakaGridAction,
+} from "./MakaGrid";
 
 export { MakaDateRangePicker, makaPresetRange } from "./MakaDateRangePicker";
 export type { MakaDateRangePickerProps, MakaDateRange, MakaRangePreset } from "./MakaDateRangePicker";

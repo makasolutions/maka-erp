@@ -39,7 +39,7 @@ import {
   EntityStatusBadge,
 } from "@/components/list";
 import {
-  MakaGrid,
+  MakaGridServer,
   MakaGridFilters,
   MakaFilterField,
   MakaDateRangePicker,
@@ -572,7 +572,7 @@ function AuditsMakaSection({ panelOpen }: { panelOpen: boolean }) {
         }
       />
 
-      <MakaGrid<AuditRow>
+      <MakaGridServer<AuditRow>
         dataSource={rows}
         columns={columns}
         isLoading={listQuery.isFetching}
