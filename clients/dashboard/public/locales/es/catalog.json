@@ -224,7 +224,10 @@
       "parent": "Categoría padre",
       "description": "Descripción",
       "image": "Imagen",
-      "created": "Creado"
+      "created": "Creado",
+      "code": "Código",
+      "active": "Activo",
+      "visible": "Visible"
     },
     "actions": {
       "create": "Nueva categoría",
@@ -267,6 +270,18 @@
     "createFailed": "Error al crear",
     "updateFailed": "Error al actualizar",
     "deleteFailed": "Error al eliminar",
-    "deleteFullDesc": "Esto elimina permanentemente {{name}} (creada el {{date}}). Las categorías con subcategorías no pueden eliminarse — mueve o elimina los hijos primero."
+    "deleteFullDesc": "Esto elimina permanentemente {{name}} (creada el {{date}}). Las categorías con subcategorías no pueden eliminarse — mueve o elimina los hijos primero.",
+    "codePlaceholder": "Ej. CAMARAS",
+    "searchLabel": "Buscar",
+    "imageHint": "Opcional. Imagen de la categoría.",
+    "filters": {
+      "visibleYes": "Sí",
+      "visibleNo": "No"
+    },
+    "kpi": {
+      "total": "Categorías totales",
+      "active": "Activas",
+      "visible": "Visibles"
+    }
   }
 }

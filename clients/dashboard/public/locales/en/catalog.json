@@ -224,7 +224,10 @@
       "parent": "Parent category",
       "description": "Description",
       "image": "Image",
-      "created": "Created"
+      "created": "Created",
+      "code": "Code",
+      "active": "Active",
+      "visible": "Visible"
     },
     "actions": {
       "create": "New category",
@@ -267,6 +270,18 @@
     "createFailed": "Create failed",
     "updateFailed": "Update failed",
     "deleteFailed": "Delete failed",
-    "deleteFullDesc": "This permanently removes {{name}} (created {{date}}). Categories with child categories cannot be deleted — move or delete the children first."
+    "deleteFullDesc": "This permanently removes {{name}} (created {{date}}). Categories with child categories cannot be deleted — move or delete the children first.",
+    "codePlaceholder": "e.g. CAMERAS",
+    "searchLabel": "Search",
+    "imageHint": "Optional. Category image.",
+    "filters": {
+      "visibleYes": "Yes",
+      "visibleNo": "No"
+    },
+    "kpi": {
+      "total": "Total categories",
+      "active": "Active",
+      "visible": "Visible"
+    }
   }
 }

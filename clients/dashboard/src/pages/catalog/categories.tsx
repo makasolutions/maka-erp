@@ -10,16 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  ChevronRight,
-  ChevronsRight,
-  GitBranch,
-  Layers,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { ChevronsRight, Eye, GitBranch, Layers, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -45,53 +36,41 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { ImageInput } from "@/components/file/image-input";
 import {
   Combobox,
-  EntityEmpty,
+  EntityFilterPill,
   EntityInitialsAvatar,
-  EntityListCard,
-  EntityListHeader,
-  EntityListLoading,
-  EntityListRow,
-  EntityMobileCard,
   EntityPageHeader,
-  EntityPager,
-  EntitySearch,
+  EntityStatusBadge,
   Field,
 } from "@/components/list";
-import { cn } from "@/lib/cn";
 import {
-  describe,
-  formatDate,
-  formatRelative,
-  slugify,
-} from "@/lib/list-helpers";
+  MakaGrid,
+  MakaGridFilters,
+  MakaFilterField,
+} from "@/components/maka";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
+import { cn } from "@/lib/cn";
+import { describe, formatDate, slugify } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
-import { Perm, usePerm } from "@/auth/permission-guard";
+import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZES = [20, 50, 100];
 
-type FlatNode = {
-  id: string;
-  name: string;
-  slug: string;
-  depth: number;
-  ancestorIds: string[];
-};
-function flattenTree(
-  nodes: CategoryTreeNodeDto[],
-  depth = 0,
-  ancestors: string[] = [],
-): FlatNode[] {
+type FlatNode = { id: string; name: string; slug: string; depth: number; ancestorIds: string[] };
+function flattenTree(nodes: CategoryTreeNodeDto[], depth = 0, ancestors: string[] = []): FlatNode[] {
   const out: FlatNode[] = [];
   for (const n of nodes) {
     out.push({ id: n.id, name: n.name, slug: n.slug, depth, ancestorIds: ancestors });
-    if (n.children?.length)
-      out.push(...flattenTree(n.children, depth + 1, [...ancestors, n.id]));
+    if (n.children?.length) out.push(...flattenTree(n.children, depth + 1, [...ancestors, n.id]));
   }
   return out;
 }
+
+type CategoryRow = CategoryDto & { parentName: string; activeLabel: string; visibleLabel: string };
 
 type EditorState =
   | { mode: "closed" }
@@ -99,40 +78,101 @@ type EditorState =
   | { mode: "edit"; category: CategoryDto }
   | { mode: "delete"; category: CategoryDto };
 
+function triToBool(v: string | null): boolean | undefined {
+  return v === null ? undefined : v === "true";
+}
+
+// ── Cell templates ───────────────────────────────────────────────────────
+function CatImageCell(row: CategoryRow) {
+  return <CategoryAvatar category={row} size={32} />;
+}
+function CatCodeCell(row: CategoryRow) {
+  return <code className="font-mono text-[12px] font-medium text-[var(--color-foreground)]">{row.code}</code>;
+}
+function CatNameCell(row: CategoryRow) {
+  return (
+    <div className="min-w-0">
+      <div className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.name}</div>
+      <div className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-[var(--color-muted-foreground)]">
+        {row.parentCategoryId ? (
+          <>
+            <ChevronsRight className="size-3 shrink-0 opacity-60" />
+            <span className="truncate">{row.parentName}</span>
+          </>
+        ) : (
+          <>
+            <GitBranch className="size-3 shrink-0 opacity-60" />
+            <span>{row.parentName}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+function CatSlugCell(row: CategoryRow) {
+  return <code className="font-mono text-[11.5px] text-[var(--color-muted-foreground)]">{row.slug}</code>;
+}
+function CatActiveCell(row: CategoryRow) {
+  return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
+}
+function CatVisibleCell(row: CategoryRow) {
+  return <EntityStatusBadge tone={row.isVisible ? "info" : "default"}>{row.visibleLabel}</EntityStatusBadge>;
+}
+
+function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2">
+        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
+        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          {label}
+        </span>
+      </div>
+      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
+        {value.toLocaleString("es-CO")}
+      </div>
+    </div>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────
 //  Page
 // ───────────────────────────────────────────────────────────────────────
 
 export function CategoriesPage() {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const { can } = usePerm();
+
+  const [panelOpen, setPanelOpen] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "name", dir: "asc" });
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-      setPageNumber(1);
-    }, 250);
-    return () => clearTimeout(timer);
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(id);
   }, [search]);
 
+  const filters = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      isActive: triToBool(activeFilter),
+      isVisible: triToBool(visibleFilter),
+    }),
+    [debouncedSearch, activeFilter, visibleFilter],
+  );
+  useEffect(() => setPage(1), [filters]);
+
   const query = useQuery({
-    queryKey: [
-      "catalog",
-      "categories",
-      { search: debouncedSearch, pageNumber, pageSize: PAGE_SIZE },
-    ],
+    queryKey: ["catalog", "categories", filters, page, pageSize, sort],
     queryFn: () =>
-      searchCategories({
-        search: debouncedSearch || undefined,
-        pageNumber,
-        pageSize: PAGE_SIZE,
-        sortBy: "name",
-        sortDir: "asc",
-      }),
+      searchCategories({ ...filters, pageNumber: page, pageSize, sortBy: sort.by, sortDir: sort.dir }),
     placeholderData: keepPreviousData,
   });
 
@@ -142,8 +182,21 @@ export function CategoriesPage() {
     staleTime: 30_000,
   });
 
-  const data = query.data;
-  const items = data?.items ?? [];
+  const totalQuery = useQuery({
+    queryKey: ["catalog", "categories", "kpi", "total"],
+    queryFn: () => searchCategories({ pageSize: 1 }),
+    staleTime: 30_000,
+  });
+  const activeQuery = useQuery({
+    queryKey: ["catalog", "categories", "kpi", "active"],
+    queryFn: () => searchCategories({ pageSize: 1, isActive: true }),
+    staleTime: 30_000,
+  });
+  const visibleQuery = useQuery({
+    queryKey: ["catalog", "categories", "kpi", "visible"],
+    queryFn: () => searchCategories({ pageSize: 1, isVisible: true }),
+    staleTime: 30_000,
+  });
 
   const nameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -157,17 +210,66 @@ export function CategoriesPage() {
     return map;
   }, [treeQuery.data]);
 
-  const searchActive = debouncedSearch.length > 0;
+  const rows: CategoryRow[] = useMemo(
+    () =>
+      (query.data?.items ?? []).map((c) => ({
+        ...c,
+        parentName: c.parentCategoryId
+          ? nameById.get(c.parentCategoryId) ?? "—"
+          : t("categories.rootLabel"),
+        activeLabel: c.isActive ? tc("status.active") : tc("status.inactive"),
+        visibleLabel: c.isVisible ? t("categories.filters.visibleYes") : t("categories.filters.visibleNo"),
+      })),
+    [query.data, nameById, t, tc],
+  );
+
+  const sortFieldFor = (field: string): string | undefined =>
+    ({ name: "name", slug: "slug", createdAtUtc: "createdAtUtc" })[field];
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "imageUrl", headerText: t("categories.fields.image"), template: CatImageCell as any, width: 72, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "code", headerText: t("categories.fields.code"), template: CatCodeCell as any, width: 130 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "name", headerText: t("categories.singular"), template: CatNameCell as any, minWidth: 240 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "slug", headerText: t("categories.fields.slug"), template: CatSlugCell as any, width: 170 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isActive", headerText: t("categories.fields.active"), template: CatActiveCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isVisible", headerText: t("categories.fields.visible"), template: CatVisibleCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      { field: "createdAtUtc", headerText: t("categories.fields.created"), width: 140, type: "date" },
+    ],
+    [t],
+  );
+
+  const resetFilters = () => {
+    setSearch("");
+    setActiveFilter(null);
+    setVisibleFilter(null);
+    setPage(1);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Layers}
         title={t("categories.title")}
-        total={data?.totalCount ?? null}
+        total={query.data?.totalCount ?? null}
         unit={t("categories.singular")}
         description={t("categories.description")}
       >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.panelToggle")}
+        </Button>
         <Button
           perm={P.catalog.categories.create}
           onClick={() => setEditor({ mode: "create" })}
@@ -178,294 +280,111 @@ export function CategoriesPage() {
         </Button>
       </EntityPageHeader>
 
-      <EntitySearch
-        value={search}
-        onChange={setSearch}
-        placeholder={t("categories.searchPlaceholder")}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={resetFilters}
+        filters={
+          <>
+            <MakaFilterField label={t("categories.searchLabel")} className="grow">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("categories.searchPlaceholder")}
+                className="h-8 w-full min-w-64"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("categories.fields.active")}>
+              <EntityFilterPill<string | null>
+                label={t("categories.fields.active")}
+                value={activeFilter}
+                onChange={setActiveFilter}
+                options={[
+                  { value: null, label: tc("status.all") },
+                  { value: "true", label: tc("status.active") },
+                  { value: "false", label: tc("status.inactive") },
+                ]}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("categories.fields.visible")}>
+              <EntityFilterPill<string | null>
+                label={t("categories.fields.visible")}
+                value={visibleFilter}
+                onChange={setVisibleFilter}
+                options={[
+                  { value: null, label: tc("status.all") },
+                  { value: "true", label: t("categories.filters.visibleYes") },
+                  { value: "false", label: t("categories.filters.visibleNo") },
+                ]}
+              />
+            </MakaFilterField>
+          </>
+        }
+        kpis={
+          <>
+            <KpiCard label={t("categories.kpi.total")} value={totalQuery.data?.totalCount ?? 0} tone="var(--color-primary)" />
+            <KpiCard label={t("categories.kpi.active")} value={activeQuery.data?.totalCount ?? 0} tone="var(--color-success)" />
+            <KpiCard label={t("categories.kpi.visible")} value={visibleQuery.data?.totalCount ?? 0} tone="var(--color-info)" />
+          </>
+        }
       />
 
-      {query.isLoading && items.length === 0 ? (
-        <EntityListLoading desktopColumns="grid-cols-[1fr_180px_140px_24px]" />
-      ) : items.length === 0 ? (
-        <EntityEmpty
-          icon={searchActive ? Search : Layers}
-          title={searchActive ? t("categories.empty.searchTitle") : t("categories.empty.title")}
-          body={
-            searchActive
-              ? debouncedSearch
-                ? t("categories.empty.searchBody", { term: debouncedSearch })
-                : t("categories.empty.filterBody")
-              : t("categories.empty.body")
-          }
-          action={
-            searchActive ? (
-              <Button
-                variant="outline"
-                onClick={() => setSearch("")}
-                className="h-9 rounded-lg px-4 text-[13px]"
-              >
-                {t("categories.empty.clearSearch")}
-              </Button>
-            ) : (
-              <Button
-                perm={P.catalog.categories.create}
-                onClick={() => setEditor({ mode: "create" })}
-                className="h-9 rounded-lg px-4 text-[13px]"
-              >
-                <Plus className="mr-1.5 size-4" />
-                {t("categories.actions.add")}
-              </Button>
-            )
-          }
-        />
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {t("categories.found", { count: data?.totalCount ?? 0 })}
-            </p>
-          </div>
-
-          {/* Mobile: card list */}
-          <div className="space-y-2 md:hidden">
-            {items.map((category) => (
-              <MobileCard
-                key={category.id}
-                category={category}
-                parentName={
-                  category.parentCategoryId
-                    ? nameById.get(category.parentCategoryId)
-                    : undefined
-                }
-                onEdit={can(P.catalog.categories.update) ? () => setEditor({ mode: "edit", category }) : undefined}
-              />
-            ))}
-          </div>
-
-          {/* Desktop: list card */}
-          <EntityListCard className="hidden md:block">
-            <EntityListHeader className="grid-cols-[1fr_180px_140px_24px]">
-              <span>{t("categories.singular")}</span>
-              <span>{t("categories.fields.slug")}</span>
-              <span>{t("categories.fields.created")}</span>
-              <span />
-            </EntityListHeader>
-
-            {items.map((category, i) => (
-              <DesktopRow
-                key={category.id}
-                category={category}
-                parentName={
-                  category.parentCategoryId
-                    ? nameById.get(category.parentCategoryId)
-                    : undefined
-                }
-                isLast={i === items.length - 1}
-                onEdit={() => setEditor({ mode: "edit", category })}
-                onDelete={() => setEditor({ mode: "delete", category })}
-              />
-            ))}
-          </EntityListCard>
-
-          <EntityPager
-            page={data?.pageNumber ?? 1}
-            totalPages={data?.totalPages ?? 1}
-            hasPrev={!!data?.hasPrevious}
-            hasNext={!!data?.hasNext}
-            onPrev={() => setPageNumber((p) => Math.max(1, p - 1))}
-            onNext={() => setPageNumber((p) => p + 1)}
-          />
-        </div>
-      )}
-
-      {query.isError && (
-        <div
-          role="alert"
-          className="rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.30)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.06)] px-3 py-2 text-sm text-[var(--color-destructive)]"
-        >
-          {describe(query.error)}
-        </div>
-      )}
+      <MakaGrid<CategoryRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isFetching}
+        fileName="categorias"
+        entityName={t("categories.singular")}
+        onRowClick={(row) => can(P.catalog.categories.update) && setEditor({ mode: "edit", category: row })}
+        onClearFilters={resetFilters}
+        permissions={{ edit: P.catalog.categories.update, delete: P.catalog.categories.delete }}
+        onEdit={(row) => setEditor({ mode: "edit", category: row })}
+        onDelete={(row) => setEditor({ mode: "delete", category: row })}
+        serverPaging={{
+          totalCount: query.data?.totalCount ?? 0,
+          page,
+          pageSize,
+          pageSizes: PAGE_SIZES,
+          onChange: ({ page: p, pageSize: ps }) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+          onSortChange: (s) => {
+            setPage(1);
+            if (!s) setSort({ by: "name", dir: "asc" });
+            else {
+              const by = sortFieldFor(s.field);
+              setSort(by ? { by, dir: s.dir } : { by: "name", dir: "asc" });
+            }
+          },
+        }}
+      />
 
       <CategoryEditorDialog
         state={editor}
         onClose={() => setEditor({ mode: "closed" })}
         tree={treeQuery.data ?? []}
       />
-      <DeleteCategoryDialog
-        state={editor}
-        onClose={() => setEditor({ mode: "closed" })}
-      />
+      <DeleteCategoryDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
     </div>
   );
 }
 
-// ───────────────────────────────────────────────────────────────────────
-//  Mobile card
-// ───────────────────────────────────────────────────────────────────────
-
-function MobileCard({
-  category,
-  parentName,
-  onEdit,
-}: {
-  category: CategoryDto;
-  parentName: string | undefined;
-  onEdit?: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-
-  return (
-    <EntityMobileCard
-      {...(onEdit
-        ? {
-            href: "#",
-            onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
-              e.preventDefault();
-              onEdit();
-            },
-            "aria-label": t("categories.openCategoryAria", { name: category.name }),
-          }
-        : {})}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <EntityInitialsAvatar name={category.name} size={40} />
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-              {category.name}
-            </p>
-            <code className="mt-0.5 block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              {category.slug}
-            </code>
-          </div>
-        </div>
-        <ChevronRight className="size-4 text-[var(--color-border)]" />
-      </div>
-      <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--color-muted-foreground)]">
-        {category.parentCategoryId ? (
-          <>
-            <ChevronsRight className="size-3 opacity-60" />
-            <span>{t("categories.underParent", { name: parentName ?? "—" })}</span>
-          </>
-        ) : (
-          <>
-            <GitBranch className="size-3 opacity-60" />
-            <span>{t("categories.rootLabel")}</span>
-          </>
+// ── Category avatar ────────────────────────────────────────────────────────
+function CategoryAvatar({ category, size }: { category: CategoryDto; size: number }) {
+  if (category.imageUrl) {
+    return (
+      <span
+        style={{ width: size, height: size }}
+        className={cn(
+          "relative grid shrink-0 place-items-center overflow-hidden rounded-lg",
+          "bg-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)]",
         )}
-        {category.description && (
-          <>
-            <span className="opacity-40">·</span>
-            <span className="truncate" title={category.description}>
-              {category.description}
-            </span>
-          </>
-        )}
-      </div>
-    </EntityMobileCard>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Desktop row
-// ───────────────────────────────────────────────────────────────────────
-
-function DesktopRow({
-  category,
-  parentName,
-  isLast,
-  onEdit,
-  onDelete,
-}: {
-  category: CategoryDto;
-  parentName: string | undefined;
-  isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-
-  return (
-    <EntityListRow
-      className="grid-cols-[1fr_180px_140px_24px]"
-      isLast={isLast}
-    >
-      {/* Name + avatar */}
-      <div className="flex min-w-0 items-center gap-3">
-        <EntityInitialsAvatar name={category.name} size={36} />
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-medium text-[var(--color-foreground)] transition-colors group-hover:text-[var(--color-primary)]">
-            {category.name}
-          </div>
-          <div className="mt-0.5 flex items-center gap-1 truncate text-[12px] text-[var(--color-muted-foreground)]">
-            {category.parentCategoryId ? (
-              <>
-                <ChevronsRight className="size-3 shrink-0 opacity-60" />
-                <span className="truncate">
-                  {t("categories.underParent", { name: parentName ?? "—" })}
-                </span>
-              </>
-            ) : (
-              <>
-                <GitBranch className="size-3 shrink-0 opacity-60" />
-                <span>{t("categories.rootLabel")}</span>
-              </>
-            )}
-            {category.description && (
-              <>
-                <span className="opacity-40">·</span>
-                <span className="truncate" title={category.description}>
-                  {category.description}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Slug */}
-      <code
-        title={category.slug}
-        className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]"
       >
-        {category.slug}
-      </code>
-
-      {/* Created */}
-      <div className="min-w-0 text-[12px] text-[var(--color-muted-foreground)] tabular-nums">
-        <div className="truncate">{formatDate(category.createdAtUtc)}</div>
-        <div className="truncate text-[11px] opacity-70">
-          {formatRelative(category.createdAtUtc)}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-1">
-        <Perm need={P.catalog.categories.update}>
-          <button
-            type="button"
-            aria-label={t("categories.editAria", { name: category.name })}
-            onClick={onEdit}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
-          >
-            <Pencil className="size-3.5" />
-          </button>
-        </Perm>
-        <Perm need={P.catalog.categories.delete}>
-          <button
-            type="button"
-            aria-label={t("categories.deleteAria", { name: category.name })}
-            onClick={onDelete}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
-        </Perm>
-        <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
-      </div>
-    </EntityListRow>
-  );
+        <img src={category.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+      </span>
+    );
+  }
+  return <EntityInitialsAvatar name={category.name} size={size} />;
 }
 
 // ───────────────────────────────────────────────────────────────────────
@@ -482,49 +401,50 @@ function CategoryEditorDialog({
   tree: CategoryTreeNodeDto[];
 }) {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "create" || state.mode === "edit";
   const category = state.mode === "edit" ? state.category : undefined;
   const queryClient = useQueryClient();
 
   const initial = useMemo(
     () => ({
+      code: category?.code ?? "",
       name: category?.name ?? "",
       description: category?.description ?? "",
+      imageUrl: category?.imageUrl ?? "",
       parentCategoryId: category?.parentCategoryId ?? "",
+      isActive: category?.isActive ?? true,
+      isVisible: category?.isVisible ?? true,
     }),
-    [
-      category?.id,
-      category?.name,
-      category?.description,
-      category?.parentCategoryId,
-    ],
+    [category?.id, category?.code, category?.name, category?.description, category?.imageUrl, category?.parentCategoryId, category?.isActive, category?.isVisible],
   );
 
+  const [code, setCode] = useState(initial.code);
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description);
+  const [imageUrl, setImageUrl] = useState(initial.imageUrl);
   const [parentCategoryId, setParentCategoryId] = useState(initial.parentCategoryId);
+  const [isActive, setIsActive] = useState(initial.isActive);
+  const [isVisible, setIsVisible] = useState(initial.isVisible);
 
   useEffect(() => {
     if (isOpen) {
+      setCode(initial.code);
       setName(initial.name);
       setDescription(initial.description);
+      setImageUrl(initial.imageUrl);
       setParentCategoryId(initial.parentCategoryId);
+      setIsActive(initial.isActive);
+      setIsVisible(initial.isVisible);
     }
-  }, [
-    isOpen,
-    initial.name,
-    initial.description,
-    initial.parentCategoryId,
-  ]);
+  }, [isOpen, initial]);
 
   const slugPreview = useMemo(() => slugify(name) || "—", [name]);
 
   const parentOptions = useMemo<FlatNode[]>(() => {
     const flat = flattenTree(tree);
     if (!category) return flat;
-    return flat.filter(
-      (n) => n.id !== category.id && !n.ancestorIds.includes(category.id),
-    );
+    return flat.filter((n) => n.id !== category.id && !n.ancestorIds.includes(category.id));
   }, [tree, category]);
 
   const createMutation = useMutation({
@@ -549,21 +469,20 @@ function CategoryEditorDialog({
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const trimmedName = name.trim();
+  const trimmedCode = code.trim();
+  const canSubmit = !!trimmedName && !!trimmedCode;
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!trimmedName) return;
-    // TODO(catalog-fase2): replace with proper Code/Image/Active/Visible inputs.
-    const code =
-      (category?.code || trimmedName.toUpperCase().replace(/[^A-Z0-9]+/g, "-")).slice(0, 32) || "CAT";
+    if (!canSubmit) return;
     const payload = {
-      code,
+      code: trimmedCode,
       name: trimmedName,
       description: description.trim() || null,
-      imageUrl: category?.imageUrl ?? null,
+      imageUrl: imageUrl.trim() || null,
       parentCategoryId: parentCategoryId || null,
-      isActive: category?.isActive ?? true,
-      isVisible: category?.isVisible ?? true,
+      isActive,
+      isVisible,
     };
     if (state.mode === "edit" && category) {
       updateMutation.mutate({ categoryId: category.id, ...payload });
@@ -577,34 +496,38 @@ function CategoryEditorDialog({
       <DialogContent className="!max-w-lg">
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle>
-              {category ? t("categories.editTitle") : t("categories.createTitle")}
-            </DialogTitle>
+            <DialogTitle>{category ? t("categories.editTitle") : t("categories.createTitle")}</DialogTitle>
             <DialogDescription>
-              {category
-                ? t("categories.editDesc", { name: category.name })
-                : t("categories.createDesc")}
+              {category ? t("categories.editDesc", { name: category.name }) : t("categories.createDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody className="space-y-5">
-            <Field id="category-name" label={t("categories.fields.name")} required>
-              <Input
-                id="category-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("categories.namePlaceholder")}
-                autoFocus
-                required
-                maxLength={128}
-              />
-            </Field>
+            <div className="grid grid-cols-[160px_1fr] gap-4">
+              <Field id="category-code" label={t("categories.fields.code")} required>
+                <Input
+                  id="category-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder={t("categories.codePlaceholder")}
+                  required
+                  maxLength={32}
+                />
+              </Field>
+              <Field id="category-name" label={t("categories.fields.name")} required>
+                <Input
+                  id="category-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("categories.namePlaceholder")}
+                  autoFocus
+                  required
+                  maxLength={128}
+                />
+              </Field>
+            </div>
 
-            <Field
-              id="category-slug"
-              label={t("categories.fields.slug")}
-              hint={t("categories.slugHint")}
-            >
+            <Field id="category-slug" label={t("categories.fields.slug")} hint={t("categories.slugHint")}>
               <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
                 <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
                   {slugPreview}
@@ -612,11 +535,7 @@ function CategoryEditorDialog({
               </div>
             </Field>
 
-            <Field
-              id="category-parent"
-              label={t("categories.fields.parent")}
-              hint={t("categories.parentHint")}
-            >
+            <Field id="category-parent" label={t("categories.fields.parent")} hint={t("categories.parentHint")}>
               <Combobox
                 id="category-parent"
                 label={t("categories.fields.parent")}
@@ -650,11 +569,7 @@ function CategoryEditorDialog({
               />
             </Field>
 
-            <Field
-              id="category-description"
-              label={t("categories.fields.description")}
-              hint={t("categories.descriptionHint")}
-            >
+            <Field id="category-description" label={t("categories.fields.description")} hint={t("categories.descriptionHint")}>
               <textarea
                 id="category-description"
                 value={description}
@@ -670,7 +585,21 @@ function CategoryEditorDialog({
               />
             </Field>
 
-            {/* Change history — only shown when editing an existing category */}
+            <Field id="category-image" label={t("categories.fields.image")} hint={t("categories.imageHint")}>
+              <ImageInput value={imageUrl} onChange={setImageUrl} ownerType="Category" ownerId={category?.id} shape="square" />
+            </Field>
+
+            <div className="flex items-center gap-8">
+              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("categories.fields.active")} />
+                {t("categories.fields.active")}
+              </label>
+              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("categories.fields.visible")} />
+                {t("categories.fields.visible")}
+              </label>
+            </div>
+
             {category && (
               <div className="border-t border-[var(--color-border)] pt-4">
                 <EntityAuditSection entityKey={category.id} entityName="Category" />
@@ -681,15 +610,11 @@ function CategoryEditorDialog({
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isPending}>
-                {t("common:actions.cancel")}
+                {tc("actions.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending || !trimmedName}>
-              {isPending
-                ? t("common:feedback.saving")
-                : category
-                  ? t("common:actions.saveChanges")
-                  : t("categories.actions.add")}
+            <Button type="submit" disabled={isPending || !canSubmit}>
+              {isPending ? tc("feedback.saving") : category ? tc("actions.saveChanges") : t("categories.actions.add")}
             </Button>
           </DialogFooter>
         </form>
@@ -702,14 +627,9 @@ function CategoryEditorDialog({
 //  Delete confirmation
 // ───────────────────────────────────────────────────────────────────────
 
-function DeleteCategoryDialog({
-  state,
-  onClose,
-}: {
-  state: EditorState;
-  onClose: () => void;
-}) {
+function DeleteCategoryDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "delete";
   const category = state.mode === "delete" ? state.category : undefined;
   const queryClient = useQueryClient();
@@ -728,9 +648,7 @@ function DeleteCategoryDialog({
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-[var(--color-destructive)]">
-            {t("categories.actions.delete")}
-          </DialogTitle>
+          <DialogTitle className="text-[var(--color-destructive)]">{t("categories.actions.delete")}</DialogTitle>
           <DialogDescription>
             {t("categories.deleteFullDesc", {
               name: category?.name ?? "",
@@ -741,7 +659,7 @@ function DeleteCategoryDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={deleteMutation.isPending}>
-              {t("common:actions.cancel")}
+              {tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -749,9 +667,7 @@ function DeleteCategoryDialog({
             onClick={() => category && deleteMutation.mutate(category.id)}
             disabled={deleteMutation.isPending || !category}
           >
-            {deleteMutation.isPending
-              ? t("common:feedback.deleting")
-              : t("categories.actions.delete")}
+            {deleteMutation.isPending ? tc("feedback.deleting") : t("categories.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
