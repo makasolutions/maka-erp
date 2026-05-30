@@ -164,3 +164,51 @@ Patrón de referencia: `src/components/maka/MakaChart.tsx` — seguirlo exactame
 [data-theme="dark"] .e-schedule { ... }
 ```
 
+### Formato de moneda — SIEMPRE `formatMoney`
+
+🚫 **PROHIBIDO:** formatear dinero con `Intl.NumberFormat(..., { style: "currency" })` ad-hoc o
+con un helper local por archivo.
+
+**Regla de la casa (única fuente):** usar `formatMoney(amount, currency?)` de
+`@/lib/list-helpers`. Salida canónica:
+
+- Símbolo **`$` primero**, miles con **`.`**, decimales con **`,`** (agrupación es-CO).
+- `formatMoney(12540000)` → `$12.540.000`
+- `formatMoney(12540000, "COP")` → `$12.540.000 COP` (el código ISO va **al final**)
+- `formatMoney(1299, "USD")` → `$1.299,00 USD`
+- **Decimales:** COP (y montos sin código) → **0**; otras monedas → **2** (no redondear centavos extranjeros).
+- `formatMoney(x, code, { code: false })` oculta el código en pantallas de una sola moneda.
+
+En grids Syncfusion usar `formatCOP` / `makaCurrencyColumn` de `@/components/maka` (mismo
+estilo). En charts seguir `MakaChart.tsx`. Nunca reintroducir un formateador de moneda local.
+
+### Filtros de lista — input/select con ✕ que limpia
+
+🚫 **PROHIBIDO:** crear un input de filtro de texto a mano (`<Input>` suelto) sin la ✕ de limpiar.
+
+- Texto → **`MakaFilterInput`** de `@/components/maka` (input h-8 + ✕ que resetea; hereda el
+  comportamiento para **todos** los filtros del sitio).
+- Dropdown/select → **`Combobox`** con `clearable` (su ✕ limpia sin abrir el menú).
+- Campo de filtro (label + control alineados) → envolver en **`MakaFilterField`** (da nombre
+  accesible vía `role="group"` + `aria-labelledby`).
+- El panel de filtros/KPIs es **`MakaGridFilters`** (tabs ARIA correctas).
+
+Todo filtro nuevo DEBE reutilizar estos componentes; no reimplementar la lógica de limpiar.
+
+### Formularios en popups — rejilla de 12 columnas
+
+🚫 **PROHIBIDO:** maquetar un formulario de diálogo con grids ad-hoc (`grid-cols-2`,
+`grid-cols-[160px_1fr]`, etc.).
+
+- Envolver los campos en **`FormGrid`** de `@/components/list` (rejilla responsive de 12 cols;
+  una sola columna en móvil, 12 desde `sm`).
+- Dar `span` a cada `Field` (Bootstrap-style). Convención de la casa:
+  **código → 4, nombre → 8, slug → 6, descripción → 12**, la mayoría de los demás → **6**.
+  Bloques que no son `Field` (switches, secciones) usan `col-span-1 sm:col-span-N` literal.
+- Ancho del diálogo de formulario de 2 columnas: **`!max-w-[720px]`** (responsive; full-width en
+  móvil). Forms triviales de 1 campo pueden seguir con `max-w-md`/`max-w-lg`.
+- Las clases de span son estáticas en `field.tsx` (`SPAN_CLASS`) para que el JIT de Tailwind las
+  detecte — **nunca** construir `sm:col-span-${n}` dinámicamente.
+
+Referencia: `pages/catalog/{brands,categories,products}.tsx`.
+

@@ -1,5 +1,5 @@
 export { PageHero } from "./page-hero";
-export { Field } from "./field";
+export { Field, FormGrid, type FormSpan } from "./field";
 export { ErrorBand } from "./error-band";
 export { Combobox, type ComboboxOption } from "./combobox";
 export {

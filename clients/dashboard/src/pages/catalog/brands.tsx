@@ -42,6 +42,7 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormGrid,
 } from "@/components/list";
 import {
   MakaGridClient,
@@ -425,7 +426,7 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="!max-w-lg">
+      <DialogContent className="!max-w-[720px]">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{brand ? t("brands.actions.edit") : t("brands.actions.add")}</DialogTitle>
@@ -434,9 +435,9 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
             </DialogDescription>
           </DialogHeader>
 
-          <DialogBody className="space-y-5">
-            <div className="grid grid-cols-[160px_1fr] gap-4">
-              <Field id="brand-code" label={t("brands.fields.code")} required>
+          <DialogBody>
+            <FormGrid>
+              <Field id="brand-code" span={4} label={t("brands.fields.code")} required>
                 <Input
                   id="brand-code"
                   value={code}
@@ -446,7 +447,7 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                   maxLength={32}
                 />
               </Field>
-              <Field id="brand-name" label={t("brands.fields.name")} required>
+              <Field id="brand-name" span={8} label={t("brands.fields.name")} required>
                 <Input
                   id="brand-name"
                   value={name}
@@ -457,52 +458,52 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                   maxLength={128}
                 />
               </Field>
-            </div>
 
-            <Field id="brand-slug" label={t("brands.fields.slug")} hint={t("brands.slugHint")}>
-              <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
-                <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
-                  {slugPreview}
-                </code>
+              <Field id="brand-slug" span={6} label={t("brands.fields.slug")} hint={t("brands.slugHint")}>
+                <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
+                  <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
+                    {slugPreview}
+                  </code>
+                </div>
+              </Field>
+
+              <Field id="brand-logo" span={6} label={t("brands.fields.image")} hint={t("brands.logoHint")}>
+                <ImageInput value={logoUrl} onChange={setLogoUrl} ownerType="Brand" ownerId={brand?.id} shape="square" />
+              </Field>
+
+              <Field id="brand-description" span={12} label={t("brands.fields.description")} hint={t("brands.descriptionHint")}>
+                <textarea
+                  id="brand-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  maxLength={1024}
+                  className={cn(
+                    "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
+                    "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
+                    "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
+                  )}
+                  placeholder={t("brands.descPlaceholder")}
+                />
+              </Field>
+
+              <div className="col-span-1 flex items-center gap-8 sm:col-span-12">
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("brands.fields.active")} />
+                  {t("brands.fields.active")}
+                </label>
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("brands.fields.visible")} />
+                  {t("brands.fields.visible")}
+                </label>
               </div>
-            </Field>
 
-            <Field id="brand-description" label={t("brands.fields.description")} hint={t("brands.descriptionHint")}>
-              <textarea
-                id="brand-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                maxLength={1024}
-                className={cn(
-                  "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
-                  "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
-                  "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
-                )}
-                placeholder={t("brands.descPlaceholder")}
-              />
-            </Field>
-
-            <Field id="brand-logo" label={t("brands.fields.image")} hint={t("brands.logoHint")}>
-              <ImageInput value={logoUrl} onChange={setLogoUrl} ownerType="Brand" ownerId={brand?.id} shape="square" />
-            </Field>
-
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("brands.fields.active")} />
-                {t("brands.fields.active")}
-              </label>
-              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("brands.fields.visible")} />
-                {t("brands.fields.visible")}
-              </label>
-            </div>
-
-            {brand && (
-              <div className="border-t border-[var(--color-border)] pt-4">
-                <EntityAuditSection entityKey={brand.id} entityName="Brand" />
-              </div>
-            )}
+              {brand && (
+                <div className="col-span-1 border-t border-[var(--color-border)] pt-4 sm:col-span-12">
+                  <EntityAuditSection entityKey={brand.id} entityName="Brand" />
+                </div>
+              )}
+            </FormGrid>
           </DialogBody>
 
           <DialogFooter>

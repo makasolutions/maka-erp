@@ -61,6 +61,7 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormGrid,
 } from "@/components/list";
 import {
   MakaGridServer,
@@ -133,9 +134,10 @@ function ProdCategoryCell(row: ProductRow) {
   return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.categoryName}</span>;
 }
 function ProdPriceCell(row: ProductRow) {
-  // Sans + tabular-nums (no display font): the product register bans display
-  // fonts in data cells; tabular figures keep the column aligned.
-  return <span className="text-[13px] font-semibold tabular-nums text-[var(--color-foreground)]">{row.priceLabel}</span>;
+  // Same weight/size/colour as every other data cell — only tabular-nums (digit
+  // alignment) sets it apart. No display font, no bold (product register bans
+  // display fonts in data; bold made the column read as a different typeface).
+  return <span className="text-[13px] tabular-nums text-[var(--color-foreground)]">{row.priceLabel}</span>;
 }
 function ProdActiveCell(row: ProductRow) {
   return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
@@ -263,11 +265,11 @@ export function ProductsPage() {
   const columns: ColumnModel[] = useMemo(
     () => [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "thumbnailUrl", headerText: t("products.fields.image"), template: ProdImageCell as any, width: 72, allowSorting: false, textAlign: "Center" },
+      { field: "thumbnailUrl", headerText: t("products.fields.image"), template: ProdImageCell as any, width: 96, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "categoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
+      { field: "categoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 170, minWidth: 140, allowSorting: false },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 150, allowSorting: false },
+      { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 170, minWidth: 140, allowSorting: false },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "sku", headerText: t("products.fields.sku"), template: ProdSkuCell as any, width: 140 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -672,7 +674,7 @@ function ProductEditorDialog({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="!max-w-xl">
+      <DialogContent className="!max-w-[720px]">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>
@@ -685,9 +687,9 @@ function ProductEditorDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <DialogBody className="space-y-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field id="product-name" label={t("products.fields.name")} required>
+          <DialogBody>
+            <FormGrid>
+              <Field id="product-name" span={8} label={t("products.fields.name")} required>
                 <Input
                   id="product-name"
                   value={name}
@@ -700,6 +702,7 @@ function ProductEditorDialog({
               </Field>
               <Field
                 id="product-sku"
+                span={4}
                 label={t("products.fields.sku")}
                 required={!product}
                 hint={product ? t("products.fields.skuFixedHint") : t("products.fields.skuHint")}
@@ -715,10 +718,8 @@ function ProductEditorDialog({
                   className="font-mono text-[13px] tracking-tight"
                 />
               </Field>
-            </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field id="product-brand" label={t("products.fields.brand")} required>
+              <Field id="product-brand" span={6} label={t("products.fields.brand")} required>
                 <Combobox
                   id="product-brand"
                   label={t("products.fields.brand")}
@@ -732,7 +733,7 @@ function ProductEditorDialog({
                   createLabel={t("products.createBrand")}
                 />
               </Field>
-              <Field id="product-category" label={t("products.fields.category")} required>
+              <Field id="product-category" span={6} label={t("products.fields.category")} required>
                 <Combobox
                   id="product-category"
                   label={t("products.fields.category")}
@@ -746,79 +747,80 @@ function ProductEditorDialog({
                   createLabel={t("products.createCategory")}
                 />
               </Field>
-            </div>
 
-            {!product && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Field id="product-price" label={t("products.fields.price")} required>
-                  <Input
-                    id="product-price"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min="0"
-                    value={priceAmount}
-                    onChange={(e) => setPriceAmount(e.target.value)}
-                    required
-                    className="tabular-nums"
-                  />
-                </Field>
-                <Field id="product-currency" label={t("products.fields.currency")} required>
-                  <Input
-                    id="product-currency"
-                    value={priceCurrency}
-                    onChange={(e) => setPriceCurrency(e.target.value.toUpperCase().slice(0, 3))}
-                    required
-                    maxLength={3}
-                    className="font-mono uppercase tracking-tight"
-                  />
-                </Field>
-                <Field id="product-stock" label={t("products.fields.stock")} required>
-                  <Input
-                    id="product-stock"
-                    type="number"
-                    inputMode="numeric"
-                    step="1"
-                    min="0"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    required
-                    className="tabular-nums"
-                  />
-                </Field>
-              </div>
-            )}
+              {!product && (
+                <>
+                  <Field id="product-price" span={4} label={t("products.fields.price")} required>
+                    <Input
+                      id="product-price"
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      value={priceAmount}
+                      onChange={(e) => setPriceAmount(e.target.value)}
+                      required
+                      className="tabular-nums"
+                    />
+                  </Field>
+                  <Field id="product-currency" span={4} label={t("products.fields.currency")} required>
+                    <Input
+                      id="product-currency"
+                      value={priceCurrency}
+                      onChange={(e) => setPriceCurrency(e.target.value.toUpperCase().slice(0, 3))}
+                      required
+                      maxLength={3}
+                      className="font-mono uppercase tracking-tight"
+                    />
+                  </Field>
+                  <Field id="product-stock" span={4} label={t("products.fields.stock")} required>
+                    <Input
+                      id="product-stock"
+                      type="number"
+                      inputMode="numeric"
+                      step="1"
+                      min="0"
+                      value={stock}
+                      onChange={(e) => setStock(e.target.value)}
+                      required
+                      className="tabular-nums"
+                    />
+                  </Field>
+                </>
+              )}
 
-            <Field
-              id="product-description"
-              label={t("products.fields.description")}
-              hint={t("products.fields.descHint")}
-            >
-              <textarea
+              <Field
                 id="product-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                maxLength={4000}
-                className={cn(
-                  "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
-                  "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
-                  "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
-                )}
-                placeholder={t("products.fields.descPlaceholder")}
-              />
-            </Field>
+                span={12}
+                label={t("products.fields.description")}
+                hint={t("products.fields.descHint")}
+              >
+                <textarea
+                  id="product-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  maxLength={4000}
+                  className={cn(
+                    "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
+                    "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
+                    "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
+                  )}
+                  placeholder={t("products.fields.descPlaceholder")}
+                />
+              </Field>
 
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("products.fields.active")} />
-                {t("products.fields.active")}
-              </label>
-              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("products.fields.visible")} />
-                {t("products.fields.visible")}
-              </label>
-            </div>
+              <div className="col-span-1 flex items-center gap-8 sm:col-span-12">
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("products.fields.active")} />
+                  {t("products.fields.active")}
+                </label>
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("products.fields.visible")} />
+                  {t("products.fields.visible")}
+                </label>
+              </div>
+            </FormGrid>
           </DialogBody>
 
           <DialogFooter>

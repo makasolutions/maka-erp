@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/cn";
@@ -102,10 +102,15 @@ export function EntitySearch({
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-[11px] font-medium text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)] transition-colors hover:text-[var(--color-muted-foreground)]"
+          aria-label={t("actions.clear")}
+          className={cn(
+            "absolute right-3 top-1/2 grid size-6 -translate-y-1/2 cursor-pointer place-items-center rounded-md",
+            "text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+          )}
           type="button"
         >
-          {t("actions.clear")}
+          <X className="size-3.5" />
         </button>
       )}
     </div>

@@ -94,11 +94,10 @@ const ACTIONS_FIELD = "__maka_actions__";
  * "es" locale that Syncfusion's C0 format falls back to → "28.900.000 COP").
  */
 export function formatCOP(value: number): string {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(value);
+  // House money style: "$" first, dot-grouped, no decimals → "$12.540.000".
+  // (Mirrors formatMoney in list-helpers; kept here so the maka barrel has no
+  // cross-dependency on the page-helpers module.)
+  return `$${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value)}`;
 }
 
 /**

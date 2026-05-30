@@ -51,7 +51,7 @@ import {
   Field,
   type EntityStatusTone,
 } from "@/components/list";
-import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField } from "@/components/maka";
+import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField, MakaFilterInput } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { getUserById } from "@/api/identity";
@@ -314,11 +314,12 @@ export function TicketsPage() {
         filters={
           <>
             <MakaFilterField label={t("cols.number")}>
-              <Input
+              <MakaFilterInput
                 value={numberFilter}
-                onChange={(e) => setNumberFilter(e.target.value)}
+                onChange={setNumberFilter}
                 placeholder={t("cols.number")}
-                className="h-8 w-40"
+                ariaLabel={t("cols.number")}
+                className="w-40"
               />
             </MakaFilterField>
             <MakaFilterField label={t("cols.created")}>

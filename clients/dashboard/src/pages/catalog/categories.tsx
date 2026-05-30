@@ -45,6 +45,7 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormGrid,
 } from "@/components/list";
 import {
   MakaGridClient,
@@ -462,7 +463,7 @@ function CategoryEditorDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="!max-w-lg">
+      <DialogContent className="!max-w-[720px]">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{category ? t("categories.editTitle") : t("categories.createTitle")}</DialogTitle>
@@ -471,9 +472,9 @@ function CategoryEditorDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <DialogBody className="space-y-5">
-            <div className="grid grid-cols-[160px_1fr] gap-4">
-              <Field id="category-code" label={t("categories.fields.code")} required>
+          <DialogBody>
+            <FormGrid>
+              <Field id="category-code" span={4} label={t("categories.fields.code")} required>
                 <Input
                   id="category-code"
                   value={code}
@@ -483,7 +484,7 @@ function CategoryEditorDialog({
                   maxLength={32}
                 />
               </Field>
-              <Field id="category-name" label={t("categories.fields.name")} required>
+              <Field id="category-name" span={8} label={t("categories.fields.name")} required>
                 <Input
                   id="category-name"
                   value={name}
@@ -494,18 +495,17 @@ function CategoryEditorDialog({
                   maxLength={128}
                 />
               </Field>
-            </div>
 
-            <Field id="category-slug" label={t("categories.fields.slug")} hint={t("categories.slugHint")}>
-              <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
-                <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
-                  {slugPreview}
-                </code>
-              </div>
-            </Field>
+              <Field id="category-slug" span={6} label={t("categories.fields.slug")} hint={t("categories.slugHint")}>
+                <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
+                  <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
+                    {slugPreview}
+                  </code>
+                </div>
+              </Field>
 
-            <Field id="category-parent" label={t("categories.fields.parent")} hint={t("categories.parentHint")}>
-              <Combobox
+              <Field id="category-parent" span={6} label={t("categories.fields.parent")} hint={t("categories.parentHint")}>
+                <Combobox
                 id="category-parent"
                 label={t("categories.fields.parent")}
                 placeholder={t("categories.noParentPlaceholder")}
@@ -538,42 +538,43 @@ function CategoryEditorDialog({
               />
             </Field>
 
-            <Field id="category-description" label={t("categories.fields.description")} hint={t("categories.descriptionHint")}>
-              <textarea
-                id="category-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                maxLength={1024}
-                className={cn(
-                  "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
-                  "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
-                  "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
-                )}
-                placeholder={t("categories.descPlaceholder")}
-              />
-            </Field>
+              <Field id="category-description" span={12} label={t("categories.fields.description")} hint={t("categories.descriptionHint")}>
+                <textarea
+                  id="category-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  maxLength={1024}
+                  className={cn(
+                    "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
+                    "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
+                    "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
+                  )}
+                  placeholder={t("categories.descPlaceholder")}
+                />
+              </Field>
 
-            <Field id="category-image" label={t("categories.fields.image")} hint={t("categories.imageHint")}>
-              <ImageInput value={imageUrl} onChange={setImageUrl} ownerType="Category" ownerId={category?.id} shape="square" />
-            </Field>
+              <Field id="category-image" span={12} label={t("categories.fields.image")} hint={t("categories.imageHint")}>
+                <ImageInput value={imageUrl} onChange={setImageUrl} ownerType="Category" ownerId={category?.id} shape="square" />
+              </Field>
 
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("categories.fields.active")} />
-                {t("categories.fields.active")}
-              </label>
-              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("categories.fields.visible")} />
-                {t("categories.fields.visible")}
-              </label>
-            </div>
-
-            {category && (
-              <div className="border-t border-[var(--color-border)] pt-4">
-                <EntityAuditSection entityKey={category.id} entityName="Category" />
+              <div className="col-span-1 flex items-center gap-8 sm:col-span-12">
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("categories.fields.active")} />
+                  {t("categories.fields.active")}
+                </label>
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("categories.fields.visible")} />
+                  {t("categories.fields.visible")}
+                </label>
               </div>
-            )}
+
+              {category && (
+                <div className="col-span-1 border-t border-[var(--color-border)] pt-4 sm:col-span-12">
+                  <EntityAuditSection entityKey={category.id} entityName="Category" />
+                </div>
+              )}
+            </FormGrid>
           </DialogBody>
 
           <DialogFooter>

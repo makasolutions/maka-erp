@@ -23,22 +23,11 @@ import {
   ToneIconTile,
   type EntityStatusTone,
 } from "@/components/list";
-import { formatDate } from "@/lib/list-helpers";
+import { formatDate, formatMoney } from "@/lib/list-helpers";
 
 // ────────────────────────────────────────────────────────────────────
 // Pure helpers — module scope so they're not re-allocated each render.
 // ────────────────────────────────────────────────────────────────────
-
-function formatMoney(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`;
-  }
-}
 
 function formatPeriod(year: number, month: number) {
   return `${year}-${String(month).padStart(2, "0")}`;

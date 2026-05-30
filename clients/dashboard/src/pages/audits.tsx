@@ -30,7 +30,6 @@ import {
 import { searchUsers } from "@/api/identity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   EntityFilterPill,
@@ -42,6 +41,7 @@ import {
   MakaGridServer,
   MakaGridFilters,
   MakaFilterField,
+  MakaFilterInput,
   MakaDateRangePicker,
   makaPresetRange,
 } from "@/components/maka";
@@ -520,7 +520,7 @@ function AuditsMakaSection({ panelOpen }: { panelOpen: boolean }) {
               <EntityFilterPill<string | null> label={t("audits.severityLabel")} value={severity} onChange={setSeverity} options={severityOptions} />
             </MakaFilterField>
             <MakaFilterField label={t("audits.search")} className="grow">
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("audits.searchPlaceholder")} className="h-8 w-full min-w-72" />
+              <MakaFilterInput value={search} onChange={setSearch} placeholder={t("audits.searchPlaceholder")} ariaLabel={t("audits.search")} className="min-w-72" />
             </MakaFilterField>
 
             {/* Force a new row → source, user, entity, operation below */}

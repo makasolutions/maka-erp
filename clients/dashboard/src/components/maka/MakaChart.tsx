@@ -26,7 +26,6 @@ import {
   AreaSeries,
   type SeriesModel,
 } from "@syncfusion/ej2-react-charts";
-import { useLocalization } from "@/contexts/localization-context";
 import {
   AccumulationChartComponent,
   AccumulationSeriesCollectionDirective,
@@ -98,29 +97,23 @@ export function MakaChart({
 }: MakaChartProps) {
   const [palette, setPalette] = useState<string[]>(FALLBACK_PALETTE);
   const chartRef = useRef<ChartComponent>(null);
-  const { config } = useLocalization();
 
   useEffect(() => {
     setPalette(resolveMakaChartPalette());
   }, []);
 
-  // Build currency formatter from tenant config (respects language + currency).
-  // Used to derive the Syncfusion tooltip template string by formatting zero
-  // and replacing the "0" with Syncfusion's ${point.y} placeholder.
+  // House money style: "$" first, dot-grouped, no decimals. Plain number
+  // grouping + a literal "$" prefix (not Intl currency style, which would emit
+  // a native symbol/code that fights the canonical "$… CODE" convention).
   const currencyFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat(config.language === "es" ? "es-CO" : "en-US", {
-        style: "currency",
-        currency: config.currency,
-        maximumFractionDigits: 0,
-      }),
-    [config.language, config.currency],
+    () => new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }),
+    [],
   );
 
   const tooltipSettings = {
     enable: true,
     format: formatAsCOP
-      ? `<b>\${point.x}</b><br/>${currencyFormatter.format(0).replace("0", "${point.y}")}`
+      ? `<b>\${point.x}</b><br/>$${currencyFormatter.format(0).replace("0", "${point.y}")}`
       : "${point.x} : <b>${point.y}</b>",
   };
 

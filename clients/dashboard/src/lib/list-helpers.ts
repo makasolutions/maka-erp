@@ -62,15 +62,39 @@ export function slugify(value: string) {
   return s;
 }
 
-export function formatMoney(amount: number, currency: string) {
+/**
+ * Canonical Maka money format — the SINGLE source of money rendering site-wide.
+ *
+ * House style (see CLAUDE.md): symbol "$" first, "." as thousands separator,
+ * "," as decimal separator (es-CO grouping); the ISO code, when shown, goes at
+ * the END:
+ *   formatMoney(12540000)        → "$12.540.000"
+ *   formatMoney(12540000, "COP") → "$12.540.000 COP"
+ *   formatMoney(1299, "USD")     → "$1.299,00 USD"
+ *
+ * Decimals: COP (and code-less amounts) render with 0 decimals; other
+ * currencies keep 2 so foreign-currency cents aren't silently rounded away.
+ * Pass `{ code: false }` to suppress the trailing ISO code even when a currency
+ * is given (single-currency screens where the code is redundant).
+ */
+export function formatMoney(
+  amount: number,
+  currency?: string | null,
+  opts?: { code?: boolean },
+): string {
+  const code = currency?.trim().toUpperCase() || null;
+  const decimals = code && code !== "COP" ? 2 : 0;
+  let grouped: string;
   try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
+    grouped = new Intl.NumberFormat("es-CO", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     }).format(amount);
   } catch {
-    return `${amount.toFixed(2)} ${currency}`;
+    grouped = amount.toFixed(decimals);
   }
+  const base = `$${grouped}`;
+  return code && opts?.code !== false ? `${base} ${code}` : base;
 }
 
 // Surface API/network/runtime errors with the same formatting everywhere.
