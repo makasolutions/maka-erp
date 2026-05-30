@@ -168,7 +168,11 @@
       "logoUrl": "URL del logo",
       "website": "Sitio web",
       "country": "País de origen",
-      "created": "Creado"
+      "created": "Creado",
+      "code": "Código",
+      "image": "Imagen",
+      "active": "Activo",
+      "visible": "Visible"
     },
     "actions": {
       "create": "Nueva marca",
@@ -196,7 +200,18 @@
     "namePlaceholder": "Artículos Acme",
     "descPlaceholder": "Artículos de calidad para el hogar moderno.",
     "editAria": "Editar {{name}}",
-    "deleteAria": "Eliminar {{name}}"
+    "deleteAria": "Eliminar {{name}}",
+    "codePlaceholder": "Ej. SONY",
+    "searchLabel": "Buscar",
+    "filters": {
+      "visibleYes": "Sí",
+      "visibleNo": "No"
+    },
+    "kpi": {
+      "total": "Marcas totales",
+      "active": "Activas",
+      "visible": "Visibles"
+    }
   },
   "categories": {
     "title": "Categorías",

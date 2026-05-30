@@ -760,6 +760,7 @@ function ProductEditorDialog({
       brandId,
       categoryId,
       isActive,
+      isVisible: product?.isVisible ?? true,
     });
   };
 

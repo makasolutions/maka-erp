@@ -12,10 +12,13 @@ export type PagedResponse<T> = {
 
 export type BrandDto = {
   id: string;
+  code: string;
   name: string;
   slug: string;
   description?: string | null;
   logoUrl?: string | null;
+  isActive: boolean;
+  isVisible: boolean;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
   deletedOnUtc?: string | null;
@@ -24,6 +27,8 @@ export type BrandDto = {
 
 export type SearchBrandsParams = {
   search?: string;
+  isActive?: boolean;
+  isVisible?: boolean;
   pageNumber?: number;
   pageSize?: number;
   sortBy?: string;
@@ -31,21 +36,29 @@ export type SearchBrandsParams = {
 };
 
 export type CreateBrandInput = {
+  code: string;
   name: string;
   description?: string | null;
   logoUrl?: string | null;
+  isActive: boolean;
+  isVisible: boolean;
 };
 
 export type UpdateBrandInput = {
   brandId: string;
+  code: string;
   name: string;
   description?: string | null;
   logoUrl?: string | null;
+  isActive: boolean;
+  isVisible: boolean;
 };
 
 export function searchBrands(params: SearchBrandsParams = {}): Promise<PagedResponse<BrandDto>> {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
+  if (params.isActive !== undefined) query.set("isActive", String(params.isActive));
+  if (params.isVisible !== undefined) query.set("isVisible", String(params.isVisible));
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 20));
   if (params.sortBy) query.set("sortBy", params.sortBy);
@@ -61,9 +74,12 @@ export async function createBrand(input: CreateBrandInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/brands", {
     method: "POST",
     body: JSON.stringify({
+      code: input.code,
       name: input.name,
       description: input.description ?? null,
       logoUrl: input.logoUrl ?? null,
+      isActive: input.isActive,
+      isVisible: input.isVisible,
     }),
   });
 }
@@ -73,9 +89,12 @@ export async function updateBrand(input: UpdateBrandInput): Promise<string> {
     method: "PUT",
     body: JSON.stringify({
       brandId: input.brandId,
+      code: input.code,
       name: input.name,
       description: input.description ?? null,
       logoUrl: input.logoUrl ?? null,
+      isActive: input.isActive,
+      isVisible: input.isVisible,
     }),
   });
 }
@@ -90,10 +109,14 @@ export async function deleteBrand(id: string): Promise<void> {
 
 export type CategoryDto = {
   id: string;
+  code: string;
   name: string;
   slug: string;
   description?: string | null;
+  imageUrl?: string | null;
   parentCategoryId?: string | null;
+  isActive: boolean;
+  isVisible: boolean;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
   deletedOnUtc?: string | null;
@@ -111,6 +134,8 @@ export type CategoryTreeNodeDto = {
 export type SearchCategoriesParams = {
   search?: string;
   parentCategoryId?: string | null;
+  isActive?: boolean;
+  isVisible?: boolean;
   pageNumber?: number;
   pageSize?: number;
   sortBy?: string;
@@ -118,16 +143,24 @@ export type SearchCategoriesParams = {
 };
 
 export type CreateCategoryInput = {
+  code: string;
   name: string;
   description?: string | null;
+  imageUrl?: string | null;
   parentCategoryId?: string | null;
+  isActive: boolean;
+  isVisible: boolean;
 };
 
 export type UpdateCategoryInput = {
   categoryId: string;
+  code: string;
   name: string;
   description?: string | null;
+  imageUrl?: string | null;
   parentCategoryId?: string | null;
+  isActive: boolean;
+  isVisible: boolean;
 };
 
 export function searchCategories(
@@ -136,6 +169,8 @@ export function searchCategories(
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.parentCategoryId) query.set("parentCategoryId", params.parentCategoryId);
+  if (params.isActive !== undefined) query.set("isActive", String(params.isActive));
+  if (params.isVisible !== undefined) query.set("isVisible", String(params.isVisible));
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 50));
   if (params.sortBy) query.set("sortBy", params.sortBy);
@@ -157,9 +192,13 @@ export async function createCategory(input: CreateCategoryInput): Promise<string
   return apiFetch<string>("/api/v1/catalog/categories", {
     method: "POST",
     body: JSON.stringify({
+      code: input.code,
       name: input.name,
       description: input.description ?? null,
+      imageUrl: input.imageUrl ?? null,
       parentCategoryId: input.parentCategoryId ?? null,
+      isActive: input.isActive,
+      isVisible: input.isVisible,
     }),
   });
 }
@@ -171,9 +210,13 @@ export async function updateCategory(input: UpdateCategoryInput): Promise<string
       method: "PUT",
       body: JSON.stringify({
         categoryId: input.categoryId,
+        code: input.code,
         name: input.name,
         description: input.description ?? null,
+        imageUrl: input.imageUrl ?? null,
         parentCategoryId: input.parentCategoryId ?? null,
+        isActive: input.isActive,
+        isVisible: input.isVisible,
       }),
     },
   );
@@ -212,6 +255,7 @@ export type ProductDto = {
   price: MoneyDto;
   stock: number;
   isActive: boolean;
+  isVisible: boolean;
   /** Convenience: the URL of the thumbnail image (if any). Derived server-side from images[]. */
   thumbnailUrl?: string | null;
   images: ProductImageDto[];
@@ -226,6 +270,7 @@ export type SearchProductsParams = {
   brandId?: string | null;
   categoryId?: string | null;
   isActive?: boolean | null;
+  isVisible?: boolean | null;
   pageNumber?: number;
   pageSize?: number;
   sortBy?: string;
@@ -241,6 +286,8 @@ export type CreateProductInput = {
   priceAmount: number;
   priceCurrency: string;
   stock: number;
+  isActive: boolean;
+  isVisible: boolean;
 };
 
 export type UpdateProductInput = {
@@ -250,6 +297,7 @@ export type UpdateProductInput = {
   brandId: string;
   categoryId: string;
   isActive: boolean;
+  isVisible: boolean;
 };
 
 export type ChangeProductPriceInput = {
@@ -272,6 +320,8 @@ export function searchProducts(
   if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.isActive !== undefined && params.isActive !== null)
     query.set("isActive", String(params.isActive));
+  if (params.isVisible !== undefined && params.isVisible !== null)
+    query.set("isVisible", String(params.isVisible));
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 20));
   if (params.sortBy) query.set("sortBy", params.sortBy);
@@ -297,6 +347,8 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
       priceAmount: input.priceAmount,
       priceCurrency: input.priceCurrency,
       stock: input.stock,
+      isActive: input.isActive,
+      isVisible: input.isVisible,
     }),
   });
 }
@@ -313,6 +365,7 @@ export async function updateProduct(input: UpdateProductInput): Promise<string> 
         brandId: input.brandId,
         categoryId: input.categoryId,
         isActive: input.isActive,
+        isVisible: input.isVisible,
       }),
     },
   );

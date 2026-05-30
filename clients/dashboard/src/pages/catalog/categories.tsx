@@ -553,10 +553,17 @@ function CategoryEditorDialog({
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!trimmedName) return;
+    // TODO(catalog-fase2): replace with proper Code/Image/Active/Visible inputs.
+    const code =
+      (category?.code || trimmedName.toUpperCase().replace(/[^A-Z0-9]+/g, "-")).slice(0, 32) || "CAT";
     const payload = {
+      code,
       name: trimmedName,
       description: description.trim() || null,
+      imageUrl: category?.imageUrl ?? null,
       parentCategoryId: parentCategoryId || null,
+      isActive: category?.isActive ?? true,
+      isVisible: category?.isVisible ?? true,
     };
     if (state.mode === "edit" && category) {
       updateMutation.mutate({ categoryId: category.id, ...payload });

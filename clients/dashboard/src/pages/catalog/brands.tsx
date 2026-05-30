@@ -11,14 +11,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  ChevronRight,
-  Pencil,
-  Plus,
-  Search,
-  Tag,
-  Trash2,
-} from "lucide-react";
+import { Eye, Plus, Tag } from "lucide-react";
 import { toast } from "sonner";
 import {
   createBrand,
@@ -41,31 +34,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { ImageInput } from "@/components/file/image-input";
 import {
-  EntityEmpty,
+  EntityFilterPill,
   EntityInitialsAvatar,
-  EntityListCard,
-  EntityListHeader,
-  EntityListLoading,
-  EntityListRow,
-  EntityMobileCard,
   EntityPageHeader,
-  EntityPager,
-  EntitySearch,
+  EntityStatusBadge,
   Field,
 } from "@/components/list";
-import { cn } from "@/lib/cn";
 import {
-  describe,
-  formatDate,
-  formatRelative,
-  slugify,
-} from "@/lib/list-helpers";
+  MakaGrid,
+  MakaGridFilters,
+  MakaFilterField,
+} from "@/components/maka";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
+import { cn } from "@/lib/cn";
+import { describe, slugify } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
-import { Perm, usePerm } from "@/auth/permission-guard";
+import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
-
-const PAGE_SIZE = 20;
 
 type EditorState =
   | { mode: "closed" }
@@ -73,57 +61,192 @@ type EditorState =
   | { mode: "edit"; brand: BrandDto }
   | { mode: "delete"; brand: BrandDto };
 
+type BrandRow = BrandDto & { activeLabel: string; visibleLabel: string };
+
+const PAGE_SIZES = [20, 50, 100];
+
+// Boolean tri-state pill value: null = all, "true" / "false".
+function triToBool(v: string | null): boolean | undefined {
+  return v === null ? undefined : v === "true";
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  Cell templates (hook-free; read enriched row fields)
+// ───────────────────────────────────────────────────────────────────────
+
+function BrandLogoCell(row: BrandRow) {
+  return <BrandAvatar brand={row} size={32} />;
+}
+function BrandCodeCell(row: BrandRow) {
+  return (
+    <code className="font-mono text-[12px] font-medium text-[var(--color-foreground)]">
+      {row.code}
+    </code>
+  );
+}
+function BrandNameCell(row: BrandRow) {
+  return (
+    <div className="min-w-0">
+      <div className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.name}</div>
+      {row.description && (
+        <div className="truncate text-[12px] text-[var(--color-muted-foreground)]" title={row.description}>
+          {row.description}
+        </div>
+      )}
+    </div>
+  );
+}
+function BrandSlugCell(row: BrandRow) {
+  return <code className="font-mono text-[11.5px] text-[var(--color-muted-foreground)]">{row.slug}</code>;
+}
+function BrandActiveCell(row: BrandRow) {
+  return (
+    <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>
+  );
+}
+function BrandVisibleCell(row: BrandRow) {
+  return (
+    <EntityStatusBadge tone={row.isVisible ? "info" : "default"}>{row.visibleLabel}</EntityStatusBadge>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  KPI card — centred, formatted (es-CO grouping)
+// ───────────────────────────────────────────────────────────────────────
+
+function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2">
+        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
+        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          {label}
+        </span>
+      </div>
+      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
+        {value.toLocaleString("es-CO")}
+      </div>
+    </div>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────
 //  Page
 // ───────────────────────────────────────────────────────────────────────
 
 export function BrandsPage() {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const { can } = usePerm();
+
+  const [panelOpen, setPanelOpen] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "createdAtUtc", dir: "desc" });
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-      setPageNumber(1);
-    }, 250);
-    return () => clearTimeout(t);
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(id);
   }, [search]);
 
+  const filters = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      isActive: triToBool(activeFilter),
+      isVisible: triToBool(visibleFilter),
+    }),
+    [debouncedSearch, activeFilter, visibleFilter],
+  );
+
+  // Reset to page 1 when filters change.
+  useEffect(() => setPage(1), [filters]);
+
   const query = useQuery({
-    queryKey: [
-      "catalog",
-      "brands",
-      { search: debouncedSearch, pageNumber, pageSize: PAGE_SIZE },
-    ],
+    queryKey: ["catalog", "brands", filters, page, pageSize, sort],
     queryFn: () =>
-      searchBrands({
-        search: debouncedSearch || undefined,
-        pageNumber,
-        pageSize: PAGE_SIZE,
-        sortBy: "createdAtUtc",
-        sortDir: "desc",
-      }),
+      searchBrands({ ...filters, pageNumber: page, pageSize, sortBy: sort.by, sortDir: sort.dir }),
     placeholderData: keepPreviousData,
   });
 
-  const data = query.data;
-  const items = data?.items ?? [];
+  // KPI counts (lightweight totalCount-only queries).
+  const totalQuery = useQuery({
+    queryKey: ["catalog", "brands", "kpi", "total"],
+    queryFn: () => searchBrands({ pageSize: 1 }),
+    staleTime: 30_000,
+  });
+  const activeQuery = useQuery({
+    queryKey: ["catalog", "brands", "kpi", "active"],
+    queryFn: () => searchBrands({ pageSize: 1, isActive: true }),
+    staleTime: 30_000,
+  });
+  const visibleQuery = useQuery({
+    queryKey: ["catalog", "brands", "kpi", "visible"],
+    queryFn: () => searchBrands({ pageSize: 1, isVisible: true }),
+    staleTime: 30_000,
+  });
 
-  const searchActive = debouncedSearch.length > 0;
+  const rows: BrandRow[] = useMemo(
+    () =>
+      (query.data?.items ?? []).map((b) => ({
+        ...b,
+        activeLabel: b.isActive ? tc("status.active") : tc("status.inactive"),
+        visibleLabel: b.isVisible ? t("brands.filters.visibleYes") : t("brands.filters.visibleNo"),
+      })),
+    [query.data, t, tc],
+  );
+
+  const sortFieldFor = (field: string): string | undefined =>
+    ({ name: "name", slug: "slug", createdAtUtc: "createdAtUtc" })[field];
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "logoUrl", headerText: t("brands.fields.image"), template: BrandLogoCell as any, width: 72, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "code", headerText: t("brands.fields.code"), template: BrandCodeCell as any, width: 130 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "name", headerText: t("brands.singular"), template: BrandNameCell as any, minWidth: 220 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "slug", headerText: t("brands.fields.slug"), template: BrandSlugCell as any, width: 170 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isActive", headerText: t("brands.fields.active"), template: BrandActiveCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isVisible", headerText: t("brands.fields.visible"), template: BrandVisibleCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      { field: "createdAtUtc", headerText: t("brands.fields.created"), width: 140, type: "date" },
+    ],
+    [t],
+  );
+
+  const resetFilters = () => {
+    setSearch("");
+    setActiveFilter(null);
+    setVisibleFilter(null);
+    setPage(1);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Tag}
         title={t("brands.title")}
-        total={data?.totalCount ?? null}
+        total={query.data?.totalCount ?? null}
         unit={t("brands.singular")}
         description={t("brands.description")}
       >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.panelToggle")}
+        </Button>
         <Button
           perm={P.catalog.brands.create}
           onClick={() => setEditor({ mode: "create" })}
@@ -134,247 +257,88 @@ export function BrandsPage() {
         </Button>
       </EntityPageHeader>
 
-      <EntitySearch
-        value={search}
-        onChange={setSearch}
-        placeholder={t("brands.searchPlaceholder")}
-      />
-
-      {query.isLoading && items.length === 0 ? (
-        <EntityListLoading desktopColumns="grid-cols-[1fr_180px_140px_24px]" />
-      ) : items.length === 0 ? (
-        <EntityEmpty
-          icon={searchActive ? Search : Tag}
-          title={searchActive ? t("brands.empty.searchTitle") : t("brands.empty.title")}
-          body={
-            searchActive
-              ? debouncedSearch
-                ? t("brands.empty.searchBody", { term: debouncedSearch })
-                : t("brands.empty.filterBody")
-              : t("brands.empty.body")
-          }
-          action={
-            searchActive ? (
-              <Button
-                variant="outline"
-                onClick={() => setSearch("")}
-                className="h-9 rounded-lg px-4 text-[13px]"
-              >
-                {t("brands.empty.clearSearch")}
-              </Button>
-            ) : (
-              <Button
-                perm={P.catalog.brands.create}
-                onClick={() => setEditor({ mode: "create" })}
-                className="h-9 rounded-lg px-4 text-[13px]"
-              >
-                <Plus className="mr-1.5 size-4" />
-                {t("brands.actions.add")}
-              </Button>
-            )
-          }
-        />
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {t("brands.found", { count: data?.totalCount ?? 0 })}
-            </p>
-          </div>
-
-          {/* Mobile: card list */}
-          <div className="space-y-2 md:hidden">
-            {items.map((brand) => (
-              <MobileCard
-                key={brand.id}
-                brand={brand}
-                onEdit={can(P.catalog.brands.update) ? () => setEditor({ mode: "edit", brand }) : undefined}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={resetFilters}
+        filters={
+          <>
+            <MakaFilterField label={t("brands.searchLabel")} className="grow">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("brands.searchPlaceholder")}
+                className="h-8 w-full min-w-64"
               />
-            ))}
-          </div>
-
-          {/* Desktop: list card */}
-          <EntityListCard className="hidden md:block">
-            <EntityListHeader className="grid-cols-[1fr_180px_140px_24px]">
-              <span>{t("brands.singular")}</span>
-              <span>{t("brands.fields.slug")}</span>
-              <span>{t("brands.fields.created")}</span>
-              <span />
-            </EntityListHeader>
-
-            {items.map((brand, i) => (
-              <DesktopRow
-                key={brand.id}
-                brand={brand}
-                isLast={i === items.length - 1}
-                onEdit={() => setEditor({ mode: "edit", brand })}
-                onDelete={() => setEditor({ mode: "delete", brand })}
+            </MakaFilterField>
+            <MakaFilterField label={t("brands.fields.active")}>
+              <EntityFilterPill<string | null>
+                label={t("brands.fields.active")}
+                value={activeFilter}
+                onChange={setActiveFilter}
+                options={[
+                  { value: null, label: tc("status.all") },
+                  { value: "true", label: tc("status.active") },
+                  { value: "false", label: tc("status.inactive") },
+                ]}
               />
-            ))}
-          </EntityListCard>
-
-          <EntityPager
-            page={data?.pageNumber ?? 1}
-            totalPages={data?.totalPages ?? 1}
-            hasPrev={!!data?.hasPrevious}
-            hasNext={!!data?.hasNext}
-            onPrev={() => setPageNumber((p) => Math.max(1, p - 1))}
-            onNext={() => setPageNumber((p) => p + 1)}
-          />
-        </div>
-      )}
-
-      {query.isError && (
-        <div
-          role="alert"
-          className="rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.30)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.06)] px-3 py-2 text-sm text-[var(--color-destructive)]"
-        >
-          {describe(query.error)}
-        </div>
-      )}
-
-      <BrandEditorDialog
-        state={editor}
-        onClose={() => setEditor({ mode: "closed" })}
+            </MakaFilterField>
+            <MakaFilterField label={t("brands.fields.visible")}>
+              <EntityFilterPill<string | null>
+                label={t("brands.fields.visible")}
+                value={visibleFilter}
+                onChange={setVisibleFilter}
+                options={[
+                  { value: null, label: tc("status.all") },
+                  { value: "true", label: t("brands.filters.visibleYes") },
+                  { value: "false", label: t("brands.filters.visibleNo") },
+                ]}
+              />
+            </MakaFilterField>
+          </>
+        }
+        kpis={
+          <>
+            <KpiCard label={t("brands.kpi.total")} value={totalQuery.data?.totalCount ?? 0} tone="var(--color-primary)" />
+            <KpiCard label={t("brands.kpi.active")} value={activeQuery.data?.totalCount ?? 0} tone="var(--color-success)" />
+            <KpiCard label={t("brands.kpi.visible")} value={visibleQuery.data?.totalCount ?? 0} tone="var(--color-info)" />
+          </>
+        }
       />
-      <DeleteBrandDialog
-        state={editor}
-        onClose={() => setEditor({ mode: "closed" })}
+
+      <MakaGrid<BrandRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isFetching}
+        fileName="marcas"
+        entityName={t("brands.singular")}
+        onRowClick={(row) => can(P.catalog.brands.update) && setEditor({ mode: "edit", brand: row })}
+        onClearFilters={resetFilters}
+        permissions={{ edit: P.catalog.brands.update, delete: P.catalog.brands.delete }}
+        onEdit={(row) => setEditor({ mode: "edit", brand: row })}
+        onDelete={(row) => setEditor({ mode: "delete", brand: row })}
+        serverPaging={{
+          totalCount: query.data?.totalCount ?? 0,
+          page,
+          pageSize,
+          pageSizes: PAGE_SIZES,
+          onChange: ({ page: p, pageSize: ps }) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+          onSortChange: (s) => {
+            setPage(1);
+            if (!s) setSort({ by: "createdAtUtc", dir: "desc" });
+            else {
+              const by = sortFieldFor(s.field);
+              setSort(by ? { by, dir: s.dir } : { by: "createdAtUtc", dir: "desc" });
+            }
+          },
+        }}
       />
+
+      <BrandEditorDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <DeleteBrandDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
     </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Mobile card
-// ───────────────────────────────────────────────────────────────────────
-
-function MobileCard({
-  brand,
-  onEdit,
-}: {
-  brand: BrandDto;
-  onEdit?: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-  return (
-    <EntityMobileCard
-      {...(onEdit
-        ? {
-            href: "#",
-            onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
-              e.preventDefault();
-              onEdit();
-            },
-            "aria-label": t("brands.editAria", { name: brand.name }),
-          }
-        : {})}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <BrandAvatar brand={brand} size={40} />
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-              {brand.name}
-            </p>
-            <code className="mt-0.5 block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              {brand.slug}
-            </code>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <ChevronRight className="size-4 text-[var(--color-border)]" />
-        </div>
-      </div>
-      {brand.description && (
-        <p className="mt-2 ml-[52px] line-clamp-2 text-[12px] text-[var(--color-muted-foreground)]">
-          {brand.description}
-        </p>
-      )}
-    </EntityMobileCard>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Desktop row
-// ───────────────────────────────────────────────────────────────────────
-
-function DesktopRow({
-  brand,
-  isLast,
-  onEdit,
-  onDelete,
-}: {
-  brand: BrandDto;
-  isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-  return (
-    <EntityListRow
-      className="grid-cols-[1fr_180px_140px_24px]"
-      isLast={isLast}
-    >
-      {/* Name + avatar */}
-      <div className="flex min-w-0 items-center gap-3">
-        <BrandAvatar brand={brand} size={36} />
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-medium text-[var(--color-foreground)] transition-colors group-hover:text-[var(--color-primary)]">
-            {brand.name}
-          </div>
-          {brand.description && (
-            <div
-              className="mt-0.5 truncate text-[12px] text-[var(--color-muted-foreground)]"
-              title={brand.description}
-            >
-              {brand.description}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Slug */}
-      <code
-        title={brand.slug}
-        className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]"
-      >
-        {brand.slug}
-      </code>
-
-      {/* Created */}
-      <div className="min-w-0 text-[12px] text-[var(--color-muted-foreground)] tabular-nums">
-        <div className="truncate">{formatDate(brand.createdAtUtc)}</div>
-        <div className="truncate text-[11px] opacity-70">
-          {formatRelative(brand.createdAtUtc)}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-1">
-        <Perm need={P.catalog.brands.update}>
-          <button
-            type="button"
-            aria-label={t("brands.editAria", { name: brand.name })}
-            onClick={onEdit}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
-          >
-            <Pencil className="size-3.5" />
-          </button>
-        </Perm>
-        <Perm need={P.catalog.brands.delete}>
-          <button
-            type="button"
-            aria-label={t("brands.deleteAria", { name: brand.name })}
-            onClick={onDelete}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
-        </Perm>
-        <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
-      </div>
-    </EntityListRow>
   );
 }
 
@@ -388,31 +352,17 @@ function BrandAvatar({ brand, size }: { brand: BrandDto; size: number }) {
       <span
         style={{ width: size, height: size }}
         className={cn(
-          "relative grid shrink-0 place-items-center overflow-hidden rounded-xl",
+          "relative grid shrink-0 place-items-center overflow-hidden rounded-lg",
           "bg-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)]",
         )}
       >
         <img
           src={brand.logoUrl}
           alt=""
-          className="h-full w-full object-contain p-1"
+          className="h-full w-full object-contain p-0.5"
           loading="lazy"
           referrerPolicy="no-referrer"
-          onError={(e) => {
-            const target = e.currentTarget;
-            target.style.display = "none";
-            target.parentElement
-              ?.querySelector<HTMLElement>("[data-fallback]")
-              ?.style.removeProperty("display");
-          }}
         />
-        <span
-          data-fallback
-          style={{ display: "none" }}
-          className="absolute inset-0 grid place-items-center font-display text-[14px] font-bold tracking-tight text-[var(--color-muted-foreground)]"
-        >
-          {brand.name.trim().charAt(0).toUpperCase() || "·"}
-        </span>
       </span>
     );
   }
@@ -423,13 +373,7 @@ function BrandAvatar({ brand, size }: { brand: BrandDto; size: number }) {
 //  Editor dialog
 // ───────────────────────────────────────────────────────────────────────
 
-function BrandEditorDialog({
-  state,
-  onClose,
-}: {
-  state: EditorState;
-  onClose: () => void;
-}) {
+function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "create" || state.mode === "edit";
@@ -438,24 +382,33 @@ function BrandEditorDialog({
 
   const initial = useMemo(
     () => ({
+      code: brand?.code ?? "",
       name: brand?.name ?? "",
       description: brand?.description ?? "",
       logoUrl: brand?.logoUrl ?? "",
+      isActive: brand?.isActive ?? true,
+      isVisible: brand?.isVisible ?? true,
     }),
-    [brand?.id, brand?.name, brand?.description, brand?.logoUrl],
+    [brand?.id, brand?.code, brand?.name, brand?.description, brand?.logoUrl, brand?.isActive, brand?.isVisible],
   );
 
+  const [code, setCode] = useState(initial.code);
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description);
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl);
+  const [isActive, setIsActive] = useState(initial.isActive);
+  const [isVisible, setIsVisible] = useState(initial.isVisible);
 
   useEffect(() => {
     if (isOpen) {
+      setCode(initial.code);
       setName(initial.name);
       setDescription(initial.description);
       setLogoUrl(initial.logoUrl);
+      setIsActive(initial.isActive);
+      setIsVisible(initial.isVisible);
     }
-  }, [isOpen, initial.name, initial.description, initial.logoUrl]);
+  }, [isOpen, initial]);
 
   const slugPreview = useMemo(() => slugify(name) || "—", [name]);
 
@@ -481,14 +434,19 @@ function BrandEditorDialog({
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const trimmedName = name.trim();
+  const trimmedCode = code.trim();
+  const canSubmit = !!trimmedName && !!trimmedCode;
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!trimmedName) return;
+    if (!canSubmit) return;
     const payload = {
+      code: trimmedCode,
       name: trimmedName,
       description: description.trim() || null,
       logoUrl: logoUrl.trim() || null,
+      isActive,
+      isVisible,
     };
     if (state.mode === "edit" && brand) {
       updateMutation.mutate({ brandId: brand.id, ...payload });
@@ -504,30 +462,36 @@ function BrandEditorDialog({
           <DialogHeader>
             <DialogTitle>{brand ? t("brands.actions.edit") : t("brands.actions.add")}</DialogTitle>
             <DialogDescription>
-              {brand
-                ? t("brands.editDesc", { name: brand.name })
-                : t("brands.createDesc")}
+              {brand ? t("brands.editDesc", { name: brand.name }) : t("brands.createDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody className="space-y-5">
-            <Field id="brand-name" label={t("brands.fields.name")} required>
-              <Input
-                id="brand-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("brands.namePlaceholder")}
-                autoFocus
-                required
-                maxLength={128}
-              />
-            </Field>
+            <div className="grid grid-cols-[160px_1fr] gap-4">
+              <Field id="brand-code" label={t("brands.fields.code")} required>
+                <Input
+                  id="brand-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder={t("brands.codePlaceholder")}
+                  required
+                  maxLength={32}
+                />
+              </Field>
+              <Field id="brand-name" label={t("brands.fields.name")} required>
+                <Input
+                  id="brand-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("brands.namePlaceholder")}
+                  autoFocus
+                  required
+                  maxLength={128}
+                />
+              </Field>
+            </div>
 
-            <Field
-              id="brand-slug"
-              label={t("brands.fields.slug")}
-              hint={t("brands.slugHint")}
-            >
+            <Field id="brand-slug" label={t("brands.fields.slug")} hint={t("brands.slugHint")}>
               <div className="flex h-9 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
                 <code className="truncate font-mono text-[12.5px] tracking-tight text-[var(--color-foreground)]">
                   {slugPreview}
@@ -535,11 +499,7 @@ function BrandEditorDialog({
               </div>
             </Field>
 
-            <Field
-              id="brand-description"
-              label={t("brands.fields.description")}
-              hint={t("brands.descriptionHint")}
-            >
+            <Field id="brand-description" label={t("brands.fields.description")} hint={t("brands.descriptionHint")}>
               <textarea
                 id="brand-description"
                 value={description}
@@ -555,22 +515,21 @@ function BrandEditorDialog({
               />
             </Field>
 
-            <Field
-              id="brand-logo"
-              label={t("brands.fields.logoUrl")}
-              hint={t("brands.logoHint")}
-            >
-              <Input
-                id="brand-logo"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://…"
-                maxLength={512}
-                type="url"
-              />
+            <Field id="brand-logo" label={t("brands.fields.image")} hint={t("brands.logoHint")}>
+              <ImageInput value={logoUrl} onChange={setLogoUrl} ownerType="Brand" ownerId={brand?.id} shape="square" />
             </Field>
 
-            {/* Change history — only shown when editing an existing brand */}
+            <div className="flex items-center gap-8">
+              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("brands.fields.active")} />
+                {t("brands.fields.active")}
+              </label>
+              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("brands.fields.visible")} />
+                {t("brands.fields.visible")}
+              </label>
+            </div>
+
             {brand && (
               <div className="border-t border-[var(--color-border)] pt-4">
                 <EntityAuditSection entityKey={brand.id} entityName="Brand" />
@@ -584,7 +543,7 @@ function BrandEditorDialog({
                 {tc("actions.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending || !trimmedName}>
+            <Button type="submit" disabled={isPending || !canSubmit}>
               {isPending ? tc("feedback.saving") : brand ? tc("actions.saveChanges") : t("brands.actions.add")}
             </Button>
           </DialogFooter>
@@ -598,13 +557,7 @@ function BrandEditorDialog({
 //  Delete confirmation
 // ───────────────────────────────────────────────────────────────────────
 
-function DeleteBrandDialog({
-  state,
-  onClose,
-}: {
-  state: EditorState;
-  onClose: () => void;
-}) {
+function DeleteBrandDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "delete";
@@ -625,12 +578,8 @@ function DeleteBrandDialog({
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-[var(--color-destructive)]">
-            {t("brands.actions.delete")}
-          </DialogTitle>
-          <DialogDescription>
-            {t("brands.deleteDesc", { name: brand?.name ?? "" })}
-          </DialogDescription>
+          <DialogTitle className="text-[var(--color-destructive)]">{t("brands.actions.delete")}</DialogTitle>
+          <DialogDescription>{t("brands.deleteDesc", { name: brand?.name ?? "" })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>

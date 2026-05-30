@@ -168,7 +168,11 @@
       "logoUrl": "Logo URL",
       "website": "Website",
       "country": "Country of origin",
-      "created": "Created"
+      "created": "Created",
+      "code": "Code",
+      "image": "Image",
+      "active": "Active",
+      "visible": "Visible"
     },
     "actions": {
       "create": "New brand",
@@ -196,7 +200,18 @@
     "namePlaceholder": "Acme Goods",
     "descPlaceholder": "Quality essentials for the modern home.",
     "editAria": "Edit {{name}}",
-    "deleteAria": "Delete {{name}}"
+    "deleteAria": "Delete {{name}}",
+    "codePlaceholder": "e.g. SONY",
+    "searchLabel": "Search",
+    "filters": {
+      "visibleYes": "Yes",
+      "visibleNo": "No"
+    },
+    "kpi": {
+      "total": "Total brands",
+      "active": "Active",
+      "visible": "Visible"
+    }
   },
   "categories": {
     "title": "Categories",

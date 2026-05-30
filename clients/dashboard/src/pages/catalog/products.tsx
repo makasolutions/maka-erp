@@ -954,6 +954,7 @@ function ProductEditorDialog({
         brandId,
         categoryId,
         isActive,
+        isVisible: product?.isVisible ?? true,
       });
     } else {
       createMutation.mutate({
@@ -965,6 +966,8 @@ function ProductEditorDialog({
         priceAmount: priceNum,
         priceCurrency,
         stock: stockNum,
+        isActive: true,
+        isVisible: true,
       });
     }
   };
