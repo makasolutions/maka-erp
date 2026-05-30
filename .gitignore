@@ -511,6 +511,14 @@ JANN*.json
 **/appsettings.Development.json
 **/appsettings.Production.json
 
+# Impeccable design skill — herramienta local del desarrollador, no es fuente del proyecto
+.impeccable/
+.claude/skills/
+.claude/agents/impeccable-manual-edit-applier.md
+# Carpetas anidadas creadas por error por el instalador de skills (duplicados) — borrar manualmente
+.agents/.agents/
+.github/.github/
+
 # Auto Claude data directory
 .auto-claude/
 

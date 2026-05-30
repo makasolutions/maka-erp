@@ -29,6 +29,7 @@ import {
   createCategory,
   createProduct,
   deleteProduct,
+  getProductStats,
   searchBrands,
   searchCategories,
   searchProducts,
@@ -65,6 +66,7 @@ import {
   MakaGridServer,
   MakaGridFilters,
   MakaFilterField,
+  MakaFilterInput,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
@@ -96,12 +98,21 @@ function triToBool(v: string | null): boolean | undefined {
   return v === null ? undefined : v === "true";
 }
 
+// Category / Brand filter dropdowns: match the MakaGrid action button's surface
+// (card bg, hairline border, accent hover) and the SKU input's footprint
+// (h-8, min-w-40) so the filter row reads as one consistent set of controls.
+const FILTER_COMBO_CLASS =
+  "h-8 min-w-40 rounded-md border-[var(--color-border)] bg-[var(--color-card)] shadow-none " +
+  "hover:border-[var(--color-border)] hover:bg-[var(--color-accent)]";
+
 // ── Cell templates (hook-free; read enriched row fields) ──────────────────
 function ProdImageCell(row: ProductRow) {
   return <ProductImage imageUrl={row.thumbnailUrl} initial={row.name.trim().charAt(0).toUpperCase() || "·"} size={32} />;
 }
 function ProdSkuCell(row: ProductRow) {
-  return <code className="font-mono text-[12px] font-medium text-[var(--color-foreground)]">{row.sku}</code>;
+  // Mono is a deliberate, register-allowed convention for codes/SKUs; colour
+  // and size match the rest of the row so only the glyph shape sets it apart.
+  return <code className="font-mono text-[13px] text-[var(--color-foreground)]">{row.sku}</code>;
 }
 function ProdNameCell(row: ProductRow) {
   return (
@@ -116,13 +127,15 @@ function ProdNameCell(row: ProductRow) {
   );
 }
 function ProdBrandCell(row: ProductRow) {
-  return <span className="truncate text-[12.5px] text-[var(--color-foreground)]">{row.brandName}</span>;
+  return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.brandName}</span>;
 }
 function ProdCategoryCell(row: ProductRow) {
-  return <span className="truncate text-[12.5px] text-[var(--color-muted-foreground)]">{row.categoryName}</span>;
+  return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.categoryName}</span>;
 }
 function ProdPriceCell(row: ProductRow) {
-  return <span className="font-display text-[13px] font-semibold tabular-nums text-[var(--color-foreground)]">{row.priceLabel}</span>;
+  // Sans + tabular-nums (no display font): the product register bans display
+  // fonts in data cells; tabular figures keep the column aligned.
+  return <span className="text-[13px] font-semibold tabular-nums text-[var(--color-foreground)]">{row.priceLabel}</span>;
 }
 function ProdActiveCell(row: ProductRow) {
   return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
@@ -156,8 +169,10 @@ export function ProductsPage() {
   const { t: tc } = useTranslation("common");
   const { can } = usePerm();
   const [panelOpen, setPanelOpen] = useState(true);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [skuFilter, setSkuFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
+  const [debouncedSku, setDebouncedSku] = useState("");
+  const [debouncedName, setDebouncedName] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "createdAtUtc", dir: "desc" });
@@ -169,19 +184,24 @@ export function ProductsPage() {
   const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    const timer = setTimeout(() => setDebouncedSku(skuFilter.trim()), 250);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [skuFilter]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(nameFilter.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [nameFilter]);
 
   const filters = useMemo(
     () => ({
-      search: debouncedSearch || undefined,
+      sku: debouncedSku || undefined,
+      name: debouncedName || undefined,
       brandId: brandFilter,
       categoryId: categoryFilter,
       isActive: triToBool(activeFilter),
       isVisible: triToBool(visibleFilter),
     }),
-    [debouncedSearch, brandFilter, categoryFilter, activeFilter, visibleFilter],
+    [debouncedSku, debouncedName, brandFilter, categoryFilter, activeFilter, visibleFilter],
   );
   useEffect(() => setPage(1), [filters]);
 
@@ -203,20 +223,10 @@ export function ProductsPage() {
     staleTime: 60_000,
   });
 
-  // KPI counts.
-  const totalQuery = useQuery({
-    queryKey: ["catalog", "products", "kpi", "total"],
-    queryFn: () => searchProducts({ pageSize: 1 }),
-    staleTime: 30_000,
-  });
-  const activeKpiQuery = useQuery({
-    queryKey: ["catalog", "products", "kpi", "active"],
-    queryFn: () => searchProducts({ pageSize: 1, isActive: true }),
-    staleTime: 30_000,
-  });
-  const visibleKpiQuery = useQuery({
-    queryKey: ["catalog", "products", "kpi", "visible"],
-    queryFn: () => searchProducts({ pageSize: 1, isVisible: true }),
+  // KPI counts — one server-side aggregate query instead of three count probes.
+  const statsQuery = useQuery({
+    queryKey: ["catalog", "products", "stats"],
+    queryFn: getProductStats,
     staleTime: 30_000,
   });
 
@@ -255,16 +265,16 @@ export function ProductsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "thumbnailUrl", headerText: t("products.fields.image"), template: ProdImageCell as any, width: 72, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "sku", headerText: t("products.fields.sku"), template: ProdSkuCell as any, width: 140 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 220 },
+      { field: "categoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 150, allowSorting: false },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "categoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
+      { field: "sku", headerText: t("products.fields.sku"), template: ProdSkuCell as any, width: 140 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 220 },
+      { field: "stock", headerText: t("products.fields.stock"), width: 90, textAlign: "Right" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "priceLabel", headerText: t("products.fields.price"), template: ProdPriceCell as any, width: 130, textAlign: "Right" },
-      { field: "stock", headerText: t("products.fields.stock"), width: 90, textAlign: "Right" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isActive", headerText: t("products.fields.active"), template: ProdActiveCell as any, width: 100, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -274,7 +284,8 @@ export function ProductsPage() {
   );
 
   const resetFilters = () => {
-    setSearch("");
+    setSkuFilter("");
+    setNameFilter("");
     setBrandFilter(null);
     setCategoryFilter(null);
     setActiveFilter(null);
@@ -315,12 +326,18 @@ export function ProductsPage() {
         onClear={resetFilters}
         filters={
           <>
-            <MakaFilterField label={t("products.searchLabel")} className="grow">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("products.searchPlaceholder")}
-                className="h-8 w-full min-w-64"
+            <MakaFilterField label={t("products.fields.category")}>
+              <Combobox
+                id="product-category-filter"
+                label={t("products.fields.category")}
+                placeholder={tc("status.all")}
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                options={(categoriesQuery.data?.items ?? []).map((c) => ({ value: c.id, label: c.name }))}
+                searchable
+                clearable
+                emptyOptionLabel={tc("status.all")}
+                className={FILTER_COMBO_CLASS}
               />
             </MakaFilterField>
             <MakaFilterField label={t("products.fields.brand")}>
@@ -334,22 +351,27 @@ export function ProductsPage() {
                 searchable
                 clearable
                 emptyOptionLabel={tc("status.all")}
+                className={FILTER_COMBO_CLASS}
               />
             </MakaFilterField>
-            <MakaFilterField label={t("products.fields.category")}>
-              <Combobox
-                id="product-category-filter"
-                label={t("products.fields.category")}
-                placeholder={tc("status.all")}
-                value={categoryFilter}
-                onChange={setCategoryFilter}
-                options={(categoriesQuery.data?.items ?? []).map((c) => ({ value: c.id, label: c.name }))}
-                searchable
-                clearable
-                emptyOptionLabel={tc("status.all")}
+            <MakaFilterField label={t("products.fields.sku")}>
+              <MakaFilterInput
+                value={skuFilter}
+                onChange={setSkuFilter}
+                placeholder={t("products.filters.skuPlaceholder")}
+                ariaLabel={t("products.fields.sku")}
+                className="min-w-40 font-mono"
               />
             </MakaFilterField>
-            <div className="basis-full" aria-hidden />
+            <MakaFilterField label={t("products.singular")} className="grow">
+              <MakaFilterInput
+                value={nameFilter}
+                onChange={setNameFilter}
+                placeholder={t("products.filters.namePlaceholder")}
+                ariaLabel={t("products.singular")}
+                className="min-w-48"
+              />
+            </MakaFilterField>
             <MakaFilterField label={t("products.fields.active")}>
               <EntityFilterPill<string | null>
                 label={t("products.fields.active")}
@@ -378,9 +400,9 @@ export function ProductsPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("products.kpi.total")} value={totalQuery.data?.totalCount ?? 0} tone="var(--color-primary)" />
-            <KpiCard label={t("products.kpi.active")} value={activeKpiQuery.data?.totalCount ?? 0} tone="var(--color-success)" />
-            <KpiCard label={t("products.kpi.visible")} value={visibleKpiQuery.data?.totalCount ?? 0} tone="var(--color-info)" />
+            <KpiCard label={t("products.kpi.total")} value={statsQuery.data?.total ?? 0} tone="var(--color-primary)" />
+            <KpiCard label={t("products.kpi.active")} value={statsQuery.data?.active ?? 0} tone="var(--color-success)" />
+            <KpiCard label={t("products.kpi.visible")} value={statsQuery.data?.visible ?? 0} tone="var(--color-info)" />
           </>
         }
       />

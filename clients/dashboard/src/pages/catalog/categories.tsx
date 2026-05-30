@@ -50,6 +50,7 @@ import {
   MakaGridClient,
   MakaGridFilters,
   MakaFilterField,
+  MakaFilterInput,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
@@ -143,29 +144,18 @@ export function CategoriesPage() {
   const { can } = usePerm();
 
   const [panelOpen, setPanelOpen] = useState(true);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [codeFilter, setCodeFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
-    return () => clearTimeout(id);
-  }, [search]);
-
-  const filters = useMemo(
-    () => ({
-      search: debouncedSearch || undefined,
-      isActive: triToBool(activeFilter),
-      isVisible: triToBool(visibleFilter),
-    }),
-    [debouncedSearch, activeFilter, visibleFilter],
-  );
-
+  // Client-side grid: fetch the full set once; filtering (code, name, active,
+  // visible), paging, Excel column filtering, grouping and sorting all happen
+  // locally — no refetch per keystroke.
   const query = useQuery({
-    queryKey: ["catalog", "categories", filters],
-    queryFn: () => searchCategories({ ...filters, pageNumber: 1, pageSize: 200, sortBy: "name", sortDir: "asc" }),
+    queryKey: ["catalog", "categories", "list"],
+    queryFn: () => searchCategories({ pageSize: 200, sortBy: "name", sortDir: "asc" }),
     placeholderData: keepPreviousData,
   });
 
@@ -175,21 +165,10 @@ export function CategoriesPage() {
     staleTime: 30_000,
   });
 
-  const totalQuery = useQuery({
-    queryKey: ["catalog", "categories", "kpi", "total"],
-    queryFn: () => searchCategories({ pageSize: 1 }),
-    staleTime: 30_000,
-  });
-  const activeQuery = useQuery({
-    queryKey: ["catalog", "categories", "kpi", "active"],
-    queryFn: () => searchCategories({ pageSize: 1, isActive: true }),
-    staleTime: 30_000,
-  });
-  const visibleQuery = useQuery({
-    queryKey: ["catalog", "categories", "kpi", "visible"],
-    queryFn: () => searchCategories({ pageSize: 1, isVisible: true }),
-    staleTime: 30_000,
-  });
+  const allItems = query.data?.items ?? [];
+  const kpiTotal = query.data?.totalCount ?? allItems.length;
+  const kpiActive = allItems.filter((c) => c.isActive).length;
+  const kpiVisible = allItems.filter((c) => c.isVisible).length;
 
   const nameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -203,18 +182,26 @@ export function CategoriesPage() {
     return map;
   }, [treeQuery.data]);
 
-  const rows: CategoryRow[] = useMemo(
-    () =>
-      (query.data?.items ?? []).map((c) => ({
+  const rows: CategoryRow[] = useMemo(() => {
+    const code = codeFilter.trim().toLowerCase();
+    const name = nameFilter.trim().toLowerCase();
+    const active = triToBool(activeFilter);
+    const visible = triToBool(visibleFilter);
+    return allItems
+      .filter((c) =>
+        (!code || c.code.toLowerCase().includes(code)) &&
+        (!name || c.name.toLowerCase().includes(name)) &&
+        (active === undefined || c.isActive === active) &&
+        (visible === undefined || c.isVisible === visible))
+      .map((c) => ({
         ...c,
         parentName: c.parentCategoryId
           ? nameById.get(c.parentCategoryId) ?? "—"
           : t("categories.rootLabel"),
         activeLabel: c.isActive ? tc("status.active") : tc("status.inactive"),
         visibleLabel: c.isVisible ? t("categories.filters.visibleYes") : t("categories.filters.visibleNo"),
-      })),
-    [query.data, nameById, t, tc],
-  );
+      }));
+  }, [allItems, nameById, codeFilter, nameFilter, activeFilter, visibleFilter, t, tc]);
 
   const columns: ColumnModel[] = useMemo(
     () => [
@@ -225,18 +212,19 @@ export function CategoriesPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "name", headerText: t("categories.singular"), template: CatNameCell as any, minWidth: 240 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "slug", headerText: t("categories.fields.slug"), template: CatSlugCell as any, width: 170 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isActive", headerText: t("categories.fields.active"), template: CatActiveCell as any, width: 110, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isVisible", headerText: t("categories.fields.visible"), template: CatVisibleCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "slug", headerText: t("categories.fields.slug"), template: CatSlugCell as any, width: 170 },
       { field: "createdAtUtc", headerText: t("categories.fields.created"), width: 140, type: "date" },
     ],
     [t],
   );
 
   const resetFilters = () => {
-    setSearch("");
+    setCodeFilter("");
+    setNameFilter("");
     setActiveFilter(null);
     setVisibleFilter(null);
   };
@@ -274,12 +262,22 @@ export function CategoriesPage() {
         onClear={resetFilters}
         filters={
           <>
-            <MakaFilterField label={t("categories.searchLabel")} className="grow">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("categories.searchPlaceholder")}
-                className="h-8 w-full min-w-64"
+            <MakaFilterField label={t("categories.fields.code")}>
+              <MakaFilterInput
+                value={codeFilter}
+                onChange={setCodeFilter}
+                placeholder={t("categories.filters.codePlaceholder")}
+                ariaLabel={t("categories.fields.code")}
+                className="min-w-40 font-mono"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("categories.singular")} className="grow">
+              <MakaFilterInput
+                value={nameFilter}
+                onChange={setNameFilter}
+                placeholder={t("categories.filters.namePlaceholder")}
+                ariaLabel={t("categories.singular")}
+                className="min-w-48"
               />
             </MakaFilterField>
             <MakaFilterField label={t("categories.fields.active")}>
@@ -310,9 +308,9 @@ export function CategoriesPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("categories.kpi.total")} value={totalQuery.data?.totalCount ?? 0} tone="var(--color-primary)" />
-            <KpiCard label={t("categories.kpi.active")} value={activeQuery.data?.totalCount ?? 0} tone="var(--color-success)" />
-            <KpiCard label={t("categories.kpi.visible")} value={visibleQuery.data?.totalCount ?? 0} tone="var(--color-info)" />
+            <KpiCard label={t("categories.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
+            <KpiCard label={t("categories.kpi.active")} value={kpiActive} tone="var(--color-success)" />
+            <KpiCard label={t("categories.kpi.visible")} value={kpiVisible} tone="var(--color-info)" />
           </>
         }
       />

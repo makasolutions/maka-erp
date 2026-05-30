@@ -58,7 +58,9 @@
       "hidden": "Ocultos",
       "activeAriaLabel": "Filtro de estado",
       "visibleYes": "Sí",
-      "visibleNo": "No"
+      "visibleNo": "No",
+      "skuPlaceholder": "Buscar por SKU…",
+      "namePlaceholder": "Buscar por nombre…"
     },
     "empty": {
       "title": "Sin productos aún",
@@ -219,7 +221,9 @@
     "searchLabel": "Buscar",
     "filters": {
       "visibleYes": "Sí",
-      "visibleNo": "No"
+      "visibleNo": "No",
+      "codePlaceholder": "Buscar por código…",
+      "namePlaceholder": "Buscar por nombre…"
     },
     "kpi": {
       "total": "Marcas totales",
@@ -290,7 +294,9 @@
     "imageHint": "Opcional. Imagen de la categoría.",
     "filters": {
       "visibleYes": "Sí",
-      "visibleNo": "No"
+      "visibleNo": "No",
+      "codePlaceholder": "Buscar por código…",
+      "namePlaceholder": "Buscar por nombre…"
     },
     "kpi": {
       "total": "Categorías totales",

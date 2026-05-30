@@ -329,6 +329,10 @@ const FilterTrigger = ({
         <button
           type="button"
           aria-label={`Clear ${label} filter`}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onClick={onClear}
           disabled={disabled}
           className="ml-1 grid h-5 w-5 cursor-pointer place-items-center rounded-full text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
@@ -408,6 +412,12 @@ const FieldTrigger = ({
             role="button"
             tabIndex={0}
             aria-label={clearLabel ?? "Clear"}
+            // Radix opens the menu on pointerdown, which fires before onClick —
+            // intercept it here so clearing never also pops the dropdown open.
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={(e) => {
               e.stopPropagation();
               onClear();

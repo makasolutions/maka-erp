@@ -40,6 +40,18 @@ public sealed class SearchProductsQueryHandler(CatalogDbContext dbContext)
             q = q.Where(p => p.IsVisible == visible);
         }
 
+        if (!string.IsNullOrWhiteSpace(query.Sku))
+        {
+            string sku = query.Sku.Trim();
+            q = q.Where(p => EF.Functions.ILike(p.Sku, $"%{sku}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Name))
+        {
+            string name = query.Name.Trim();
+            q = q.Where(p => EF.Functions.ILike(p.Name, $"%{name}%"));
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string term = query.Search.Trim();

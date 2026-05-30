@@ -47,6 +47,7 @@ import {
   MakaGridClient,
   MakaGridFilters,
   MakaFilterField,
+  MakaFilterInput,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
@@ -138,60 +139,45 @@ export function BrandsPage() {
   const { can } = usePerm();
 
   const [panelOpen, setPanelOpen] = useState(true);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [codeFilter, setCodeFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
-    return () => clearTimeout(id);
-  }, [search]);
-
-  const filters = useMemo(
-    () => ({
-      search: debouncedSearch || undefined,
-      isActive: triToBool(activeFilter),
-      isVisible: triToBool(visibleFilter),
-    }),
-    [debouncedSearch, activeFilter, visibleFilter],
-  );
-
-  // Client-side grid: fetch the full (filtered) set in one page; MakaGridClient
-  // handles paging, Excel column filtering, grouping and sorting locally.
+  // Client-side grid: fetch the full set once; filtering (code, name, active,
+  // visible), paging, Excel column filtering, grouping and sorting all happen
+  // locally in MakaGridClient / the panel below — no refetch per keystroke.
   const query = useQuery({
-    queryKey: ["catalog", "brands", filters],
-    queryFn: () => searchBrands({ ...filters, pageNumber: 1, pageSize: 200 }),
+    queryKey: ["catalog", "brands", "list"],
+    queryFn: () => searchBrands({ pageSize: 200, sortBy: "name", sortDir: "asc" }),
     placeholderData: keepPreviousData,
   });
 
-  // KPI counts (lightweight totalCount-only queries).
-  const totalQuery = useQuery({
-    queryKey: ["catalog", "brands", "kpi", "total"],
-    queryFn: () => searchBrands({ pageSize: 1 }),
-    staleTime: 30_000,
-  });
-  const activeQuery = useQuery({
-    queryKey: ["catalog", "brands", "kpi", "active"],
-    queryFn: () => searchBrands({ pageSize: 1, isActive: true }),
-    staleTime: 30_000,
-  });
-  const visibleQuery = useQuery({
-    queryKey: ["catalog", "brands", "kpi", "visible"],
-    queryFn: () => searchBrands({ pageSize: 1, isVisible: true }),
-    staleTime: 30_000,
-  });
+  const allItems = query.data?.items ?? [];
 
-  const rows: BrandRow[] = useMemo(
-    () =>
-      (query.data?.items ?? []).map((b) => ({
+  const rows: BrandRow[] = useMemo(() => {
+    const code = codeFilter.trim().toLowerCase();
+    const name = nameFilter.trim().toLowerCase();
+    const active = triToBool(activeFilter);
+    const visible = triToBool(visibleFilter);
+    return allItems
+      .filter((b) =>
+        (!code || b.code.toLowerCase().includes(code)) &&
+        (!name || b.name.toLowerCase().includes(name)) &&
+        (active === undefined || b.isActive === active) &&
+        (visible === undefined || b.isVisible === visible))
+      .map((b) => ({
         ...b,
         activeLabel: b.isActive ? tc("status.active") : tc("status.inactive"),
         visibleLabel: b.isVisible ? t("brands.filters.visibleYes") : t("brands.filters.visibleNo"),
-      })),
-    [query.data, t, tc],
-  );
+      }));
+  }, [allItems, codeFilter, nameFilter, activeFilter, visibleFilter, t, tc]);
+
+  // KPIs derived from the full loaded set (no extra round-trips).
+  const kpiTotal = query.data?.totalCount ?? allItems.length;
+  const kpiActive = allItems.filter((b) => b.isActive).length;
+  const kpiVisible = allItems.filter((b) => b.isVisible).length;
 
   const columns: ColumnModel[] = useMemo(
     () => [
@@ -202,18 +188,19 @@ export function BrandsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "name", headerText: t("brands.singular"), template: BrandNameCell as any, minWidth: 220 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "slug", headerText: t("brands.fields.slug"), template: BrandSlugCell as any, width: 170 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isActive", headerText: t("brands.fields.active"), template: BrandActiveCell as any, width: 110, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isVisible", headerText: t("brands.fields.visible"), template: BrandVisibleCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "slug", headerText: t("brands.fields.slug"), template: BrandSlugCell as any, width: 170 },
       { field: "createdAtUtc", headerText: t("brands.fields.created"), width: 140, type: "date" },
     ],
     [t],
   );
 
   const resetFilters = () => {
-    setSearch("");
+    setCodeFilter("");
+    setNameFilter("");
     setActiveFilter(null);
     setVisibleFilter(null);
   };
@@ -251,12 +238,22 @@ export function BrandsPage() {
         onClear={resetFilters}
         filters={
           <>
-            <MakaFilterField label={t("brands.searchLabel")} className="grow">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("brands.searchPlaceholder")}
-                className="h-8 w-full min-w-64"
+            <MakaFilterField label={t("brands.fields.code")}>
+              <MakaFilterInput
+                value={codeFilter}
+                onChange={setCodeFilter}
+                placeholder={t("brands.filters.codePlaceholder")}
+                ariaLabel={t("brands.fields.code")}
+                className="min-w-40 font-mono"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("brands.singular")} className="grow">
+              <MakaFilterInput
+                value={nameFilter}
+                onChange={setNameFilter}
+                placeholder={t("brands.filters.namePlaceholder")}
+                ariaLabel={t("brands.singular")}
+                className="min-w-48"
               />
             </MakaFilterField>
             <MakaFilterField label={t("brands.fields.active")}>
@@ -287,9 +284,9 @@ export function BrandsPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("brands.kpi.total")} value={totalQuery.data?.totalCount ?? 0} tone="var(--color-primary)" />
-            <KpiCard label={t("brands.kpi.active")} value={activeQuery.data?.totalCount ?? 0} tone="var(--color-success)" />
-            <KpiCard label={t("brands.kpi.visible")} value={visibleQuery.data?.totalCount ?? 0} tone="var(--color-info)" />
+            <KpiCard label={t("brands.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
+            <KpiCard label={t("brands.kpi.active")} value={kpiActive} tone="var(--color-success)" />
+            <KpiCard label={t("brands.kpi.visible")} value={kpiVisible} tone="var(--color-info)" />
           </>
         }
       />

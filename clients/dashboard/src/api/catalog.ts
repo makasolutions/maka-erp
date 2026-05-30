@@ -267,6 +267,8 @@ export type ProductDto = {
 
 export type SearchProductsParams = {
   search?: string;
+  sku?: string;
+  name?: string;
   brandId?: string | null;
   categoryId?: string | null;
   isActive?: boolean | null;
@@ -316,6 +318,8 @@ export function searchProducts(
 ): Promise<PagedResponse<ProductDto>> {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
+  if (params.sku) query.set("sku", params.sku);
+  if (params.name) query.set("name", params.name);
   if (params.brandId) query.set("brandId", params.brandId);
   if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.isActive !== undefined && params.isActive !== null)
@@ -333,6 +337,17 @@ export function searchProducts(
 
 export function getProductById(id: string): Promise<ProductDto> {
   return apiFetch<ProductDto>(`/api/v1/catalog/products/${encodeURIComponent(id)}`);
+}
+
+/** Catalog-wide product counts for KPI cards (one request instead of three). */
+export type ProductStats = {
+  total: number;
+  active: number;
+  visible: number;
+};
+
+export function getProductStats(): Promise<ProductStats> {
+  return apiFetch<ProductStats>(`/api/v1/catalog/products/stats`);
 }
 
 export async function createProduct(input: CreateProductInput): Promise<string> {

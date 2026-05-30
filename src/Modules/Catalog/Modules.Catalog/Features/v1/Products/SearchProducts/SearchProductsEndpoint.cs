@@ -13,12 +13,14 @@ public static class SearchProductsEndpoint
     internal static RouteHandlerBuilder MapSearchProductsEndpoint(this IEndpointRouteBuilder endpoints)
     {
         return endpoints.MapGet("/products",
-                (string? search, Guid? brandId, Guid? categoryId, bool? isActive, bool? isVisible,
+                (string? search, string? sku, string? name, Guid? brandId, Guid? categoryId, bool? isActive, bool? isVisible,
                  int pageNumber, int pageSize, string? sortBy, string? sortDir,
                  IMediator mediator, CancellationToken ct) =>
                     mediator.Send(
                         new SearchProductsQuery(
                             Search: search,
+                            Sku: sku,
+                            Name: name,
                             BrandId: brandId,
                             CategoryId: categoryId,
                             IsActive: isActive,

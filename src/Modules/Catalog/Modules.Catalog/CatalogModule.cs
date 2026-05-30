@@ -27,6 +27,7 @@ using FSH.Modules.Catalog.Features.v1.Products.ChangeProductPrice;
 using FSH.Modules.Catalog.Features.v1.Products.CreateProduct;
 using FSH.Modules.Catalog.Features.v1.Products.DeleteProduct;
 using FSH.Modules.Catalog.Features.v1.Products.GetProductById;
+using FSH.Modules.Catalog.Features.v1.Products.GetProductStats;
 using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
 using FSH.Modules.Catalog.Features.v1.Products.RemoveProductImage;
 using FSH.Modules.Catalog.Features.v1.Products.ReorderProductImages;
@@ -122,5 +123,6 @@ public sealed class CatalogModule : IModule
 
         group.MapGetProductByIdEndpoint();
         group.MapSearchProductsEndpoint();
+        group.MapGetProductStatsEndpoint();
     }
 }

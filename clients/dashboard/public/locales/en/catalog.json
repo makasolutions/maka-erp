@@ -58,7 +58,9 @@
       "hidden": "Hidden",
       "activeAriaLabel": "Active filter",
       "visibleYes": "Yes",
-      "visibleNo": "No"
+      "visibleNo": "No",
+      "skuPlaceholder": "Search by SKU…",
+      "namePlaceholder": "Search by name…"
     },
     "empty": {
       "title": "No products yet",
@@ -219,7 +221,9 @@
     "searchLabel": "Search",
     "filters": {
       "visibleYes": "Yes",
-      "visibleNo": "No"
+      "visibleNo": "No",
+      "codePlaceholder": "Search by code…",
+      "namePlaceholder": "Search by name…"
     },
     "kpi": {
       "total": "Total brands",
@@ -290,7 +294,9 @@
     "imageHint": "Optional. Category image.",
     "filters": {
       "visibleYes": "Yes",
-      "visibleNo": "No"
+      "visibleNo": "No",
+      "codePlaceholder": "Search by code…",
+      "namePlaceholder": "Search by name…"
     },
     "kpi": {
       "total": "Total categories",
