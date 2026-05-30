@@ -13,18 +13,13 @@ import {
 import {
   AlertTriangle,
   ArrowDown,
-  ChevronLeft,
-  ChevronRight,
   CircleDollarSign,
+  Eye,
   Minus,
   Package,
   PackageX,
-  Pencil,
   Plus,
-  Search,
-  Trash2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -56,24 +51,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   Combobox,
+  EntityFilterPill,
   EntityPageHeader,
+  EntityStatusBadge,
   Field,
 } from "@/components/list";
+import {
+  MakaGrid,
+  MakaGridFilters,
+  MakaFilterField,
+} from "@/components/maka";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
 import {
   describe,
   formatDate,
   formatMoney,
 } from "@/lib/list-helpers";
-import { Perm, usePerm } from "@/auth/permission-guard";
+import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
-
-const PAGE_SIZE = 25;
-const LOW_STOCK = 10;
 
 type EditorState =
   | { mode: "closed" }
@@ -83,93 +82,65 @@ type EditorState =
   | { mode: "price"; product: ProductDto }
   | { mode: "stock"; product: ProductDto };
 
-// ───────────────────────────────────────────────────────────────────────
-//  Filter row — simple inline filter chips above the table.
-// ───────────────────────────────────────────────────────────────────────
+type ProductRow = ProductDto & {
+  brandName: string;
+  categoryName: string;
+  priceLabel: string;
+  activeLabel: string;
+  visibleLabel: string;
+};
 
-function FilterRow({
-  brands,
-  categories,
-  brandFilter,
-  setBrandFilter,
-  categoryFilter,
-  setCategoryFilter,
-  activeFilter,
-  setActiveFilter,
-}: {
-  brands: BrandDto[];
-  categories: CategoryDto[];
-  brandFilter: string | null;
-  setBrandFilter: (v: string | null) => void;
-  categoryFilter: string | null;
-  setCategoryFilter: (v: string | null) => void;
-  activeFilter: boolean | null;
-  setActiveFilter: (v: boolean | null) => void;
-}) {
-  const { t } = useTranslation("catalog");
+function triToBool(v: string | null): boolean | undefined {
+  return v === null ? undefined : v === "true";
+}
+
+// ── Cell templates (hook-free; read enriched row fields) ──────────────────
+function ProdImageCell(row: ProductRow) {
+  return <ProductImage imageUrl={row.thumbnailUrl} initial={row.name.trim().charAt(0).toUpperCase() || "·"} size={32} />;
+}
+function ProdSkuCell(row: ProductRow) {
+  return <code className="font-mono text-[12px] font-medium text-[var(--color-foreground)]">{row.sku}</code>;
+}
+function ProdNameCell(row: ProductRow) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Combobox
-        label={t("products.fields.brand")}
-        value={brandFilter}
-        onChange={setBrandFilter}
-        options={brands.map((b) => ({ value: b.id, label: b.name }))}
-        variant="filter"
-        searchable
-        clearable
-      />
-      <Combobox
-        label={t("products.fields.category")}
-        value={categoryFilter}
-        onChange={setCategoryFilter}
-        options={categories.map((c) => ({ value: c.id, label: c.name }))}
-        variant="filter"
-        searchable
-        clearable
-      />
-      <ActivePill value={activeFilter} onChange={setActiveFilter} />
+    <div className="min-w-0">
+      <div className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.name}</div>
+      {row.description && (
+        <div className="truncate text-[12px] text-[var(--color-muted-foreground)]" title={row.description}>
+          {row.description}
+        </div>
+      )}
     </div>
   );
 }
+function ProdBrandCell(row: ProductRow) {
+  return <span className="truncate text-[12.5px] text-[var(--color-foreground)]">{row.brandName}</span>;
+}
+function ProdCategoryCell(row: ProductRow) {
+  return <span className="truncate text-[12.5px] text-[var(--color-muted-foreground)]">{row.categoryName}</span>;
+}
+function ProdPriceCell(row: ProductRow) {
+  return <span className="font-display text-[13px] font-semibold tabular-nums text-[var(--color-foreground)]">{row.priceLabel}</span>;
+}
+function ProdActiveCell(row: ProductRow) {
+  return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
+}
+function ProdVisibleCell(row: ProductRow) {
+  return <EntityStatusBadge tone={row.isVisible ? "info" : "default"}>{row.visibleLabel}</EntityStatusBadge>;
+}
 
-function ActivePill({
-  value,
-  onChange,
-}: {
-  value: boolean | null;
-  onChange: (v: boolean | null) => void;
-}) {
-  const { t } = useTranslation("catalog");
-  const options = [
-    { v: null as null | boolean, label: t("products.filters.all") },
-    { v: true as null | boolean, label: t("products.filters.active") },
-    { v: false as null | boolean, label: t("products.filters.hidden") },
-  ];
+function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div
-      role="group"
-      aria-label={t("products.filters.activeAriaLabel")}
-      className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] p-0.5 text-[11px] font-semibold uppercase tracking-wider"
-    >
-      {options.map((opt) => {
-        const isActive = value === opt.v;
-        return (
-          <button
-            key={String(opt.v)}
-            type="button"
-            onClick={() => onChange(opt.v)}
-            aria-pressed={isActive}
-            className={cn(
-              "h-7 cursor-pointer rounded-full px-3 transition-colors duration-[var(--duration-fast)]",
-              isActive
-                ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
-                : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
+    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
+      <div className="flex items-center justify-center gap-2">
+        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
+        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          {label}
+        </span>
+      </div>
+      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
+        {value.toLocaleString("es-CO")}
+      </div>
     </div>
   );
 }
@@ -180,52 +151,42 @@ function ActivePill({
 
 export function ProductsPage() {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const { can } = usePerm();
+  const [panelOpen, setPanelOpen] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "createdAtUtc", dir: "desc" });
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<boolean | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-      setPage(1);
-    }, 250);
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [brandFilter, categoryFilter, activeFilter]);
+  const filters = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      brandId: brandFilter,
+      categoryId: categoryFilter,
+      isActive: triToBool(activeFilter),
+      isVisible: triToBool(visibleFilter),
+    }),
+    [debouncedSearch, brandFilter, categoryFilter, activeFilter, visibleFilter],
+  );
+  useEffect(() => setPage(1), [filters]);
 
   const query = useQuery({
-    queryKey: [
-      "catalog",
-      "products",
-      {
-        search: debouncedSearch,
-        brandId: brandFilter,
-        categoryId: categoryFilter,
-        isActive: activeFilter,
-        pageNumber: page,
-        pageSize: PAGE_SIZE,
-      },
-    ],
+    queryKey: ["catalog", "products", filters, page, pageSize, sort],
     queryFn: () =>
-      searchProducts({
-        search: debouncedSearch || undefined,
-        brandId: brandFilter,
-        categoryId: categoryFilter,
-        isActive: activeFilter,
-        pageNumber: page,
-        pageSize: PAGE_SIZE,
-        sortBy: "createdAtUtc",
-        sortDir: "desc",
-      }),
+      searchProducts({ ...filters, pageNumber: page, pageSize, sortBy: sort.by, sortDir: sort.dir }),
     placeholderData: keepPreviousData,
   });
 
@@ -240,8 +201,24 @@ export function ProductsPage() {
     staleTime: 60_000,
   });
 
+  // KPI counts.
+  const totalQuery = useQuery({
+    queryKey: ["catalog", "products", "kpi", "total"],
+    queryFn: () => searchProducts({ pageSize: 1 }),
+    staleTime: 30_000,
+  });
+  const activeKpiQuery = useQuery({
+    queryKey: ["catalog", "products", "kpi", "active"],
+    queryFn: () => searchProducts({ pageSize: 1, isActive: true }),
+    staleTime: 30_000,
+  });
+  const visibleKpiQuery = useQuery({
+    queryKey: ["catalog", "products", "kpi", "visible"],
+    queryFn: () => searchProducts({ pageSize: 1, isVisible: true }),
+    staleTime: 30_000,
+  });
+
   const data = query.data;
-  const items = data?.items ?? [];
 
   const brandsById = useMemo(() => {
     const map = new Map<string, BrandDto>();
@@ -255,9 +232,53 @@ export function ProductsPage() {
     return map;
   }, [categoriesQuery.data]);
 
-  const filtersApplied =
-    brandFilter !== null || categoryFilter !== null || activeFilter !== null;
-  const searchActive = debouncedSearch.length > 0 || filtersApplied;
+  const rows: ProductRow[] = useMemo(
+    () =>
+      (data?.items ?? []).map((p) => ({
+        ...p,
+        brandName: brandsById.get(p.brandId)?.name ?? "—",
+        categoryName: categoriesById.get(p.categoryId)?.name ?? "—",
+        priceLabel: formatMoney(p.price.amount, p.price.currency),
+        activeLabel: p.isActive ? tc("status.active") : tc("status.inactive"),
+        visibleLabel: p.isVisible ? t("products.filters.visibleYes") : t("products.filters.visibleNo"),
+      })),
+    [data, brandsById, categoriesById, t, tc],
+  );
+
+  const sortFieldFor = (field: string): string | undefined =>
+    ({ name: "name", sku: "sku", stock: "stock", priceLabel: "price", createdAtUtc: "createdAtUtc" })[field];
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "thumbnailUrl", headerText: t("products.fields.image"), template: ProdImageCell as any, width: 72, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "sku", headerText: t("products.fields.sku"), template: ProdSkuCell as any, width: 140 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 220 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 150, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "categoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "priceLabel", headerText: t("products.fields.price"), template: ProdPriceCell as any, width: 130, textAlign: "Right" },
+      { field: "stock", headerText: t("products.fields.stock"), width: 90, textAlign: "Right" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isActive", headerText: t("products.fields.active"), template: ProdActiveCell as any, width: 100, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isVisible", headerText: t("products.fields.visible"), template: ProdVisibleCell as any, width: 100, allowSorting: false, textAlign: "Center" },
+    ],
+    [t],
+  );
+
+  const resetFilters = () => {
+    setSearch("");
+    setBrandFilter(null);
+    setCategoryFilter(null);
+    setActiveFilter(null);
+    setVisibleFilter(null);
+    setPage(1);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -269,6 +290,15 @@ export function ProductsPage() {
         description={t("products.description")}
       >
         <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.panelToggle")}
+        </Button>
+        <Button
           perm={P.catalog.products.create}
           onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
@@ -278,136 +308,119 @@ export function ProductsPage() {
         </Button>
       </EntityPageHeader>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]" />
-        <input
-          type="text"
-          placeholder={t("products.searchPlaceholder")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={cn(
-            "h-[46px] w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]",
-            "pl-12 pr-4 text-[14px] font-normal text-[var(--color-foreground)] outline-none",
-            "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]",
-            "shadow-xs",
-            "transition-all duration-200",
-            "focus:border-[oklch(from_var(--color-ring)_l_c_h_/_0.30)] focus:ring-2 focus:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.10)]",
-          )}
-        />
-        {search && (
-          <button
-            onClick={() => setSearch("")}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-medium text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)] transition-colors hover:text-[var(--color-muted-foreground)]"
-          >
-            {t("common:actions.clear")}
-          </button>
-        )}
-      </div>
-
-      {/* Filters */}
-      <FilterRow
-        brands={brandsQuery.data?.items ?? []}
-        categories={categoriesQuery.data?.items ?? []}
-        brandFilter={brandFilter}
-        setBrandFilter={setBrandFilter}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        activeFilter={activeFilter}
-        setActiveFilter={setActiveFilter}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={resetFilters}
+        filters={
+          <>
+            <MakaFilterField label={t("products.searchLabel")} className="grow">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("products.searchPlaceholder")}
+                className="h-8 w-full min-w-64"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.brand")}>
+              <Combobox
+                id="product-brand-filter"
+                label={t("products.fields.brand")}
+                placeholder={tc("status.all")}
+                value={brandFilter}
+                onChange={setBrandFilter}
+                options={(brandsQuery.data?.items ?? []).map((b) => ({ value: b.id, label: b.name }))}
+                searchable
+                clearable
+                emptyOptionLabel={tc("status.all")}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.category")}>
+              <Combobox
+                id="product-category-filter"
+                label={t("products.fields.category")}
+                placeholder={tc("status.all")}
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                options={(categoriesQuery.data?.items ?? []).map((c) => ({ value: c.id, label: c.name }))}
+                searchable
+                clearable
+                emptyOptionLabel={tc("status.all")}
+              />
+            </MakaFilterField>
+            <div className="basis-full" aria-hidden />
+            <MakaFilterField label={t("products.fields.active")}>
+              <EntityFilterPill<string | null>
+                label={t("products.fields.active")}
+                value={activeFilter}
+                onChange={setActiveFilter}
+                options={[
+                  { value: null, label: tc("status.all") },
+                  { value: "true", label: tc("status.active") },
+                  { value: "false", label: tc("status.inactive") },
+                ]}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.visible")}>
+              <EntityFilterPill<string | null>
+                label={t("products.fields.visible")}
+                value={visibleFilter}
+                onChange={setVisibleFilter}
+                options={[
+                  { value: null, label: tc("status.all") },
+                  { value: "true", label: t("products.filters.visibleYes") },
+                  { value: "false", label: t("products.filters.visibleNo") },
+                ]}
+              />
+            </MakaFilterField>
+          </>
+        }
+        kpis={
+          <>
+            <KpiCard label={t("products.kpi.total")} value={totalQuery.data?.totalCount ?? 0} tone="var(--color-primary)" />
+            <KpiCard label={t("products.kpi.active")} value={activeKpiQuery.data?.totalCount ?? 0} tone="var(--color-success)" />
+            <KpiCard label={t("products.kpi.visible")} value={visibleKpiQuery.data?.totalCount ?? 0} tone="var(--color-info)" />
+          </>
+        }
       />
 
-      {/* Results */}
-      {query.isLoading && items.length === 0 ? (
-        <LoadingList />
-      ) : items.length === 0 ? (
-        <EmptyResults
-          searchActive={searchActive}
-          search={debouncedSearch}
-          onCreate={can(P.catalog.products.create) ? () => setEditor({ mode: "create" }) : undefined}
-          onClear={() => {
-            setSearch("");
-            setBrandFilter(null);
-            setCategoryFilter(null);
-            setActiveFilter(null);
-          }}
-        />
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {t("products.found", { count: data?.totalCount ?? 0 })}
-            </p>
-          </div>
-
-          {/* Mobile: card list */}
-          <div className="space-y-2 md:hidden">
-            {items.map((product) => (
-              <MobileCard
-                key={product.id}
-                product={product}
-                brand={brandsById.get(product.brandId)}
-                category={categoriesById.get(product.categoryId)}
-                onEdit={can(P.catalog.products.update) ? () => setEditor({ mode: "edit", product }) : undefined}
-              />
-            ))}
-          </div>
-
-          {/* Desktop: table */}
-          <div className="hidden overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-xs md:block">
-            {/* Header */}
-            <div className="grid grid-cols-[1fr_120px_24px] gap-3 border-b border-[var(--color-border)] bg-[oklch(from_var(--color-muted)_l_c_h_/_0.4)] px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] lg:grid-cols-[1fr_140px_110px_120px_24px]">
-              <span>{t("products.singular")}</span>
-              <span>{t("products.fields.sku")}</span>
-              <span className="hidden lg:block">{t("products.fields.brand")}</span>
-              <span className="hidden lg:block">{t("products.fields.price")}</span>
-              <span />
-            </div>
-
-            {/* Rows */}
-            {items.map((product, i) => (
-              <DesktopRow
-                key={product.id}
-                product={product}
-                brand={brandsById.get(product.brandId)}
-                category={categoriesById.get(product.categoryId)}
-                isLast={i === items.length - 1}
-                onEdit={() => setEditor({ mode: "edit", product })}
-                onDelete={() => setEditor({ mode: "delete", product })}
-                onPriceChange={can(P.catalog.products.update) ? () => setEditor({ mode: "price", product }) : undefined}
-                onStockAdjust={can(P.catalog.products.adjustStock) ? () => setEditor({ mode: "stock", product }) : undefined}
-              />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {(data?.totalPages ?? 1) > 1 && (
-            <div className="mt-3 flex items-center justify-between">
-              <p className="text-[11px] text-[var(--color-muted-foreground)]">
-                {t("products.pageOf", { page, total: data?.totalPages })}
-              </p>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  disabled={!data?.hasPrevious}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[oklch(from_var(--color-muted)_l_c_h_/_0.5)] hover:text-[var(--color-foreground)] disabled:cursor-not-allowed disabled:opacity-30"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={!data?.hasNext}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--color-muted-foreground)] transition-colors hover:bg-[oklch(from_var(--color-muted)_l_c_h_/_0.5)] hover:text-[var(--color-foreground)] disabled:cursor-not-allowed disabled:opacity-30"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <MakaGrid<ProductRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isFetching}
+        fileName="productos"
+        entityName={t("products.singular")}
+        onRowClick={(row) => can(P.catalog.products.update) && setEditor({ mode: "edit", product: row })}
+        onClearFilters={resetFilters}
+        permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
+        onEdit={(row) => setEditor({ mode: "edit", product: row })}
+        onDelete={(row) => setEditor({ mode: "delete", product: row })}
+        extraActions={[
+          ...(can(P.catalog.products.update)
+            ? [{ key: "price", label: t("products.actions.changePrice"), icon: CircleDollarSign, onClick: (row: ProductRow) => setEditor({ mode: "price", product: row }) }]
+            : []),
+          ...(can(P.catalog.products.adjustStock)
+            ? [{ key: "stock", label: t("products.actions.adjustStock"), icon: PackageX, onClick: (row: ProductRow) => setEditor({ mode: "stock", product: row }) }]
+            : []),
+        ]}
+        serverPaging={{
+          totalCount: data?.totalCount ?? 0,
+          page,
+          pageSize,
+          pageSizes: [25, 50, 100],
+          onChange: ({ page: p, pageSize: ps }) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+          onSortChange: (s) => {
+            setPage(1);
+            if (!s) setSort({ by: "createdAtUtc", dir: "desc" });
+            else {
+              const by = sortFieldFor(s.field);
+              setSort(by ? { by, dir: s.dir } : { by: "createdAtUtc", dir: "desc" });
+            }
+          },
+        }}
+      />
 
       {query.isError && (
         <div
@@ -432,356 +445,6 @@ export function ProductsPage() {
   );
 }
 
-// ───────────────────────────────────────────────────────────────────────
-//  Mobile card
-// ───────────────────────────────────────────────────────────────────────
-
-function MobileCard({
-  product,
-  brand,
-  category,
-  onEdit,
-}: {
-  product: ProductDto;
-  brand: BrandDto | undefined;
-  category: CategoryDto | undefined;
-  onEdit?: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-  return (
-    <Link
-      to={`/catalog/products/${product.id}`}
-      aria-label={t("products.openProductAria", { name: product.name })}
-      className={cn(
-        "block rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-left",
-        "shadow-xs",
-        "transition-colors hover:bg-[oklch(from_var(--color-accent)_l_c_h_/_0.4)] active:bg-[oklch(from_var(--color-accent)_l_c_h_/_0.6)]",
-        "outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.4)]",
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <ProductImage
-            imageUrl={product.thumbnailUrl}
-            initial={product.name.trim().charAt(0).toUpperCase() || "·"}
-            size={40}
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-                {product.name}
-              </p>
-              {!product.isActive && (
-                <span className="inline-flex h-4 items-center rounded-full border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.20)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.10)] px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wider text-[var(--color-destructive)]">
-                  {t("products.hiddenBadge")}
-                </span>
-              )}
-            </div>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <code className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
-                {product.sku}
-              </code>
-            </div>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {onEdit && (
-            <button
-              type="button"
-              aria-label={t("products.editAria", { name: product.name })}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-            >
-              <Pencil className="size-3.5" />
-            </button>
-          )}
-          <ChevronRight className="size-4 text-[var(--color-border)]" />
-        </div>
-      </div>
-      <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-2">
-        {brand && (
-          <span className="inline-flex h-5 items-center rounded-full bg-[var(--color-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-secondary-foreground)]">
-            {brand.name}
-          </span>
-        )}
-        {category && (
-          <span className="text-[11px] text-[var(--color-muted-foreground)]">
-            {category.name}
-          </span>
-        )}
-        <span className="ml-auto font-display text-[13px] font-semibold tabular-nums text-[var(--color-foreground)]">
-          {formatMoney(product.price.amount, product.price.currency)}
-        </span>
-        <StockChip stock={product.stock} />
-      </div>
-    </Link>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Desktop row
-// ───────────────────────────────────────────────────────────────────────
-
-function DesktopRow({
-  product,
-  brand,
-  category,
-  isLast,
-  onEdit,
-  onDelete,
-  onPriceChange,
-  onStockAdjust,
-}: {
-  product: ProductDto;
-  brand: BrandDto | undefined;
-  category: CategoryDto | undefined;
-  isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  onPriceChange?: () => void;
-  onStockAdjust?: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-  return (
-    <div
-      className={cn(
-        "group grid grid-cols-[1fr_120px_24px] items-center gap-3 px-5 py-3 transition-colors duration-100",
-        "hover:bg-[oklch(from_var(--color-accent)_l_c_h_/_0.4)]",
-        "lg:grid-cols-[1fr_140px_110px_120px_24px]",
-        !isLast && "border-b border-[oklch(from_var(--color-border)_l_c_h_/_0.3)]",
-        !product.isActive && "opacity-75",
-      )}
-    >
-      {/* Image + name */}
-      <Link
-        to={`/catalog/products/${product.id}`}
-        className="flex min-w-0 items-center gap-3 outline-none"
-      >
-        <ProductImage
-          imageUrl={product.thumbnailUrl}
-          initial={product.name.trim().charAt(0).toUpperCase() || "·"}
-          size={36}
-        />
-        <span className="truncate text-[14px] font-medium text-[var(--color-foreground)] transition-colors group-hover:text-[var(--color-primary)]">
-          {product.name}
-        </span>
-        {!product.isActive && (
-          <span className="inline-flex h-4 shrink-0 items-center rounded-full border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.20)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.10)] px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wider text-[var(--color-destructive)]">
-            {t("products.hiddenBadge")}
-          </span>
-        )}
-      </Link>
-
-      {/* SKU */}
-      <code
-        title={product.sku}
-        className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]"
-      >
-        {product.sku}
-      </code>
-
-      {/* Brand (lg+) */}
-      <div className="hidden lg:block">
-        {brand ? (
-          <span className="inline-flex max-w-full items-center rounded-full bg-[var(--color-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-secondary-foreground)]">
-            <span className="truncate">{brand.name}</span>
-          </span>
-        ) : (
-          <span className="text-[12px] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]">
-            —
-          </span>
-        )}
-        {category && (
-          <div className="mt-0.5 truncate text-[11px] text-[var(--color-muted-foreground)]">
-            {category.name}
-          </div>
-        )}
-      </div>
-
-      {/* Price + stock (lg+) */}
-      <div className="hidden items-center gap-2 lg:flex">
-        {onPriceChange ? (
-          <button
-            type="button"
-            onClick={onPriceChange}
-            title={t("products.changePriceRowTitle")}
-            className="cursor-pointer rounded-md px-1.5 py-0.5 text-left font-display text-[14px] font-semibold tabular-nums transition-colors hover:bg-[var(--color-muted)]"
-          >
-            {formatMoney(product.price.amount, product.price.currency)}
-          </button>
-        ) : (
-          <span className="px-1.5 py-0.5 font-display text-[14px] font-semibold tabular-nums">
-            {formatMoney(product.price.amount, product.price.currency)}
-          </span>
-        )}
-        <StockChip stock={product.stock} onClick={onStockAdjust} adjustTitle={t("products.adjustStockRowTitle")} />
-      </div>
-
-      {/* Trailing actions + chevron */}
-      <div className="flex items-center justify-end gap-1">
-        <Perm need={P.catalog.products.update}>
-          <button
-            type="button"
-            aria-label={t("products.editAria", { name: product.name })}
-            onClick={onEdit}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)] group-hover:opacity-100"
-          >
-            <Pencil className="size-3.5" />
-          </button>
-        </Perm>
-        <Perm need={P.catalog.products.delete}>
-          <button
-            type="button"
-            aria-label={t("products.deleteAria", { name: product.name })}
-            onClick={onDelete}
-            className="grid size-7 cursor-pointer place-items-center rounded-md text-[var(--color-muted-foreground)] opacity-0 transition-all hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)] group-hover:opacity-100"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
-        </Perm>
-        <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
-      </div>
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Empty state
-// ───────────────────────────────────────────────────────────────────────
-
-function EmptyResults({
-  searchActive,
-  search,
-  onCreate,
-  onClear,
-}: {
-  searchActive: boolean;
-  search: string;
-  onCreate?: () => void;
-  onClear: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-[var(--color-muted)]">
-        {searchActive ? (
-          <Search className="size-6 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.4)]" />
-        ) : (
-          <PackageX className="size-6 text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.4)]" />
-        )}
-      </div>
-      <h3 className="mb-1.5 font-display text-[17px] font-semibold text-[var(--color-foreground)]">
-        {searchActive ? t("products.empty.searchTitle") : t("products.empty.title")}
-      </h3>
-      <p className="mb-6 max-w-[320px] text-[13px] text-[var(--color-muted-foreground)]">
-        {searchActive
-          ? search
-            ? t("products.empty.searchBody", { term: search })
-            : t("products.empty.filterBody")
-          : t("products.empty.addFirstBody")}
-      </p>
-      {searchActive ? (
-        <Button variant="outline" onClick={onClear} className="h-9 rounded-lg px-4 text-[13px]">
-          {t("products.empty.clearFilters")}
-        </Button>
-      ) : onCreate ? (
-        <Button onClick={onCreate} className="h-9 rounded-lg px-4 text-[13px]">
-          <Plus className="mr-1.5 size-4" />
-          {t("products.actions.add")}
-        </Button>
-      ) : null}
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Loading state
-// ───────────────────────────────────────────────────────────────────────
-
-function LoadingList() {
-  return (
-    <div>
-      <div className="space-y-2 md:hidden">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4"
-          >
-            <Skeleton className="size-10 rounded-xl" />
-            <div className="flex-1 space-y-1.5">
-              <Skeleton className="h-3.5 w-40" />
-              <Skeleton className="h-2.5 w-28" />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="hidden overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] md:block">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              "grid grid-cols-[1fr_140px_110px_120px_24px] gap-3 items-center px-5 py-3",
-              i < 5 && "border-b border-[oklch(from_var(--color-border)_l_c_h_/_0.3)]",
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <Skeleton className="size-9 rounded-xl" />
-              <Skeleton className="h-4 w-48" />
-            </div>
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="ml-auto size-4" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Stock chip
-// ───────────────────────────────────────────────────────────────────────
-
-function StockChip({
-  stock,
-  onClick,
-  adjustTitle,
-}: {
-  stock: number;
-  onClick?: () => void;
-  adjustTitle?: string;
-}) {
-  const tone =
-    stock === 0 ? "danger" : stock < LOW_STOCK ? "warning" : "default";
-  const tones = {
-    default:
-      "bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-surface-1)]",
-    warning:
-      "bg-[oklch(from_var(--color-warning)_l_c_h_/_0.14)] text-[var(--color-warning)] hover:bg-[oklch(from_var(--color-warning)_l_c_h_/_0.22)]",
-    danger:
-      "bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.14)] text-[var(--color-destructive)] hover:bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.22)]",
-  } as const;
-  const Comp = onClick ? "button" : "span";
-  return (
-    <Comp
-      onClick={onClick}
-      title={adjustTitle}
-      className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[11px] font-semibold tabular-nums transition-colors",
-        onClick && "cursor-pointer",
-        tones[tone],
-      )}
-    >
-      <Package className="size-3" />
-      {stock}
-    </Comp>
-  );
-}
 
 // ───────────────────────────────────────────────────────────────────────
 //  Product image

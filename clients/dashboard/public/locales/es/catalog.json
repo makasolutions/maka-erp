@@ -29,7 +29,10 @@
       "skuPlaceholder": "ACM-TS-001",
       "descPlaceholder": "Algodón orgánico 100%, cuello redondo.",
       "brandPlaceholder": "Selecciona una marca…",
-      "categoryPlaceholder": "Selecciona una categoría…"
+      "categoryPlaceholder": "Selecciona una categoría…",
+      "image": "Imagen",
+      "active": "Activo",
+      "visible": "Visible"
     },
     "actions": {
       "create": "Nuevo producto",
@@ -53,7 +56,9 @@
       "all": "Todos",
       "active": "Activos",
       "hidden": "Ocultos",
-      "activeAriaLabel": "Filtro de estado"
+      "activeAriaLabel": "Filtro de estado",
+      "visibleYes": "Sí",
+      "visibleNo": "No"
     },
     "empty": {
       "title": "Sin productos aún",
@@ -153,6 +158,12 @@
       "notFoundDesc": "Es posible que haya sido eliminado o que el enlace sea incorrecto.",
       "createdWhen": "Creado {{when}}",
       "updatedWhen": "Actualizado {{when}}"
+    },
+    "searchLabel": "Buscar",
+    "kpi": {
+      "total": "Productos totales",
+      "active": "Activos",
+      "visible": "Visibles"
     }
   },
   "brands": {
