@@ -8,4 +8,5 @@ public sealed record UpdateProductCommand(
     string? Description,
     Guid BrandId,
     Guid CategoryId,
-    bool IsActive) : ICommand<Guid>;
+    bool IsActive,
+    bool IsVisible = true) : ICommand<Guid>;

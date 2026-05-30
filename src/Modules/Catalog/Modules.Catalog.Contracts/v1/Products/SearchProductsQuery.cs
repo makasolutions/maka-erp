@@ -11,6 +11,7 @@ namespace FSH.Modules.Catalog.Contracts.v1.Products;
 /// <param name="BrandId">Optional brand filter.</param>
 /// <param name="CategoryId">Optional category filter.</param>
 /// <param name="IsActive">Optional active status filter.</param>
+/// <param name="IsVisible">Optional visible status filter.</param>
 /// <param name="PageNumber">Page number.</param>
 /// <param name="PageSize">Page size.</param>
 /// <param name="SortBy">Sort column. One of: name | sku | createdAtUtc | stock | price.</param>
@@ -20,6 +21,7 @@ public sealed record SearchProductsQuery(
     Guid? BrandId = null,
     Guid? CategoryId = null,
     bool? IsActive = null,
+    bool? IsVisible = null,
     int PageNumber = 1,
     int PageSize = 20,
     string? SortBy = null,

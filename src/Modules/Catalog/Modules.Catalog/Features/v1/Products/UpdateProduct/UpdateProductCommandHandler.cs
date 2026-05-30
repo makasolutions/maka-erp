@@ -46,7 +46,8 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext dbContext)
             command.Description,
             command.BrandId,
             command.CategoryId,
-            command.IsActive);
+            command.IsActive,
+            command.IsVisible);
 
         bool slugTaken = await dbContext.Products
             .AnyAsync(p => p.Slug == product.Slug && p.Id != product.Id, cancellationToken)

@@ -13,17 +13,19 @@ public static class SearchCategoriesEndpoint
     internal static RouteHandlerBuilder MapSearchCategoriesEndpoint(this IEndpointRouteBuilder endpoints)
     {
         return endpoints.MapGet("/categories",
-                (string? search, Guid? parentCategoryId, int pageNumber, int pageSize,
+                (string? search, Guid? parentCategoryId, bool? isActive, bool? isVisible, int pageNumber, int pageSize,
                  string? sortBy, string? sortDir,
                  IMediator mediator, CancellationToken ct) =>
                     mediator.Send(
                         new SearchCategoriesQuery(
-                            search,
-                            parentCategoryId,
-                            pageNumber == 0 ? 1 : pageNumber,
-                            pageSize == 0 ? 50 : pageSize,
-                            sortBy,
-                            sortDir),
+                            Search: search,
+                            ParentCategoryId: parentCategoryId,
+                            IsActive: isActive,
+                            IsVisible: isVisible,
+                            PageNumber: pageNumber == 0 ? 1 : pageNumber,
+                            PageSize: pageSize == 0 ? 50 : pageSize,
+                            SortBy: sortBy,
+                            SortDir: sortDir),
                         ct))
             .WithName("SearchCategories")
             .WithSummary("Search categories (paged, filter by parent, sortable)")

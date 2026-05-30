@@ -16,30 +16,34 @@ public static class CatalogSeedData
     // violate on the second tenant's seed.
     public static IReadOnlyList<Brand> BuildBrands() =>
     [
-        Brand.Create("Acme Goods",      "Quality essentials for the modern home.",            null),
-        Brand.Create("Northwind",       "Outdoor and adventure gear since 1985.",             null),
-        Brand.Create("Contoso Studio",  "Design-forward furniture and lighting.",             null),
-        Brand.Create("Fabrikam",        "Pro-grade tools for makers and builders.",           null),
+        // Default fallback brand — the product form pre-selects this one.
+        Brand.Create("GEN",     "Genérica",        "Marca genérica por defecto.",                        null),
+        Brand.Create("ACME",    "Acme Goods",      "Quality essentials for the modern home.",            null),
+        Brand.Create("NW",      "Northwind",       "Outdoor and adventure gear since 1985.",             null),
+        Brand.Create("CONTOSO", "Contoso Studio",  "Design-forward furniture and lighting.",             null),
+        Brand.Create("FAB",     "Fabrikam",        "Pro-grade tools for makers and builders.",           null),
     ];
 
     public static (IReadOnlyList<Category> Roots, IReadOnlyList<Category> Children) BuildCategories()
     {
-        var apparel = Category.Create("Apparel", "Clothing and accessories.", null);
-        var home = Category.Create("Home & Living", "Furniture, decor, and home essentials.", null);
-        var outdoor = Category.Create("Outdoor", "Gear for the great outdoors.", null);
-        var tools = Category.Create("Tools", "Power tools, hand tools, and accessories.", null);
+        // Default fallback category — the product form pre-selects this one.
+        var uncategorized = Category.Create("SIN-CAT", "Sin categoría", "Categoría por defecto.", null);
+        var apparel = Category.Create("APPAREL", "Apparel", "Clothing and accessories.", null);
+        var home = Category.Create("HOME", "Home & Living", "Furniture, decor, and home essentials.", null);
+        var outdoor = Category.Create("OUTDOOR", "Outdoor", "Gear for the great outdoors.", null);
+        var tools = Category.Create("TOOLS", "Tools", "Power tools, hand tools, and accessories.", null);
 
-        var roots = new[] { apparel, home, outdoor, tools };
+        var roots = new[] { uncategorized, apparel, home, outdoor, tools };
 
         var children = new[]
         {
-            Category.Create("Tops",         "Shirts, t-shirts, and tops.",          apparel.Id),
-            Category.Create("Outerwear",    "Jackets, coats, and shells.",          apparel.Id),
-            Category.Create("Furniture",    "Chairs, tables, and shelving.",        home.Id),
-            Category.Create("Lighting",     "Lamps and lighting fixtures.",         home.Id),
-            Category.Create("Camping",      "Tents, sleeping bags, and cookware.",  outdoor.Id),
-            Category.Create("Hand Tools",   "Hammers, screwdrivers, wrenches.",     tools.Id),
-            Category.Create("Power Tools",  "Drills, saws, sanders.",               tools.Id),
+            Category.Create("TOPS",        "Tops",         "Shirts, t-shirts, and tops.",          apparel.Id),
+            Category.Create("OUTERWEAR",   "Outerwear",    "Jackets, coats, and shells.",          apparel.Id),
+            Category.Create("FURNITURE",   "Furniture",    "Chairs, tables, and shelving.",        home.Id),
+            Category.Create("LIGHTING",    "Lighting",     "Lamps and lighting fixtures.",         home.Id),
+            Category.Create("CAMPING",     "Camping",      "Tents, sleeping bags, and cookware.",  outdoor.Id),
+            Category.Create("HAND-TOOLS",  "Hand Tools",   "Hammers, screwdrivers, wrenches.",     tools.Id),
+            Category.Create("POWER-TOOLS", "Power Tools",  "Drills, saws, sanders.",               tools.Id),
         };
 
         return (roots, children);

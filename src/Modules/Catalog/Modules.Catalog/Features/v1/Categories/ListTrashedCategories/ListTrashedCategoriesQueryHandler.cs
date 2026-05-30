@@ -30,7 +30,7 @@ public sealed class ListTrashedCategoriesQueryHandler(CatalogDbContext dbContext
             .Skip((page - 1) * size)
             .Take(size)
             .Select(c => new CategoryDto(
-                c.Id, c.Name, c.Slug, c.Description, c.ParentCategoryId,
+                c.Id, c.Code, c.Name, c.Slug, c.Description, c.ImageUrl, c.ParentCategoryId, c.IsActive, c.IsVisible,
                 c.CreatedAtUtc, c.UpdatedAtUtc, c.DeletedOnUtc, c.DeletedBy))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

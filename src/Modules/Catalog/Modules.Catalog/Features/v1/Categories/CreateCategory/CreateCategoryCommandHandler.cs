@@ -26,7 +26,14 @@ public sealed class CreateCategoryCommandHandler(CatalogDbContext dbContext)
             }
         }
 
-        var category = Category.Create(command.Name, command.Description, command.ParentCategoryId);
+        var category = Category.Create(
+            command.Code,
+            command.Name,
+            command.Description,
+            command.ParentCategoryId,
+            command.ImageUrl,
+            command.IsActive,
+            command.IsVisible);
 
         bool slugTaken = await dbContext.Categories
             .AnyAsync(c => c.Slug == category.Slug, cancellationToken)
@@ -35,6 +42,17 @@ public sealed class CreateCategoryCommandHandler(CatalogDbContext dbContext)
         {
             throw new CustomException(
                 $"A category with name '{command.Name}' already exists.",
+                (IEnumerable<string>?)null,
+                HttpStatusCode.Conflict);
+        }
+
+        bool codeTaken = await dbContext.Categories
+            .AnyAsync(c => c.Code == category.Code, cancellationToken)
+            .ConfigureAwait(false);
+        if (codeTaken)
+        {
+            throw new CustomException(
+                $"A category with code '{category.Code}' already exists.",
                 (IEnumerable<string>?)null,
                 HttpStatusCode.Conflict);
         }

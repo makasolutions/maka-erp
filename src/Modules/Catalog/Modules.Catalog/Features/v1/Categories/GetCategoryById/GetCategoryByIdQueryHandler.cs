@@ -20,6 +20,6 @@ public sealed class GetCategoryByIdQueryHandler(CatalogDbContext dbContext)
             .ConfigureAwait(false)
             ?? throw new NotFoundException($"Category {query.CategoryId} not found.");
 
-        return new CategoryDto(c.Id, c.Name, c.Slug, c.Description, c.ParentCategoryId, c.CreatedAtUtc, c.UpdatedAtUtc, c.DeletedOnUtc, c.DeletedBy);
+        return new CategoryDto(c.Id, c.Code, c.Name, c.Slug, c.Description, c.ImageUrl, c.ParentCategoryId, c.IsActive, c.IsVisible, c.CreatedAtUtc, c.UpdatedAtUtc, c.DeletedOnUtc, c.DeletedBy);
     }
 }

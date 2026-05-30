@@ -4,10 +4,14 @@ namespace FSH.Modules.Catalog.Domain;
 
 public sealed class Category : AggregateRoot<Guid>, ISoftDeletable
 {
+    public string Code { get; private set; } = default!;
     public string Name { get; private set; } = default!;
     public string Slug { get; private set; } = default!;
     public string? Description { get; private set; }
+    public string? ImageUrl { get; private set; }
     public Guid? ParentCategoryId { get; private set; }
+    public bool IsActive { get; private set; }
+    public bool IsVisible { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
 
@@ -26,33 +30,57 @@ public sealed class Category : AggregateRoot<Guid>, ISoftDeletable
 
     private Category() { }
 
-    public static Category Create(string name, string? description, Guid? parentCategoryId)
+    public static Category Create(
+        string code,
+        string name,
+        string? description,
+        Guid? parentCategoryId,
+        string? imageUrl = null,
+        bool isActive = true,
+        bool isVisible = true)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         return new Category
         {
             Id = Guid.CreateVersion7(),
+            Code = code.Trim().ToUpperInvariant(),
             Name = name.Trim(),
             Slug = Slugify(name),
             Description = description?.Trim(),
+            ImageUrl = imageUrl?.Trim(),
             ParentCategoryId = parentCategoryId,
+            IsActive = isActive,
+            IsVisible = isVisible,
             CreatedAtUtc = DateTime.UtcNow
         };
     }
 
-    public void Update(string name, string? description, Guid? parentCategoryId)
+    public void Update(
+        string code,
+        string name,
+        string? description,
+        Guid? parentCategoryId,
+        string? imageUrl,
+        bool isActive,
+        bool isVisible)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         if (parentCategoryId == Id)
         {
             throw new InvalidOperationException("A category cannot be its own parent.");
         }
 
+        Code = code.Trim().ToUpperInvariant();
         Name = name.Trim();
         Slug = Slugify(name);
         Description = description?.Trim();
+        ImageUrl = imageUrl?.Trim();
         ParentCategoryId = parentCategoryId;
+        IsActive = isActive;
+        IsVisible = isVisible;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

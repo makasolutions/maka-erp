@@ -9,6 +9,8 @@ namespace FSH.Modules.Catalog.Contracts.v1.Categories;
 /// </summary>
 /// <param name="Search">Search term.</param>
 /// <param name="ParentCategoryId">Optional parent category ID filter.</param>
+/// <param name="IsActive">Optional active status filter.</param>
+/// <param name="IsVisible">Optional visible status filter.</param>
 /// <param name="PageNumber">Page number.</param>
 /// <param name="PageSize">Page size.</param>
 /// <param name="SortBy">Sort column. One of: name | slug | createdAtUtc.</param>
@@ -16,6 +18,8 @@ namespace FSH.Modules.Catalog.Contracts.v1.Categories;
 public sealed record SearchCategoriesQuery(
     string? Search = null,
     Guid? ParentCategoryId = null,
+    bool? IsActive = null,
+    bool? IsVisible = null,
     int PageNumber = 1,
     int PageSize = 50,
     string? SortBy = null,

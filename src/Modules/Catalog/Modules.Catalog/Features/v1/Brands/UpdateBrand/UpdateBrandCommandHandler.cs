@@ -19,7 +19,13 @@ public sealed class UpdateBrandCommandHandler(CatalogDbContext dbContext)
             .ConfigureAwait(false)
             ?? throw new NotFoundException($"Brand {command.BrandId} not found.");
 
-        brand.Update(command.Name, command.Description, command.LogoUrl);
+        brand.Update(
+            command.Code,
+            command.Name,
+            command.Description,
+            command.LogoUrl,
+            command.IsActive,
+            command.IsVisible);
 
         bool slugTaken = await dbContext.Brands
             .AnyAsync(b => b.Slug == brand.Slug && b.Id != brand.Id, cancellationToken)
@@ -28,6 +34,17 @@ public sealed class UpdateBrandCommandHandler(CatalogDbContext dbContext)
         {
             throw new CustomException(
                 $"Another brand with name '{command.Name}' already exists.",
+                (IEnumerable<string>?)null,
+                HttpStatusCode.Conflict);
+        }
+
+        bool codeTaken = await dbContext.Brands
+            .AnyAsync(b => b.Code == brand.Code && b.Id != brand.Id, cancellationToken)
+            .ConfigureAwait(false);
+        if (codeTaken)
+        {
+            throw new CustomException(
+                $"Another brand with code '{brand.Code}' already exists.",
                 (IEnumerable<string>?)null,
                 HttpStatusCode.Conflict);
         }

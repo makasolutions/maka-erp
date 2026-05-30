@@ -10,4 +10,6 @@ public sealed record CreateProductCommand(
     Guid CategoryId,
     decimal PriceAmount,
     string PriceCurrency,
-    int Stock) : ICommand<Guid>;
+    int Stock,
+    bool IsActive = true,
+    bool IsVisible = true) : ICommand<Guid>;

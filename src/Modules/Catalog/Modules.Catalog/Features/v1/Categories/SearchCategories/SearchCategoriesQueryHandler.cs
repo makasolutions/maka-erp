@@ -30,7 +30,18 @@ public sealed class SearchCategoriesQueryHandler(CatalogDbContext dbContext)
             string term = query.Search.Trim();
             q = q.Where(c =>
                 EF.Functions.ILike(c.Name, $"%{term}%") ||
+                EF.Functions.ILike(c.Code, $"%{term}%") ||
                 EF.Functions.ILike(c.Slug, $"%{term}%"));
+        }
+
+        if (query.IsActive.HasValue)
+        {
+            q = q.Where(c => c.IsActive == query.IsActive.Value);
+        }
+
+        if (query.IsVisible.HasValue)
+        {
+            q = q.Where(c => c.IsVisible == query.IsVisible.Value);
         }
 
         q = ApplySort(q, query.SortBy, query.SortDir);
@@ -45,7 +56,7 @@ public sealed class SearchCategoriesQueryHandler(CatalogDbContext dbContext)
         return new PagedResponse<CategoryDto>
         {
             Items = categories
-                .Select(c => new CategoryDto(c.Id, c.Name, c.Slug, c.Description, c.ParentCategoryId, c.CreatedAtUtc, c.UpdatedAtUtc, c.DeletedOnUtc, c.DeletedBy))
+                .Select(c => new CategoryDto(c.Id, c.Code, c.Name, c.Slug, c.Description, c.ImageUrl, c.ParentCategoryId, c.IsActive, c.IsVisible, c.CreatedAtUtc, c.UpdatedAtUtc, c.DeletedOnUtc, c.DeletedBy))
                 .ToList(),
             PageNumber = page,
             PageSize = size,

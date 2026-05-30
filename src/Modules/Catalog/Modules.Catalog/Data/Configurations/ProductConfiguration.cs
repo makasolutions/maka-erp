@@ -44,6 +44,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.Property(x => x.Stock).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();
+        builder.Property(x => x.IsVisible).IsRequired();
 
         builder.OwnsOne(x => x.Price, m =>
         {

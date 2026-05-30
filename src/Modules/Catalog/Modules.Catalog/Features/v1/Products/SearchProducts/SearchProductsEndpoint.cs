@@ -13,19 +13,20 @@ public static class SearchProductsEndpoint
     internal static RouteHandlerBuilder MapSearchProductsEndpoint(this IEndpointRouteBuilder endpoints)
     {
         return endpoints.MapGet("/products",
-                (string? search, Guid? brandId, Guid? categoryId, bool? isActive,
+                (string? search, Guid? brandId, Guid? categoryId, bool? isActive, bool? isVisible,
                  int pageNumber, int pageSize, string? sortBy, string? sortDir,
                  IMediator mediator, CancellationToken ct) =>
                     mediator.Send(
                         new SearchProductsQuery(
-                            search,
-                            brandId,
-                            categoryId,
-                            isActive,
-                            pageNumber == 0 ? 1 : pageNumber,
-                            pageSize == 0 ? 20 : pageSize,
-                            sortBy,
-                            sortDir),
+                            Search: search,
+                            BrandId: brandId,
+                            CategoryId: categoryId,
+                            IsActive: isActive,
+                            IsVisible: isVisible,
+                            PageNumber: pageNumber == 0 ? 1 : pageNumber,
+                            PageSize: pageSize == 0 ? 20 : pageSize,
+                            SortBy: sortBy,
+                            SortDir: sortDir),
                         ct))
             .WithName("SearchProducts")
             .WithSummary("Search products (paged, filter by brand/category/active, sortable)")

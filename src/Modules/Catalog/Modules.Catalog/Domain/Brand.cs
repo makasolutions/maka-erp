@@ -4,10 +4,13 @@ namespace FSH.Modules.Catalog.Domain;
 
 public sealed class Brand : AggregateRoot<Guid>, ISoftDeletable
 {
+    public string Code { get; private set; } = default!;
     public string Name { get; private set; } = default!;
     public string Slug { get; private set; } = default!;
     public string? Description { get; private set; }
     public string? LogoUrl { get; private set; }
+    public bool IsActive { get; private set; }
+    public bool IsVisible { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
 
@@ -33,29 +36,49 @@ public sealed class Brand : AggregateRoot<Guid>, ISoftDeletable
 
     private Brand() { }
 
-    public static Brand Create(string name, string? description, string? logoUrl)
+    public static Brand Create(
+        string code,
+        string name,
+        string? description,
+        string? logoUrl,
+        bool isActive = true,
+        bool isVisible = true)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         return new Brand
         {
             Id = Guid.CreateVersion7(),
+            Code = code.Trim().ToUpperInvariant(),
             Name = name.Trim(),
             Slug = Slugify(name),
             Description = description?.Trim(),
             LogoUrl = logoUrl?.Trim(),
+            IsActive = isActive,
+            IsVisible = isVisible,
             CreatedAtUtc = DateTime.UtcNow
         };
     }
 
-    public void Update(string name, string? description, string? logoUrl)
+    public void Update(
+        string code,
+        string name,
+        string? description,
+        string? logoUrl,
+        bool isActive,
+        bool isVisible)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
+        Code = code.Trim().ToUpperInvariant();
         Name = name.Trim();
         Slug = Slugify(name);
         Description = description?.Trim();
         LogoUrl = logoUrl?.Trim();
+        IsActive = isActive;
+        IsVisible = isVisible;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

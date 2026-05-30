@@ -33,7 +33,7 @@ public sealed class ListTrashedBrandsQueryHandler(CatalogDbContext dbContext)
             .Skip((page - 1) * size)
             .Take(size)
             .Select(b => new BrandDto(
-                b.Id, b.Name, b.Slug, b.Description, b.LogoUrl,
+                b.Id, b.Code, b.Name, b.Slug, b.Description, b.LogoUrl, b.IsActive, b.IsVisible,
                 b.CreatedAtUtc, b.UpdatedAtUtc, b.DeletedOnUtc, b.DeletedBy))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

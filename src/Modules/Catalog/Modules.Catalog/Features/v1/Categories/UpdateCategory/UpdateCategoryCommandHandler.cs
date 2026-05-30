@@ -49,7 +49,14 @@ public sealed class UpdateCategoryCommandHandler(CatalogDbContext dbContext)
             }
         }
 
-        category.Update(command.Name, command.Description, command.ParentCategoryId);
+        category.Update(
+            command.Code,
+            command.Name,
+            command.Description,
+            command.ParentCategoryId,
+            command.ImageUrl,
+            command.IsActive,
+            command.IsVisible);
 
         bool slugTaken = await dbContext.Categories
             .AnyAsync(c => c.Slug == category.Slug && c.Id != category.Id, cancellationToken)
@@ -58,6 +65,17 @@ public sealed class UpdateCategoryCommandHandler(CatalogDbContext dbContext)
         {
             throw new CustomException(
                 $"Another category with name '{command.Name}' already exists.",
+                (IEnumerable<string>?)null,
+                HttpStatusCode.Conflict);
+        }
+
+        bool codeTaken = await dbContext.Categories
+            .AnyAsync(c => c.Code == category.Code && c.Id != category.Id, cancellationToken)
+            .ConfigureAwait(false);
+        if (codeTaken)
+        {
+            throw new CustomException(
+                $"Another category with code '{category.Code}' already exists.",
                 (IEnumerable<string>?)null,
                 HttpStatusCode.Conflict);
         }

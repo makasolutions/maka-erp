@@ -25,7 +25,18 @@ public sealed class SearchBrandsQueryHandler(CatalogDbContext dbContext)
             string term = query.Search.Trim();
             q = q.Where(b =>
                 EF.Functions.ILike(b.Name, $"%{term}%") ||
+                EF.Functions.ILike(b.Code, $"%{term}%") ||
                 EF.Functions.ILike(b.Slug, $"%{term}%"));
+        }
+
+        if (query.IsActive.HasValue)
+        {
+            q = q.Where(b => b.IsActive == query.IsActive.Value);
+        }
+
+        if (query.IsVisible.HasValue)
+        {
+            q = q.Where(b => b.IsVisible == query.IsVisible.Value);
         }
 
         q = ApplySort(q, query.SortBy, query.SortDir);
@@ -40,7 +51,7 @@ public sealed class SearchBrandsQueryHandler(CatalogDbContext dbContext)
         return new PagedResponse<BrandDto>
         {
             Items = brands
-                .Select(b => new BrandDto(b.Id, b.Name, b.Slug, b.Description, b.LogoUrl, b.CreatedAtUtc, b.UpdatedAtUtc, b.DeletedOnUtc, b.DeletedBy))
+                .Select(b => new BrandDto(b.Id, b.Code, b.Name, b.Slug, b.Description, b.LogoUrl, b.IsActive, b.IsVisible, b.CreatedAtUtc, b.UpdatedAtUtc, b.DeletedOnUtc, b.DeletedBy))
                 .ToList(),
             PageNumber = page,
             PageSize = size,

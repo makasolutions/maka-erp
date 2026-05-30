@@ -16,6 +16,7 @@ internal static class ProductMappings
         new MoneyDto(p.Price.Amount, p.Price.Currency),
         p.Stock,
         p.IsActive,
+        p.IsVisible,
         p.ThumbnailUrl,
         p.Images
             .OrderBy(i => i.SortOrder)

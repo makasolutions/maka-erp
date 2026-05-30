@@ -22,10 +22,13 @@ public sealed class GetBrandByIdQueryHandler(CatalogDbContext dbContext)
 
         return new BrandDto(
             brand.Id,
+            brand.Code,
             brand.Name,
             brand.Slug,
             brand.Description,
             brand.LogoUrl,
+            brand.IsActive,
+            brand.IsVisible,
             brand.CreatedAtUtc,
             brand.UpdatedAtUtc,
             brand.DeletedOnUtc,

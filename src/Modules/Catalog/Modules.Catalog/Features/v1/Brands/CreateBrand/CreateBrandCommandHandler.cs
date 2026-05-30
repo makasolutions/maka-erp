@@ -15,7 +15,13 @@ public sealed class CreateBrandCommandHandler(CatalogDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var brand = Brand.Create(command.Name, command.Description, command.LogoUrl);
+        var brand = Brand.Create(
+            command.Code,
+            command.Name,
+            command.Description,
+            command.LogoUrl,
+            command.IsActive,
+            command.IsVisible);
 
         bool slugTaken = await dbContext.Brands
             .AnyAsync(b => b.Slug == brand.Slug, cancellationToken)
@@ -24,6 +30,17 @@ public sealed class CreateBrandCommandHandler(CatalogDbContext dbContext)
         {
             throw new CustomException(
                 $"A brand with name '{command.Name}' already exists.",
+                (IEnumerable<string>?)null,
+                HttpStatusCode.Conflict);
+        }
+
+        bool codeTaken = await dbContext.Brands
+            .AnyAsync(b => b.Code == brand.Code, cancellationToken)
+            .ConfigureAwait(false);
+        if (codeTaken)
+        {
+            throw new CustomException(
+                $"A brand with code '{brand.Code}' already exists.",
                 (IEnumerable<string>?)null,
                 HttpStatusCode.Conflict);
         }

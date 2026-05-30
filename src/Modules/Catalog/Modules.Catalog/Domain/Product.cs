@@ -14,6 +14,7 @@ public sealed class Product : AggregateRoot<Guid>, ISoftDeletable
     public Money Price { get; private set; } = default!;
     public int Stock { get; private set; }
     public bool IsActive { get; private set; }
+    public bool IsVisible { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
 
@@ -47,7 +48,9 @@ public sealed class Product : AggregateRoot<Guid>, ISoftDeletable
         Guid brandId,
         Guid categoryId,
         Money price,
-        int stock)
+        int stock,
+        bool isActive = true,
+        bool isVisible = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sku);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -76,7 +79,8 @@ public sealed class Product : AggregateRoot<Guid>, ISoftDeletable
             CategoryId = categoryId,
             Price = price,
             Stock = stock,
-            IsActive = true,
+            IsActive = isActive,
+            IsVisible = isVisible,
             CreatedAtUtc = DateTime.UtcNow
         };
 
@@ -91,7 +95,8 @@ public sealed class Product : AggregateRoot<Guid>, ISoftDeletable
         string? description,
         Guid brandId,
         Guid categoryId,
-        bool isActive)
+        bool isActive,
+        bool isVisible)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         if (brandId == Guid.Empty)
@@ -109,6 +114,7 @@ public sealed class Product : AggregateRoot<Guid>, ISoftDeletable
         BrandId = brandId;
         CategoryId = categoryId;
         IsActive = isActive;
+        IsVisible = isVisible;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

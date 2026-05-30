@@ -35,6 +35,11 @@ public sealed class SearchProductsQueryHandler(CatalogDbContext dbContext)
             q = q.Where(p => p.IsActive == active);
         }
 
+        if (query.IsVisible is { } visible)
+        {
+            q = q.Where(p => p.IsVisible == visible);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string term = query.Search.Trim();

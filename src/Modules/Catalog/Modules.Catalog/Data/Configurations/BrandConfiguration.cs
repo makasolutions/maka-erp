@@ -11,6 +11,10 @@ public sealed class BrandConfiguration : IEntityTypeConfiguration<Brand>
         ArgumentNullException.ThrowIfNull(builder);
         builder.ToTable("Brands");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Code).IsRequired().HasMaxLength(32);
+        // Filtered unique index — uniqueness across live rows (per-tenant via the
+        // shadow TenantId column added by BaseDbContext.AdjustUniqueIndexes).
+        builder.HasIndex(x => x.Code).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
         builder.Property(x => x.Name).IsRequired().HasMaxLength(128);
         builder.Property(x => x.Slug).IsRequired().HasMaxLength(160);
         // Filtered unique index — only enforce uniqueness across live rows
@@ -18,6 +22,8 @@ public sealed class BrandConfiguration : IEntityTypeConfiguration<Brand>
         builder.HasIndex(x => x.Slug).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
         builder.Property(x => x.Description).HasMaxLength(1024);
         builder.Property(x => x.LogoUrl).HasMaxLength(512);
+        builder.Property(x => x.IsActive).IsRequired();
+        builder.Property(x => x.IsVisible).IsRequired();
         builder.Property(x => x.DeletedBy).HasMaxLength(64);
         builder.HasIndex(x => x.IsDeleted);
         builder.Ignore(x => x.DomainEvents);

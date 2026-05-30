@@ -38,7 +38,9 @@ public sealed class CreateProductCommandHandler(CatalogDbContext dbContext)
             command.BrandId,
             command.CategoryId,
             new Money(command.PriceAmount, command.PriceCurrency),
-            command.Stock);
+            command.Stock,
+            command.IsActive,
+            command.IsVisible);
 
         bool skuTaken = await dbContext.Products
             .AnyAsync(p => p.Sku == product.Sku, cancellationToken)

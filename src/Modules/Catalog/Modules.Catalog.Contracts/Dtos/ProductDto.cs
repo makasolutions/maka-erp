@@ -11,6 +11,7 @@ public sealed record ProductDto(
     MoneyDto Price,
     int Stock,
     bool IsActive,
+    bool IsVisible,
     // ThumbnailUrl — projection of the cover image's URL; null when the product has no images.
     // Derived server-side from the Images collection so list views don't need to ship Images.
     string? ThumbnailUrl,
