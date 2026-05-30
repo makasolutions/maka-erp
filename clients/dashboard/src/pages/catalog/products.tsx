@@ -674,7 +674,7 @@ function ProductEditorDialog({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="!max-w-[720px]">
+      <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>

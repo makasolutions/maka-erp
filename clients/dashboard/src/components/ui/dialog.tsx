@@ -43,10 +43,25 @@ export const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = "DialogOverlay";
 
+/**
+ * Dialog content width presets:
+ *  - `default` — compact dialog (confirmations, single-field forms): caps at `lg`.
+ *  - `form`    — multi-field 2-column editor forms: fills 90% of the viewport,
+ *                capped at ~2K so it doesn't sprawl on ultra-wide monitors, and
+ *                full-width (minus margin) on mobile.
+ * Tall content scrolls inside the body; the dialog never exceeds ~92vh.
+ */
+type DialogContentSize = "default" | "form";
+
+const DIALOG_SIZE_CLASS: Record<DialogContentSize, string> = {
+  default: "sm:max-w-lg",
+  form: "sm:w-[90vw] sm:max-w-[2048px]",
+};
+
 export const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(function DialogContentInner({ className, children, ...props }, ref) {
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { size?: DialogContentSize }
+>(function DialogContentInner({ className, children, size = "default", ...props }, ref) {
   const { t } = useTranslation("common");
   return (
     <DialogPortal>
@@ -56,8 +71,10 @@ export const DialogContent = React.forwardRef<
         data-slot="dialog-content"
         className={cn(
           "fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2",
+          "max-h-[92vh] overflow-y-auto",
           "rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]",
-          "shadow-xl outline-none sm:max-w-lg",
+          "shadow-xl outline-none",
+          DIALOG_SIZE_CLASS[size],
           "data-[state=open]:animate-fsh-dialog-in data-[state=closed]:animate-fsh-dialog-out",
           className,
         )}

@@ -463,7 +463,7 @@ function CategoryEditorDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="!max-w-[720px]">
+      <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{category ? t("categories.editTitle") : t("categories.createTitle")}</DialogTitle>
