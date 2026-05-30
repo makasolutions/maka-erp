@@ -535,14 +535,17 @@ function ProductEditorDialog({
       sku: product?.sku ?? "",
       name: product?.name ?? "",
       description: product?.description ?? "",
-      brandId: product?.brandId ?? "",
-      categoryId: product?.categoryId ?? "",
+      // Defaults for new products: "Genérica" brand (GEN) and "Sin categoría"
+      // category (SIN-CAT) when present in this tenant.
+      brandId: product?.brandId ?? brands.find((b) => b.code === "GEN")?.id ?? "",
+      categoryId: product?.categoryId ?? categories.find((c) => c.code === "SIN-CAT")?.id ?? "",
       priceAmount: product?.price.amount ?? 0,
       priceCurrency: product?.price.currency ?? "USD",
       stock: product?.stock ?? 0,
       isActive: product?.isActive ?? true,
+      isVisible: product?.isVisible ?? true,
     }),
-    [product],
+    [product, brands, categories],
   );
 
   const [sku, setSku] = useState(initial.sku);
@@ -554,6 +557,7 @@ function ProductEditorDialog({
   const [priceCurrency, setPriceCurrency] = useState(initial.priceCurrency);
   const [stock, setStock] = useState(String(initial.stock));
   const [isActive, setIsActive] = useState(initial.isActive);
+  const [isVisible, setIsVisible] = useState(initial.isVisible);
 
   useEffect(() => {
     if (isOpen) {
@@ -566,6 +570,7 @@ function ProductEditorDialog({
       setPriceCurrency(initial.priceCurrency);
       setStock(String(initial.stock));
       setIsActive(initial.isActive);
+      setIsVisible(initial.isVisible);
     }
   }, [isOpen, initial]);
 
@@ -617,7 +622,7 @@ function ProductEditorDialog({
         brandId,
         categoryId,
         isActive,
-        isVisible: product?.isVisible ?? true,
+        isVisible,
       });
     } else {
       createMutation.mutate({
@@ -629,8 +634,8 @@ function ProductEditorDialog({
         priceAmount: priceNum,
         priceCurrency,
         stock: stockNum,
-        isActive: true,
-        isVisible: true,
+        isActive,
+        isVisible,
       });
     }
   };
@@ -770,23 +775,16 @@ function ProductEditorDialog({
               />
             </Field>
 
-            {product && (
-              <div className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
-                <div>
-                  <div className="text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                    {t("products.visibility")}
-                  </div>
-                  <div className="mt-0.5 text-[12.5px] text-[var(--color-muted-foreground)]">
-                    {isActive ? t("products.visibleDesc") : t("products.hiddenVisibilityDesc")}
-                  </div>
-                </div>
-                <Switch
-                  checked={isActive}
-                  onCheckedChange={setIsActive}
-                  aria-label={t("products.visibility")}
-                />
-              </div>
-            )}
+            <div className="flex items-center gap-8">
+              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("products.fields.active")} />
+                {t("products.fields.active")}
+              </label>
+              <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("products.fields.visible")} />
+                {t("products.fields.visible")}
+              </label>
+            </div>
           </DialogBody>
 
           <DialogFooter>
