@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -6,8 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  AlertCircle,
-  AlertTriangle,
+  Eye,
   Globe,
   LogOut,
   MonitorSmartphone,
@@ -16,6 +15,7 @@ import {
   Smartphone,
   UserCog,
 } from "lucide-react";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -27,25 +27,55 @@ import {
 import { Button } from "@/components/ui/button";
 import { P } from "@/auth/permissions";
 import {
-  EntityEmpty,
   EntityFilterPill,
   EntityInitialsAvatar,
-  EntityListCard,
-  EntityListHeader,
-  EntityListLoading,
-  EntityListRow,
   EntityPageHeader,
-  EntityPager,
-  EntitySearch,
   EntityStatusBadge,
 } from "@/components/list";
+import {
+  MakaGridClient,
+  MakaGridFilters,
+  MakaFilterField,
+  MakaFilterInput,
+} from "@/components/maka";
 import { useAuth } from "@/auth/use-auth";
 import { ApiRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 import { describe, formatRelative } from "@/lib/list-helpers";
 
-const PAGE_SIZE = 50;
-const DESKTOP_COLS = "grid-cols-[1.4fr_1.4fr_140px_140px_120px]";
+// Fetch a large client-side page; MakaGridClient handles paging/sort/filter.
+const PAGE_SIZE = 100;
+
+type SessionRow = {
+  id: string;
+  userId: string | null;
+  isActive: boolean;
+  isCurrentSession: boolean;
+  isMobile: boolean;
+  displayName: string;
+  email: string;
+  browser: string;
+  os: string;
+  ip: string;
+  lastActivityLabel: string;
+  youLabel: string;
+  inactiveLabel: string;
+  raw: UserSessionDto;
+};
+
+// Mutable context the (stable, hook-free) cell templates read at call time.
+type ActionsCtx = {
+  revoke: (s: UserSessionDto) => void;
+  revokingId: string | null;
+  revokeAll: (userId: string) => void;
+  revokingUserId: string | null;
+  labels: {
+    revoke: string;
+    revoking: string;
+    allDevices: string;
+    allDevicesTitle: string;
+  };
+};
 
 // ───────────────────────────────────────────────────────────────────────
 //  Page — admin / tenant-wide sessions console
@@ -53,71 +83,34 @@ const DESKTOP_COLS = "grid-cols-[1.4fr_1.4fr_140px_140px_120px]";
 
 export function SessionsPage() {
   const { t } = useTranslation("system");
+  const { t: tc } = useTranslation("common");
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const [panelOpen, setPanelOpen] = useState(true);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [pageNumber, setPageNumber] = useState(1);
-
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => window.clearTimeout(id);
-  }, [search]);
-
-  useEffect(() => setPageNumber(1), [debouncedSearch, includeInactive]);
 
   const query = useQuery({
-    queryKey: [
-      "identity",
-      "sessions",
-      "tenant",
-      { search: debouncedSearch, includeInactive, pageNumber },
-    ],
+    queryKey: ["identity", "sessions", "tenant", { includeInactive }],
     queryFn: () =>
-      getTenantSessions({
-        search: debouncedSearch || undefined,
-        includeInactive,
-        pageNumber,
-        pageSize: PAGE_SIZE,
-      }),
+      getTenantSessions({ includeInactive, pageNumber: 1, pageSize: PAGE_SIZE }),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000, // light auto-refresh — sessions move fast
   });
 
-  const items = query.data?.items ?? [];
-
-  const stats = useMemo(() => {
-    const active = items.filter((s) => s.isActive).length;
-    const mobile = items.filter((s) =>
-      (s.deviceType ?? "").toLowerCase().includes("mobile"),
-    ).length;
-    const distinctUsers = new Set(
-      items.filter((s) => s.userId).map((s) => s.userId!),
-    ).size;
-    return { active, mobile, distinctUsers };
-  }, [items]);
-
-  const filterOptions = [
-    { value: false, label: t("sessions.filterLiveOnly") },
-    { value: true, label: t("sessions.filterIncludeInactive") },
-  ];
+  const items = useMemo(() => query.data?.items ?? [], [query.data]);
 
   const revokeOne = useMutation({
-    mutationFn: (s: UserSessionDto) =>
-      adminRevokeUserSessionById(s.userId ?? "", s.id),
+    mutationFn: (s: UserSessionDto) => adminRevokeUserSessionById(s.userId ?? "", s.id),
     onSuccess: () => {
       toast.success(t("sessions.revokeSuccess"));
       void queryClient.invalidateQueries({ queryKey: ["identity", "sessions"] });
     },
-    onError: (err) => {
+    onError: (err) =>
       toast.error(
-        err instanceof ApiRequestError
-          ? err.problem?.detail ?? err.message
-          : t("sessions.revokeErrorFallback"),
-      );
-    },
+        err instanceof ApiRequestError ? err.problem?.detail ?? err.message : t("sessions.revokeErrorFallback"),
+      ),
   });
 
   const revokeAllForUser = useMutation({
@@ -126,28 +119,101 @@ export function SessionsPage() {
       toast.success(t("sessions.revokeAllSuccess", { count: data.revokedCount }));
       void queryClient.invalidateQueries({ queryKey: ["identity", "sessions"] });
     },
-    onError: (err) => {
+    onError: (err) =>
       toast.error(
-        err instanceof ApiRequestError
-          ? err.problem?.detail ?? err.message
-          : t("sessions.revokeAllErrorFallback"),
-      );
-    },
+        err instanceof ApiRequestError ? err.problem?.detail ?? err.message : t("sessions.revokeAllErrorFallback"),
+      ),
   });
 
-  const data = query.data;
-  const searchActive = debouncedSearch.length > 0 || includeInactive;
+  // Keep the cell templates' context current without rebuilding the templates.
+  const ctxRef = useRef<ActionsCtx>({
+    revoke: () => {},
+    revokingId: null,
+    revokeAll: () => {},
+    revokingUserId: null,
+    labels: { revoke: "", revoking: "", allDevices: "", allDevicesTitle: "" },
+  });
+  ctxRef.current = {
+    revoke: (s) => revokeOne.mutate(s),
+    revokingId: revokeOne.isPending ? (revokeOne.variables?.id ?? null) : null,
+    revokeAll: (uid) => revokeAllForUser.mutate(uid),
+    revokingUserId: revokeAllForUser.isPending ? (revokeAllForUser.variables ?? null) : null,
+    labels: {
+      revoke: t("sessions.revoke"),
+      revoking: t("sessions.revoking"),
+      allDevices: t("sessions.allDevicesShort"),
+      allDevicesTitle: t("sessions.allDevicesTitle"),
+    },
+  };
+
+  const rows: SessionRow[] = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items
+      .map<SessionRow>((s) => ({
+        id: s.id,
+        userId: s.userId ?? null,
+        isActive: s.isActive,
+        isCurrentSession: s.isCurrentSession,
+        isMobile: (s.deviceType ?? "").toLowerCase().includes("mobile"),
+        displayName: s.userName ?? s.userEmail ?? t("sessions.unknownUser"),
+        email: s.userName && s.userEmail ? s.userEmail : "",
+        browser:
+          [s.browser, s.browserVersion].filter(Boolean).join(" ") || t("sessions.unknownBrowser"),
+        os: [s.operatingSystem, s.osVersion].filter(Boolean).join(" "),
+        ip: s.ipAddress ?? "—",
+        lastActivityLabel: formatRelative(s.lastActivityAt),
+        youLabel: t("sessions.youBadge"),
+        inactiveLabel: t("sessions.inactiveBadge"),
+        raw: s,
+      }))
+      .filter((r) => {
+        if (!q) return true;
+        return [r.displayName, r.email, r.browser, r.os, r.ip]
+          .filter(Boolean)
+          .some((v) => v.toLowerCase().includes(q));
+      });
+  }, [items, search, t]);
+
+  // ── Cell templates (stable; read ctxRef at call time) ──────────────────
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "displayName", headerText: t("sessions.cols.user"), template: SessionUserCell as any, minWidth: 220 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "browser", headerText: t("sessions.cols.device"), template: SessionDeviceCell as any, minWidth: 200, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "ip", headerText: t("sessions.cols.ip"), template: SessionIpCell as any, width: 150 },
+      { field: "lastActivityLabel", headerText: t("sessions.cols.lastActivity"), width: 150, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "__actions", headerText: t("sessions.cols.actions"), template: makeActionsCell(ctxRef) as any, width: 170, textAlign: "Right", headerTextAlign: "Right", allowSorting: false, allowFiltering: false },
+    ],
+    [t],
+  );
+
+  const filterOptions = [
+    { value: false, label: t("sessions.filterLiveOnly") },
+    { value: true, label: t("sessions.filterIncludeInactive") },
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={UserCog}
         title={t("sessions.title")}
-        total={data?.totalCount ?? null}
+        total={query.data?.totalCount ?? null}
         unit={t("sessions.unit")}
         unitPlural={t("sessions.unitPlural")}
         description={t("sessions.description", { tenant: user?.tenant ?? "this tenant" })}
       >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.filtersTab")}
+        </Button>
         <Button
           variant="outline"
           disabled={query.isFetching}
@@ -159,348 +225,136 @@ export function SessionsPage() {
         </Button>
       </EntityPageHeader>
 
-      <EntitySearch
-        value={search}
-        onChange={setSearch}
-        placeholder={t("sessions.searchPlaceholder")}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={() => {
+          setSearch("");
+          setIncludeInactive(false);
+        }}
+        filters={
+          <>
+            <MakaFilterField label={tc("gridFilters.search")} className="grow">
+              <MakaFilterInput
+                value={search}
+                onChange={setSearch}
+                placeholder={t("sessions.searchPlaceholder")}
+                ariaLabel={tc("gridFilters.search")}
+                className="min-w-64"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("sessions.filterVisibility")}>
+              <EntityFilterPill<boolean>
+                label={t("sessions.filterVisibility")}
+                value={includeInactive}
+                onChange={setIncludeInactive}
+                options={filterOptions}
+              />
+            </MakaFilterField>
+          </>
+        }
       />
 
-      {/* Filter row */}
-      <div className="flex flex-wrap items-center gap-2">
-        <EntityFilterPill<boolean>
-          label={t("sessions.filterVisibility")}
-          value={includeInactive}
-          onChange={setIncludeInactive}
-          options={filterOptions}
-        />
-        {items.length > 0 && (
-          <div className="ml-auto hidden items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] sm:flex">
-            <span>{t("sessions.statsActive", { count: stats.active })}</span>
-            <span aria-hidden className="opacity-50">·</span>
-            <span>{t("sessions.statsUsers", { count: stats.distinctUsers })}</span>
-            <span aria-hidden className="opacity-50">·</span>
-            <span>{t("sessions.statsMobile", { count: stats.mobile })}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Results */}
-      {query.isLoading && items.length === 0 ? (
-        <EntityListLoading desktopColumns={DESKTOP_COLS} />
-      ) : items.length === 0 ? (
-        <EntityEmpty
-          icon={ShieldCheck}
-          title={searchActive ? t("sessions.empty.searchTitle") : t("sessions.empty.title")}
-          body={
-            debouncedSearch
-              ? t("sessions.empty.searchBody", { term: debouncedSearch })
-              : t("sessions.empty.body")
-          }
-          action={
-            <div className="flex items-center gap-2">
-              {debouncedSearch && (
-                <Button variant="outline" onClick={() => setSearch("")} className="h-9 rounded-lg px-4 text-[13px]">
-                  {t("sessions.empty.clearSearch")}
-                </Button>
-              )}
-              <Button onClick={() => void query.refetch()} className="h-9 rounded-lg px-4 text-[13px]">
-                <RefreshCw className="mr-1.5 size-4" />
-                {t("sessions.refresh")}
-              </Button>
-            </div>
-          }
-        />
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {t("sessions.found", { count: data?.totalCount ?? 0 })}
-            </p>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="space-y-2 md:hidden">
-            {items.map((session) => (
-              <SessionMobileCard
-                key={session.id}
-                session={session}
-                onRevoke={() => revokeOne.mutate(session)}
-                isRevoking={revokeOne.isPending && revokeOne.variables?.id === session.id}
-                onRevokeAllForUser={() =>
-                  session.userId && revokeAllForUser.mutate(session.userId)
-                }
-                isRevokingAllForUser={
-                  revokeAllForUser.isPending &&
-                  revokeAllForUser.variables === session.userId
-                }
-              />
-            ))}
-          </div>
-
-          {/* Desktop list */}
-          <EntityListCard className="hidden md:block">
-            <EntityListHeader className={DESKTOP_COLS}>
-              <span>{t("sessions.cols.user")}</span>
-              <span>{t("sessions.cols.device")}</span>
-              <span>{t("sessions.cols.ip")}</span>
-              <span>{t("sessions.cols.lastActivity")}</span>
-              <span className="text-right">{t("sessions.cols.actions")}</span>
-            </EntityListHeader>
-            {items.map((session, i) => (
-              <SessionDesktopRow
-                key={session.id}
-                session={session}
-                isLast={i === items.length - 1}
-                onRevoke={() => revokeOne.mutate(session)}
-                isRevoking={revokeOne.isPending && revokeOne.variables?.id === session.id}
-                onRevokeAllForUser={() =>
-                  session.userId && revokeAllForUser.mutate(session.userId)
-                }
-                isRevokingAllForUser={
-                  revokeAllForUser.isPending &&
-                  revokeAllForUser.variables === session.userId
-                }
-              />
-            ))}
-          </EntityListCard>
-
-          <EntityPager
-            page={data?.pageNumber ?? pageNumber}
-            totalPages={Math.max(data?.totalPages ?? 1, 1)}
-            hasPrev={data?.hasPrevious ?? false}
-            hasNext={data?.hasNext ?? false}
-            onPrev={() => setPageNumber((p) => Math.max(1, p - 1))}
-            onNext={() => setPageNumber((p) => p + 1)}
-          />
-        </div>
-      )}
+      <MakaGridClient<SessionRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isLoading}
+        fileName="sesiones"
+        entityName={t("sessions.unit")}
+        onClearFilters={() => {
+          setSearch("");
+          setIncludeInactive(false);
+        }}
+      />
 
       {query.isError && (
         <div
           role="alert"
           className="flex items-start gap-2 rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.30)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.06)] px-3 py-2 text-sm text-[var(--color-destructive)]"
         >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>{describe(query.error)}</span>
         </div>
       )}
-
     </div>
   );
 }
 
 // ───────────────────────────────────────────────────────────────────────
-//  Mobile card
+//  Cell templates (hook-free; read enriched row fields / ctxRef)
 // ───────────────────────────────────────────────────────────────────────
 
-function SessionMobileCard({
-  session,
-  onRevoke,
-  isRevoking,
-  onRevokeAllForUser,
-  isRevokingAllForUser,
-}: {
-  session: UserSessionDto;
-  onRevoke: () => void;
-  isRevoking: boolean;
-  onRevokeAllForUser: () => void;
-  isRevokingAllForUser: boolean;
-}) {
-  const { t } = useTranslation("system");
-  const isMobile = (session.deviceType ?? "").toLowerCase().includes("mobile");
-  const DeviceIcon = isMobile ? Smartphone : MonitorSmartphone;
-  const displayName = session.userName ?? session.userEmail ?? t("sessions.unknownUser");
-  const browser =
-    [session.browser, session.browserVersion].filter(Boolean).join(" ") ||
-    t("sessions.unknownBrowser");
-
+function SessionUserCell(row: SessionRow) {
   return (
-    <div
-      className={cn(
-        "block rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-left",
-        "shadow-xs",
-        !session.isActive && "opacity-75",
-      )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <EntityInitialsAvatar name={displayName} size={40} />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-                {displayName}
-              </p>
-              {session.isCurrentSession && (
-                <EntityStatusBadge tone="info">{t("sessions.youBadge")}</EntityStatusBadge>
-              )}
-              {!session.isActive && (
-                <EntityStatusBadge tone="danger">{t("sessions.inactiveBadge")}</EntityStatusBadge>
-              )}
-            </div>
-            {session.userEmail && session.userName && (
-              <code className="mt-0.5 block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-                {session.userEmail}
-              </code>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="mt-2 ml-[52px] space-y-1 text-[11px] text-[var(--color-muted-foreground)]">
+    <div className={cn("flex min-w-0 items-center gap-3", !row.isActive && "opacity-75")}>
+      <EntityInitialsAvatar name={row.displayName} size={32} />
+      <div className="min-w-0">
         <div className="flex items-center gap-1.5">
-          <DeviceIcon className="size-3" />
-          <span className="truncate">{browser}</span>
+          <span className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.displayName}</span>
+          {row.isCurrentSession && <EntityStatusBadge tone="info">{row.youLabel}</EntityStatusBadge>}
+          {!row.isActive && <EntityStatusBadge tone="danger">{row.inactiveLabel}</EntityStatusBadge>}
         </div>
-        {session.ipAddress && (
-          <div className="flex items-center gap-1.5">
-            <Globe className="size-3" />
-            <code className="font-mono">{session.ipAddress}</code>
-          </div>
+        {row.email && (
+          <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">{row.email}</code>
         )}
-        <div className="tabular-nums">{formatRelative(session.lastActivityAt)}</div>
       </div>
-      {session.isActive && !session.isCurrentSession && (
-        <div className="mt-3 ml-[52px] flex items-center gap-1.5">
-          {session.userId && (
-            <Button
-              perm={P.identity.sessions.revokeAll}
-              variant="ghost"
-              size="sm"
-              disabled={isRevokingAllForUser}
-              onClick={onRevokeAllForUser}
-              className="gap-1.5"
-            >
-              <ShieldCheck className="size-3.5" />
-              {t("sessions.allDevices")}
-            </Button>
-          )}
+    </div>
+  );
+}
+
+function SessionDeviceCell(row: SessionRow) {
+  const DeviceIcon = row.isMobile ? Smartphone : MonitorSmartphone;
+  return (
+    <div className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-[var(--color-foreground)]">
+      <DeviceIcon className="size-3.5 shrink-0 text-[var(--color-muted-foreground)]" />
+      <div className="min-w-0">
+        <div className="truncate">{row.browser}</div>
+        {row.os && <div className="truncate text-[11px] text-[var(--color-muted-foreground)]">{row.os}</div>}
+      </div>
+    </div>
+  );
+}
+
+function SessionIpCell(row: SessionRow) {
+  return <code className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]">{row.ip}</code>;
+}
+
+function makeActionsCell(ctxRef: React.MutableRefObject<ActionsCtx>) {
+  // eslint-disable-next-line react/display-name
+  return function SessionActionsCell(row: SessionRow) {
+    const ctx = ctxRef.current;
+    if (!row.isActive || row.isCurrentSession) {
+      return <span className="text-[11px] font-semibold uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">—</span>;
+    }
+    return (
+      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        {row.userId && (
           <Button
             perm={P.identity.sessions.revokeAll}
-            variant="outline"
+            variant="ghost"
             size="sm"
-            disabled={isRevoking}
-            onClick={onRevoke}
-            className="gap-1.5"
+            disabled={ctx.revokingUserId === row.userId}
+            onClick={() => row.userId && ctx.revokeAll(row.userId)}
+            className="gap-1.5 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+            title={ctx.labels.allDevicesTitle}
           >
-            <LogOut className="size-3.5" />
-            {isRevoking ? t("sessions.revoking") : t("sessions.revoke")}
+            <ShieldCheck className="size-3.5" />
+            <span className="hidden lg:inline">{ctx.labels.allDevices}</span>
           </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Desktop row
-// ───────────────────────────────────────────────────────────────────────
-
-function SessionDesktopRow({
-  session,
-  isLast,
-  onRevoke,
-  isRevoking,
-  onRevokeAllForUser,
-  isRevokingAllForUser,
-}: {
-  session: UserSessionDto;
-  isLast: boolean;
-  onRevoke: () => void;
-  isRevoking: boolean;
-  onRevokeAllForUser: () => void;
-  isRevokingAllForUser: boolean;
-}) {
-  const { t } = useTranslation("system");
-  const isMobile = (session.deviceType ?? "").toLowerCase().includes("mobile");
-  const DeviceIcon = isMobile ? Smartphone : MonitorSmartphone;
-  const displayName = session.userName ?? session.userEmail ?? t("sessions.unknownUser");
-  const browser =
-    [session.browser, session.browserVersion].filter(Boolean).join(" ") ||
-    t("sessions.unknownBrowser");
-  const os = [session.operatingSystem, session.osVersion].filter(Boolean).join(" ");
-
-  return (
-    <EntityListRow className={DESKTOP_COLS} isLast={isLast} dim={!session.isActive}>
-      {/* User */}
-      <div className="flex min-w-0 items-center gap-3">
-        <EntityInitialsAvatar name={displayName} size={36} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-              {displayName}
-            </span>
-            {session.isCurrentSession && (
-              <EntityStatusBadge tone="info">{t("sessions.youBadge")}</EntityStatusBadge>
-            )}
-            {!session.isActive && (
-              <EntityStatusBadge tone="danger">{t("sessions.inactiveBadge")}</EntityStatusBadge>
-            )}
-          </div>
-          {session.userEmail && session.userName && (
-            <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              {session.userEmail}
-            </code>
-          )}
-        </div>
-      </div>
-
-      {/* Device / browser */}
-      <div className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-[var(--color-foreground)]">
-        <DeviceIcon className="size-3.5 shrink-0 text-[var(--color-muted-foreground)]" />
-        <div className="min-w-0">
-          <div className="truncate">{browser}</div>
-          {os && <div className="truncate text-[11px] text-[var(--color-muted-foreground)]">{os}</div>}
-        </div>
-      </div>
-
-      {/* IP */}
-      <code className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]">
-        {session.ipAddress ?? "—"}
-      </code>
-
-      {/* Last activity */}
-      <div className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
-        {formatRelative(session.lastActivityAt)}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-1.5">
-        {session.isActive && !session.isCurrentSession ? (
-          <>
-            {session.userId && (
-              <Button
-                perm={P.identity.sessions.revokeAll}
-                variant="ghost"
-                size="sm"
-                disabled={isRevokingAllForUser}
-                onClick={onRevokeAllForUser}
-                className="gap-1.5 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-                title={t("sessions.allDevicesTitle")}
-              >
-                <ShieldCheck className="size-3.5" />
-                <span className="hidden lg:inline">{t("sessions.allDevicesShort")}</span>
-              </Button>
-            )}
-            <Button
-              perm={P.identity.sessions.revokeAll}
-              variant="outline"
-              size="sm"
-              disabled={isRevoking}
-              onClick={onRevoke}
-              className="gap-1.5"
-            >
-              <LogOut className="size-3.5" />
-              {isRevoking ? t("sessions.revoking") : t("sessions.revoke")}
-            </Button>
-          </>
-        ) : (
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]/70">
-            —
-          </span>
         )}
+        <Button
+          perm={P.identity.sessions.revokeAll}
+          variant="outline"
+          size="sm"
+          disabled={ctx.revokingId === row.id}
+          onClick={() => ctx.revoke(row.raw)}
+          className="gap-1.5"
+        >
+          <LogOut className="size-3.5" />
+          {ctx.revokingId === row.id ? ctx.labels.revoking : ctx.labels.revoke}
+        </Button>
       </div>
-    </EntityListRow>
-  );
+    );
+  };
 }
 
-// AlertCircle reserved for a future stale-session callout.
-void AlertCircle;
+// Globe reserved for a future per-row geo-IP indicator.
+void Globe;
