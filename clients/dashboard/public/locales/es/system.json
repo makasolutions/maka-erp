@@ -57,6 +57,7 @@
     "title": "Papelera",
     "description": "Registros eliminados, conservados indefinidamente hasta que los restaures. Restaurar una fila la devuelve a su lista de origen con el mismo ID e historial.",
     "navLabel": "Secciones de la papelera",
+    "searchPlaceholder": "Buscar por nombre…",
     "tabs": {
       "products": "Productos",
       "brands": "Marcas",

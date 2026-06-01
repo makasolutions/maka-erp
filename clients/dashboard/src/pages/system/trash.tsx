@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
-  Boxes,
+  Eye,
   FileText,
   FolderTree,
   Package,
@@ -11,6 +11,7 @@ import {
   Ticket,
   Trash2,
 } from "lucide-react";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { toast } from "sonner";
 import {
   listTrashedBrands,
@@ -19,44 +20,166 @@ import {
   restoreBrand,
   restoreCategory,
   restoreProduct,
-  type BrandDto,
-  type CategoryDto,
   type PagedResponse,
-  type ProductDto,
 } from "@/api/catalog";
-import {
-  listTrashedTickets,
-  restoreTicket,
-  type TicketDto,
-} from "@/api/tickets";
-import {
-  listTrashedFiles,
-  restoreFile,
-  type FileAssetDto,
-} from "@/api/files";
+import { listTrashedTickets, restoreTicket } from "@/api/tickets";
+import { listTrashedFiles, restoreFile } from "@/api/files";
 import { Button } from "@/components/ui/button";
 import { P } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 import {
-  EntityEmpty,
   EntityInitialsAvatar,
-  EntityListCard,
-  EntityListHeader,
-  EntityListLoading,
-  EntityListRow,
   EntityPageHeader,
-  EntityPager,
 } from "@/components/list";
 import {
-  describe,
-  formatDateMono,
-  formatRelative,
-} from "@/lib/list-helpers";
+  MakaGridClient,
+  MakaGridFilters,
+  MakaFilterField,
+  MakaFilterInput,
+} from "@/components/maka";
+import { describe, formatDateMono, formatRelative } from "@/lib/list-helpers";
 
-const PAGE_SIZE = 20;
-const DESKTOP_COLS = "grid-cols-[1.5fr_140px_140px_100px]";
+const PAGE_SIZE = 100;
 
 type TabKey = "products" | "brands" | "categories" | "tickets" | "files";
+
+type RowVm = {
+  id: string;
+  title: string;
+  subtitle: string;
+  deletedByLabel: string;
+  deletedRel: string;
+  deletedMono: string;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Trashed = any;
+
+// Per-tab wiring: list/restore endpoints, permission, restore-toast key,
+// cache to invalidate on restore, and how to derive the row title/subtitle.
+const TAB_CONFIG: Record<
+  TabKey,
+  {
+    icon: React.ComponentType<{ className?: string }>;
+    list: (page: number, size: number) => Promise<PagedResponse<Trashed>>;
+    restore: (id: string) => Promise<unknown>;
+    perm: string;
+    restoredKey: string;
+    invalidateKey: string[];
+    title: (x: Trashed) => string;
+    subtitle: (x: Trashed) => string;
+  }
+> = {
+  products: {
+    icon: Package,
+    list: listTrashedProducts,
+    restore: restoreProduct,
+    perm: P.catalog.products.restore,
+    restoredKey: "trash.restoredProduct",
+    invalidateKey: ["catalog", "products"],
+    title: (p) => p.name,
+    subtitle: (p) => `SKU ${p.sku}`,
+  },
+  brands: {
+    icon: Tags,
+    list: listTrashedBrands,
+    restore: restoreBrand,
+    perm: P.catalog.brands.restore,
+    restoredKey: "trash.restoredBrand",
+    invalidateKey: ["catalog", "brands"],
+    title: (b) => b.name,
+    subtitle: (b) => `/${b.slug}`,
+  },
+  categories: {
+    icon: FolderTree,
+    list: listTrashedCategories,
+    restore: restoreCategory,
+    perm: P.catalog.categories.restore,
+    restoredKey: "trash.restoredCategory",
+    invalidateKey: ["catalog", "categories"],
+    title: (c) => c.name,
+    subtitle: (c) => `/${c.slug}`,
+  },
+  tickets: {
+    icon: Ticket,
+    list: listTrashedTickets,
+    restore: restoreTicket,
+    perm: P.tickets.restore,
+    restoredKey: "trash.restoredTicket",
+    invalidateKey: ["tickets"],
+    title: (ticket) => ticket.title,
+    subtitle: (ticket) => ticket.number,
+  },
+  files: {
+    icon: FileText,
+    list: listTrashedFiles,
+    restore: restoreFile,
+    perm: P.files.restore,
+    restoredKey: "trash.restoredFile",
+    invalidateKey: ["files"],
+    title: (f) => f.originalFileName,
+    subtitle: (f) => f.contentType,
+  },
+};
+
+const TAB_ORDER: TabKey[] = ["products", "brands", "categories", "tickets", "files"];
+
+type RestoreCtx = {
+  restore: (id: string) => void;
+  restoringId: string | null;
+  perm: string;
+  restoreLabel: string;
+  restoringLabel: string;
+};
+
+// ── Cell templates (hook-free; read enriched row fields / ctxRef) ─────────
+function EntityCell(row: RowVm) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <EntityInitialsAvatar name={row.title} size={32} />
+      <div className="min-w-0">
+        <div className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.title}</div>
+        <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">{row.subtitle}</code>
+      </div>
+    </div>
+  );
+}
+function DeletedByCell(row: RowVm) {
+  return <code className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]">{row.deletedByLabel}</code>;
+}
+function DeletedAtCell(row: RowVm) {
+  if (!row.deletedRel) {
+    return <span className="text-[12px] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]">—</span>;
+  }
+  return (
+    <div className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
+      <div>{row.deletedRel}</div>
+      {row.deletedMono && <div className="text-[10.5px] opacity-70">{row.deletedMono}</div>}
+    </div>
+  );
+}
+function makeRestoreCell(ctxRef: React.MutableRefObject<RestoreCtx>) {
+  // eslint-disable-next-line react/display-name
+  return function RestoreCell(row: RowVm) {
+    const ctx = ctxRef.current;
+    const busy = ctx.restoringId === row.id;
+    return (
+      <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+        <Button
+          perm={ctx.perm}
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => ctx.restore(row.id)}
+          className="gap-1.5"
+        >
+          <RotateCcw className={cn("size-3.5", busy && "animate-spin")} />
+          {busy ? ctx.restoringLabel : ctx.restoreLabel}
+        </Button>
+      </div>
+    );
+  };
+}
 
 // ───────────────────────────────────────────────────────────────────────
 //  Page
@@ -64,48 +187,106 @@ type TabKey = "products" | "brands" | "categories" | "tickets" | "files";
 
 export function TrashPage() {
   const { t } = useTranslation("system");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+
   const [tab, setTab] = useState<TabKey>("products");
-  const [pageNumber, setPageNumber] = useState(1);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [search, setSearch] = useState("");
 
-  // TABS defined inside component so labels update reactively on language change.
-  const TABS: ReadonlyArray<{
-    key: TabKey;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }> = [
-    { key: "products", label: t("trash.tabs.products"), icon: Package },
-    { key: "brands", label: t("trash.tabs.brands"), icon: Tags },
-    { key: "categories", label: t("trash.tabs.categories"), icon: FolderTree },
-    { key: "tickets", label: t("trash.tabs.tickets"), icon: Ticket },
-    { key: "files", label: t("trash.tabs.files"), icon: FileText },
-  ];
+  const cfg = TAB_CONFIG[tab];
 
-  // Reset paging when switching tabs.
-  const onTab = (next: TabKey) => {
-    setTab(next);
-    setPageNumber(1);
+  const query = useQuery({
+    queryKey: ["trash", tab],
+    queryFn: () => cfg.list(1, PAGE_SIZE),
+  });
+
+  const restore = useMutation({
+    mutationFn: (id: string) => cfg.restore(id),
+    onSuccess: () => {
+      toast.success(t(cfg.restoredKey));
+      void queryClient.invalidateQueries({ queryKey: ["trash", tab] });
+      void queryClient.invalidateQueries({ queryKey: cfg.invalidateKey });
+    },
+    onError: (e) => toast.error(describe(e)),
+  });
+
+  const ctxRef = useRef<RestoreCtx>({
+    restore: () => {},
+    restoringId: null,
+    perm: cfg.perm,
+    restoreLabel: "",
+    restoringLabel: "",
+  });
+  ctxRef.current = {
+    restore: (id) => restore.mutate(id),
+    restoringId: restore.isPending ? (restore.variables ?? null) : null,
+    perm: cfg.perm,
+    restoreLabel: t("trash.restore"),
+    restoringLabel: t("trash.restoring"),
   };
+
+  const rows: RowVm[] = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const items = query.data?.items ?? [];
+    return items
+      .map<RowVm>((x: Trashed) => ({
+        id: x.id,
+        title: cfg.title(x),
+        subtitle: cfg.subtitle(x),
+        deletedByLabel: x.deletedBy ? `${String(x.deletedBy).slice(0, 8)}…` : "—",
+        deletedRel: x.deletedOnUtc ? formatRelative(x.deletedOnUtc) : "",
+        deletedMono: x.deletedOnUtc ? formatDateMono(x.deletedOnUtc) : "",
+      }))
+      .filter((r) => !q || r.title.toLowerCase().includes(q) || r.subtitle.toLowerCase().includes(q));
+  }, [query.data, cfg, search]);
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "title", headerText: t("trash.cols.entity"), template: EntityCell as any, minWidth: 240 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "deletedByLabel", headerText: t("trash.cols.deletedBy"), template: DeletedByCell as any, width: 150, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "deletedRel", headerText: t("trash.cols.deletedAt"), template: DeletedAtCell as any, width: 160, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "__actions", headerText: t("trash.cols.actions"), template: makeRestoreCell(ctxRef) as any, width: 150, textAlign: "Right", headerTextAlign: "Right", allowSorting: false, allowFiltering: false },
+    ],
+    [t],
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={Trash2}
         title={t("trash.title")}
+        total={query.data ? rows.length : null}
         description={t("trash.description")}
-      />
+      >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.filtersTab")}
+        </Button>
+      </EntityPageHeader>
 
       {/* Tab pills */}
-      <nav
-        aria-label={t("trash.navLabel")}
-        className="flex flex-wrap items-center gap-2"
-      >
-        {TABS.map(({ key, label, icon: Icon }) => {
+      <nav aria-label={t("trash.navLabel")} className="flex flex-wrap items-center gap-2">
+        {TAB_ORDER.map((key) => {
+          const Icon = TAB_CONFIG[key].icon;
           const active = tab === key;
           return (
             <button
               key={key}
               type="button"
-              onClick={() => onTab(key)}
+              onClick={() => {
+                setTab(key);
+                setSearch("");
+              }}
               aria-pressed={active}
               className={cn(
                 "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[12px] font-medium transition-colors duration-[var(--duration-fast)]",
@@ -115,479 +296,46 @@ export function TrashPage() {
               )}
             >
               <Icon className="size-3.5" aria-hidden />
-              {label}
+              {t(`trash.tabs.${key}`)}
             </button>
           );
         })}
       </nav>
 
-      {/* Active panel */}
-      {tab === "products" && (
-        <ProductsTab pageNumber={pageNumber} setPageNumber={setPageNumber} />
-      )}
-      {tab === "brands" && (
-        <BrandsTab pageNumber={pageNumber} setPageNumber={setPageNumber} />
-      )}
-      {tab === "categories" && (
-        <CategoriesTab pageNumber={pageNumber} setPageNumber={setPageNumber} />
-      )}
-      {tab === "tickets" && (
-        <TicketsTab pageNumber={pageNumber} setPageNumber={setPageNumber} />
-      )}
-      {tab === "files" && (
-        <FilesTab pageNumber={pageNumber} setPageNumber={setPageNumber} />
-      )}
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Per-resource tabs (each owns its own query + restore mutation)
-// ───────────────────────────────────────────────────────────────────────
-
-function ProductsTab({
-  pageNumber,
-  setPageNumber,
-}: {
-  pageNumber: number;
-  setPageNumber: (n: number) => void;
-}) {
-  const { t } = useTranslation("system");
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["trash", "products", pageNumber],
-    queryFn: () => listTrashedProducts(pageNumber, PAGE_SIZE),
-  });
-  const restore = useMutation({
-    mutationFn: (id: string) => restoreProduct(id),
-    onSuccess: () => {
-      toast.success(t("trash.restoredProduct"));
-      void queryClient.invalidateQueries({ queryKey: ["trash", "products"] });
-      void queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
-    },
-    onError: (e) => toast.error(describe(e)),
-  });
-  return (
-    <TrashShell
-      tabKey="products"
-      query={query}
-      pageNumber={pageNumber}
-      setPageNumber={setPageNumber}
-      mapRow={(p: ProductDto) => ({
-        id: p.id,
-        title: p.name,
-        subtitle: `SKU ${p.sku}`,
-        deletedOnUtc: p.deletedOnUtc,
-        deletedBy: p.deletedBy,
-        isRestoring: restore.isPending && restore.variables === p.id,
-        onRestore: () => restore.mutate(p.id),
-        restorePerm: P.catalog.products.restore,
-      })}
-    />
-  );
-}
-
-function BrandsTab({
-  pageNumber,
-  setPageNumber,
-}: {
-  pageNumber: number;
-  setPageNumber: (n: number) => void;
-}) {
-  const { t } = useTranslation("system");
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["trash", "brands", pageNumber],
-    queryFn: () => listTrashedBrands(pageNumber, PAGE_SIZE),
-  });
-  const restore = useMutation({
-    mutationFn: (id: string) => restoreBrand(id),
-    onSuccess: () => {
-      toast.success(t("trash.restoredBrand"));
-      void queryClient.invalidateQueries({ queryKey: ["trash", "brands"] });
-      void queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
-    },
-    onError: (e) => toast.error(describe(e)),
-  });
-  return (
-    <TrashShell
-      tabKey="brands"
-      query={query}
-      pageNumber={pageNumber}
-      setPageNumber={setPageNumber}
-      mapRow={(b: BrandDto) => ({
-        id: b.id,
-        title: b.name,
-        subtitle: `/${b.slug}`,
-        deletedOnUtc: b.deletedOnUtc,
-        deletedBy: b.deletedBy,
-        isRestoring: restore.isPending && restore.variables === b.id,
-        onRestore: () => restore.mutate(b.id),
-        restorePerm: P.catalog.brands.restore,
-      })}
-    />
-  );
-}
-
-function CategoriesTab({
-  pageNumber,
-  setPageNumber,
-}: {
-  pageNumber: number;
-  setPageNumber: (n: number) => void;
-}) {
-  const { t } = useTranslation("system");
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["trash", "categories", pageNumber],
-    queryFn: () => listTrashedCategories(pageNumber, PAGE_SIZE),
-  });
-  const restore = useMutation({
-    mutationFn: (id: string) => restoreCategory(id),
-    onSuccess: () => {
-      toast.success(t("trash.restoredCategory"));
-      void queryClient.invalidateQueries({ queryKey: ["trash", "categories"] });
-      void queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
-    },
-    onError: (e) => toast.error(describe(e)),
-  });
-  return (
-    <TrashShell
-      tabKey="categories"
-      query={query}
-      pageNumber={pageNumber}
-      setPageNumber={setPageNumber}
-      mapRow={(c: CategoryDto) => ({
-        id: c.id,
-        title: c.name,
-        subtitle: `/${c.slug}`,
-        deletedOnUtc: c.deletedOnUtc,
-        deletedBy: c.deletedBy,
-        isRestoring: restore.isPending && restore.variables === c.id,
-        onRestore: () => restore.mutate(c.id),
-        restorePerm: P.catalog.categories.restore,
-      })}
-    />
-  );
-}
-
-function TicketsTab({
-  pageNumber,
-  setPageNumber,
-}: {
-  pageNumber: number;
-  setPageNumber: (n: number) => void;
-}) {
-  const { t } = useTranslation("system");
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["trash", "tickets", pageNumber],
-    queryFn: () => listTrashedTickets(pageNumber, PAGE_SIZE),
-  });
-  const restore = useMutation({
-    mutationFn: (id: string) => restoreTicket(id),
-    onSuccess: () => {
-      toast.success(t("trash.restoredTicket"));
-      void queryClient.invalidateQueries({ queryKey: ["trash", "tickets"] });
-      void queryClient.invalidateQueries({ queryKey: ["tickets"] });
-    },
-    onError: (e) => toast.error(describe(e)),
-  });
-  return (
-    <TrashShell
-      tabKey="tickets"
-      query={query}
-      pageNumber={pageNumber}
-      setPageNumber={setPageNumber}
-      mapRow={(ticket: TicketDto) => ({
-        id: ticket.id,
-        title: ticket.title,
-        subtitle: ticket.number,
-        deletedOnUtc: ticket.deletedOnUtc,
-        deletedBy: ticket.deletedBy,
-        isRestoring: restore.isPending && restore.variables === ticket.id,
-        onRestore: () => restore.mutate(ticket.id),
-        restorePerm: P.tickets.restore,
-      })}
-    />
-  );
-}
-
-function FilesTab({
-  pageNumber,
-  setPageNumber,
-}: {
-  pageNumber: number;
-  setPageNumber: (n: number) => void;
-}) {
-  const { t } = useTranslation("system");
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["trash", "files", pageNumber],
-    queryFn: () => listTrashedFiles(pageNumber, PAGE_SIZE),
-  });
-  const restore = useMutation({
-    mutationFn: (id: string) => restoreFile(id),
-    onSuccess: () => {
-      toast.success(t("trash.restoredFile"));
-      void queryClient.invalidateQueries({ queryKey: ["trash", "files"] });
-      void queryClient.invalidateQueries({ queryKey: ["files"] });
-    },
-    onError: (e) => toast.error(describe(e)),
-  });
-  return (
-    <TrashShell
-      tabKey="files"
-      query={query}
-      pageNumber={pageNumber}
-      setPageNumber={setPageNumber}
-      mapRow={(f: FileAssetDto) => ({
-        id: f.id,
-        title: f.originalFileName,
-        subtitle: f.contentType,
-        deletedOnUtc: f.deletedOnUtc,
-        deletedBy: f.deletedBy,
-        isRestoring: restore.isPending && restore.variables === f.id,
-        onRestore: () => restore.mutate(f.id),
-        restorePerm: P.files.restore,
-      })}
-    />
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Shared shell — list/loading/empty/error rendering for each tab body.
-// ───────────────────────────────────────────────────────────────────────
-
-type RowVm = {
-  id: string;
-  title: string;
-  subtitle: string;
-  deletedOnUtc: string | null | undefined;
-  deletedBy: string | null | undefined;
-  isRestoring: boolean;
-  onRestore: () => void;
-  /** Permission required to show the Restore button. */
-  restorePerm: string;
-};
-
-type TrashQuery<T> = {
-  isLoading: boolean;
-  isError: boolean;
-  error: unknown;
-  data: PagedResponse<T> | undefined;
-};
-
-const TAB_PATHS: Record<TabKey, string> = {
-  products: "catalog/products",
-  brands: "catalog/brands",
-  categories: "catalog/categories",
-  tickets: "tickets",
-  files: "files",
-};
-
-function TrashShell<T>({
-  tabKey,
-  query,
-  pageNumber,
-  setPageNumber,
-  mapRow,
-}: {
-  tabKey: TabKey;
-  query: TrashQuery<T>;
-  pageNumber: number;
-  setPageNumber: (n: number) => void;
-  mapRow: (item: T) => RowVm;
-}) {
-  const { t } = useTranslation("system");
-  const label = t(`trash.tabs.${tabKey}`);
-  const items = query.data?.items ?? [];
-  const total = query.data?.totalCount ?? 0;
-  const rows = items.map(mapRow);
-
-  if (query.isLoading && rows.length === 0) {
-    return <EntityListLoading desktopColumns={DESKTOP_COLS} />;
-  }
-
-  if (query.isError) {
-    return (
-      <div
-        role="alert"
-        className="flex items-start gap-2 rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.30)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.06)] px-3 py-2 text-sm text-[var(--color-destructive)]"
-      >
-        <span>{describe(query.error)}</span>
-      </div>
-    );
-  }
-
-  if (rows.length === 0) {
-    return (
-      <EntityEmpty
-        icon={Trash2}
-        title={t("trash.empty.title", { label: label.toLowerCase() })}
-        body={t("trash.empty.body", { label: label.toLowerCase() })}
-        action={
-          <Button
-            variant="outline"
-            onClick={() => {
-              window.location.href = `/${TAB_PATHS[tabKey]}`;
-            }}
-            className="h-9 rounded-lg px-4 text-[13px]"
-          >
-            {t("trash.empty.backTo", { label: label.toLowerCase() })}
-          </Button>
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={() => setSearch("")}
+        filters={
+          <MakaFilterField label={tc("gridFilters.search")} className="grow">
+            <MakaFilterInput
+              value={search}
+              onChange={setSearch}
+              placeholder={t("trash.searchPlaceholder")}
+              ariaLabel={tc("gridFilters.search")}
+              className="min-w-64"
+            />
+          </MakaFilterField>
         }
       />
-    );
-  }
 
-  return (
-    <div>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-          {t(`trash.count.${tabKey}`, { count: total })}
-        </p>
-      </div>
-
-      {/* Mobile cards */}
-      <div className="space-y-2 md:hidden">
-        {rows.map((row) => (
-          <TrashMobileCard key={row.id} row={row} />
-        ))}
-      </div>
-
-      {/* Desktop list */}
-      <EntityListCard className="hidden md:block">
-        <EntityListHeader className={DESKTOP_COLS}>
-          <span>{t("trash.cols.entity")}</span>
-          <span>{t("trash.cols.deletedBy")}</span>
-          <span>{t("trash.cols.deletedAt")}</span>
-          <span className="text-right">{t("trash.cols.actions")}</span>
-        </EntityListHeader>
-        {rows.map((row, i) => (
-          <TrashDesktopRow key={row.id} row={row} isLast={i === rows.length - 1} />
-        ))}
-      </EntityListCard>
-
-      <EntityPager
-        page={query.data?.pageNumber ?? pageNumber}
-        totalPages={Math.max(query.data?.totalPages ?? 1, 1)}
-        hasPrev={query.data?.hasPrevious ?? false}
-        hasNext={query.data?.hasNext ?? false}
-        onPrev={() => setPageNumber(Math.max(1, pageNumber - 1))}
-        onNext={() => setPageNumber(pageNumber + 1)}
+      <MakaGridClient<RowVm>
+        key={tab}
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isFetching}
+        fileName={`papelera-${tab}`}
+        entityName={t(`trash.tabs.${tab}`).toLowerCase()}
+        onClearFilters={() => setSearch("")}
       />
-    </div>
-  );
-}
 
-// ───────────────────────────────────────────────────────────────────────
-//  Mobile card
-// ───────────────────────────────────────────────────────────────────────
-
-function TrashMobileCard({ row }: { row: RowVm }) {
-  const { t } = useTranslation("system");
-  return (
-    <div
-      className={cn(
-        "block rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-left",
-        "shadow-xs",
+      {query.isError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.30)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.06)] px-3 py-2 text-sm text-[var(--color-destructive)]"
+        >
+          <span>{describe(query.error)}</span>
+        </div>
       )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <EntityInitialsAvatar name={row.title} size={40} />
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-              {row.title}
-            </p>
-            <code className="mt-0.5 block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-              {row.subtitle}
-            </code>
-          </div>
-        </div>
-        <Button
-          perm={row.restorePerm}
-          variant="outline"
-          size="sm"
-          onClick={row.onRestore}
-          disabled={row.isRestoring}
-          className="shrink-0 gap-1.5"
-        >
-          <RotateCcw className={cn("size-3.5", row.isRestoring && "animate-spin")} />
-          {row.isRestoring ? "…" : t("trash.restore")}
-        </Button>
-      </div>
-      <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[var(--color-muted-foreground)]">
-        <span className="tabular-nums">
-          {row.deletedOnUtc ? formatRelative(row.deletedOnUtc) : "—"}
-        </span>
-        {row.deletedOnUtc && (
-          <span className="opacity-60">({formatDateMono(row.deletedOnUtc)})</span>
-        )}
-        {row.deletedBy && (
-          <code className="font-mono">{t("trash.byPrefix", { id: row.deletedBy.slice(0, 8) })}</code>
-        )}
-      </div>
     </div>
   );
 }
-
-// ───────────────────────────────────────────────────────────────────────
-//  Desktop row
-// ───────────────────────────────────────────────────────────────────────
-
-function TrashDesktopRow({ row, isLast }: { row: RowVm; isLast: boolean }) {
-  const { t } = useTranslation("system");
-  return (
-    <EntityListRow className={DESKTOP_COLS} isLast={isLast}>
-      {/* Entity */}
-      <div className="flex min-w-0 items-center gap-3">
-        <EntityInitialsAvatar name={row.title} size={36} />
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-            {row.title}
-          </div>
-          <code className="block truncate font-mono text-[11px] text-[var(--color-muted-foreground)]">
-            {row.subtitle}
-          </code>
-        </div>
-      </div>
-
-      {/* Deleted by */}
-      <code className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]">
-        {row.deletedBy ? `${row.deletedBy.slice(0, 8)}…` : "—"}
-      </code>
-
-      {/* Deleted at */}
-      <div className="text-[12px] tabular-nums text-[var(--color-muted-foreground)]">
-        {row.deletedOnUtc ? (
-          <>
-            <div>{formatRelative(row.deletedOnUtc)}</div>
-            <div className="text-[10.5px] opacity-70">{formatDateMono(row.deletedOnUtc)}</div>
-          </>
-        ) : (
-          "—"
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end">
-        <Button
-          perm={row.restorePerm}
-          variant="outline"
-          size="sm"
-          onClick={row.onRestore}
-          disabled={row.isRestoring}
-          className="gap-1.5"
-        >
-          <RotateCcw className={cn("size-3.5", row.isRestoring && "animate-spin")} />
-          {row.isRestoring ? t("trash.restoring") : t("trash.restore")}
-        </Button>
-      </div>
-    </EntityListRow>
-  );
-}
-
-// Suppress unused warnings for shared icons when bundling per-tab views.
-void Boxes;
