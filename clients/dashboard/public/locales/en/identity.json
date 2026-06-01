@@ -58,8 +58,11 @@
     "columns": {
       "name": "Name",
       "username": "Username",
-      "status": "Status"
+      "status": "Status",
+      "active": "Active",
+      "confirmation": "Confirmation"
     },
+    "search": "Search",
     "empty": {
       "title": "No users yet",
       "body": "Invite the first user to get started."

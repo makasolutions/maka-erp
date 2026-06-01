@@ -5,7 +5,7 @@ import {
   type FormEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   keepPreviousData,
   useMutation,
@@ -13,11 +13,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  ChevronRight,
+  Eye,
   Plus,
   UserPlus,
   Users,
 } from "lucide-react";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { toast } from "sonner";
 import {
   listRoles,
@@ -40,38 +41,40 @@ import {
 } from "@/components/ui/dialog";
 import {
   Combobox,
-  EntityEmpty,
   EntityFilterPill,
-  EntityInitialsAvatar,
-  EntityListCard,
-  EntityListHeader,
-  EntityListLoading,
-  EntityListRow,
-  EntityMobileCard,
   EntityPageHeader,
-  EntityPager,
-  EntitySearch,
   EntityStatusBadge,
   Field,
   FormGrid,
 } from "@/components/list";
-import { cn } from "@/lib/cn";
+import {
+  MakaGridClient,
+  MakaGridFilters,
+  MakaFilterField,
+  MakaFilterInput,
+} from "@/components/maka";
 import { describe } from "@/lib/list-helpers";
 import { P } from "@/auth/permissions";
-
-const PAGE_SIZE = 20;
 
 type StatusFilter = "all" | "active" | "inactive";
 type EmailFilter = "all" | "confirmed" | "unconfirmed";
 
-// Desktop grid template, shared by header + rows + skeleton.
-const DESKTOP_COLS =
-  "grid-cols-[1fr_140px_24px] lg:grid-cols-[1.6fr_140px_180px_24px]";
+type UserRow = UserDto & { activeLabel: string; confirmLabel: string };
 
-function fullName(u: UserDto, fallback = "Unnamed user"): string {
-  const parts = [u.firstName, u.lastName].filter(Boolean);
-  if (parts.length > 0) return parts.join(" ");
-  return u.userName ?? u.email ?? fallback;
+// Filter dropdown surface — matches the rest of the filter row.
+const USER_FILTER_COMBO =
+  "h-8 w-52 rounded-md border-[var(--color-border)] bg-[var(--color-card)] shadow-none " +
+  "hover:border-[var(--color-border)] hover:bg-[var(--color-accent)]";
+
+// ── Cell templates (hook-free; read enriched row fields) ──────────────────
+function UserNameCell(row: UserRow) {
+  return <code className="font-mono text-[13px] text-[var(--color-foreground)]">{row.userName ? `@${row.userName}` : "—"}</code>;
+}
+function UserActiveCell(row: UserRow) {
+  return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
+}
+function UserConfirmCell(row: UserRow) {
+  return <EntityStatusBadge tone={row.emailConfirmed ? "info" : "warning"}>{row.confirmLabel}</EntityStatusBadge>;
 }
 
 // ───────────────────────────────────────────────────────────────────────
@@ -80,43 +83,22 @@ function fullName(u: UserDto, fallback = "Unnamed user"): string {
 
 export function UsersPage() {
   const { t } = useTranslation("identity");
+  const { t: tc } = useTranslation("common");
+  const navigate = useNavigate();
+  const [panelOpen, setPanelOpen] = useState(true);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [emailFilter, setEmailFilter] = useState<EmailFilter>("all");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-      setPageNumber(1);
-    }, 250);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  useEffect(() => {
-    setPageNumber(1);
-  }, [statusFilter, emailFilter, roleFilter]);
-
-  const queryParams = useMemo(
-    () => ({
-      pageNumber,
-      pageSize: PAGE_SIZE,
-      search: debouncedSearch || undefined,
-      sort: "userName asc",
-      isActive: statusFilter === "all" ? null : statusFilter === "active",
-      emailConfirmed:
-        emailFilter === "all" ? null : emailFilter === "confirmed",
-      roleId: roleFilter,
-    }),
-    [pageNumber, debouncedSearch, statusFilter, emailFilter, roleFilter],
-  );
-
+  // Client-side grid: fetch the full set once; search / status / email filter
+  // locally. The role filter stays server-side (UserDto carries no roles), so
+  // it drives the fetch.
   const query = useQuery({
-    queryKey: ["identity", "users", queryParams],
-    queryFn: () => searchUsers(queryParams),
+    queryKey: ["identity", "users", "list", roleFilter],
+    queryFn: () =>
+      searchUsers({ pageNumber: 1, pageSize: 100, sort: "userName asc", roleId: roleFilter }),
     placeholderData: keepPreviousData,
   });
 
@@ -126,12 +108,42 @@ export function UsersPage() {
     staleTime: 60_000,
   });
 
-  const data = query.data;
-  const items = data?.items ?? [];
+  const allItems = query.data?.items ?? [];
 
-  const filtersApplied =
-    statusFilter !== "all" || emailFilter !== "all" || roleFilter !== null;
-  const searchActive = debouncedSearch.length > 0 || filtersApplied;
+  const rows: UserRow[] = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allItems
+      .filter(
+        (u) =>
+          (statusFilter === "all" || u.isActive === (statusFilter === "active")) &&
+          (emailFilter === "all" || u.emailConfirmed === (emailFilter === "confirmed")) &&
+          (!q ||
+            [u.firstName, u.lastName, u.email, u.userName, u.phoneNumber]
+              .filter(Boolean)
+              .some((v) => (v as string).toLowerCase().includes(q))),
+      )
+      .map((u) => ({
+        ...u,
+        activeLabel: u.isActive ? t("users.filters.active") : t("users.filters.inactive"),
+        confirmLabel: u.emailConfirmed ? t("users.filters.confirmed") : t("users.filters.unconfirmed"),
+      }));
+  }, [allItems, search, statusFilter, emailFilter, t]);
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      { field: "firstName", headerText: t("users.fields.firstName"), minWidth: 120 },
+      { field: "lastName", headerText: t("users.fields.lastName"), minWidth: 120 },
+      { field: "email", headerText: t("users.fields.email"), minWidth: 200 },
+      { field: "phoneNumber", headerText: t("users.fields.phone"), width: 150 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "userName", headerText: t("users.fields.username"), template: UserNameCell as any, width: 170 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isActive", headerText: t("users.columns.active"), template: UserActiveCell as any, width: 120, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "emailConfirmed", headerText: t("users.columns.confirmation"), template: UserConfirmCell as any, width: 140, allowSorting: false, textAlign: "Center" },
+    ],
+    [t],
+  );
 
   const clearFilters = () => {
     setSearch("");
@@ -145,10 +157,19 @@ export function UsersPage() {
       <EntityPageHeader
         icon={Users}
         title={t("users.title")}
-        total={data?.totalCount ?? null}
+        total={query.data?.totalCount ?? null}
         unit={t("users.singular")}
         description={t("users.description")}
       >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.filtersTab")}
+        </Button>
         <Button
           perm={P.identity.users.create}
           onClick={() => setRegisterOpen(true)}
@@ -159,124 +180,71 @@ export function UsersPage() {
         </Button>
       </EntityPageHeader>
 
-      <EntitySearch
-        value={search}
-        onChange={setSearch}
-        placeholder={t("users.searchPlaceholder")}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={clearFilters}
+        filters={
+          <>
+            <MakaFilterField label={t("users.search")} className="grow">
+              <MakaFilterInput
+                value={search}
+                onChange={setSearch}
+                placeholder={t("users.searchPlaceholder")}
+                ariaLabel={t("users.search")}
+                className="min-w-64"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("users.accountStatus")}>
+              <EntityFilterPill
+                label={t("users.accountStatus")}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  { value: "all", label: t("users.filters.allStatus") },
+                  { value: "active", label: t("users.filters.active") },
+                  { value: "inactive", label: t("users.filters.inactive") },
+                ]}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("users.emailStatus")}>
+              <EntityFilterPill
+                label={t("users.emailStatus")}
+                value={emailFilter}
+                onChange={setEmailFilter}
+                options={[
+                  { value: "all", label: t("users.filters.allEmail") },
+                  { value: "confirmed", label: t("users.filters.confirmed") },
+                  { value: "unconfirmed", label: t("users.filters.unconfirmed") },
+                ]}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("users.fields.role")}>
+              <Combobox
+                id="users-role-filter"
+                label={t("users.fields.role")}
+                placeholder={t("users.filters.allStatus")}
+                value={roleFilter}
+                onChange={setRoleFilter}
+                options={(rolesQuery.data ?? []).map((r) => ({ value: r.id, label: r.name }))}
+                searchable
+                clearable
+                emptyOptionLabel={t("users.filters.allStatus")}
+                className={USER_FILTER_COMBO}
+              />
+            </MakaFilterField>
+          </>
+        }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <EntityFilterPill
-          label={t("users.accountStatus")}
-          value={statusFilter}
-          onChange={setStatusFilter}
-          options={[
-            { value: "all", label: t("users.filters.allStatus") },
-            { value: "active", label: t("users.filters.active") },
-            { value: "inactive", label: t("users.filters.inactive") },
-          ]}
-        />
-        <EntityFilterPill
-          label={t("users.emailStatus")}
-          value={emailFilter}
-          onChange={setEmailFilter}
-          options={[
-            { value: "all", label: t("users.filters.allEmail") },
-            { value: "confirmed", label: t("users.filters.confirmed") },
-            { value: "unconfirmed", label: t("users.filters.unconfirmed") },
-          ]}
-        />
-        <Combobox
-          label={t("users.fields.role")}
-          value={roleFilter}
-          onChange={setRoleFilter}
-          options={(rolesQuery.data ?? []).map((r) => ({
-            value: r.id,
-            label: r.name,
-          }))}
-          variant="filter"
-          searchable
-          clearable
-        />
-      </div>
-
-      {query.isLoading && items.length === 0 ? (
-        <EntityListLoading desktopColumns={DESKTOP_COLS} />
-      ) : items.length === 0 ? (
-        <EntityEmpty
-          icon={Users}
-          title={searchActive ? t("users.emptySearch") : t("users.empty.title")}
-          body={
-            searchActive
-              ? debouncedSearch
-                ? t("users.emptySearchBody", { term: debouncedSearch })
-                : t("users.emptyFiltersBody")
-              : t("users.emptyBody")
-          }
-          action={
-            searchActive ? (
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                className="h-9 rounded-lg px-4 text-[13px]"
-              >
-                {t("users.clearFilters")}
-              </Button>
-            ) : (
-              <Button
-                perm={P.identity.users.create}
-                onClick={() => setRegisterOpen(true)}
-                className="h-9 rounded-lg px-4 text-[13px]"
-              >
-                <Plus className="mr-1.5 size-4" />
-                {t("users.register")}
-              </Button>
-            )
-          }
-        />
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {t("users.found", { count: data?.totalCount ?? 0 })}
-            </p>
-          </div>
-
-          {/* Mobile: card list */}
-          <div className="space-y-2 md:hidden">
-            {items.map((user) => (
-              <UserMobileCard key={user.id ?? user.userName} user={user} />
-            ))}
-          </div>
-
-          {/* Desktop: table */}
-          <EntityListCard className="hidden md:block">
-            <EntityListHeader className={DESKTOP_COLS}>
-              <span>{t("users.columns.name")}</span>
-              <span>{t("users.columns.username")}</span>
-              <span className="hidden lg:block">{t("users.columns.status")}</span>
-              <span />
-            </EntityListHeader>
-
-            {items.map((user, i) => (
-              <UserDesktopRow
-                key={user.id ?? i}
-                user={user}
-                isLast={i === items.length - 1}
-              />
-            ))}
-          </EntityListCard>
-
-          <EntityPager
-            page={data?.pageNumber ?? 1}
-            totalPages={Math.max(data?.totalPages ?? 1, 1)}
-            hasPrev={data?.hasPrevious ?? false}
-            hasNext={data?.hasNext ?? false}
-            onPrev={() => setPageNumber((p) => Math.max(1, p - 1))}
-            onNext={() => setPageNumber((p) => p + 1)}
-          />
-        </div>
-      )}
+      <MakaGridClient<UserRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isFetching}
+        fileName="usuarios"
+        entityName={t("users.singular")}
+        onRowClick={(row) => row.id && navigate(`/identity/users/${row.id}`)}
+        onClearFilters={clearFilters}
+      />
 
       {query.isError && (
         <div
@@ -292,99 +260,6 @@ export function UsersPage() {
         onClose={() => setRegisterOpen(false)}
       />
     </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Rows
-// ───────────────────────────────────────────────────────────────────────
-
-function UserMobileCard({ user }: { user: UserDto }) {
-  const { t } = useTranslation("identity");
-  const display = fullName(user, t("users.noName"));
-  const href = user.id ? `/identity/users/${user.id}` : "#";
-  return (
-    <EntityMobileCard
-      href={href}
-      aria-label={t("users.openUserAria", { name: display })}
-      dim={!user.isActive}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <EntityInitialsAvatar name={display} size={40} />
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-              {display}
-            </p>
-            <p className="mt-0.5 truncate text-[11px] text-[var(--color-muted-foreground)]">
-              {user.email ?? t("users.noEmail")}
-            </p>
-          </div>
-        </div>
-        <ChevronRight className="size-4 shrink-0 text-[var(--color-border)]" />
-      </div>
-      <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-1.5">
-        <EntityStatusBadge tone={user.isActive ? "success" : "default"}>
-          {user.isActive ? t("users.filters.active") : t("users.filters.inactive")}
-        </EntityStatusBadge>
-        <EntityStatusBadge tone={user.emailConfirmed ? "info" : "warning"}>
-          {user.emailConfirmed ? t("users.emailConfirmedBadge") : t("users.emailPendingBadge")}
-        </EntityStatusBadge>
-      </div>
-    </EntityMobileCard>
-  );
-}
-
-function UserDesktopRow({ user, isLast }: { user: UserDto; isLast: boolean }) {
-  const { t } = useTranslation("identity");
-  const display = fullName(user, t("users.noName"));
-  const href = user.id ? `/identity/users/${user.id}` : "#";
-  return (
-    <EntityListRow className={DESKTOP_COLS} isLast={isLast} dim={!user.isActive}>
-      {/* Name + email */}
-      <Link
-        to={href}
-        aria-disabled={!user.id}
-        className="flex min-w-0 items-center gap-3 outline-none"
-      >
-        <EntityInitialsAvatar name={display} size={36} />
-        <div className="min-w-0">
-          <span className="block truncate text-[14px] font-medium text-[var(--color-foreground)] transition-colors group-hover:text-[var(--color-primary)]">
-            {display}
-          </span>
-          <span
-            className={cn(
-              "block truncate text-[12px] text-[var(--color-muted-foreground)]",
-              !user.email && "italic opacity-60",
-            )}
-          >
-            {user.email ?? t("users.noEmailOnFile")}
-          </span>
-        </div>
-      </Link>
-
-      {/* Username */}
-      <code
-        title={user.userName ?? undefined}
-        className="truncate font-mono text-[12px] text-[var(--color-muted-foreground)]"
-      >
-        {user.userName ? `@${user.userName}` : "—"}
-      </code>
-
-      {/* Status (lg+) */}
-      <div className="hidden items-center gap-1.5 lg:flex">
-        <EntityStatusBadge tone={user.isActive ? "success" : "default"}>
-          {user.isActive ? t("users.filters.active") : t("users.filters.inactive")}
-        </EntityStatusBadge>
-        <EntityStatusBadge tone={user.emailConfirmed ? "info" : "warning"}>
-          {user.emailConfirmed ? t("users.filters.confirmed") : t("users.filters.unconfirmed")}
-        </EntityStatusBadge>
-      </div>
-
-      <div className="flex items-center justify-end">
-        <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
-      </div>
-    </EntityListRow>
   );
 }
 
