@@ -1,23 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  ChevronRight,
-  Plus,
-  Search,
-  Star,
-  UsersRound,
-} from "lucide-react";
+import { Eye, Plus, Star, UsersRound } from "lucide-react";
+import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { toast } from "sonner";
 import {
   createGroup,
   listGroups,
-  type GroupDto,
 } from "@/api/identity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,54 +27,137 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
-  EntityEmpty,
-  EntityInitialsAvatar,
-  EntityListCard,
-  EntityListHeader,
-  EntityListLoading,
-  EntityListRow,
-  EntityMobileCard,
   EntityPageHeader,
-  EntitySearch,
   EntityStatusBadge,
   Field,
   FormGrid,
 } from "@/components/list";
-import { cn } from "@/lib/cn";
+import {
+  MakaGridClient,
+  MakaGridFilters,
+  MakaFilterField,
+  MakaFilterInput,
+} from "@/components/maka";
 import { describe } from "@/lib/list-helpers";
 import { P } from "@/auth/permissions";
 
-const DESKTOP_COLUMNS = "grid-cols-[1fr_160px_120px_24px]";
+type GroupRow = {
+  id: string;
+  name: string;
+  description: string;
+  membersLabel: string;
+  rolesLabel: string;
+  isDefault: boolean;
+  isSystemGroup: boolean;
+  defaultLabel: string;
+  systemLabel: string;
+};
+
+// ── Cell templates (hook-free; read enriched row fields) ──────────────────
+function GroupNameCell(row: GroupRow) {
+  return (
+    <div className="min-w-0">
+      <div className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.name}</div>
+      {row.description && (
+        <div className="truncate text-[12px] text-[var(--color-muted-foreground)]" title={row.description}>
+          {row.description}
+        </div>
+      )}
+    </div>
+  );
+}
+function GroupCompositionCell(row: GroupRow) {
+  return (
+    <div className="flex flex-col text-[12px] text-[var(--color-muted-foreground)]">
+      <span>{row.membersLabel}</span>
+      <span>{row.rolesLabel}</span>
+    </div>
+  );
+}
+function GroupFlagsCell(row: GroupRow) {
+  if (!row.isDefault && !row.isSystemGroup) {
+    return <span className="text-[12px] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {row.isDefault && (
+        <EntityStatusBadge tone="info">
+          <Star className="mr-0.5 size-2.5" />
+          {row.defaultLabel}
+        </EntityStatusBadge>
+      )}
+      {row.isSystemGroup && <EntityStatusBadge tone="default">{row.systemLabel}</EntityStatusBadge>}
+    </div>
+  );
+}
 
 export function GroupsPage() {
   const { t } = useTranslation("identity");
+  const { t: tc } = useTranslation("common");
+  const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [search, setSearch] = useState("");
-  const [debounced, setDebounced] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(search.trim()), 250);
-    return () => clearTimeout(timer);
-  }, [search]);
 
   const query = useQuery({
-    queryKey: ["identity", "groups", { search: debounced }],
-    queryFn: () => listGroups(debounced || undefined),
+    queryKey: ["identity", "groups", "list"],
+    queryFn: () => listGroups(),
   });
 
-  const groups = useMemo(() => query.data ?? [], [query.data]);
+  const allGroups = useMemo(() => query.data ?? [], [query.data]);
 
-  const searchActive = debounced.length > 0;
+  const rows: GroupRow[] = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allGroups
+      .filter(
+        (g) =>
+          !q ||
+          g.name.toLowerCase().includes(q) ||
+          (g.description ?? "").toLowerCase().includes(q),
+      )
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        description: g.description ?? "",
+        membersLabel: t("groups.membersCount", { count: g.memberCount }),
+        rolesLabel: t("groups.rolesCount", { count: g.roleNames?.length ?? 0 }),
+        isDefault: g.isDefault,
+        isSystemGroup: g.isSystemGroup,
+        defaultLabel: t("groups.defaultRoleLabel"),
+        systemLabel: t("groups.systemBadge"),
+      }));
+  }, [allGroups, search, t]);
+
+  const columns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "name", headerText: t("groups.columns.group"), template: GroupNameCell as any, minWidth: 240 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "membersLabel", headerText: t("groups.columns.composition"), template: GroupCompositionCell as any, width: 190, allowSorting: false },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "isDefault", headerText: t("groups.columns.flags"), template: GroupFlagsCell as any, width: 190, allowSorting: false },
+    ],
+    [t],
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <EntityPageHeader
         icon={UsersRound}
         title={t("groups.title")}
-        total={query.data ? groups.length : null}
+        total={query.data ? allGroups.length : null}
         unit={t("groups.singular")}
         description={t("groups.description")}
       >
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen((v) => !v)}
+          aria-pressed={panelOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Eye className="size-4" />
+          {tc("gridFilters.filtersTab")}
+        </Button>
         <Button
           perm={P.identity.groups.create}
           onClick={() => setCreateOpen(true)}
@@ -91,69 +168,31 @@ export function GroupsPage() {
         </Button>
       </EntityPageHeader>
 
-      <EntitySearch
-        value={search}
-        onChange={setSearch}
-        placeholder={t("groups.searchPlaceholder")}
+      <MakaGridFilters
+        open={panelOpen}
+        onClear={() => setSearch("")}
+        filters={
+          <MakaFilterField label={tc("gridFilters.search")} className="grow">
+            <MakaFilterInput
+              value={search}
+              onChange={setSearch}
+              placeholder={t("groups.searchPlaceholder")}
+              ariaLabel={tc("gridFilters.search")}
+              className="min-w-64"
+            />
+          </MakaFilterField>
+        }
       />
 
-      {query.isLoading ? (
-        <EntityListLoading rows={6} desktopColumns={DESKTOP_COLUMNS} />
-      ) : groups.length === 0 ? (
-        <EntityEmpty
-          icon={searchActive ? Search : UsersRound}
-          title={searchActive ? t("groups.emptySearch") : t("groups.empty.title")}
-          body={
-            searchActive
-              ? t("groups.emptySearchBody", { term: debounced })
-              : t("groups.empty.body")
-          }
-          action={
-            searchActive ? (
-              <Button variant="outline" onClick={() => setSearch("")} className="h-9 rounded-lg px-4 text-[13px]">
-                {t("groups.clearSearch")}
-              </Button>
-            ) : (
-              <Button perm={P.identity.groups.create} onClick={() => setCreateOpen(true)} className="h-9 rounded-lg px-4 text-[13px]">
-                <Plus className="mr-1.5 size-4" />
-                {t("groups.addGroup")}
-              </Button>
-            )
-          }
-        />
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-medium text-[var(--color-muted-foreground)]">
-              {t("groups.groupsFound", { count: groups.length })}
-            </p>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="space-y-2 md:hidden">
-            {groups.map((group) => (
-              <MobileGroupCard key={group.id} group={group} />
-            ))}
-          </div>
-
-          {/* Desktop table */}
-          <EntityListCard className="hidden md:block">
-            <EntityListHeader className={DESKTOP_COLUMNS}>
-              <span>{t("groups.columns.group")}</span>
-              <span>{t("groups.columns.composition")}</span>
-              <span>{t("groups.columns.flags")}</span>
-              <span />
-            </EntityListHeader>
-            {groups.map((group, i) => (
-              <DesktopGroupRow
-                key={group.id}
-                group={group}
-                isLast={i === groups.length - 1}
-              />
-            ))}
-          </EntityListCard>
-        </div>
-      )}
+      <MakaGridClient<GroupRow>
+        dataSource={rows}
+        columns={columns}
+        isLoading={query.isFetching}
+        fileName="grupos"
+        entityName={t("groups.singular")}
+        onRowClick={(row) => navigate(`/identity/groups/${row.id}`)}
+        onClearFilters={() => setSearch("")}
+      />
 
       {query.isError && (
         <div
@@ -169,127 +208,6 @@ export function GroupsPage() {
   );
 }
 
-function MobileGroupCard({ group }: { group: GroupDto }) {
-  const { t } = useTranslation("identity");
-  const roleCount = group.roleNames?.length ?? 0;
-  return (
-    <EntityMobileCard
-      href={`/identity/groups/${group.id}`}
-      aria-label={t("groups.openGroupAria", { name: group.name })}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <EntityInitialsAvatar name={group.name} size={40} />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-[14px] font-medium text-[var(--color-foreground)]">
-                {group.name}
-              </p>
-              {group.isDefault && (
-                <EntityStatusBadge tone="info">
-                  <Star className="mr-0.5 size-2.5" />
-                  {t("groups.defaultRoleLabel")}
-                </EntityStatusBadge>
-              )}
-              {group.isSystemGroup && (
-                <EntityStatusBadge tone="default">{t("groups.systemBadge")}</EntityStatusBadge>
-              )}
-            </div>
-            <p
-              className={cn(
-                "mt-0.5 line-clamp-1 text-[12px] text-[var(--color-muted-foreground)]",
-                !group.description && "italic opacity-70",
-              )}
-            >
-              {group.description ?? t("groups.noDescriptionOnFile")}
-            </p>
-          </div>
-        </div>
-        <ChevronRight className="size-4 shrink-0 text-[var(--color-border)]" />
-      </div>
-      <div className="mt-2 ml-[52px] flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-muted-foreground)]">
-        <span>{t("groups.membersCount", { count: group.memberCount })}</span>
-        <span className="opacity-40">·</span>
-        <span>{t("groups.rolesCount", { count: roleCount })}</span>
-      </div>
-    </EntityMobileCard>
-  );
-}
-
-function DesktopGroupRow({
-  group,
-  isLast,
-}: {
-  group: GroupDto;
-  isLast: boolean;
-}) {
-  const { t } = useTranslation("identity");
-  const navigate = useNavigate();
-  const roleCount = group.roleNames?.length ?? 0;
-
-  return (
-    <EntityListRow
-      className={DESKTOP_COLUMNS}
-      isLast={isLast}
-      onClick={() => navigate(`/identity/groups/${group.id}`)}
-    >
-      {/* Name + description */}
-      <Link
-        to={`/identity/groups/${group.id}`}
-        onClick={(e) => e.stopPropagation()}
-        className="flex min-w-0 items-center gap-3 outline-none"
-      >
-        <EntityInitialsAvatar name={group.name} size={36} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-[14px] font-medium text-[var(--color-foreground)] transition-colors group-hover:text-[var(--color-primary)]">
-              {group.name}
-            </span>
-          </div>
-          <p
-            className={cn(
-              "mt-0.5 truncate text-[12px] text-[var(--color-muted-foreground)]",
-              !group.description && "italic opacity-70",
-            )}
-          >
-            {group.description ?? t("groups.noDescriptionOnFile")}
-          </p>
-        </div>
-      </Link>
-
-      {/* Composition */}
-      <div className="flex flex-col text-[12px] text-[var(--color-muted-foreground)]">
-        <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-foreground)]">
-          {t("groups.membersCount", { count: group.memberCount })}
-        </span>
-        <span className="font-mono text-[11px] uppercase tracking-wider">
-          {t("groups.rolesCount", { count: roleCount })}
-        </span>
-      </div>
-
-      {/* Flags */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {group.isDefault && (
-          <EntityStatusBadge tone="info">
-            <Star className="mr-0.5 size-2.5" />
-            {t("groups.defaultRoleLabel")}
-          </EntityStatusBadge>
-        )}
-        {group.isSystemGroup && (
-          <EntityStatusBadge tone="default">{t("groups.systemBadge")}</EntityStatusBadge>
-        )}
-        {!group.isDefault && !group.isSystemGroup && (
-          <span className="text-[12px] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.5)]">
-            —
-          </span>
-        )}
-      </div>
-
-      {/* Trailing chevron */}
-      <ChevronRight className="size-4 text-[var(--color-border)] transition-colors group-hover:text-[var(--color-muted-foreground)]" />
-    </EntityListRow>
-  );
-}
 
 function CreateGroupDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation("identity");

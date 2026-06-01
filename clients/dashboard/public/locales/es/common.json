@@ -776,6 +776,7 @@
   },
   "gridFilters": {
     "filtersTab": "Filtros",
+    "search": "Buscar",
     "kpisTab": "Indicadores",
     "panelToggle": "Filtros & KPI's"
   }
