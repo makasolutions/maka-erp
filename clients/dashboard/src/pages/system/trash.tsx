@@ -324,7 +324,7 @@ export function TrashPage() {
         columns={columns}
         isLoading={query.isFetching}
         fileName={`papelera-${tab}`}
-        entityName={t(`trash.tabs.${tab}`).toLowerCase()}
+        entityName={t(`trash.singular.${tab}`)}
         onClearFilters={() => setSearch("")}
       />
 

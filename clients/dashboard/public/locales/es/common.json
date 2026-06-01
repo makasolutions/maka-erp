@@ -763,7 +763,7 @@
     "totalRecords": "{{count}} registros",
     "itemsPerPage": "Registros por página",
     "noRecordsTitle": "Sin registros para mostrar",
-    "noMatch": "Ningún {{item}} coincide con los filtros actuales.",
+    "noMatch": "No hay {{item}} que coincida con los filtros actuales.",
     "clearFilters": "Limpiar filtros",
     "defaultEntity": "registro"
   },

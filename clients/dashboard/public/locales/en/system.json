@@ -58,6 +58,13 @@
     "description": "Soft-deleted records, kept indefinitely until you restore them. Restoring a row brings it back to its parent list with the same ID and history intact.",
     "navLabel": "Trash sections",
     "searchPlaceholder": "Search by name…",
+    "singular": {
+      "products": "product",
+      "brands": "brand",
+      "categories": "category",
+      "tickets": "ticket",
+      "files": "file"
+    },
     "tabs": {
       "products": "Products",
       "brands": "Brands",
