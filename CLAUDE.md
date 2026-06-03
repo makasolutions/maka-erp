@@ -16,8 +16,27 @@ Antes de escribir UNA SOLA línea de código, ejecuta este checklist mentalmente
 4. ¿La tarea pertenece al módulo correcto? → Ver §7 (requerimientos por fase)
 5. ¿La tarea viola alguna REGLA PROHIBIDA? → Ver §9
 6. ¿Es tarea nueva? → Activar Plan Mode (`Shift+Tab`), proponer modelo y esperar confirmación de Juan
+7. ¿El modelo activo es el óptimo para esta tarea?
+   → Consultar `.agents/rules/model-routing.md`
+   → Si no es el óptimo: mostrar el banner de cambio ANTES de proceder
 
 Si cualquier respuesta es dudosa: **PARAR y preguntar antes de continuar.**
+
+---
+
+## SELECCIÓN DE MODELO
+
+Ver reglas completas en `.agents/rules/model-routing.md`
+
+Resumen:
+
+| Modelo | Cuándo usarlo |
+|---|---|
+| **Sonnet** | Implementación de feature aprobada, bugs localizados, revisión y lectura de docs |
+| **Opus** | Arquitectura nueva, bugs complejos sin causa clara, features multi-módulo (3+), revisión de seguridad crítica |
+| **Haiku** | Confirmaciones rápidas (sí/no), traducciones, renombrados, tareas mecánicas repetitivas |
+
+Cuando el modelo actual no sea el óptimo: mostrar el banner de cambio (definido en el archivo de reglas) y esperar confirmación antes de proceder.
 
 ---
 
