@@ -13,6 +13,15 @@ using FSH.Modules.Catalog.Features.v1.Brands.RestoreBrand;
 using FSH.Modules.Catalog.Features.v1.Brands.UpdateBrand;
 using FSH.Modules.Catalog.Features.v1.Categories.CreateCategory;
 using FSH.Modules.Catalog.Features.v1.Categories.DeleteCategory;
+using FSH.Modules.Catalog.Features.v1.Products.ArchiveProduct;
+using FSH.Modules.Catalog.Features.v1.Products.CreateProduct;
+using FSH.Modules.Catalog.Features.v1.Products.DeleteProduct;
+using FSH.Modules.Catalog.Features.v1.Products.GetProductById;
+using FSH.Modules.Catalog.Features.v1.Products.GetProducts;
+using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
+using FSH.Modules.Catalog.Features.v1.Products.PublishProduct;
+using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
+using FSH.Modules.Catalog.Features.v1.Products.UpdateProduct;
 using FSH.Modules.Catalog.Features.v1.Categories.GetCategories;
 using FSH.Modules.Catalog.Features.v1.Categories.GetCategoryById;
 using FSH.Modules.Catalog.Features.v1.Categories.ListTrashedCategories;
@@ -80,6 +89,21 @@ public sealed class CatalogModule : IModule
 
         categories.MapListTrashedCategoriesEndpoint();
         categories.MapGetCategoriesEndpoint();
+
+        var products = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/products")
+            .WithTags("Catalog - Products")
+            .WithApiVersionSet(apiVersionSet);
+
+        products.MapListTrashedProductsEndpoint();
+        products.MapGetProductsEndpoint();
+        products.MapGetProductByIdEndpoint();
+        products.MapCreateProductEndpoint();
+        products.MapUpdateProductEndpoint();
+        products.MapDeleteProductEndpoint();
+        products.MapRestoreProductEndpoint();
+        products.MapPublishProductEndpoint();
+        products.MapArchiveProductEndpoint();
         categories.MapGetCategoryByIdEndpoint();
         categories.MapCreateCategoryEndpoint();
         categories.MapUpdateCategoryEndpoint();

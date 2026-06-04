@@ -32,6 +32,8 @@ public static class CatalogPermissions
         public const string Update      = $"Permissions.{Resource}.Update";
         public const string Delete      = $"Permissions.{Resource}.Delete";
         public const string Restore     = $"Permissions.{Resource}.Restore";
+        public const string Publish     = $"Permissions.{Resource}.Publish";
+        public const string Archive     = $"Permissions.{Resource}.Archive";
         public const string AdjustStock = $"Permissions.{Resource}.AdjustStock";
     }
 
@@ -54,6 +56,8 @@ public static class CatalogPermissions
         new("Update Products",      ActionConstants.Update, Products.Resource),
         new("Delete Products",      ActionConstants.Delete, Products.Resource),
         new("Restore Products",     "Restore",              Products.Resource),
+        new("Publish Products",     "Publish",              Products.Resource),
+        new("Archive Products",     "Archive",              Products.Resource),
         new("Adjust Product Stock", "AdjustStock",          Products.Resource),
     ];
 }

@@ -1,4 +1,5 @@
 using FSH.Framework.Core.Domain;
+using FSH.Modules.Catalog.Contracts.Enums;
 
 namespace FSH.Modules.Catalog.Domain;
 

@@ -1,12 +1,8 @@
 using System.Text.Json;
 using FSH.Framework.Core.Domain;
+using FSH.Modules.Catalog.Contracts.Enums;
 
 namespace FSH.Modules.Catalog.Domain;
-
-public enum ProductType   { Simple, Variable, Bundle, Service }
-public enum ProductStatus { Draft, Active, Archived }
-public enum WeightUnit    { KG, G, LB, OZ }
-public enum DimensionUnit { CM, M, IN }
 
 /// <summary>
 /// Product — definición pura del bien/servicio — spec §2.6.
