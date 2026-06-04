@@ -35,6 +35,13 @@ using FSH.Modules.Catalog.Features.v1.Categories.GetCategoryById;
 using FSH.Modules.Catalog.Features.v1.Categories.ListTrashedCategories;
 using FSH.Modules.Catalog.Features.v1.Categories.RestoreCategory;
 using FSH.Modules.Catalog.Features.v1.Categories.UpdateCategory;
+using FSH.Modules.Catalog.Features.v1.PriceLists.AddPriceListItem;
+using FSH.Modules.Catalog.Features.v1.PriceLists.CreatePriceList;
+using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceListById;
+using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceLists;
+using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceListItem;
+using FSH.Modules.Catalog.Features.v1.Prices.GetEffectivePrice;
+using FSH.Modules.Catalog.Features.v1.Prices.GetPriceHistory;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -135,5 +142,24 @@ public sealed class CatalogModule : IModule
         categories.MapUpdateCategoryEndpoint();
         categories.MapDeleteCategoryEndpoint();
         categories.MapRestoreCategoryEndpoint();
+
+        var priceLists = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/price-lists")
+            .WithTags("Catalog - Price Lists")
+            .WithApiVersionSet(apiVersionSet);
+
+        priceLists.MapGetPriceListsEndpoint();
+        priceLists.MapGetPriceListByIdEndpoint();
+        priceLists.MapCreatePriceListEndpoint();
+        priceLists.MapAddPriceListItemEndpoint();
+        priceLists.MapUpdatePriceListItemEndpoint();
+
+        var prices = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/prices")
+            .WithTags("Catalog - Prices")
+            .WithApiVersionSet(apiVersionSet);
+
+        prices.MapGetEffectivePriceEndpoint();
+        prices.MapGetPriceHistoryEndpoint();
     }
 }

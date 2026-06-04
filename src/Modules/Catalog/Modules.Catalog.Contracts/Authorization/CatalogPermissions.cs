@@ -37,6 +37,14 @@ public static class CatalogPermissions
         public const string AdjustStock = $"Permissions.{Resource}.AdjustStock";
     }
 
+    public static class PriceLists
+    {
+        public const string Resource = "Catalog.PriceLists";
+        public const string View        = $"Permissions.{Resource}.View";
+        public const string Manage      = $"Permissions.{Resource}.Manage";
+        public const string ApproveBulk = $"Permissions.{Resource}.ApproveBulk";
+    }
+
     public static IReadOnlyList<FshPermission> All { get; } =
     [
         new("View Brands",    ActionConstants.View,   Brands.Resource, IsBasic: true),
@@ -59,5 +67,9 @@ public static class CatalogPermissions
         new("Publish Products",     "Publish",              Products.Resource),
         new("Archive Products",     "Archive",              Products.Resource),
         new("Adjust Product Stock", "AdjustStock",          Products.Resource),
+
+        new("View Price Lists",     ActionConstants.View, PriceLists.Resource, IsBasic: true),
+        new("Manage Price Lists",   "Manage",             PriceLists.Resource),
+        new("Approve Bulk Prices",  "ApproveBulk",        PriceLists.Resource),
     ];
 }
