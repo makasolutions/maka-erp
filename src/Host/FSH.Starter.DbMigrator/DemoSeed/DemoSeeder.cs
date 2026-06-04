@@ -5,6 +5,7 @@ using FSH.Framework.Shared.Constants;
 using FSH.Framework.Shared.Identity.Claims;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Catalog.Data;
+using FSH.Modules.Catalog.Domain;
 using FSH.Modules.Chat.Data;
 using FSH.Modules.Chat.Domain;
 using FSH.Modules.Identity.Data;
@@ -294,18 +295,75 @@ internal sealed class DemoSeeder
     // ─── Catalog ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Idempotently seeds the Catalog demo dataset (4 brands / 11 categories /
-    /// 10 products) into the demo tenant. Bails when any catalog row already
-    /// exists for that tenant.
+    /// Idempotently seeds 5 brands and a 4-branch category tree into the demo
+    /// tenant. Bails early when any Brand already exists for that tenant.
     /// </summary>
-    private static Task SeedTenantCatalogAsync(DemoTenant demo, CancellationToken cancellationToken)
+    private async Task SeedTenantCatalogAsync(DemoTenant demo, CancellationToken cancellationToken)
     {
-        // Catalog v2 demo seed is implemented in Fase C1 Paso 5 (CatalogDbSeeder).
-        // The old v1 seed (Brand/Category/Product with Price+Stock+Sku) was removed
-        // as part of the catalog v2 rebuild.
-        _ = demo;
-        _ = cancellationToken;
-        return Task.CompletedTask;
+        using var scope = _services.CreateScope();
+        var tenantStore = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<AppTenantInfo>>();
+        var tenant = await tenantStore.GetAsync(demo.Id).ConfigureAwait(false);
+        if (tenant is null) return;
+
+        scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>()
+            .MultiTenantContext = new MultiTenantContext<AppTenantInfo>(tenant);
+
+        var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+
+        if (await db.Brands.AnyAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        // ── Brands ──────────────────────────────────────────────────────
+        db.Brands.AddRange(
+            Brand.Create("Sony",        "sony",        "Tecnología audiovisual profesional",   countryOfOrigin: "JP"),
+            Brand.Create("DJI",         "dji",         "Drones y estabilizadores de cámara",   countryOfOrigin: "CN"),
+            Brand.Create("Godox",       "godox",       "Iluminación fotográfica y de video",   countryOfOrigin: "CN"),
+            Brand.Create("Nanlite",     "nanlite",     "Iluminación LED profesional",          countryOfOrigin: "CN"),
+            Brand.Create("Blackmagic",  "blackmagic",  "Cámaras y accesorios de cine digital", countryOfOrigin: "AU"));
+
+        // ── Categories — 4-branch audiovisual tree ───────────────────────
+        var fotografia   = Category.Create("Fotografía",   "fotografia",   sortOrder: 1);
+        var video        = Category.Create("Video",        "video",        sortOrder: 2);
+        var iluminacion  = Category.Create("Iluminación",  "iluminacion",  sortOrder: 3);
+        var audio        = Category.Create("Audio",        "audio",        sortOrder: 4);
+
+        db.Categories.AddRange(fotografia, video, iluminacion, audio);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Children — Fotografía
+        db.Categories.AddRange(
+            Category.Create("Cámaras",     "camaras",     parentId: fotografia.Id,  sortOrder: 1),
+            Category.Create("Objetivos",   "objetivos",   parentId: fotografia.Id,  sortOrder: 2),
+            Category.Create("Accesorios",  "accesorios-foto", parentId: fotografia.Id, sortOrder: 3));
+
+        // Children — Video
+        db.Categories.AddRange(
+            Category.Create("Cámaras de Cine",  "camaras-cine",  parentId: video.Id, sortOrder: 1),
+            Category.Create("Monitores",        "monitores",     parentId: video.Id, sortOrder: 2),
+            Category.Create("Rigs y Soportes",  "rigs-soportes", parentId: video.Id, sortOrder: 3));
+
+        // Children — Iluminación
+        db.Categories.AddRange(
+            Category.Create("Paneles LED",      "paneles-led",   parentId: iluminacion.Id, sortOrder: 1),
+            Category.Create("Flash y Strobe",   "flash-strobe",  parentId: iluminacion.Id, sortOrder: 2),
+            Category.Create("Accesorios",       "accesorios-luz", parentId: iluminacion.Id, sortOrder: 3));
+
+        // Children — Audio
+        db.Categories.AddRange(
+            Category.Create("Micrófonos",       "microfonos",    parentId: audio.Id, sortOrder: 1),
+            Category.Create("Grabadoras",       "grabadoras",    parentId: audio.Id, sortOrder: 2),
+            Category.Create("Accesorios",       "accesorios-audio", parentId: audio.Id, sortOrder: 3));
+
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "[demo-seed] [{Tenant}] seeded 5 brands and 16 categories (4 roots × 3 children)",
+                tenant.Id);
+        }
     }
 
     // ─── Tickets ────────────────────────────────────────────────────────

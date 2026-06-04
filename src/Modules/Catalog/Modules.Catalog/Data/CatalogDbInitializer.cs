@@ -1,4 +1,5 @@
 using FSH.Framework.Persistence;
+using FSH.Modules.Catalog.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -18,8 +19,44 @@ public sealed class CatalogDbInitializer(
     }
 
     /// <summary>
-    /// Catalog seed is handled by CatalogDbSeeder (Fase C1 Paso 5).
-    /// A fresh tenant comes up with an empty catalog until the seeder runs.
+    /// Seeds configuration data required by every tenant: TaxRates + ShippingClasses.
+    /// Idempotent — checks before inserting.
     /// </summary>
-    public Task SeedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public async Task SeedAsync(CancellationToken cancellationToken)
+    {
+        await SeedTaxRatesAsync(cancellationToken).ConfigureAwait(false);
+        await SeedShippingClassesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task SeedTaxRatesAsync(CancellationToken cancellationToken)
+    {
+        if (await dbContext.TaxRates.AnyAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        dbContext.TaxRates.AddRange(
+            TaxRate.Create("IVA 19%", 0.19m, "Tarifa general IVA Colombia", isDefault: true),
+            TaxRate.Create("IVA 5%", 0.05m, "Tarifa reducida IVA Colombia"),
+            TaxRate.Create("Exento", 0.00m, "Bienes y servicios exentos de IVA"));
+
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        logger.LogInformation("[Catalog] seeded TaxRates (IVA 19%, IVA 5%, Exento)");
+    }
+
+    private async Task SeedShippingClassesAsync(CancellationToken cancellationToken)
+    {
+        if (await dbContext.ShippingClasses.AnyAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        dbContext.ShippingClasses.AddRange(
+            ShippingClass.Create("Normal", "Productos estándar sin restricción de envío"),
+            ShippingClass.Create("Frágil", "Requiere embalaje especial y manejo cuidadoso"),
+            ShippingClass.Create("Sobredimensionado", "Supera 50cm en alguna dimensión o más de 25kg"));
+
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        logger.LogInformation("[Catalog] seeded ShippingClasses (Normal, Frágil, Sobredimensionado)");
+    }
 }
