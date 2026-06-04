@@ -1,11 +1,11 @@
 using FluentValidation;
-using FSH.Modules.Catalog.Contracts.v1.Brands.GetBrands;
+using FSH.Modules.Catalog.Contracts.v1.Products.GetProducts;
 
-namespace FSH.Modules.Catalog.Features.v1.Brands.GetBrands;
+namespace FSH.Modules.Catalog.Features.v1.Products.GetProducts;
 
-public sealed class GetBrandsQueryValidator : AbstractValidator<GetBrandsQuery>
+public sealed class GetProductsQueryValidator : AbstractValidator<GetProductsQuery>
 {
-    public GetBrandsQueryValidator()
+    public GetProductsQueryValidator()
     {
         RuleFor(x => x.PageNumber)
             .GreaterThan(0)
