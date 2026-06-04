@@ -1,5 +1,5 @@
 # CHECKPOINT HANDOFF — Maka Omni-Commerce
-# Fecha: Mayo/Junio 2026
+# Fecha: Junio 2026
 # Para: nueva sesión de Claude Code
 # Propósito: retomar el trabajo exactamente donde quedó
 
@@ -39,7 +39,7 @@ AGENTS.md                                    ← convenciones FSH
 **Empresa:** Maka Solutions SAS / Tecnoimportaciones (Bogotá + Medellín)
 **Stack:**
 - Backend: .NET 10 / C# 14 / FSH (FullStackHero) boilerplate / PostgreSQL
-- Frontend: React 19 + Vite + TanStack Query + Syncfusion Blazor React 33.1.44
+- Frontend: React 19 + Vite + TanStack Query + Syncfusion React 33.1.44
 - Infra: Docker (PostgreSQL 17, Redis, RabbitMQ) — todo en maka_erp_dev
 - Auth: Finbuckle MultiTenant + ASP.NET Identity + JWT
 - Bus: MassTransit 8.5.7 (Apache 2.0 — NO actualizar a v9, es comercial)
@@ -74,130 +74,141 @@ AGENTS.md                                    ← convenciones FSH
 ### Specs de módulos ✅
 - `CATALOG_MODULE_SPEC.md` v2.1 (en `.agents/rules/modules/catalog.md`)
 - `PARTIES_MODULE_SPEC.md` v1.1 (en `.agents/rules/modules/parties.md`)
-- `IMPLEMENTATION_PROMPT.md` (prompt maestro para arrancar implementación)
 - `MODEL_ROUTING_RULES.md` (reglas de selección de modelo)
 
-### Módulo Catalog — estado actual ⚠️ EN TRANSICIÓN
-**El módulo está siendo reconstruido desde cero.**
+### ✅ FASE C1 — COMPLETADA AL 100%
 
-Estado antes de la limpieza (lo que había):
-- Entidades viejas: Brand, Category, Product (con Sku, Price Money, Stock int)
-- Migraciones viejas en: `src/Host/FSH.Starter.Migrations.PostgreSQL/Catalog/`
-- 3 páginas frontend funcionando: /catalog/brands, /catalog/categories, /catalog/products
-- Datos: todos de prueba, ninguno real importante
+**Objetivo:** limpiar el módulo Catalog v1, reconstruir con modelo v2, compilar limpio.
 
-**Decisiones de arquitectura tomadas en la sesión anterior:**
+| Paso | Descripción | Commit |
+|------|-------------|--------|
+| 1 | Eliminar entidades, migraciones y features v1 | `05423d7b` |
+| 2 | Reconstruir Domain/ con 18 entidades v2 | `3ea6208c` |
+| 3 | Configuraciones EF Core v2 (índices únicos, relaciones) | `d5343814` |
+| 4 | Migración `InitialCatalogV2` aplicada en BD | `e32788c4` |
+| 5 | Seed: TaxRates + ShippingClasses + Brands + Categories | `cf10c893` |
+| 6 | Features mínimas: GetBrands + GetCategories (query+handler+endpoint+validator) | `1d3f8cc9` |
+| 7 | Frontend alineado con v2 (catalog.ts, pages compilando sin errores) | `304d4fbf` |
 
-DECISIÓN 1 — Modelo de tenancy para Catalog:
-```
-→ Opción elegida: Schema completo, runtime tenant-aislado (Opción 1)
-→ OwnerId existe en las tablas como Guid? (preparado para SaaS futuro)
-→ Runtime opera tenant-aislado por Finbuckle como siempre
-→ La capa global canónica (null = visible a todos) se activa
-  en una fase posterior cuando haya 2+ tenants reales
-→ NO implementar IGlobalEntity ni opt-out del filtro Finbuckle ahora
-```
+**Estado de la BD (schema `catalog`, 23 tablas):**
+- `root`, `acme`, `globex`: 3 TaxRates + 3 ShippingClasses cada uno
+- `acme`, `globex`: 5 Brands (Sony, DJI, Godox, Nanlite, Blackmagic) + 16 Categories
 
-DECISIÓN 2 — Blast radius:
-```
-→ Romper limpiamente y reconstruir
-→ Todos los datos son de prueba — se pueden borrar
-→ Las páginas frontend se rompen temporalmente — aceptable
-→ Reconstruir con el modelo correcto del spec
-```
+**Endpoints activos en el backend:**
+- `GET /api/v1/catalog/brands` → `PagedResponse<BrandDto>` (permisos: Catalog.Brands.View)
+- `GET /api/v1/catalog/categories` → `IReadOnlyList<CategoryDto>` árbol (permisos: Catalog.Categories.View)
+
+**Estado frontend:**
+- `clients/dashboard/src/api/catalog.ts` → tipos v2. Campos v1 (`sku`, `price`, `stock`, `code`,
+  `isVisible`) marcados `@deprecated` y opcionales para compat con páginas existentes.
+- `brands.tsx`, `categories.tsx`, `products.tsx`, `product-detail.tsx` → compilan sin errores TS.
+- Las páginas funcionan con los endpoints que existen; los que faltan (CRUD) retornan 404 hasta C2/C3/C4.
 
 ---
 
-## 4. TAREA ACTIVA — FASE C1 DEL MÓDULO CATALOG
+## 4. TAREA ACTIVA — FASE C2: FEATURES BACKEND COMPLETAS DE BRANDS
 
-### Lo que se estaba ejecutando cuando se agotaron los tokens:
+### Objetivo
+Implementar el CRUD completo de Brands en el backend. Al final de C2:
+- Todos los endpoints de Brand funcionan y están en Scalar
+- Las páginas `brands.tsx` del dashboard operan completamente
+- Tests de los nuevos handlers pasando
 
-Claude Code acababa de recibir estas instrucciones y hizo check-in.
-**Verifica exactamente en qué Paso está** con los comandos de §6.
-
-### Plan completo de Fase C1 (los 7 pasos):
+### Plan completo Fase C2 (orden de implementación)
 
 ```
-Paso 1 — Limpiar módulo Catalog (backend)
-  a. DROP de tablas en PostgreSQL:
-     DROP TABLE IF EXISTS catalog."ProductImages" CASCADE;
-     DROP TABLE IF EXISTS catalog."Products" CASCADE;
-     DROP TABLE IF EXISTS catalog."Categories" CASCADE;
-     DROP TABLE IF EXISTS catalog."Brands" CASCADE;
-     (verificar nombres reales con \dt catalog.*)
-  b. Eliminar archivos de migración en:
-     src/Host/FSH.Starter.Migrations.PostgreSQL/Catalog/
-  c. Eliminar archivos viejos del Domain/:
-     Product.cs, Money.cs, Brand.cs, Category.cs, ProductImage.cs
-     y Features/, Contracts/ del módulo Catalog
-  d. dotnet build → verificar que compila (habrá errores frontend — esperado)
+Paso C2.1 — GetBrandById
+  Query + Handler + Endpoint: GET /api/v1/catalog/brands/{id}
+  Retorna: BrandDto o 404 NotFoundException
 
-Paso 2 — Reconstruir Domain/ según el spec
-  Orden estricto de creación de entidades:
-  1. Brand
-  2. Category (árbol recursivo con ParentId)
-  3. TaxRate
-  4. ShippingClass
-  5. CatalogAttribute + CatalogAttributeValue
-  6. Product (SIN Price, SIN Stock, SIN Sku)
-  7. ProductVariation (con Sku ÚNICO global)
-  8. ProductImage, ProductCode, ProductTag,
-     ProductCategory, ProductAttribute, ProductBundleItem
-  9. PriceList + PriceListItem + PriceListItemHistory
-  10. TenantProduct + TenantProductImage
-  11. SupplierBrand + SupplierProduct
+Paso C2.2 — CreateBrand
+  Command + Validator + Handler + Endpoint: POST /api/v1/catalog/brands
+  Input:
+    name (required, max 200)
+    slug (auto-generado si no se envía, único global, lowercase, URL-safe)
+    description? (max 2000)
+    logoUrl? (max 500, debe ser URL válida si se envía)
+    websiteUrl? (max 500)
+    countryOfOrigin? (exactamente 2 chars uppercase ISO-2)
+    isActive (default true)
+  Validación extra: slug debe ser único en la BD (excluyendo IsDeleted=true)
+  Retorna: 201 Created con el Guid del brand nuevo
+  Domain event: ninguno en C2 (se agrega en C5 para sync WooCommerce)
 
-  REGLAS para cada entidad:
-  - Heredar de AggregateRoot (con domain events) o BaseEntity
-  - Usar ISoftDeletable donde el spec lo indica
-  - IHasTenant de FSH — NO campo TenantId manual
-  - OwnerId es Guid? normal (no afecta Finbuckle)
-  - Constructor privado vacío para EF Core
-  - Todos los setters: private set
+Paso C2.3 — UpdateBrand
+  Command + Validator + Handler + Endpoint: PUT /api/v1/catalog/brands/{id}
+  Mismos campos que Create + brandId en ruta
+  Validación: slug único excluyendo el propio id
+  Retorna: 200 con Guid
 
-Paso 3 — Configuraciones EF Core en Data/Configurations/
-  Índices obligatorios:
-  - Brand: Slug UNIQUE
-  - ProductVariation: Sku UNIQUE (global, sin filtro de tenant)
-  - ProductCode: (VariationId + CodeType + Code) UNIQUE
-  - Category: (Slug + ParentId) UNIQUE
+Paso C2.4 — DeleteBrand (soft delete)
+  Command + Handler + Endpoint: DELETE /api/v1/catalog/brands/{id}
+  Usa ISoftDeletable — setea IsDeleted=true, DeletedOnUtc, DeletedBy
+  No se puede eliminar si tiene Products asociados (verificar antes de borrar)
+  Retorna: 204 No Content
 
-Paso 4 — Migración única inicial
-  dotnet ef migrations add InitialCatalogV2 \
-    --project src/Host/FSH.Starter.Migrations.PostgreSQL \
-    --startup-project src/Host/FSH.Starter.Api \
-    --context CatalogDbContext \
-    --output-dir Catalog
-  Luego: dotnet run --project src/Host/FSH.Starter.DbMigrator
+Paso C2.5 — RestoreBrand
+  Command + Handler + Endpoint: POST /api/v1/catalog/brands/{id}/restore
+  Revierte soft delete. Falla con NotFoundException si no está borrada.
+  Retorna: 200 con Guid
 
-Paso 5 — Seed mínimo
-  - 3 TaxRates: IVA 19% (default), IVA 5%, Exento 0%
-  - 5 Brands: Sony, DJI, Godox, Nanlite, Blackmagic
-  - Árbol básico de categorías (4 ramas)
-  - NO productos todavía
-
-Paso 6 — Features mínimas para compilar
-  Solo para que el sistema no explote:
-  - GetBrands (query + endpoint)
-  - GetCategories (query + endpoint, árbol)
-  Nada más — el resto en Fase C2
-
-Paso 7 — Frontend mínimo para compilar
-  - Actualizar ProductDto en clients/dashboard/src/api/catalog.ts
-    (quitar sku/price/stock, alinear con el nuevo modelo)
-  - Actualizar columnas en products.tsx (sin SKU/precio/stock)
-  - Las páginas muestran menos datos temporalmente — está bien
-  - dotnet build + npm run build → ambos deben pasar sin errores
-
-  QA Checklist completo al final del Paso 7.
+Paso C2.6 — ListTrashedBrands
+  Query + Validator + Handler + Endpoint: GET /api/v1/catalog/brands/trash
+  Paginado. Filtra WHERE IsDeleted = true (IgnoreQueryFilters necesario)
+  Retorna: PagedResponse<BrandDto>
 ```
 
-### Reglas de ejecución:
+### Reglas de implementación para C2
+
 ```
-- Un commit por cada Paso completado y verificado
-- dotnet build limpio antes de cada commit
-- Si hay más de 5 errores nuevos en un paso: PARAR y reportar
-- Frontend puede tener warnings temporales pero NO errores de build
+- Estructura de archivos: src/Modules/Catalog/Modules.Catalog/Features/v1/Brands/{Feature}/
+- Contracts en: src/Modules/Catalog/Modules.Catalog.Contracts/v1/Brands/{Feature}/
+- Registrar cada endpoint nuevo en CatalogModule.MapEndpoints()
+- NO AutoMapper — mapeo manual Brand → BrandDto con método estático
+  (crear src/Modules/Catalog/Modules.Catalog/Extensions/BrandExtensions.cs)
+- Handlers: DbContext directo, AsNoTracking() en queries de lectura
+- DeleteBrand: verificar Products ANTES de borrar
+  → si tiene products activos: lanzar CustomException(400)
+- ListTrashedBrands: requiere .IgnoreQueryFilters() para ver registros soft-deleted
+- Permiso por endpoint:
+  GetBrandById   → CatalogPermissions.Brands.View
+  CreateBrand    → CatalogPermissions.Brands.Create
+  UpdateBrand    → CatalogPermissions.Brands.Update
+  DeleteBrand    → CatalogPermissions.Brands.Delete
+  RestoreBrand   → CatalogPermissions.Brands.Restore
+  ListTrashed    → CatalogPermissions.Brands.View
+```
+
+### Convención de slug
+
+```csharp
+// Generar slug a partir del nombre si no se envía
+slug = string.IsNullOrWhiteSpace(input.Slug)
+    ? input.Name.ToLowerInvariant()
+              .Normalize(NormalizationForm.FormD)
+              // quitar diacríticos
+              .Replace(" ", "-")
+              // quitar chars no ASCII-safe
+              .Trim('-')
+    : input.Slug.ToLowerInvariant().Trim();
+
+// Verificar unicidad (excluyendo soft-deleted):
+bool slugExists = await db.Brands
+    .AsNoTracking()
+    .Where(b => !b.IsDeleted && b.Slug == slug && b.Id != excludeId)
+    .AnyAsync(ct);
+if (slugExists) throw new CustomException("Slug ya existe", statusCode: HttpStatusCode.Conflict);
+```
+
+### Paso C2.7 — Frontend brands.tsx (al final, una vez que el backend compila)
+
+```
+- Actualizar createBrand y updateBrand en catalog.ts para enviar slug auto-generado
+- Quitar campo "Code" del formulario de brands.tsx (ya no existe en v2)
+- Agregar campos opcionales: websiteUrl, countryOfOrigin (si se quieren en C2)
+- Verificar que trash/restore funciona en la UI
+- QA: crear → editar → eliminar → restaurar → confirmar en DevTools Network tab
+- Light mode + Dark mode antes de commit
 ```
 
 ---
@@ -205,10 +216,14 @@ Paso 7 — Frontend mínimo para compilar
 ## 5. CONTEXTO DE FASES FUTURAS (para referencia, no implementar ahora)
 
 ```
-Fase C2: Features backend completas de Brands
 Fase C3: Features backend completas de Categories
-Fase C4: Features backend completas de Products (la más compleja)
+  (CRUD + árbol recursivo + reordenamiento + move subtree)
+
+Fase C4: Features backend completas de Products
+  (la más compleja — variaciones, códigos, imágenes, price lists)
+
 Fase C5: Frontend completo (una página a la vez, QA antes de cada una)
+  Orden: brands → categories → products
 
 Después de Catalog completo:
 → Módulo Parties (spec en .agents/rules/modules/parties.md)
@@ -231,26 +246,27 @@ git branch --show-current
 # 2. ¿Qué se hizo en los últimos commits?
 git log --oneline -10
 
-# 3. ¿Qué archivos existen actualmente en el Domain del Catalog?
-Get-ChildItem src/Modules/Catalog -Recurse -Filter "*.cs" | Select-Object Name
+# 3. ¿Qué features existen en Brands?
+find src/Modules/Catalog/Modules.Catalog/Features/v1/Brands -name "*.cs" | sort
 
-# 4. ¿Qué migraciones del Catalog existen?
-Get-ChildItem src/Host/FSH.Starter.Migrations.PostgreSQL/Catalog -Filter "*.cs" 2>$null
+# 4. ¿Qué contracts existen en Brands?
+find src/Modules/Catalog/Modules.Catalog.Contracts/v1/Brands -name "*.cs" | sort
 
-# 5. ¿Compila el backend ahora mismo?
-dotnet build src/FSH.Starter.slnx 2>&1 | tail -5
+# 5. ¿Compila el backend?
+dotnet build src/FSH.Starter.slnx 2>&1 | tail -4
 
 # 6. ¿Compila el frontend?
-cd clients/dashboard && npm run build 2>&1 | tail -5
+cd clients/dashboard && npm run build 2>&1 | tail -3
 
-# 7. ¿Qué tablas existen en el schema catalog de PostgreSQL?
-# (ejecutar en Adminer http://localhost:8081 o con psql)
-# SELECT table_name FROM information_schema.tables
-# WHERE table_schema = 'catalog';
+# 7. ¿Cuántos brands hay en la BD?
+# (en Adminer http://localhost:8081 o docker exec)
+# SELECT "TenantId", COUNT(*) FROM catalog."Brands" GROUP BY "TenantId";
+
+# 8. ¿Los endpoints de brands están en Scalar?
+# Abrir https://localhost:7030/scalar y buscar "catalog/brands"
 ```
 
-Con esos resultados, identifica exactamente en qué Paso de la Fase C1 estás
-y continúa desde ahí.
+Con esos resultados, identifica exactamente en qué Paso de C2 estás y continúa.
 
 ---
 
@@ -262,16 +278,12 @@ Una vez verificado el estado, responde con este formato:
 [QA] Verificación del estado actual:
 - Rama: [resultado]
 - Últimos commits: [lista]
-- Archivos en Domain/: [lista]
-- Migraciones Catalog: [lista o "ninguna"]
+- Features en Brands/: [lista de carpetas/archivos]
 - Build backend: [✅ limpio / ❌ N errores]
 - Build frontend: [✅ limpio / ❌ N errores]
-- Tablas en schema catalog: [lista o "ninguna"]
+- Endpoints Brands en Scalar: [✅ visible / ❌ no encontrado]
 
-Estado: estoy en el Paso [N] de la Fase C1.
-[Si Paso 1 completado: confirmar qué se limpió]
-[Si nada hecho: "Listo para iniciar Paso 1"]
-
+Estado: [Fase C1 completa / estoy en el Paso C2.N de Fase C2]
 Continúo con: [descripción de lo que sigue]
 ```
 
@@ -287,7 +299,8 @@ Continúo con: [descripción de lo que sigue]
 
 ❌ NUNCA campo TenantId manual en entidades — lo maneja Finbuckle
 
-❌ NUNCA AutoMapper — mapeo manual con extension methods
+❌ NUNCA AutoMapper — mapeo manual con extension methods estáticos en
+   src/Modules/Catalog/Modules.Catalog/Extensions/
 
 ❌ NUNCA Repository Pattern genérico — DbContext directo en handlers
 
@@ -305,11 +318,65 @@ Continúo con: [descripción de lo que sigue]
 
 ✅ AsNoTracking() en TODAS las queries de lectura
 
-✅ QA Checklist completo antes de cada commit de feature
+✅ IgnoreQueryFilters() en queries de trash (soft-deleted records)
+
+✅ QA Checklist completo antes de cada commit de feature:
+   backend: build → endpoint en Scalar → curl de prueba → respuesta 2xx
+   frontend: build → browser → flujo completo → 0 errores Console/Network
 ```
 
 ---
 
-*Checkpoint generado: Mayo/Junio 2026*
+## 9. ESTRUCTURA DE ARCHIVOS DE REFERENCIA (estado actual)
+
+```
+src/Modules/Catalog/
+├── Modules.Catalog.Contracts/
+│   ├── Authorization/CatalogPermissions.cs  ← permisos ya definidos para Brands/Categories/Products
+│   ├── CatalogContractsMarker.cs
+│   └── v1/
+│       ├── Brands/
+│       │   └── GetBrands/
+│       │       ├── BrandDto.cs
+│       │       └── GetBrandsQuery.cs
+│       ├── Categories/
+│       │   └── GetCategories/
+│       │       ├── CategoryDto.cs
+│       │       └── GetCategoriesQuery.cs
+│       └── GetCatalogHealthQuery.cs
+│
+└── Modules.Catalog/
+    ├── CatalogModule.cs                     ← MapEndpoints aquí
+    ├── Data/
+    │   ├── CatalogDbContext.cs
+    │   ├── CatalogDbInitializer.cs          ← SeedAsync ya implementado
+    │   └── Configurations/                  ← 11 archivos de config EF
+    ├── Domain/                              ← 18 entidades v2
+    │   ├── Brand.cs
+    │   ├── Category.cs
+    │   ├── TaxRate.cs, ShippingClass.cs
+    │   ├── CatalogAttribute.cs, CatalogJoins.cs
+    │   ├── Product.cs, ProductVariation.cs
+    │   ├── ProductCode.cs, ProductImage.cs, ProductTag.cs
+    │   ├── ProductCategory.cs, ProductAttribute.cs, ProductBundleItem.cs
+    │   ├── PriceList.cs, PriceListItem.cs, PriceListItemHistory.cs
+    │   ├── TenantProduct.cs, SupplierRelations.cs
+    │   └── ShippingClass.cs
+    └── Features/v1/
+        ├── Brands/
+        │   └── GetBrands/
+        │       ├── GetBrandsQueryHandler.cs
+        │       ├── GetBrandsQueryValidator.cs
+        │       └── GetBrandsEndpoint.cs
+        ├── Categories/
+        │   └── GetCategories/
+        │       ├── GetCategoriesQueryHandler.cs
+        │       └── GetCategoriesEndpoint.cs
+        └── GetCatalogHealthQueryHandler.cs
+```
+
+---
+
+*Checkpoint generado: Junio 2026*
 *Sesión anterior terminó por límite de contexto (~1M tokens)*
-*Continuar en nueva sesión con /clear activo*
+*Fase C1 completada al 100% — próxima: Fase C2 (CRUD completo de Brands)*
