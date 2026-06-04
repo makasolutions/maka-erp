@@ -4,7 +4,10 @@
 		<RootNamespace>FSH.Modules.Catalog</RootNamespace>
 		<AssemblyName>FSH.Modules.Catalog</AssemblyName>
 		<PackageId>FullStackHero.Modules.Catalog</PackageId>
-		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267</NoWarn>
+		<!-- CA1308: slugs/segments are canonical lowercase (URL-friendly per spec §7).
+		     CA1711: CatalogAttribute / ProductAttribute are domain entity names from
+		     the spec (§2.5, §2.12) — they are product attributes, not .NET attributes. -->
+		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1711</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
