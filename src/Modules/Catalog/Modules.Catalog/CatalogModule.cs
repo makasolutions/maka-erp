@@ -42,6 +42,10 @@ using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceLists;
 using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceListItem;
 using FSH.Modules.Catalog.Features.v1.Prices.GetEffectivePrice;
 using FSH.Modules.Catalog.Features.v1.Prices.GetPriceHistory;
+using FSH.Modules.Catalog.Features.v1.PriceProposals.ApprovePriceProposals;
+using FSH.Modules.Catalog.Features.v1.PriceProposals.BulkUpdatePrices;
+using FSH.Modules.Catalog.Features.v1.PriceProposals.GetPriceProposals;
+using FSH.Modules.Catalog.Features.v1.PriceProposals.RejectPriceProposals;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -161,5 +165,17 @@ public sealed class CatalogModule : IModule
 
         prices.MapGetEffectivePriceEndpoint();
         prices.MapGetPriceHistoryEndpoint();
+
+        // Bulk import lives under the price-lists group (POST /{id}/bulk-import).
+        priceLists.MapBulkUpdatePricesEndpoint();
+
+        var priceProposals = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/price-proposals")
+            .WithTags("Catalog - Price Proposals")
+            .WithApiVersionSet(apiVersionSet);
+
+        priceProposals.MapGetPriceProposalsEndpoint();
+        priceProposals.MapApprovePriceProposalsEndpoint();
+        priceProposals.MapRejectPriceProposalsEndpoint();
     }
 }

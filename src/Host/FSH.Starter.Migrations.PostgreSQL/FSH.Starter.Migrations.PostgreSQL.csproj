@@ -4,8 +4,10 @@
 		<RootNamespace>FSH.Starter.Migrations.PostgreSQL</RootNamespace>
 		<AssemblyName>FSH.Starter.Migrations.PostgreSQL</AssemblyName>
 		<IsPackable>false</IsPackable>
-		<!-- Suppress analyzer warnings for EF Core auto-generated migration files -->
-		<NoWarn>$(NoWarn);CA1062;CA1861</NoWarn>
+		<!-- Suppress analyzer warnings for EF Core auto-generated migration files.
+		     CA1707: migration class names follow the Module_Description convention
+		     (e.g. Catalog_AddPriceBulkProposals) per AGENTS.md — underscores are intentional. -->
+		<NoWarn>$(NoWarn);CA1062;CA1861;CA1707</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
