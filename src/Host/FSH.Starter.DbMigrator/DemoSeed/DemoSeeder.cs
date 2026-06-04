@@ -5,7 +5,6 @@ using FSH.Framework.Shared.Constants;
 using FSH.Framework.Shared.Identity.Claims;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Catalog.Data;
-using FSH.Modules.Catalog.Domain;
 using FSH.Modules.Chat.Data;
 using FSH.Modules.Chat.Domain;
 using FSH.Modules.Identity.Data;
@@ -299,43 +298,14 @@ internal sealed class DemoSeeder
     /// 10 products) into the demo tenant. Bails when any catalog row already
     /// exists for that tenant.
     /// </summary>
-    private async Task SeedTenantCatalogAsync(DemoTenant demo, CancellationToken cancellationToken)
+    private static Task SeedTenantCatalogAsync(DemoTenant demo, CancellationToken cancellationToken)
     {
-        using var scope = _services.CreateScope();
-        var tenantStore = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<AppTenantInfo>>();
-        var tenant = await tenantStore.GetAsync(demo.Id).ConfigureAwait(false);
-        if (tenant is null) return;
-
-        scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>()
-            .MultiTenantContext = new MultiTenantContext<AppTenantInfo>(tenant);
-
-        var dbContext = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-        bool alreadySeeded = await dbContext.Brands.AnyAsync(cancellationToken).ConfigureAwait(false)
-            || await dbContext.Categories.AnyAsync(cancellationToken).ConfigureAwait(false)
-            || await dbContext.Products.AnyAsync(cancellationToken).ConfigureAwait(false);
-        if (alreadySeeded) return;
-
-        var brands = CatalogSeedData.BuildBrands();
-        dbContext.Brands.AddRange(brands);
-
-        var (roots, children) = CatalogSeedData.BuildCategories();
-        dbContext.Categories.AddRange(roots);
-        dbContext.Categories.AddRange(children);
-
-        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        var brandsByName = brands.ToDictionary(b => b.Name, b => b);
-        var categoriesByName = roots.Concat(children).ToDictionary(c => c.Name, c => c);
-        var products = CatalogSeedData.BuildProducts(brandsByName, categoriesByName);
-        dbContext.Products.AddRange(products);
-        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        if (_logger.IsEnabled(LogLevel.Information))
-        {
-            _logger.LogInformation(
-                "[demo-seed] [{Tenant}] seeded {BrandCount} brands, {CategoryCount} categories, {ProductCount} products",
-                tenant.Id, brands.Count, roots.Count + children.Count, products.Count);
-        }
+        // Catalog v2 demo seed is implemented in Fase C1 Paso 5 (CatalogDbSeeder).
+        // The old v1 seed (Brand/Category/Product with Price+Stock+Sku) was removed
+        // as part of the catalog v2 rebuild.
+        _ = demo;
+        _ = cancellationToken;
+        return Task.CompletedTask;
     }
 
     // ─── Tickets ────────────────────────────────────────────────────────
