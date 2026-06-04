@@ -11,11 +11,13 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Eye, Plus, Tag } from "lucide-react";
+import { Eye, Plus, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   createBrand,
   deleteBrand,
+  listTrashedBrands,
+  restoreBrand,
   searchBrands,
   updateBrand,
   type BrandDto,
@@ -61,9 +63,10 @@ type EditorState =
   | { mode: "closed" }
   | { mode: "create" }
   | { mode: "edit"; brand: BrandDto }
-  | { mode: "delete"; brand: BrandDto };
+  | { mode: "delete"; brand: BrandDto }
+  | { mode: "restore"; brand: BrandDto };
 
-type BrandRow = BrandDto & { activeLabel: string; visibleLabel: string };
+type BrandRow = BrandDto & { activeLabel: string };
 
 // Boolean tri-state pill value: null = all, "true" / "false".
 function triToBool(v: string | null): boolean | undefined {
@@ -76,13 +79,6 @@ function triToBool(v: string | null): boolean | undefined {
 
 function BrandLogoCell(row: BrandRow) {
   return <BrandAvatar brand={row} size={32} />;
-}
-function BrandCodeCell(row: BrandRow) {
-  return (
-    <code className="font-mono text-[12px] font-medium text-[var(--color-foreground)]">
-      {row.code}
-    </code>
-  );
 }
 function BrandNameCell(row: BrandRow) {
   return (
@@ -104,14 +100,17 @@ function BrandActiveCell(row: BrandRow) {
     <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>
   );
 }
-function BrandVisibleCell(row: BrandRow) {
+function BrandCountryCell(row: BrandRow) {
+  if (!row.countryOfOrigin) return null;
   return (
-    <EntityStatusBadge tone={row.isVisible ? "info" : "default"}>{row.visibleLabel}</EntityStatusBadge>
+    <span className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase text-[var(--color-foreground)]">
+      {row.countryOfOrigin}
+    </span>
   );
 }
 
 // ───────────────────────────────────────────────────────────────────────
-//  KPI card — centred, formatted (es-CO grouping)
+//  KPI card
 // ───────────────────────────────────────────────────────────────────────
 
 function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
@@ -140,70 +139,80 @@ export function BrandsPage() {
   const { can } = usePerm();
 
   const [panelOpen, setPanelOpen] = useState(true);
-  const [codeFilter, setCodeFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
+  const [trashOpen, setTrashOpen] = useState(false);
 
-  // Client-side grid: fetch the full set once; filtering (code, name, active,
-  // visible), paging, Excel column filtering, grouping and sorting all happen
-  // locally in MakaGridClient / the panel below — no refetch per keystroke.
   const query = useQuery({
     queryKey: ["catalog", "brands", "list"],
-    queryFn: () => searchBrands({ pageSize: 200, sortBy: "name", sortDir: "asc" }),
+    queryFn: () => searchBrands({ pageSize: 200, sort: "name" }),
+    placeholderData: keepPreviousData,
+  });
+
+  const trashQuery = useQuery({
+    queryKey: ["catalog", "brands", "trash"],
+    queryFn: () => listTrashedBrands(1, 200),
+    enabled: trashOpen,
     placeholderData: keepPreviousData,
   });
 
   const allItems = query.data?.items ?? [];
 
   const rows: BrandRow[] = useMemo(() => {
-    const code = codeFilter.trim().toLowerCase();
     const name = nameFilter.trim().toLowerCase();
     const active = triToBool(activeFilter);
-    const visible = triToBool(visibleFilter);
     return allItems
       .filter((b) =>
-        (!code || b.code?.toLowerCase().includes(code)) &&
-        (!name || b.name.toLowerCase().includes(name)) &&
-        (active === undefined || b.isActive === active) &&
-        (visible === undefined || b.isVisible === visible))
+        (!name || b.name.toLowerCase().includes(name) || b.slug.includes(name)) &&
+        (active === undefined || b.isActive === active))
       .map((b) => ({
         ...b,
         activeLabel: b.isActive ? tc("status.active") : tc("status.inactive"),
-        visibleLabel: b.isVisible ? t("brands.filters.visibleYes") : t("brands.filters.visibleNo"),
       }));
-  }, [allItems, codeFilter, nameFilter, activeFilter, visibleFilter, t, tc]);
+  }, [allItems, nameFilter, activeFilter, tc]);
 
-  // KPIs derived from the full loaded set (no extra round-trips).
+  const trashedRows: BrandRow[] = useMemo(() =>
+    (trashQuery.data?.items ?? []).map((b) => ({
+      ...b,
+      activeLabel: b.isActive ? tc("status.active") : tc("status.inactive"),
+    })),
+    [trashQuery.data, tc],
+  );
+
   const kpiTotal = query.data?.totalCount ?? allItems.length;
   const kpiActive = allItems.filter((b) => b.isActive).length;
-  const kpiVisible = allItems.filter((b) => b.isVisible).length;
+  const kpiTrashed = trashQuery.data?.totalCount ?? 0;
 
   const columns: ColumnModel[] = useMemo(
     () => [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "logoUrl", headerText: t("brands.fields.image"), template: BrandLogoCell as any, width: 72, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "code", headerText: t("brands.fields.code"), template: BrandCodeCell as any, width: 130 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "name", headerText: t("brands.singular"), template: BrandNameCell as any, minWidth: 220 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isActive", headerText: t("brands.fields.active"), template: BrandActiveCell as any, width: 110, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "isVisible", headerText: t("brands.fields.visible"), template: BrandVisibleCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+      { field: "countryOfOrigin", headerText: t("brands.fields.country"), template: BrandCountryCell as any, width: 100, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "slug", headerText: t("brands.fields.slug"), template: BrandSlugCell as any, width: 170 },
-      { field: "createdAtUtc", headerText: t("brands.fields.created"), width: 140, type: "date" },
+    ],
+    [t],
+  );
+
+  const trashColumns: ColumnModel[] = useMemo(
+    () => [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "name", headerText: t("brands.singular"), template: BrandNameCell as any, minWidth: 180 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "slug", headerText: t("brands.fields.slug"), template: BrandSlugCell as any, width: 160 },
     ],
     [t],
   );
 
   const resetFilters = () => {
-    setCodeFilter("");
     setNameFilter("");
     setActiveFilter(null);
-    setVisibleFilter(null);
   };
 
   return (
@@ -215,6 +224,20 @@ export function BrandsPage() {
         unit={t("brands.singular")}
         description={t("brands.description")}
       >
+        <Button
+          variant="outline"
+          onClick={() => setTrashOpen((v) => !v)}
+          aria-pressed={trashOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Trash2 className="size-4" />
+          {t("brands.actions.viewTrash")}
+          {kpiTrashed > 0 && (
+            <span className="ml-1 rounded-full bg-[var(--color-destructive)] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {kpiTrashed}
+            </span>
+          )}
+        </Button>
         <Button
           variant="outline"
           onClick={() => setPanelOpen((v) => !v)}
@@ -234,20 +257,33 @@ export function BrandsPage() {
         </Button>
       </EntityPageHeader>
 
+      {trashOpen && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
+              {t("brands.trash.title")}
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => setTrashOpen(false)}>
+              {tc("actions.close")}
+            </Button>
+          </div>
+          <MakaGridClient<BrandRow>
+            dataSource={trashedRows}
+            columns={trashColumns}
+            isLoading={trashQuery.isFetching}
+            fileName="marcas-papelera"
+            entityName={t("brands.singular")}
+            permissions={{ edit: P.catalog.brands.restore }}
+            onEdit={(row) => setEditor({ mode: "restore", brand: row })}
+          />
+        </div>
+      )}
+
       <MakaGridFilters
         open={panelOpen}
         onClear={resetFilters}
         filters={
           <>
-            <MakaFilterField label={t("brands.fields.code")}>
-              <MakaFilterInput
-                value={codeFilter}
-                onChange={setCodeFilter}
-                placeholder={t("brands.filters.codePlaceholder")}
-                ariaLabel={t("brands.fields.code")}
-                className="min-w-40 font-mono"
-              />
-            </MakaFilterField>
             <MakaFilterField label={t("brands.singular")} className="grow">
               <MakaFilterInput
                 value={nameFilter}
@@ -269,25 +305,13 @@ export function BrandsPage() {
                 ]}
               />
             </MakaFilterField>
-            <MakaFilterField label={t("brands.fields.visible")}>
-              <EntityFilterPill<string | null>
-                label={t("brands.fields.visible")}
-                value={visibleFilter}
-                onChange={setVisibleFilter}
-                options={[
-                  { value: null, label: tc("status.all") },
-                  { value: "true", label: t("brands.filters.visibleYes") },
-                  { value: "false", label: t("brands.filters.visibleNo") },
-                ]}
-              />
-            </MakaFilterField>
           </>
         }
         kpis={
           <>
             <KpiCard label={t("brands.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
             <KpiCard label={t("brands.kpi.active")} value={kpiActive} tone="var(--color-success)" />
-            <KpiCard label={t("brands.kpi.visible")} value={kpiVisible} tone="var(--color-info)" />
+            {trashOpen && <KpiCard label={t("brands.kpi.trashed")} value={kpiTrashed} tone="var(--color-destructive)" />}
           </>
         }
       />
@@ -307,12 +331,13 @@ export function BrandsPage() {
 
       <BrandEditorDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <DeleteBrandDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <RestoreBrandDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
     </div>
   );
 }
 
 // ───────────────────────────────────────────────────────────────────────
-//  Brand avatar — image if present, else initials tile.
+//  Brand avatar
 // ───────────────────────────────────────────────────────────────────────
 
 function BrandAvatar({ brand, size }: { brand: BrandDto; size: number }) {
@@ -351,31 +376,32 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   const initial = useMemo(
     () => ({
-      code: brand?.code ?? "",
       name: brand?.name ?? "",
       description: brand?.description ?? "",
       logoUrl: brand?.logoUrl ?? "",
+      websiteUrl: brand?.websiteUrl ?? "",
+      countryOfOrigin: brand?.countryOfOrigin ?? "",
       isActive: brand?.isActive ?? true,
-      isVisible: brand?.isVisible ?? true,
     }),
-    [brand?.id, brand?.code, brand?.name, brand?.description, brand?.logoUrl, brand?.isActive, brand?.isVisible],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brand?.id],
   );
 
-  const [code, setCode] = useState(initial.code);
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description);
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl);
+  const [websiteUrl, setWebsiteUrl] = useState(initial.websiteUrl);
+  const [countryOfOrigin, setCountryOfOrigin] = useState(initial.countryOfOrigin);
   const [isActive, setIsActive] = useState(initial.isActive);
-  const [isVisible, setIsVisible] = useState(initial.isVisible);
 
   useEffect(() => {
     if (isOpen) {
-      setCode(initial.code);
       setName(initial.name);
       setDescription(initial.description);
       setLogoUrl(initial.logoUrl);
+      setWebsiteUrl(initial.websiteUrl);
+      setCountryOfOrigin(initial.countryOfOrigin);
       setIsActive(initial.isActive);
-      setIsVisible(initial.isVisible);
     }
   }, [isOpen, initial]);
 
@@ -403,19 +429,18 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const trimmedName = name.trim();
-  const trimmedCode = code.trim();
-  const canSubmit = !!trimmedName && !!trimmedCode;
+  const canSubmit = !!trimmedName;
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!canSubmit) return;
     const payload = {
-      code: trimmedCode,
       name: trimmedName,
       description: description.trim() || null,
       logoUrl: logoUrl.trim() || null,
+      websiteUrl: websiteUrl.trim() || null,
+      countryOfOrigin: countryOfOrigin.trim().toUpperCase() || null,
       isActive,
-      isVisible,
     };
     if (state.mode === "edit" && brand) {
       updateMutation.mutate({ brandId: brand.id, ...payload });
@@ -437,16 +462,6 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
           <DialogBody>
             <FormGrid>
-              <Field id="brand-code" span={4} label={t("brands.fields.code")} required>
-                <Input
-                  id="brand-code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder={t("brands.codePlaceholder")}
-                  required
-                  maxLength={32}
-                />
-              </Field>
               <Field id="brand-name" span={8} label={t("brands.fields.name")} required>
                 <Input
                   id="brand-name"
@@ -455,7 +470,18 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                   placeholder={t("brands.namePlaceholder")}
                   autoFocus
                   required
-                  maxLength={128}
+                  maxLength={200}
+                />
+              </Field>
+
+              <Field id="brand-country" span={4} label={t("brands.fields.country")} hint={t("brands.countryHint")}>
+                <Input
+                  id="brand-country"
+                  value={countryOfOrigin}
+                  onChange={(e) => setCountryOfOrigin(e.target.value.toUpperCase())}
+                  placeholder={t("brands.countryPlaceholder")}
+                  maxLength={2}
+                  className="uppercase"
                 />
               </Field>
 
@@ -471,13 +497,24 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                 <ImageInput value={logoUrl} onChange={setLogoUrl} ownerType="Brand" ownerId={brand?.id} shape="square" />
               </Field>
 
+              <Field id="brand-website" span={12} label={t("brands.fields.website")} hint={t("brands.websiteHint")}>
+                <Input
+                  id="brand-website"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  placeholder={t("brands.websiteUrlPlaceholder")}
+                  maxLength={500}
+                  type="url"
+                />
+              </Field>
+
               <Field id="brand-description" span={12} label={t("brands.fields.description")} hint={t("brands.descriptionHint")}>
                 <textarea
                   id="brand-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  maxLength={1024}
+                  maxLength={2000}
                   className={cn(
                     "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
                     "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
@@ -491,10 +528,6 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                 <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
                   <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("brands.fields.active")} />
                   {t("brands.fields.active")}
-                </label>
-                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("brands.fields.visible")} />
-                  {t("brands.fields.visible")}
                 </label>
               </div>
 
@@ -562,6 +595,52 @@ function DeleteBrandDialog({ state, onClose }: { state: EditorState; onClose: ()
             disabled={deleteMutation.isPending || !brand}
           >
             {deleteMutation.isPending ? tc("feedback.deleting") : t("brands.actions.delete")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  Restore confirmation
+// ───────────────────────────────────────────────────────────────────────
+
+function RestoreBrandDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const isOpen = state.mode === "restore";
+  const brand = state.mode === "restore" ? state.brand : undefined;
+  const queryClient = useQueryClient();
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => restoreBrand(id),
+    onSuccess: () => {
+      toast.success(t("brands.trash.restoreSuccess"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
+      onClose();
+    },
+    onError: (err) => toast.error(t("brands.trash.restoreFailed"), { description: describe(err) }),
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("brands.trash.restoreConfirmTitle", { name: brand?.name ?? "" })}</DialogTitle>
+          <DialogDescription>{t("brands.trash.restoreConfirmDesc")}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={restoreMutation.isPending}>
+              {tc("actions.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            onClick={() => brand && restoreMutation.mutate(brand.id)}
+            disabled={restoreMutation.isPending || !brand}
+          >
+            {restoreMutation.isPending ? tc("feedback.saving") : t("brands.actions.restore")}
           </Button>
         </DialogFooter>
       </DialogContent>

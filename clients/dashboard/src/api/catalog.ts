@@ -94,7 +94,6 @@ export function getBrandById(id: string): Promise<BrandDto> {
   return apiFetch<BrandDto>(`/api/v1/catalog/brands/${encodeURIComponent(id)}`);
 }
 
-/** @todo Fase C2 — backend endpoint not yet implemented */
 export async function createBrand(input: CreateBrandInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/brands", {
     method: "POST",
@@ -102,7 +101,6 @@ export async function createBrand(input: CreateBrandInput): Promise<string> {
   });
 }
 
-/** @todo Fase C2 — backend endpoint not yet implemented */
 export async function updateBrand(input: UpdateBrandInput): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/brands/${encodeURIComponent(input.brandId)}`, {
     method: "PUT",
@@ -110,7 +108,6 @@ export async function updateBrand(input: UpdateBrandInput): Promise<string> {
   });
 }
 
-/** @todo Fase C2 — backend endpoint not yet implemented */
 export async function deleteBrand(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/catalog/brands/${encodeURIComponent(id)}`, {
     method: "DELETE",
@@ -493,7 +490,6 @@ export async function deleteProduct(id: string): Promise<void> {
 
 // ─── Trash + Restore ──────────────────────────────────────────────────
 
-/** @todo Fase C2 */
 export function listTrashedBrands(
   pageNumber = 1,
   pageSize = 20,
@@ -505,7 +501,6 @@ export function listTrashedBrands(
   return apiFetch<PagedResponse<BrandDto>>(`/api/v1/catalog/brands/trash?${q.toString()}`);
 }
 
-/** @todo Fase C2 */
 export function restoreBrand(id: string): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/brands/${encodeURIComponent(id)}/restore`, {
     method: "POST",

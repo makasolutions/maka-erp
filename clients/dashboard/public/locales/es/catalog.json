@@ -194,7 +194,9 @@
       "create": "Nueva marca",
       "add": "Agregar marca",
       "edit": "Editar marca",
-      "delete": "Eliminar marca"
+      "delete": "Eliminar marca",
+      "restore": "Restaurar marca",
+      "viewTrash": "Papelera"
     },
     "empty": {
       "title": "Sin marcas aún",
@@ -228,8 +230,22 @@
     "kpi": {
       "total": "Marcas totales",
       "active": "Activas",
-      "visible": "Visibles"
-    }
+      "trashed": "En papelera"
+    },
+    "trash": {
+      "title": "Papelera — Marcas",
+      "description": "Marcas eliminadas que pueden ser restauradas.",
+      "deletedOn": "Eliminada el",
+      "deletedBy": "Eliminada por",
+      "restoreConfirmTitle": "¿Restaurar \"{{name}}\"?",
+      "restoreConfirmDesc": "La marca volverá a estar activa y visible en el catálogo.",
+      "restoreSuccess": "Marca restaurada",
+      "restoreFailed": "Error al restaurar"
+    },
+    "websiteUrlPlaceholder": "https://www.sony.com",
+    "countryPlaceholder": "CO",
+    "websiteHint": "Opcional. URL del sitio web oficial de la marca.",
+    "countryHint": "Opcional. Código ISO-3166-1 alpha-2 (ej. JP, CN, CO)."
   },
   "categories": {
     "title": "Categorías",
