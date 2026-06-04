@@ -1,0 +1,33 @@
+using FSH.Modules.Catalog.Domain;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace FSH.Modules.Catalog.Data.Configurations;
+
+public sealed class BrandConfiguration : IEntityTypeConfiguration<Brand>
+{
+    public void Configure(EntityTypeBuilder<Brand> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        builder.ToTable("Brands");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Name).IsRequired().HasMaxLength(128);
+        builder.Property(x => x.Slug).IsRequired().HasMaxLength(160);
+        // Filtered unique — only across live rows; per-tenant via the shadow
+        // TenantId column added by BaseDbContext.AdjustUniqueIndexes.
+        builder.HasIndex(x => x.Slug).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
+
+        builder.Property(x => x.Description).HasMaxLength(1024);
+        builder.Property(x => x.LogoUrl).HasMaxLength(512);
+        builder.Property(x => x.WebsiteUrl).HasMaxLength(512);
+        builder.Property(x => x.CountryOfOrigin).HasMaxLength(2);
+        builder.Property(x => x.IsActive).IsRequired();
+        builder.Property(x => x.DeletedBy).HasMaxLength(64);
+
+        builder.HasIndex(x => x.OwnerId);
+        builder.HasIndex(x => x.IsDeleted);
+
+        builder.Ignore(x => x.DomainEvents);
+    }
+}

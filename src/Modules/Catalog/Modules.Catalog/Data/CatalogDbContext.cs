@@ -2,6 +2,7 @@ using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Persistence.Context;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Framework.Shared.Persistence;
+using FSH.Modules.Catalog.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -18,8 +19,19 @@ public sealed class CatalogDbContext : BaseDbContext
         IOptions<DatabaseOptions> settings,
         IHostEnvironment environment) : base(multiTenantContextAccessor, options, settings, environment) { }
 
-    // Domain entities will be registered here after Paso 2.
-    // DbSets are intentionally empty during the cleanup phase.
+    public DbSet<Brand>            Brands           => Set<Brand>();
+    public DbSet<Category>         Categories       => Set<Category>();
+    public DbSet<TaxRate>          TaxRates         => Set<TaxRate>();
+    public DbSet<ShippingClass>    ShippingClasses  => Set<ShippingClass>();
+    public DbSet<CatalogAttribute> Attributes       => Set<CatalogAttribute>();
+    public DbSet<Product>          Products         => Set<Product>();
+    public DbSet<ProductVariation> Variations       => Set<ProductVariation>();
+    public DbSet<ProductCode>      ProductCodes     => Set<ProductCode>();
+    public DbSet<PriceList>        PriceLists       => Set<PriceList>();
+    public DbSet<PriceListItem>    PriceListItems   => Set<PriceListItem>();
+    public DbSet<TenantProduct>    TenantProducts   => Set<TenantProduct>();
+    public DbSet<SupplierBrand>    SupplierBrands   => Set<SupplierBrand>();
+    public DbSet<SupplierProduct>  SupplierProducts => Set<SupplierProduct>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
