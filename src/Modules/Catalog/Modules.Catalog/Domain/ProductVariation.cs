@@ -108,5 +108,13 @@ public sealed class ProductVariation : BaseEntity<Guid>, ISoftDeletable
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    /// <summary>Removes the IsDefault flag when another variation becomes the default.</summary>
+    public void ClearDefault()
+    {
+        if (!IsDefault) return;
+        IsDefault    = false;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void SyncWooCommerce(int wooCommerceId) => WooCommerceId = wooCommerceId;
 }
