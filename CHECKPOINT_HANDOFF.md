@@ -76,7 +76,7 @@ AGENTS.md                                    ← convenciones FSH
 - `PARTIES_MODULE_SPEC.md` v1.1 (en `.agents/rules/modules/parties.md`)
 - `MODEL_ROUTING_RULES.md` (reglas de selección de modelo)
 
-### ✅ FASE C1 — COMPLETADA AL 100%
+### ✅ FASE C1 — COMPLETADA
 
 | Paso | Descripción | Commit |
 |------|-------------|--------|
@@ -85,125 +85,180 @@ AGENTS.md                                    ← convenciones FSH
 | 3 | Configuraciones EF Core v2 (índices únicos, relaciones) | `d5343814` |
 | 4 | Migración `InitialCatalogV2` aplicada en BD | `e32788c4` |
 | 5 | Seed: TaxRates + ShippingClasses + Brands + Categories | `cf10c893` |
-| 6 | Features mínimas: GetBrands + GetCategories (query+handler+endpoint+validator) | `1d3f8cc9` |
-| 7 | Frontend alineado con v2 (catalog.ts, pages compilando sin errores) | `304d4fbf` |
+| 6 | Features mínimas: GetBrands + GetCategories | `1d3f8cc9` |
+| 7 | Frontend alineado con v2 | `304d4fbf` |
 
-### ✅ FASE C2 — COMPLETADA AL 100%
+### ✅ FASE C2 — COMPLETADA
 
-**Objetivo:** CRUD completo de Brands en backend + frontend brands.tsx v2.
+CRUD completo de Brands: backend + frontend brands.tsx v2. Commit `e4ad6a94` + `34d79e17`
 
-| Paso | Descripción | Commit |
-|------|-------------|--------|
-| C2.1 | GetBrandById — GET /api/v1/catalog/brands/{id} | `e4ad6a94` |
-| C2.2 | CreateBrand — POST /api/v1/catalog/brands (slug auto-gen, unicidad, validación) | `e4ad6a94` |
-| C2.3 | UpdateBrand — PUT /api/v1/catalog/brands/{id} | `e4ad6a94` |
-| C2.4 | DeleteBrand — DELETE /api/v1/catalog/brands/{id} (soft, bloquea si tiene productos) | `e4ad6a94` |
-| C2.5 | RestoreBrand — POST /api/v1/catalog/brands/{id}/restore | `e4ad6a94` |
-| C2.6 | ListTrashedBrands — GET /api/v1/catalog/brands/trash (paginado, IgnoreQueryFilters) | `e4ad6a94` |
-| C2.7 | Frontend brands.tsx — eliminar v1 (code, isVisible), agregar websiteUrl/countryOfOrigin, panel papelera | `34d79e17` |
+Endpoints activos:
+- `GET/POST /api/v1/catalog/brands`
+- `GET/PUT/DELETE /api/v1/catalog/brands/{id}`
+- `POST /api/v1/catalog/brands/{id}/restore`
+- `GET /api/v1/catalog/brands/trash`
 
-**Estado de endpoints activos:**
-- `GET    /api/v1/catalog/brands`              → PagedResponse<BrandDto>
-- `GET    /api/v1/catalog/brands/{id}`         → BrandDetailDto
-- `POST   /api/v1/catalog/brands`              → 201 Guid
-- `PUT    /api/v1/catalog/brands/{id}`         → 200 Guid
-- `DELETE /api/v1/catalog/brands/{id}`         → 204
-- `POST   /api/v1/catalog/brands/{id}/restore` → 200 Guid
-- `GET    /api/v1/catalog/brands/trash`        → PagedResponse<TrashedBrandDto>
-- `GET    /api/v1/catalog/categories`          → IReadOnlyList<CategoryDto> árbol
+### ✅ FASE C3 — COMPLETADA
+
+CRUD completo de Categories: backend + frontend categories.tsx v2. Commit `8e9c62aa`
+
+Endpoints activos:
+- `GET/POST /api/v1/catalog/categories`
+- `GET/PUT/DELETE /api/v1/catalog/categories/{id}`
+- `POST /api/v1/catalog/categories/{id}/restore`
+- `GET /api/v1/catalog/categories/trash`
+
+### ✅ FASE C4 — COMPLETADA
+
+CRUD core de Products (9 endpoints). Commit `ddf7944c`
+
+Nota técnica: `ProductType`, `ProductStatus`, `WeightUnit`, `DimensionUnit` viven en
+`src/Modules/Catalog/Modules.Catalog.Contracts/Enums/ProductEnums.cs`
+(movidos del Domain para respetar module boundaries — el Domain los importa vía using).
+
+Endpoints activos:
+- `GET /api/v1/catalog/products/trash`
+- `GET /api/v1/catalog/products`
+- `POST /api/v1/catalog/products` (crea variación default para Simple/Service)
+- `GET /api/v1/catalog/products/{id}` (incluye Images, Variations, Categories, Tags)
+- `PUT /api/v1/catalog/products/{id}`
+- `DELETE /api/v1/catalog/products/{id}` (soft)
+- `POST /api/v1/catalog/products/{id}/restore`
+- `POST /api/v1/catalog/products/{id}/publish` (valida variación activa)
+- `POST /api/v1/catalog/products/{id}/archive`
+
+### ✅ FASE C5 — COMPLETADA
+
+Frontend products.tsx reescrito para v2. Commit `949393f9`
+- Grid server-side con filtros: nombre, marca, tipo (Simple/Variable/Bundle/Service), estado (Draft/Active/Archived)
+- Panel de papelera + restore
+- Diálogos: crear, editar, eliminar, publicar, archivar, restaurar
+- 0 campos v1 (sin SKU, precio, stock, isVisible en Product)
+- Permisos: publish y archive agregados a permissions.ts
 
 ---
 
-## 4. TAREA ACTIVA — FASE C3: FEATURES BACKEND COMPLETAS DE CATEGORIES
+## 4. TAREA ACTIVA — FASE C6: VARIATIONS BACKEND
 
 ### Objetivo
-Implementar el CRUD completo de Categories en el backend. Al final de C3:
-- Todos los endpoints de Category funcionan y están en Scalar
-- La página `categories.tsx` del dashboard opera completamente
-- Tests de los nuevos handlers pasando
+Implementar el CRUD de ProductVariations. Al final de C6:
+- Un operador puede agregar/editar/eliminar variaciones a un producto Variable
+- Los productos Simple/Service muestran su variación default en el formulario
+- Todos los endpoints de Variation funcionan y están en Scalar
 
-### Plan completo Fase C3 (orden de implementación)
+### Plan C6 — 5 endpoints
 
 ```
-Paso C3.1 — GetCategoryById
-  Query + Handler + Endpoint: GET /api/v1/catalog/categories/{id}
-  Retorna: CategoryDetailDto o 404 NotFoundException
+C6.1 — GetVariationsByProduct
+  GET /api/v1/catalog/products/{productId}/variations
+  Retorna: IReadOnlyList<VariationDto> (todas las variaciones del producto, incluidas soft-deleted con flag)
 
-Paso C3.2 — CreateCategory
-  Command + Validator + Handler + Endpoint: POST /api/v1/catalog/categories
-  Input:
-    name (required, max 200)
-    slug (auto-gen si no se envía, único global, lowercase)
-    description? (max 2000)
-    imageUrl? (max 500, URL válida)
-    parentId? (Guid? — si se envía, debe existir y no estar borrado)
-    sortOrder (default 0)
-    isActive (default true)
-  Retorna: 201 Created con Guid
+C6.2 — AddVariation
+  POST /api/v1/catalog/products/{productId}/variations
+  Input: Sku (required, único global), Description?, IsDefault (si true, quita IsDefault a la anterior),
+         IsActive (default true), Weight?, WeightUnit?, ImageUrl?, ManageStock (default true),
+         AllowBackorders, SoldIndividually, LowStockThreshold?, IsVirtual
+  Retorna: 201 con Guid
 
-Paso C3.3 — UpdateCategory
-  Command + Validator + Handler + Endpoint: PUT /api/v1/catalog/categories/{id}
-  Mismos campos que Create + categoryId en ruta
-  Validación: slug único excluyendo el propio id
+C6.3 — UpdateVariation
+  PUT /api/v1/catalog/products/{productId}/variations/{id}
+  Mismos campos que Add (excepto Sku — inmutable después de crear según spec §7)
   Retorna: 200 con Guid
 
-Paso C3.4 — DeleteCategory (soft delete)
-  Command + Handler + Endpoint: DELETE /api/v1/catalog/categories/{id}
-  No se puede eliminar si tiene sub-categorías activas O productos activos
-  Retorna: 204 No Content
+C6.4 — DeleteVariation (soft)
+  DELETE /api/v1/catalog/products/{productId}/variations/{id}
+  Bloquear si IsDefault = true (el producto Simple necesita al menos 1 variación)
+  Retorna: 204
 
-Paso C3.5 — RestoreCategory
-  Command + Handler + Endpoint: POST /api/v1/catalog/categories/{id}/restore
-  Revierte soft delete. Falla si no está borrada.
+C6.5 — RestoreVariation
+  POST /api/v1/catalog/products/{productId}/variations/{id}/restore
   Retorna: 200 con Guid
-
-Paso C3.6 — ListTrashedCategories
-  Query + Validator + Handler + Endpoint: GET /api/v1/catalog/categories/trash
-  Paginado. Filtra WHERE IsDeleted = true (IgnoreQueryFilters)
-  Retorna: PagedResponse<TrashedCategoryDto>
 ```
 
-### Reglas de implementación para C3
+### DTOs necesarios (Contracts)
+
+```csharp
+// VariationDto — para GetVariationsByProduct
+record VariationDto(
+  Guid    Id,
+  Guid    ProductId,
+  string  Sku,
+  string? Description,
+  bool    IsDefault,
+  bool    IsActive,
+  bool    IsDeleted,
+  decimal? Weight,
+  string? WeightUnit,
+  string? ImageUrl,
+  bool    ManageStock,
+  bool    AllowBackorders,
+  bool    SoldIndividually,
+  int?    LowStockThreshold,
+  bool    IsVirtual,
+  int?    WooCommerceId,
+  DateTime  CreatedAtUtc,
+  DateTime? UpdatedAtUtc);
+
+// AddVariationCommand — Contracts
+record AddVariationCommand(
+  Guid    ProductId,
+  string  Sku,
+  string? Description,
+  bool    IsDefault = false,
+  bool    IsActive = true,
+  decimal? Weight = null,
+  string?  WeightUnit = null,
+  string?  ImageUrl = null,
+  bool     ManageStock = true,
+  bool     AllowBackorders = false,
+  bool     SoldIndividually = false,
+  int?     LowStockThreshold = null,
+  bool     IsVirtual = false) : ICommand<Guid>;
+
+// UpdateVariationCommand
+record UpdateVariationCommand(
+  Guid    ProductId,
+  Guid    Id,
+  string? Description,
+  bool    IsActive,
+  decimal? Weight,
+  string?  WeightUnit,
+  string?  ImageUrl,
+  bool     ManageStock,
+  bool     AllowBackorders,
+  bool     SoldIndividually,
+  int?     LowStockThreshold,
+  bool     IsVirtual) : ICommand<Guid>;
+```
+
+### Reglas clave
 
 ```
-- Estructura de archivos: src/Modules/Catalog/Modules.Catalog/Features/v1/Categories/{Feature}/
-- Contracts en: src/Modules/Catalog/Modules.Catalog.Contracts/v1/Categories/{Feature}/
-- Registrar cada endpoint nuevo en CatalogModule.MapEndpoints()
-- NO AutoMapper — mapeo manual Category → CategoryDto con método estático
-  (crear src/Modules/Catalog/Modules.Catalog/Extensions/CategoryExtensions.cs)
-- Handlers: DbContext directo, AsNoTracking() en queries de lectura
-- DeleteCategory: verificar sub-categorías Y productos ANTES de borrar
-- ListTrashedCategories: requiere .IgnoreQueryFilters()
-- Reusar BuildSlug de CreateBrandCommandHandler (mover a helper o duplicar)
-- Permiso por endpoint:
-  GetCategoryById  → CatalogPermissions.Categories.View
-  CreateCategory   → CatalogPermissions.Categories.Create
-  UpdateCategory   → CatalogPermissions.Categories.Update
-  DeleteCategory   → CatalogPermissions.Categories.Delete
-  RestoreCategory  → CatalogPermissions.Categories.Restore
-  ListTrashed      → CatalogPermissions.Categories.View
-```
-
-### Paso C3.7 — Frontend categories.tsx (al final, una vez que el backend compila)
-
-```
-- Quitar campo "Code" del formulario categories.tsx (ya no existe en v2)
-- Conectar createCategory / updateCategory / deleteCategory con los nuevos endpoints
-- Agregar panel de papelera igual al de brands.tsx
-- QA: crear → editar → eliminar → restaurar → confirmar en DevTools Network tab
-- Light mode + Dark mode antes de commit
+- Rutas anidadas bajo /products/{productId}/variations
+- SKU: inmutable después de crear — no incluir en UpdateVariation
+- SKU: único global — verificar con IgnoreQueryFilters() para capturar también soft-deleted
+- AddVariation: verificar que el productId existe y no está deleted
+- DeleteVariation: bloquear si IsDefault = true (usar CustomException 400)
+- Permiso: CatalogPermissions.Products.Update para Add/Update/Delete/Restore
+- Permiso: CatalogPermissions.Products.View para Get
+- Registrar endpoints en CatalogModule con MapGroup anidado:
+  var variations = products.MapGroup("/{productId:guid}/variations")
 ```
 
 ---
 
-## 5. CONTEXTO DE FASES FUTURAS (para referencia, no implementar ahora)
+## 5. CONTEXTO DE FASES FUTURAS
 
 ```
-Fase C4: Features backend completas de Products
-  (la más compleja — variaciones, códigos, imágenes, price lists)
+Fase C7: ProductCodes backend
+  - GET/POST/DELETE /api/v1/catalog/products/{id}/variations/{varId}/codes
+  - CodeType: SKU | EAN | UPC | ISBN | GTIN | PartNumber | ManufacturerCode | SupplierCode
 
-Fase C5: Frontend completo (una página a la vez, QA antes de cada una)
-  Orden: brands (✅ C2) → categories (C3) → products (C4)
+Fase C8: PriceLists backend
+  - CRUD de PriceList + PriceListItem + GetEffectivePrice
+  - CustomerSegment: retail | wholesale | vip | b2b | dropshipping
+
+Fase C9: Frontend Variations (en-línea en products.tsx) + ProductCodes UI
 
 Después de Catalog completo:
 → Módulo Parties (spec en .agents/rules/modules/parties.md)
@@ -217,8 +272,6 @@ Después de Catalog completo:
 
 ## 6. COMANDOS DE VERIFICACIÓN — EJECUTAR PRIMERO
 
-Antes de cualquier acción, ejecuta estos comandos y reporta resultados:
-
 ```bash
 # 1. ¿En qué rama estás?
 git branch --show-current
@@ -226,35 +279,24 @@ git branch --show-current
 # 2. ¿Qué se hizo en los últimos commits?
 git log --oneline -10
 
-# 3. ¿Qué features existen en Categories?
-find src/Modules/Catalog/Modules.Catalog/Features/v1/Categories -name "*.cs" | sort
+# 3. ¿Qué features existen en Variations?
+find src/Modules/Catalog/Modules.Catalog/Features/v1/Variations -name "*.cs" 2>/dev/null | sort
 
-# 4. ¿Qué contracts existen en Categories?
-find src/Modules/Catalog/Modules.Catalog.Contracts/v1/Categories -name "*.cs" | sort
+# 4. ¿Compila el backend?
+dotnet build src/FSH.Starter.slnx 2>&1 | grep -E ": error CS" | grep -v MSB302 | head -10
 
-# 5. ¿Compila el backend?
-dotnet build src/FSH.Starter.slnx 2>&1 | tail -4
-
-# 6. ¿Compila el frontend?
-cd clients/dashboard && npm run build 2>&1 | tail -3
+# 5. ¿Compila el frontend?
+cd clients/dashboard && npx tsc --noEmit 2>&1 | head -10
 ```
-
-Con esos resultados, confirma que C2 está completa e inicia C3.1.
 
 ---
 
 ## 7. INSTRUCCIÓN DE CONTINUACIÓN
 
 ```
-[QA] Verificación del estado actual:
-- Rama: [resultado]
-- Últimos commits: [lista]
-- Features en Categories/: [lista de carpetas/archivos]
-- Build backend: [✅ limpio / ❌ N errores]
-- Build frontend: [✅ limpio / ❌ N errores]
-
-Estado: Fase C2 completa — inicio Fase C3 (CRUD completo de Categories)
-Continúo con: C3.1 GetCategoryById
+[QA] Verificar estado actual con §6
+Estado: Fase C5 completa — inicio Fase C6 (Variations CRUD)
+Continúo con: C6.1 GetVariationsByProduct → C6.2 AddVariation → C6.3-C6.5
 ```
 
 ---
@@ -262,27 +304,16 @@ Continúo con: C3.1 GetCategoryById
 ## 8. REGLAS CRÍTICAS QUE NO DEBEN OLVIDARSE
 
 ```
-❌ NUNCA poner Price, Stock o Sku directamente en la entidad Product
-   → Price va en PriceListItem (referencia VariationId)
-   → Stock va en módulo Inventory (futuro)
-   → Sku va en ProductVariation (única por variación)
-
 ❌ NUNCA campo TenantId manual en entidades — lo maneja Finbuckle
-
-❌ NUNCA AutoMapper — mapeo manual con extension methods estáticos en
-   src/Modules/Catalog/Modules.Catalog/Extensions/
-
+❌ NUNCA AutoMapper — mapeo manual con extension methods estáticos
 ❌ NUNCA Repository Pattern genérico — DbContext directo en handlers
-
 ❌ NUNCA MudBlazor — Syncfusion únicamente
-
 ❌ NUNCA strings hardcodeados en JSX — siempre t() con traducciones ES+EN
-
 ❌ NUNCA colores hex/rgb en CSS — siempre var(--color-*)
-
 ❌ NUNCA commitear con errores en Console o Network del browser
 
-✅ OwnerId = Guid? en entidades del Catalog (preparado para SaaS, no activo)
+✅ Enums de Products viven en Contracts/Enums/ProductEnums.cs (NO en Domain)
+   Domain los importa via: using FSH.Modules.Catalog.Contracts.Enums;
 
 ✅ ISoftDeletable en Brand, Category, Product, ProductVariation
 
@@ -290,61 +321,59 @@ Continúo con: C3.1 GetCategoryById
 
 ✅ IgnoreQueryFilters() en queries de trash (soft-deleted records)
 
+✅ SKU de variación: ÚNICO GLOBAL — verificar con IgnoreQueryFilters()
+   para capturar también SKUs de variaciones soft-deleted
+
 ✅ CustomException(message, Enumerable.Empty<string>(), HttpStatusCode.X)
-   — CustomException NO tiene overload (string, statusCode) directo;
-     siempre pasar IEnumerable<string> como segundo argumento.
 
-✅ ICommand<Guid> para todos los commands (no ICommand sin tipo de retorno)
+✅ ICommand<Guid> para todos los commands
 
-✅ QA Checklist completo antes de cada commit de feature:
+✅ Variaciones anidadas bajo productos:
+   MapGroup("/{productId:guid}/variations") dentro del group de products
+
+✅ QA Checklist completo antes de cada commit:
    backend: build → endpoint en Scalar → curl de prueba → respuesta 2xx
    frontend: build → browser → flujo completo → 0 errores Console/Network
 ```
 
 ---
 
-## 9. ESTRUCTURA DE ARCHIVOS DE REFERENCIA (estado tras C2)
+## 9. ESTRUCTURA DE ARCHIVOS (estado tras C5)
 
 ```
 src/Modules/Catalog/
 ├── Modules.Catalog.Contracts/
-│   ├── Authorization/CatalogPermissions.cs
+│   ├── Authorization/CatalogPermissions.cs   ← Products: Publish + Archive agregados
+│   ├── Enums/ProductEnums.cs                 ← ProductType, ProductStatus, WeightUnit, DimensionUnit
 │   ├── CatalogContractsMarker.cs
 │   └── v1/
-│       ├── Brands/
-│       │   ├── GetBrands/       BrandDto.cs + GetBrandsQuery.cs
-│       │   ├── GetBrandById/    BrandDetailDto.cs + GetBrandByIdQuery.cs
-│       │   ├── CreateBrand/     CreateBrandCommand.cs
-│       │   ├── UpdateBrand/     UpdateBrandCommand.cs
-│       │   ├── DeleteBrand/     DeleteBrandCommand.cs
-│       │   ├── RestoreBrand/    RestoreBrandCommand.cs
-│       │   └── ListTrashedBrands/ ListTrashedBrandsQuery.cs + TrashedBrandDto.cs
-│       ├── Categories/
-│       │   └── GetCategories/   CategoryDto.cs + GetCategoriesQuery.cs
-│       └── GetCatalogHealthQuery.cs
+│       ├── Brands/       (CRUD completo)
+│       ├── Categories/   (CRUD completo)
+│       └── Products/     (CRUD core completo — faltan Variations, Codes, PriceLists)
 │
 └── Modules.Catalog/
-    ├── CatalogModule.cs          ← MapEndpoints (todos los Brands registrados)
+    ├── CatalogModule.cs          ← brands + categories + products mapeados
     ├── Data/
     │   ├── CatalogDbContext.cs
     │   ├── CatalogDbInitializer.cs
     │   └── Configurations/       11 archivos
     ├── Domain/                   18 entidades v2
+    ├── Extensions/SlugHelper.cs
     └── Features/v1/
-        ├── Brands/
-        │   ├── GetBrands/
-        │   ├── GetBrandById/
-        │   ├── CreateBrand/      Handler + Validator + Endpoint
-        │   ├── UpdateBrand/      Handler + Validator + Endpoint
-        │   ├── DeleteBrand/      Handler + Endpoint
-        │   ├── RestoreBrand/     Handler + Endpoint
-        │   └── ListTrashedBrands/ Handler + Validator + Endpoint
-        ├── Categories/
-        │   └── GetCategories/
-        └── GetCatalogHealthQueryHandler.cs
+        ├── Brands/       (CRUD completo)
+        ├── Categories/   (CRUD completo)
+        └── Products/     (CRUD core completo — faltan Variations, Codes)
+
+clients/dashboard/src/
+├── auth/permissions.ts           ← products: publish + archive agregados
+├── api/catalog.ts                ← ProductDto v2, publishProduct, archiveProduct
+└── pages/catalog/
+    ├── brands.tsx      ✅ v2
+    ├── categories.tsx  ✅ v2
+    └── products.tsx    ✅ v2 (server-side grid, filtros tipo/estado, trash panel)
 ```
 
 ---
 
 *Checkpoint actualizado: Junio 2026*
-*Fase C2 completada al 100% — próxima: Fase C3 (CRUD completo de Categories)*
+*Fases C1-C5 completadas — próxima: Fase C6 (Variations CRUD)*
