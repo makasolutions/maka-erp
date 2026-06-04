@@ -164,7 +164,7 @@ export function BrandsPage() {
     const visible = triToBool(visibleFilter);
     return allItems
       .filter((b) =>
-        (!code || b.code.toLowerCase().includes(code)) &&
+        (!code || b.code?.toLowerCase().includes(code)) &&
         (!name || b.name.toLowerCase().includes(name)) &&
         (active === undefined || b.isActive === active) &&
         (visible === undefined || b.isVisible === visible))

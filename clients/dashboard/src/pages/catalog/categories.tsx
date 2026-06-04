@@ -190,7 +190,7 @@ export function CategoriesPage() {
     const visible = triToBool(visibleFilter);
     return allItems
       .filter((c) =>
-        (!code || c.code.toLowerCase().includes(code)) &&
+        (!code || c.code?.toLowerCase().includes(code)) &&
         (!name || c.name.toLowerCase().includes(name)) &&
         (active === undefined || c.isActive === active) &&
         (visible === undefined || c.isVisible === visible))

@@ -251,8 +251,8 @@ export function ProductsPage() {
       (data?.items ?? []).map((p) => ({
         ...p,
         brandName: brandsById.get(p.brandId)?.name ?? "—",
-        categoryName: categoriesById.get(p.categoryId)?.name ?? "—",
-        priceLabel: formatMoney(p.price.amount, p.price.currency),
+        categoryName: categoriesById.get(p.categoryId ?? "")?.name ?? "—",
+        priceLabel: p.price ? formatMoney(p.price.amount, p.price.currency) : "—",
         activeLabel: p.isActive ? tc("status.active") : tc("status.inactive"),
         visibleLabel: p.isVisible ? t("products.filters.visibleYes") : t("products.filters.visibleNo"),
       })),
@@ -565,8 +565,8 @@ function ProductEditorDialog({
       // category (SIN-CAT) when present in this tenant.
       brandId: product?.brandId ?? brands.find((b) => b.code === "GEN")?.id ?? "",
       categoryId: product?.categoryId ?? categories.find((c) => c.code === "SIN-CAT")?.id ?? "",
-      priceAmount: product?.price.amount ?? 0,
-      priceCurrency: product?.price.currency ?? "USD",
+      priceAmount: product?.price?.amount ?? 0,
+      priceCurrency: product?.price?.currency ?? "USD",
       stock: product?.stock ?? 0,
       isActive: product?.isActive ?? true,
       isVisible: product?.isVisible ?? true,
@@ -961,8 +961,8 @@ function PriceDialog({
 
   useEffect(() => {
     if (isOpen && product) {
-      setAmount(String(product.price.amount));
-      setCurrency(product.price.currency);
+      setAmount(String(product.price?.amount ?? 0));
+      setCurrency(product.price?.currency ?? "COP");
     }
   }, [isOpen, product]);
 
@@ -978,7 +978,7 @@ function PriceDialog({
 
   const newAmount = Number.parseFloat(amount);
   const valid = !Number.isNaN(newAmount) && newAmount >= 0 && currency.length === 3;
-  const oldAmount = product?.price.amount ?? 0;
+  const oldAmount = product?.price?.amount ?? 0;
   const delta = !Number.isNaN(newAmount) ? newAmount - oldAmount : 0;
 
   return (
@@ -1007,7 +1007,7 @@ function PriceDialog({
                   {t("products.priceWas")}
                 </div>
                 <div className="mt-1 font-display text-[18px] font-semibold tabular-nums">
-                  {product && formatMoney(product.price.amount, product.price.currency)}
+                  {product?.price ? formatMoney(product.price.amount, product.price.currency) : "—"}
                 </div>
               </div>
               <ArrowDown className="size-4 -rotate-90 text-[var(--color-muted-foreground)]" />

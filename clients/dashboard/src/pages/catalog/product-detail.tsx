@@ -122,7 +122,7 @@ export function ProductDetailPage() {
 
   const categoryQuery = useQuery({
     queryKey: ["catalog", "categories", product?.categoryId ?? "none"],
-    queryFn: () => getCategoryById(product!.categoryId),
+    queryFn: () => getCategoryById(product!.categoryId!),
     enabled: !!product?.categoryId,
     staleTime: 60_000,
   });
@@ -209,7 +209,7 @@ export function ProductDetailPage() {
               >
                 <ProductImageManager
                   productId={product.id}
-                  images={product.images}
+                  images={product.images ?? []}
                   invalidateKey={["catalog", "products", productId]}
                   readOnly={!canUpdate}
                 />
@@ -273,8 +273,9 @@ function ProductHero({
 }) {
   const { t } = useTranslation("catalog");
 
+  const stockValue = product.stock ?? 0;
   const stockTone: "default" | "warning" | "danger" =
-    product.stock === 0 ? "danger" : product.stock < LOW_STOCK ? "warning" : "default";
+    stockValue === 0 ? "danger" : stockValue < LOW_STOCK ? "warning" : "default";
 
   const subtitleParts: React.ReactNode[] = [
     <code
@@ -354,13 +355,13 @@ function ProductHero({
         <>
           <EntityDetailStat
             icon={CircleDollarSign}
-            value={formatMoney(product.price.amount, product.price.currency)}
+            value={product.price ? formatMoney(product.price.amount, product.price.currency) : "—"}
             label={t("products.fields.price")}
             tone="primary"
           />
           <EntityDetailStat
             icon={Package}
-            value={product.stock}
+            value={product.stock ?? "—"}
             label={
               stockTone === "danger"
                 ? t("products.outOfStock")
@@ -430,10 +431,10 @@ function PricingPanel({
     <div className="space-y-3">
       <div>
         <div className="font-display text-[24px] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-foreground)]">
-          {formatMoney(product.price.amount, product.price.currency)}
+          {product.price ? formatMoney(product.price.amount, product.price.currency) : "—"}
         </div>
         <div className="mt-1 text-[11.5px] text-[var(--color-muted-foreground)]">
-          {t("products.detail.listedPrice", { currency: product.price.currency })}
+          {t("products.detail.listedPrice", { currency: product.price?.currency ?? "COP" })}
         </div>
       </div>
       <Button
@@ -459,8 +460,9 @@ function InventoryPanel({
 }) {
   const { t } = useTranslation("catalog");
 
+  const stock = product.stock ?? 0;
   const tone: "default" | "warning" | "danger" =
-    product.stock === 0 ? "danger" : product.stock < LOW_STOCK ? "warning" : "default";
+    stock === 0 ? "danger" : stock < LOW_STOCK ? "warning" : "default";
 
   return (
     <div className="space-y-3">
@@ -473,7 +475,7 @@ function InventoryPanel({
             tone === "default" && "text-[var(--color-foreground)]",
           )}
         >
-          {product.stock}
+          {stock}
         </div>
         <div className="mt-1 flex items-center gap-1 text-[11.5px] text-[var(--color-muted-foreground)]">
           {tone === "danger" ? (
@@ -520,7 +522,7 @@ function IdentifiersPanel({
 
   return (
     <dl className="space-y-3 text-[13px]">
-      <MetaRow label={t("products.fields.sku")} value={<IdCode value={product.sku} />} />
+      <MetaRow label={t("products.fields.sku")} value={<IdCode value={product.sku ?? ""} />} />
       <MetaRow label={t("categories.fields.slug")} value={<IdCode value={product.slug} />} />
       <MetaRow label={t("products.detail.productId")} value={<IdCode value={product.id} />} />
       <MetaRow
@@ -529,7 +531,7 @@ function IdentifiersPanel({
       />
       <MetaRow
         label={t("products.detail.categoryId")}
-        value={<IdCode value={category?.id ?? product.categoryId} />}
+        value={<IdCode value={category?.id ?? product.categoryId ?? ""} />}
       />
     </dl>
   );
@@ -953,13 +955,15 @@ function PriceDialog({
 }) {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
-  const [amount, setAmount] = useState(String(product.price.amount));
-  const [currency, setCurrency] = useState(product.price.currency);
+  const price = product.price ?? { amount: 0, currency: "COP" };
+  const [amount, setAmount] = useState(String(price.amount));
+  const [currency, setCurrency] = useState(price.currency);
 
   useEffect(() => {
     if (open) {
-      setAmount(String(product.price.amount));
-      setCurrency(product.price.currency);
+      const p = product.price ?? { amount: 0, currency: "COP" };
+      setAmount(String(p.amount));
+      setCurrency(p.currency);
     }
   }, [open, product]);
 
@@ -976,7 +980,7 @@ function PriceDialog({
 
   const newAmount = Number.parseFloat(amount);
   const valid = !Number.isNaN(newAmount) && newAmount >= 0 && currency.length === 3;
-  const delta = !Number.isNaN(newAmount) ? newAmount - product.price.amount : 0;
+  const delta = !Number.isNaN(newAmount) ? newAmount - price.amount : 0;
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -1001,7 +1005,7 @@ function PriceDialog({
                   {t("products.priceWas")}
                 </div>
                 <div className="font-display mt-1 text-[18px] font-semibold tabular-nums">
-                  {formatMoney(product.price.amount, product.price.currency)}
+                  {formatMoney(price.amount, price.currency)}
                 </div>
               </div>
               <ArrowDown className="h-4 w-4 -rotate-90 text-[var(--color-muted-foreground)]" />
@@ -1097,7 +1101,7 @@ function StockDialog({
 
   const deltaNum = Number.parseInt(delta, 10);
   const valid = !Number.isNaN(deltaNum) && deltaNum !== 0;
-  const newStock = product.stock + (Number.isNaN(deltaNum) ? 0 : deltaNum);
+  const newStock = (product.stock ?? 0) + (Number.isNaN(deltaNum) ? 0 : deltaNum);
   const willGoNegative = newStock < 0;
 
   return (

@@ -10,59 +10,83 @@ export type PagedResponse<T> = {
   hasPrevious: boolean;
 };
 
+// ─── Brands ────────────────────────────────────────────────────────────
+// v2 model: no `code`, no `isVisible`. Fields kept optional for compat.
+
 export type BrandDto = {
   id: string;
-  code: string;
   name: string;
   slug: string;
   description?: string | null;
   logoUrl?: string | null;
+  websiteUrl?: string | null;
+  countryOfOrigin?: string | null;
   isActive: boolean;
-  isVisible: boolean;
-  createdAtUtc: string;
+  wooCommerceId?: number | null;
+
+  /** @deprecated v1 field — not returned by v2 API */
+  code?: string;
+  /** @deprecated v1 field — not returned by v2 API */
+  isVisible?: boolean;
+  /** @deprecated v1 field — not returned by v2 API */
+  createdAtUtc?: string;
+  /** @deprecated v1 field — not returned by v2 API */
   updatedAtUtc?: string | null;
+  /** @deprecated v1 field — not returned by v2 API */
   deletedOnUtc?: string | null;
+  /** @deprecated v1 field — not returned by v2 API */
   deletedBy?: string | null;
 };
 
 export type SearchBrandsParams = {
   search?: string;
   isActive?: boolean;
-  isVisible?: boolean;
   pageNumber?: number;
   pageSize?: number;
+  sort?: string;
+  /** @deprecated v1 param */
+  isVisible?: boolean;
+  /** @deprecated v1 params */
   sortBy?: string;
   sortDir?: "asc" | "desc";
 };
 
 export type CreateBrandInput = {
-  code: string;
   name: string;
+  slug?: string;
   description?: string | null;
   logoUrl?: string | null;
+  websiteUrl?: string | null;
+  countryOfOrigin?: string | null;
   isActive: boolean;
-  isVisible: boolean;
+  /** @deprecated v1 field */
+  code?: string;
+  /** @deprecated v1 field */
+  isVisible?: boolean;
 };
 
 export type UpdateBrandInput = {
   brandId: string;
-  code: string;
   name: string;
+  slug?: string;
   description?: string | null;
   logoUrl?: string | null;
+  websiteUrl?: string | null;
+  countryOfOrigin?: string | null;
   isActive: boolean;
-  isVisible: boolean;
+  /** @deprecated v1 field */
+  code?: string;
+  /** @deprecated v1 field */
+  isVisible?: boolean;
 };
 
 export function searchBrands(params: SearchBrandsParams = {}): Promise<PagedResponse<BrandDto>> {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.isActive !== undefined) query.set("isActive", String(params.isActive));
-  if (params.isVisible !== undefined) query.set("isVisible", String(params.isVisible));
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 20));
-  if (params.sortBy) query.set("sortBy", params.sortBy);
-  if (params.sortDir) query.set("sortDir", params.sortDir);
+  if (params.sort) query.set("sort", params.sort);
   return apiFetch<PagedResponse<BrandDto>>(`/api/v1/catalog/brands?${query.toString()}`);
 }
 
@@ -70,35 +94,23 @@ export function getBrandById(id: string): Promise<BrandDto> {
   return apiFetch<BrandDto>(`/api/v1/catalog/brands/${encodeURIComponent(id)}`);
 }
 
+/** @todo Fase C2 — backend endpoint not yet implemented */
 export async function createBrand(input: CreateBrandInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/brands", {
     method: "POST",
-    body: JSON.stringify({
-      code: input.code,
-      name: input.name,
-      description: input.description ?? null,
-      logoUrl: input.logoUrl ?? null,
-      isActive: input.isActive,
-      isVisible: input.isVisible,
-    }),
+    body: JSON.stringify(input),
   });
 }
 
+/** @todo Fase C2 — backend endpoint not yet implemented */
 export async function updateBrand(input: UpdateBrandInput): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/brands/${encodeURIComponent(input.brandId)}`, {
     method: "PUT",
-    body: JSON.stringify({
-      brandId: input.brandId,
-      code: input.code,
-      name: input.name,
-      description: input.description ?? null,
-      logoUrl: input.logoUrl ?? null,
-      isActive: input.isActive,
-      isVisible: input.isVisible,
-    }),
+    body: JSON.stringify(input),
   });
 }
 
+/** @todo Fase C2 — backend endpoint not yet implemented */
 export async function deleteBrand(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/catalog/brands/${encodeURIComponent(id)}`, {
     method: "DELETE",
@@ -106,23 +118,37 @@ export async function deleteBrand(id: string): Promise<void> {
 }
 
 // ─── Categories ────────────────────────────────────────────────────────
+// v2 model: no `code`, no `isVisible`. `parentCategoryId` → `parentId`.
 
 export type CategoryDto = {
   id: string;
-  code: string;
+  parentId?: string | null;
   name: string;
   slug: string;
   description?: string | null;
   imageUrl?: string | null;
-  parentCategoryId?: string | null;
+  sortOrder: number;
   isActive: boolean;
-  isVisible: boolean;
-  createdAtUtc: string;
+  wooCommerceId?: number | null;
+  children: CategoryDto[];
+
+  /** @deprecated v1 field — not returned by v2 API */
+  code?: string;
+  /** @deprecated v1 field — use `parentId` instead */
+  parentCategoryId?: string | null;
+  /** @deprecated v1 field — not returned by v2 API */
+  isVisible?: boolean;
+  /** @deprecated v1 field */
+  createdAtUtc?: string;
+  /** @deprecated v1 field */
   updatedAtUtc?: string | null;
+  /** @deprecated v1 field */
   deletedOnUtc?: string | null;
+  /** @deprecated v1 field */
   deletedBy?: string | null;
 };
 
+/** @deprecated v1 shape — use CategoryDto (self-referencing tree) instead */
 export type CategoryTreeNodeDto = {
   id: string;
   name: string;
@@ -132,9 +158,11 @@ export type CategoryTreeNodeDto = {
 };
 
 export type SearchCategoriesParams = {
+  isActive?: boolean;
+  parentId?: string | null;
+  /** @deprecated v1 params */
   search?: string;
   parentCategoryId?: string | null;
-  isActive?: boolean;
   isVisible?: boolean;
   pageNumber?: number;
   pageSize?: number;
@@ -143,85 +171,98 @@ export type SearchCategoriesParams = {
 };
 
 export type CreateCategoryInput = {
-  code: string;
   name: string;
+  slug?: string;
   description?: string | null;
   imageUrl?: string | null;
-  parentCategoryId?: string | null;
+  parentId?: string | null;
   isActive: boolean;
-  isVisible: boolean;
+  /** @deprecated v1 fields */
+  code?: string;
+  parentCategoryId?: string | null;
+  isVisible?: boolean;
 };
 
 export type UpdateCategoryInput = {
   categoryId: string;
-  code: string;
   name: string;
+  slug?: string;
   description?: string | null;
   imageUrl?: string | null;
-  parentCategoryId?: string | null;
+  parentId?: string | null;
   isActive: boolean;
-  isVisible: boolean;
+  /** @deprecated v1 fields */
+  code?: string;
+  parentCategoryId?: string | null;
+  isVisible?: boolean;
 };
 
-export function searchCategories(
+/** Flattens a category tree into a flat list (depth-first). */
+function flattenCategoryTree(nodes: CategoryDto[]): CategoryDto[] {
+  const result: CategoryDto[] = [];
+  const stack = [...nodes];
+  while (stack.length > 0) {
+    const node = stack.shift()!;
+    result.push(node);
+    if (node.children?.length) stack.unshift(...node.children);
+  }
+  return result;
+}
+
+/**
+ * Fetches categories and returns a PagedResponse-shaped object for backward
+ * compatibility with pages that expect a flat paged list.
+ * The v2 backend returns a tree; we flatten it here.
+ */
+export async function searchCategories(
   params: SearchCategoriesParams = {},
 ): Promise<PagedResponse<CategoryDto>> {
   const query = new URLSearchParams();
-  if (params.search) query.set("search", params.search);
-  if (params.parentCategoryId) query.set("parentCategoryId", params.parentCategoryId);
   if (params.isActive !== undefined) query.set("isActive", String(params.isActive));
-  if (params.isVisible !== undefined) query.set("isVisible", String(params.isVisible));
-  query.set("pageNumber", String(params.pageNumber ?? 1));
-  query.set("pageSize", String(params.pageSize ?? 50));
-  if (params.sortBy) query.set("sortBy", params.sortBy);
-  if (params.sortDir) query.set("sortDir", params.sortDir);
-  return apiFetch<PagedResponse<CategoryDto>>(
-    `/api/v1/catalog/categories?${query.toString()}`,
-  );
+  const parentId = params.parentId ?? params.parentCategoryId;
+  if (parentId) query.set("parentId", parentId);
+  const tree = await apiFetch<CategoryDto[]>(`/api/v1/catalog/categories?${query.toString()}`);
+  const flat = flattenCategoryTree(tree);
+  return {
+    items: flat,
+    pageNumber: 1,
+    pageSize: flat.length || 1,
+    totalCount: flat.length,
+    totalPages: 1,
+    hasNext: false,
+    hasPrevious: false,
+  };
 }
 
-export function getCategoryTree(): Promise<CategoryTreeNodeDto[]> {
-  return apiFetch<CategoryTreeNodeDto[]>("/api/v1/catalog/categories/tree");
+/** Returns the full category tree (v2). Same as searchCategories with no filters. */
+export function getCategoryTree(): Promise<CategoryDto[]> {
+  return apiFetch<CategoryDto[]>("/api/v1/catalog/categories");
 }
 
 export function getCategoryById(id: string): Promise<CategoryDto> {
   return apiFetch<CategoryDto>(`/api/v1/catalog/categories/${encodeURIComponent(id)}`);
 }
 
+/** @todo Fase C3 — backend endpoint not yet implemented */
 export async function createCategory(input: CreateCategoryInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/categories", {
     method: "POST",
-    body: JSON.stringify({
-      code: input.code,
-      name: input.name,
-      description: input.description ?? null,
-      imageUrl: input.imageUrl ?? null,
-      parentCategoryId: input.parentCategoryId ?? null,
-      isActive: input.isActive,
-      isVisible: input.isVisible,
-    }),
+    body: JSON.stringify(input),
   });
 }
 
+/** @todo Fase C3 — backend endpoint not yet implemented */
 export async function updateCategory(input: UpdateCategoryInput): Promise<string> {
   return apiFetch<string>(
     `/api/v1/catalog/categories/${encodeURIComponent(input.categoryId)}`,
     {
       method: "PUT",
-      body: JSON.stringify({
-        categoryId: input.categoryId,
-        code: input.code,
-        name: input.name,
-        description: input.description ?? null,
-        imageUrl: input.imageUrl ?? null,
-        parentCategoryId: input.parentCategoryId ?? null,
-        isActive: input.isActive,
-        isVisible: input.isVisible,
-      }),
+      body: JSON.stringify(input),
     },
   );
 }
 
+/** @todo Fase C3 — backend endpoint not yet implemented */
 export async function deleteCategory(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/catalog/categories/${encodeURIComponent(id)}`, {
     method: "DELETE",
@@ -229,7 +270,10 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 // ─── Products ──────────────────────────────────────────────────────────
+// v2 model: Product has NO sku, price, or stock.
+// Sku → ProductVariation. Price → PriceList. Stock → Inventory module.
 
+/** @deprecated v1 type — kept for page compat while Fase C4/C5 rebuild products */
 export type MoneyDto = {
   amount: number;
   currency: string;
@@ -241,55 +285,69 @@ export type ProductImageDto = {
   url: string;
   isThumbnail: boolean;
   sortOrder: number;
-  createdAtUtc: string;
+  /** @deprecated v1 field */
+  createdAtUtc?: string;
 };
 
 export type ProductDto = {
   id: string;
-  sku: string;
   name: string;
   slug: string;
   description?: string | null;
   brandId: string;
-  categoryId: string;
-  price: MoneyDto;
-  stock: number;
   isActive: boolean;
-  isVisible: boolean;
-  /** Convenience: the URL of the thumbnail image (if any). Derived server-side from images[]. */
   thumbnailUrl?: string | null;
-  images: ProductImageDto[];
-  createdAtUtc: string;
+
+  /** @deprecated v1 field — Sku moved to ProductVariation */
+  sku?: string;
+  /** @deprecated v1 field — Price moved to PriceList */
+  price?: MoneyDto;
+  /** @deprecated v1 field — Stock moved to Inventory module */
+  stock?: number;
+  /** @deprecated v1 field */
+  categoryId?: string;
+  /** @deprecated v1 field */
+  isVisible?: boolean;
+  /** @deprecated v1 field */
+  images?: ProductImageDto[];
+  /** @deprecated v1 field */
+  createdAtUtc?: string;
+  /** @deprecated v1 field */
   updatedAtUtc?: string | null;
+  /** @deprecated v1 field */
   deletedOnUtc?: string | null;
+  /** @deprecated v1 field */
   deletedBy?: string | null;
 };
 
 export type SearchProductsParams = {
   search?: string;
-  sku?: string;
-  name?: string;
   brandId?: string | null;
-  categoryId?: string | null;
   isActive?: boolean | null;
-  isVisible?: boolean | null;
   pageNumber?: number;
   pageSize?: number;
+  sort?: string;
+  /** @deprecated v1 params */
+  sku?: string;
+  name?: string;
+  categoryId?: string | null;
+  isVisible?: boolean | null;
   sortBy?: string;
   sortDir?: "asc" | "desc";
 };
 
 export type CreateProductInput = {
-  sku: string;
   name: string;
-  description?: string | null;
   brandId: string;
-  categoryId: string;
-  priceAmount: number;
-  priceCurrency: string;
-  stock: number;
   isActive: boolean;
-  isVisible: boolean;
+  /** @deprecated v1 fields */
+  sku?: string;
+  description?: string | null;
+  categoryId?: string;
+  priceAmount?: number;
+  priceCurrency?: string;
+  stock?: number;
+  isVisible?: boolean;
 };
 
 export type UpdateProductInput = {
@@ -297,17 +355,20 @@ export type UpdateProductInput = {
   name: string;
   description?: string | null;
   brandId: string;
-  categoryId: string;
   isActive: boolean;
-  isVisible: boolean;
+  /** @deprecated v1 fields */
+  categoryId?: string;
+  isVisible?: boolean;
 };
 
+/** @deprecated v1 type */
 export type ChangeProductPriceInput = {
   productId: string;
   amount: number;
   currency: string;
 };
 
+/** @deprecated v1 type */
 export type AdjustProductStockInput = {
   productId: string;
   delta: number;
@@ -318,18 +379,12 @@ export function searchProducts(
 ): Promise<PagedResponse<ProductDto>> {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
-  if (params.sku) query.set("sku", params.sku);
-  if (params.name) query.set("name", params.name);
   if (params.brandId) query.set("brandId", params.brandId);
-  if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.isActive !== undefined && params.isActive !== null)
     query.set("isActive", String(params.isActive));
-  if (params.isVisible !== undefined && params.isVisible !== null)
-    query.set("isVisible", String(params.isVisible));
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 20));
-  if (params.sortBy) query.set("sortBy", params.sortBy);
-  if (params.sortDir) query.set("sortDir", params.sortDir);
+  if (params.sort) query.set("sort", params.sort);
   return apiFetch<PagedResponse<ProductDto>>(
     `/api/v1/catalog/products?${query.toString()}`,
   );
@@ -339,55 +394,40 @@ export function getProductById(id: string): Promise<ProductDto> {
   return apiFetch<ProductDto>(`/api/v1/catalog/products/${encodeURIComponent(id)}`);
 }
 
-/** Catalog-wide product counts for KPI cards (one request instead of three). */
+/** @deprecated v1 endpoint */
 export type ProductStats = {
   total: number;
   active: number;
   visible: number;
 };
 
+/** @todo Fase C4 — backend endpoint not yet implemented */
 export function getProductStats(): Promise<ProductStats> {
   return apiFetch<ProductStats>(`/api/v1/catalog/products/stats`);
 }
 
+/** @todo Fase C4 — backend endpoint not yet implemented */
 export async function createProduct(input: CreateProductInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/products", {
     method: "POST",
-    body: JSON.stringify({
-      sku: input.sku,
-      name: input.name,
-      description: input.description ?? null,
-      brandId: input.brandId,
-      categoryId: input.categoryId,
-      priceAmount: input.priceAmount,
-      priceCurrency: input.priceCurrency,
-      stock: input.stock,
-      isActive: input.isActive,
-      isVisible: input.isVisible,
-    }),
+    body: JSON.stringify(input),
   });
 }
 
+/** @todo Fase C4 — backend endpoint not yet implemented */
 export async function updateProduct(input: UpdateProductInput): Promise<string> {
   return apiFetch<string>(
     `/api/v1/catalog/products/${encodeURIComponent(input.productId)}`,
     {
       method: "PUT",
-      body: JSON.stringify({
-        productId: input.productId,
-        name: input.name,
-        description: input.description ?? null,
-        brandId: input.brandId,
-        categoryId: input.categoryId,
-        isActive: input.isActive,
-        isVisible: input.isVisible,
-      }),
+      body: JSON.stringify(input),
     },
   );
 }
 
 // ─── Product images ───────────────────────────────────────────────────
 
+/** @todo Fase C4 — backend endpoint not yet implemented */
 export function addProductImage(
   productId: string,
   input: { fileAssetId?: string | null; url: string },
@@ -404,6 +444,7 @@ export function addProductImage(
   );
 }
 
+/** @todo Fase C4 */
 export async function removeProductImage(productId: string, imageId: string): Promise<void> {
   await apiFetch<void>(
     `/api/v1/catalog/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}`,
@@ -411,6 +452,7 @@ export async function removeProductImage(productId: string, imageId: string): Pr
   );
 }
 
+/** @todo Fase C4 */
 export async function setProductThumbnail(productId: string, imageId: string): Promise<void> {
   await apiFetch<void>(
     `/api/v1/catalog/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}/thumbnail`,
@@ -418,20 +460,18 @@ export async function setProductThumbnail(productId: string, imageId: string): P
   );
 }
 
+/** @deprecated v1 endpoint — price managed via PriceList in v2 */
 export async function changeProductPrice(input: ChangeProductPriceInput): Promise<string> {
   return apiFetch<string>(
     `/api/v1/catalog/products/${encodeURIComponent(input.productId)}/price`,
     {
       method: "PATCH",
-      body: JSON.stringify({
-        productId: input.productId,
-        amount: input.amount,
-        currency: input.currency,
-      }),
+      body: JSON.stringify(input),
     },
   );
 }
 
+/** @deprecated v1 endpoint — stock managed via Inventory module in v2 */
 export async function adjustProductStock(
   input: AdjustProductStockInput,
 ): Promise<{ stock: number }> {
@@ -439,14 +479,12 @@ export async function adjustProductStock(
     `/api/v1/catalog/products/${encodeURIComponent(input.productId)}/stock`,
     {
       method: "PATCH",
-      body: JSON.stringify({
-        productId: input.productId,
-        delta: input.delta,
-      }),
+      body: JSON.stringify(input),
     },
   );
 }
 
+/** @todo Fase C4 */
 export async function deleteProduct(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/catalog/products/${encodeURIComponent(id)}`, {
     method: "DELETE",
@@ -455,6 +493,7 @@ export async function deleteProduct(id: string): Promise<void> {
 
 // ─── Trash + Restore ──────────────────────────────────────────────────
 
+/** @todo Fase C2 */
 export function listTrashedBrands(
   pageNumber = 1,
   pageSize = 20,
@@ -466,12 +505,14 @@ export function listTrashedBrands(
   return apiFetch<PagedResponse<BrandDto>>(`/api/v1/catalog/brands/trash?${q.toString()}`);
 }
 
+/** @todo Fase C2 */
 export function restoreBrand(id: string): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/brands/${encodeURIComponent(id)}/restore`, {
     method: "POST",
   });
 }
 
+/** @todo Fase C3 */
 export function listTrashedCategories(
   pageNumber = 1,
   pageSize = 20,
@@ -485,12 +526,14 @@ export function listTrashedCategories(
   );
 }
 
+/** @todo Fase C3 */
 export function restoreCategory(id: string): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/categories/${encodeURIComponent(id)}/restore`, {
     method: "POST",
   });
 }
 
+/** @todo Fase C4 */
 export function listTrashedProducts(
   pageNumber = 1,
   pageSize = 20,
@@ -504,6 +547,7 @@ export function listTrashedProducts(
   );
 }
 
+/** @todo Fase C4 */
 export function restoreProduct(id: string): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/products/${encodeURIComponent(id)}/restore`, {
     method: "POST",
