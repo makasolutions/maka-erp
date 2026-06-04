@@ -240,7 +240,6 @@ export function getCategoryById(id: string): Promise<CategoryDto> {
   return apiFetch<CategoryDto>(`/api/v1/catalog/categories/${encodeURIComponent(id)}`);
 }
 
-/** @todo Fase C3 — backend endpoint not yet implemented */
 export async function createCategory(input: CreateCategoryInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/categories", {
     method: "POST",
@@ -248,7 +247,6 @@ export async function createCategory(input: CreateCategoryInput): Promise<string
   });
 }
 
-/** @todo Fase C3 — backend endpoint not yet implemented */
 export async function updateCategory(input: UpdateCategoryInput): Promise<string> {
   return apiFetch<string>(
     `/api/v1/catalog/categories/${encodeURIComponent(input.categoryId)}`,
@@ -259,7 +257,6 @@ export async function updateCategory(input: UpdateCategoryInput): Promise<string
   );
 }
 
-/** @todo Fase C3 — backend endpoint not yet implemented */
 export async function deleteCategory(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/catalog/categories/${encodeURIComponent(id)}`, {
     method: "DELETE",
@@ -507,7 +504,6 @@ export function restoreBrand(id: string): Promise<string> {
   });
 }
 
-/** @todo Fase C3 */
 export function listTrashedCategories(
   pageNumber = 1,
   pageSize = 20,
@@ -521,7 +517,6 @@ export function listTrashedCategories(
   );
 }
 
-/** @todo Fase C3 */
 export function restoreCategory(id: string): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/categories/${encodeURIComponent(id)}/restore`, {
     method: "POST",

@@ -261,13 +261,21 @@
       "created": "Created",
       "code": "Code",
       "active": "Active",
-      "visible": "Visible"
+      "visible": "Visible",
+      "sortOrder": "Order"
     },
     "actions": {
       "create": "New category",
       "add": "Add category",
       "edit": "Edit category",
-      "delete": "Delete category"
+      "delete": "Delete category",
+      "viewTrash": "Trash"
+    },
+    "trash": {
+      "title": "Deleted categories",
+      "restoreTitle": "Restore category",
+      "restoreDesc": "Do you want to restore \"{{name}}\"? It will become available in the catalog again.",
+      "restoreAction": "Restore"
     },
     "empty": {
       "title": "No categories yet",
@@ -314,10 +322,14 @@
       "codePlaceholder": "Search by code…",
       "namePlaceholder": "Search by name…"
     },
+    "sortOrderHint": "Position in the list. Lower = first.",
+    "restored": "Category restored",
+    "restoreFailed": "Restore failed",
     "kpi": {
       "total": "Total categories",
       "active": "Active",
-      "visible": "Visible"
+      "visible": "Visible",
+      "trashed": "In trash"
     }
   }
 }

@@ -261,13 +261,21 @@
       "created": "Creado",
       "code": "Código",
       "active": "Activo",
-      "visible": "Visible"
+      "visible": "Visible",
+      "sortOrder": "Orden"
     },
     "actions": {
       "create": "Nueva categoría",
       "add": "Agregar categoría",
       "edit": "Editar categoría",
-      "delete": "Eliminar categoría"
+      "delete": "Eliminar categoría",
+      "viewTrash": "Papelera"
+    },
+    "trash": {
+      "title": "Categorías en papelera",
+      "restoreTitle": "Restaurar categoría",
+      "restoreDesc": "¿Deseas restaurar \"{{name}}\"? Volverá a estar disponible en el catálogo.",
+      "restoreAction": "Restaurar"
     },
     "empty": {
       "title": "Sin categorías aún",
@@ -314,10 +322,14 @@
       "codePlaceholder": "Buscar por código…",
       "namePlaceholder": "Buscar por nombre…"
     },
+    "sortOrderHint": "Posición en la lista. Menor = primero.",
+    "restored": "Categoría restaurada",
+    "restoreFailed": "Error al restaurar",
     "kpi": {
       "total": "Categorías totales",
       "active": "Activas",
-      "visible": "Visibles"
+      "visible": "Visibles",
+      "trashed": "En papelera"
     }
   }
 }

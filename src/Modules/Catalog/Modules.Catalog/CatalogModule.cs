@@ -11,7 +11,13 @@ using FSH.Modules.Catalog.Features.v1.Brands.GetBrands;
 using FSH.Modules.Catalog.Features.v1.Brands.ListTrashedBrands;
 using FSH.Modules.Catalog.Features.v1.Brands.RestoreBrand;
 using FSH.Modules.Catalog.Features.v1.Brands.UpdateBrand;
+using FSH.Modules.Catalog.Features.v1.Categories.CreateCategory;
+using FSH.Modules.Catalog.Features.v1.Categories.DeleteCategory;
 using FSH.Modules.Catalog.Features.v1.Categories.GetCategories;
+using FSH.Modules.Catalog.Features.v1.Categories.GetCategoryById;
+using FSH.Modules.Catalog.Features.v1.Categories.ListTrashedCategories;
+using FSH.Modules.Catalog.Features.v1.Categories.RestoreCategory;
+using FSH.Modules.Catalog.Features.v1.Categories.UpdateCategory;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -72,6 +78,12 @@ public sealed class CatalogModule : IModule
             .WithTags("Catalog - Categories")
             .WithApiVersionSet(apiVersionSet);
 
+        categories.MapListTrashedCategoriesEndpoint();
         categories.MapGetCategoriesEndpoint();
+        categories.MapGetCategoryByIdEndpoint();
+        categories.MapCreateCategoryEndpoint();
+        categories.MapUpdateCategoryEndpoint();
+        categories.MapDeleteCategoryEndpoint();
+        categories.MapRestoreCategoryEndpoint();
     }
 }
