@@ -18,11 +18,8 @@ public sealed class CatalogDbInitializer(
     }
 
     /// <summary>
-    /// Catalog has NO per-tenant auto-seed. A fresh tenant comes up with an empty
-    /// catalog and is expected to be populated by the operator via the API / UI.
-    /// Demo content for the <c>acme</c> and <c>globex</c> tenants lives in the
-    /// DbMigrator's <c>seed-demo</c> command, which calls
-    /// <see cref="CatalogSeedData"/> directly under a tenant-scoped DbContext.
+    /// Catalog seed is handled by CatalogDbSeeder (Fase C1 Paso 5).
+    /// A fresh tenant comes up with an empty catalog until the seeder runs.
     /// </summary>
     public Task SeedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
