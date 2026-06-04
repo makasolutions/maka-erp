@@ -32,7 +32,13 @@
       "categoryPlaceholder": "Selecciona una categoría…",
       "image": "Imagen",
       "active": "Activo",
-      "visible": "Visible"
+      "visible": "Visible",
+      "type": "Tipo",
+      "defaultSku": "SKU por defecto",
+      "shortDescription": "Descripción corta",
+      "isVirtual": "Virtual",
+      "isPublic": "Público",
+      "slug": "Slug"
     },
     "actions": {
       "create": "Nuevo producto",
@@ -169,7 +175,55 @@
     },
     "createBrand": "Crear marca",
     "createCategory": "Crear categoría",
-    "quickCreateDesc": "Crea el registro y continúa con el producto sin salir de esta pantalla."
+    "quickCreateDesc": "Crea el registro y continúa con el producto sin salir de esta pantalla.",
+    "types": {
+      "Simple": "Simple",
+      "Variable": "Variable",
+      "Bundle": "Bundle",
+      "Service": "Servicio"
+    },
+    "statuses": {
+      "Draft": "Borrador",
+      "Active": "Activo",
+      "Archived": "Archivado"
+    },
+    "actions": {
+      "create": "Nuevo producto",
+      "add": "Agregar producto",
+      "edit": "Editar producto",
+      "delete": "Eliminar producto",
+      "publish": "Publicar",
+      "archive": "Archivar",
+      "viewTrash": "Papelera",
+      "restore": "Restaurar"
+    },
+    "trash": {
+      "title": "Productos en papelera",
+      "restoreTitle": "Restaurar producto",
+      "restoreDesc": "¿Deseas restaurar \"{{name}}\"? Volverá a estar disponible en el catálogo.",
+      "restoreAction": "Restaurar"
+    },
+    "published": "Producto publicado",
+    "publishFailed": "Error al publicar",
+    "archived": "Producto archivado",
+    "archiveFailed": "Error al archivar",
+    "restored": "Producto restaurado",
+    "restoreFailed": "Error al restaurar",
+    "kpi": {
+      "total": "Productos totales",
+      "active": "Activos",
+      "visible": "Visibles",
+      "trashed": "En papelera",
+      "draft": "Borradores",
+      "archived": "Archivados"
+    },
+    "defaultSkuHint": "Identificador único de la variación base. Si se deja vacío se genera como «{slug}-default».",
+    "typePlaceholder": "Selecciona el tipo…",
+    "shortDescPlaceholder": "Breve descripción para listados.",
+    "publishConfirmTitle": "¿Publicar \"{{name}}\"?",
+    "publishConfirmDesc": "El producto será visible en el catálogo.",
+    "archiveConfirmTitle": "¿Archivar \"{{name}}\"?",
+    "archiveConfirmDesc": "El producto quedará oculto y no podrá comprarse. Se puede reactivar después."
   },
   "brands": {
     "title": "Marcas",

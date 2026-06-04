@@ -287,41 +287,45 @@ export type ProductDto = {
   id: string;
   name: string;
   slug: string;
-  description?: string | null;
-  brandId: string;
-  isActive: boolean;
+  shortDescription?: string | null;
   thumbnailUrl?: string | null;
-
-  /** @deprecated v1 field — Sku moved to ProductVariation */
-  sku?: string;
-  /** @deprecated v1 field — Price moved to PriceList */
-  price?: MoneyDto;
-  /** @deprecated v1 field — Stock moved to Inventory module */
-  stock?: number;
-  /** @deprecated v1 field */
-  categoryId?: string;
-  /** @deprecated v1 field */
-  isVisible?: boolean;
-  /** @deprecated v1 field */
-  images?: ProductImageDto[];
-  /** @deprecated v1 field */
-  createdAtUtc?: string;
-  /** @deprecated v1 field */
+  brandId?: string | null;
+  brandName?: string | null;
+  type: ProductType;
+  status: ProductStatus;
+  isVirtual: boolean;
+  isPublic: boolean;
+  defaultSku?: string | null;
+  wooCommerceId?: number | null;
+  createdAtUtc: string;
   updatedAtUtc?: string | null;
-  /** @deprecated v1 field */
+
+  /** @deprecated v1 fields — kept for backward compat */
+  description?: string | null;
+  isActive?: boolean;
+  isVisible?: boolean;
+  sku?: string;
+  price?: MoneyDto;
+  stock?: number;
+  categoryId?: string;
+  images?: ProductImageDto[];
   deletedOnUtc?: string | null;
-  /** @deprecated v1 field */
   deletedBy?: string | null;
 };
+
+export type ProductType   = "Simple" | "Variable" | "Bundle" | "Service";
+export type ProductStatus = "Draft" | "Active" | "Archived";
 
 export type SearchProductsParams = {
   search?: string;
   brandId?: string | null;
-  isActive?: boolean | null;
+  type?: ProductType | null;
+  status?: ProductStatus | null;
   pageNumber?: number;
   pageSize?: number;
   sort?: string;
   /** @deprecated v1 params */
+  isActive?: boolean | null;
   sku?: string;
   name?: string;
   categoryId?: string | null;
@@ -332,27 +336,37 @@ export type SearchProductsParams = {
 
 export type CreateProductInput = {
   name: string;
-  brandId: string;
-  isActive: boolean;
-  /** @deprecated v1 fields */
-  sku?: string;
-  description?: string | null;
-  categoryId?: string;
-  priceAmount?: number;
-  priceCurrency?: string;
-  stock?: number;
-  isVisible?: boolean;
+  slug?: string | null;
+  type: ProductType;
+  shortDescription?: string | null;
+  brandId?: string | null;
+  taxRateId?: string | null;
+  shippingClassId?: string | null;
+  defaultSku?: string | null;
+  isPublic?: boolean;
 };
 
 export type UpdateProductInput = {
   productId: string;
   name: string;
+  shortDescription?: string | null;
   description?: string | null;
-  brandId: string;
-  isActive: boolean;
-  /** @deprecated v1 fields */
-  categoryId?: string;
-  isVisible?: boolean;
+  technicalSpecs?: string | null;
+  brandId?: string | null;
+  taxRateId?: string | null;
+  shippingClassId?: string | null;
+  isVirtual?: boolean;
+  isDownloadable?: boolean;
+  isPublic?: boolean;
+  weight?: number | null;
+  weightUnit?: string;
+  dimensionLength?: number | null;
+  dimensionWidth?: number | null;
+  dimensionHeight?: number | null;
+  dimensionUnit?: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
 };
 
 /** @deprecated v1 type */
@@ -374,8 +388,8 @@ export function searchProducts(
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.brandId) query.set("brandId", params.brandId);
-  if (params.isActive !== undefined && params.isActive !== null)
-    query.set("isActive", String(params.isActive));
+  if (params.type) query.set("type", params.type);
+  if (params.status) query.set("status", params.status);
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 20));
   if (params.sort) query.set("sort", params.sort);
@@ -388,19 +402,6 @@ export function getProductById(id: string): Promise<ProductDto> {
   return apiFetch<ProductDto>(`/api/v1/catalog/products/${encodeURIComponent(id)}`);
 }
 
-/** @deprecated v1 endpoint */
-export type ProductStats = {
-  total: number;
-  active: number;
-  visible: number;
-};
-
-/** @todo Fase C4 — backend endpoint not yet implemented */
-export function getProductStats(): Promise<ProductStats> {
-  return apiFetch<ProductStats>(`/api/v1/catalog/products/stats`);
-}
-
-/** @todo Fase C4 — backend endpoint not yet implemented */
 export async function createProduct(input: CreateProductInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/products", {
     method: "POST",
@@ -408,7 +409,6 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
   });
 }
 
-/** @todo Fase C4 — backend endpoint not yet implemented */
 export async function updateProduct(input: UpdateProductInput): Promise<string> {
   return apiFetch<string>(
     `/api/v1/catalog/products/${encodeURIComponent(input.productId)}`,
@@ -417,6 +417,18 @@ export async function updateProduct(input: UpdateProductInput): Promise<string> 
       body: JSON.stringify(input),
     },
   );
+}
+
+export async function publishProduct(id: string): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/products/${encodeURIComponent(id)}/publish`, {
+    method: "POST",
+  });
+}
+
+export async function archiveProduct(id: string): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/products/${encodeURIComponent(id)}/archive`, {
+    method: "POST",
+  });
 }
 
 // ─── Product images ───────────────────────────────────────────────────
@@ -523,7 +535,6 @@ export function restoreCategory(id: string): Promise<string> {
   });
 }
 
-/** @todo Fase C4 */
 export function listTrashedProducts(
   pageNumber = 1,
   pageSize = 20,
@@ -537,7 +548,6 @@ export function listTrashedProducts(
   );
 }
 
-/** @todo Fase C4 */
 export function restoreProduct(id: string): Promise<string> {
   return apiFetch<string>(`/api/v1/catalog/products/${encodeURIComponent(id)}/restore`, {
     method: "POST",

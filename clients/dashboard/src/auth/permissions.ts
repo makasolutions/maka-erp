@@ -40,6 +40,8 @@ export const P = {
       update:       "Permissions.Catalog.Products.Update",
       delete:       "Permissions.Catalog.Products.Delete",
       restore:      "Permissions.Catalog.Products.Restore",
+      publish:      "Permissions.Catalog.Products.Publish",
+      archive:      "Permissions.Catalog.Products.Archive",
       adjustStock:  "Permissions.Catalog.Products.AdjustStock",
     },
   },

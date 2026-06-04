@@ -29,6 +29,12 @@
       "skuPlaceholder": "ACM-TS-001",
       "descPlaceholder": "100% organic cotton crew-neck.",
       "brandPlaceholder": "Select a brand…",
+      "type": "Type",
+      "defaultSku": "Default SKU",
+      "shortDescription": "Short description",
+      "isVirtual": "Virtual",
+      "isPublic": "Public",
+      "slug": "Slug",
       "categoryPlaceholder": "Select a category…",
       "image": "Image",
       "active": "Active",
@@ -169,7 +175,55 @@
     },
     "createBrand": "Create brand",
     "createCategory": "Create category",
-    "quickCreateDesc": "Create the record and keep editing the product without leaving this screen."
+    "quickCreateDesc": "Create the record and keep editing the product without leaving this screen.",
+    "types": {
+      "Simple": "Simple",
+      "Variable": "Variable",
+      "Bundle": "Bundle",
+      "Service": "Service"
+    },
+    "statuses": {
+      "Draft": "Draft",
+      "Active": "Active",
+      "Archived": "Archived"
+    },
+    "actions": {
+      "create": "New product",
+      "add": "Add product",
+      "edit": "Edit product",
+      "delete": "Delete product",
+      "publish": "Publish",
+      "archive": "Archive",
+      "viewTrash": "Trash",
+      "restore": "Restore"
+    },
+    "trash": {
+      "title": "Deleted products",
+      "restoreTitle": "Restore product",
+      "restoreDesc": "Do you want to restore \"{{name}}\"? It will become available in the catalog again.",
+      "restoreAction": "Restore"
+    },
+    "published": "Product published",
+    "publishFailed": "Publish failed",
+    "archived": "Product archived",
+    "archiveFailed": "Archive failed",
+    "restored": "Product restored",
+    "restoreFailed": "Restore failed",
+    "kpi": {
+      "total": "Total products",
+      "active": "Active",
+      "visible": "Visible",
+      "trashed": "In trash",
+      "draft": "Drafts",
+      "archived": "Archived"
+    },
+    "defaultSkuHint": "Unique identifier for the default variation. Leave blank to auto-generate as «{slug}-default».",
+    "typePlaceholder": "Select type…",
+    "shortDescPlaceholder": "Short description for listings.",
+    "publishConfirmTitle": "Publish \"{{name}}\"?",
+    "publishConfirmDesc": "The product will become visible in the catalog.",
+    "archiveConfirmTitle": "Archive \"{{name}}\"?",
+    "archiveConfirmDesc": "The product will be hidden and cannot be purchased. It can be re-activated later."
   },
   "brands": {
     "title": "Brands",

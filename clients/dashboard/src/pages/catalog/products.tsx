@@ -10,36 +10,24 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  ArrowDown,
-  CircleDollarSign,
-  Eye,
-  Minus,
-  Package,
-  PackageX,
-  Plus,
-} from "lucide-react";
+import { Eye, Package, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
-  adjustProductStock,
-  changeProductPrice,
-  createBrand,
-  createCategory,
+  archiveProduct,
   createProduct,
   deleteProduct,
-  getProductStats,
+  listTrashedProducts,
+  publishProduct,
+  restoreProduct,
   searchBrands,
-  searchCategories,
   searchProducts,
   updateProduct,
-  type AdjustProductStockInput,
   type BrandDto,
-  type CategoryDto,
-  type ChangeProductPriceInput,
   type CreateProductInput,
   type ProductDto,
+  type ProductStatus,
+  type ProductType,
   type UpdateProductInput,
 } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
@@ -58,6 +46,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Combobox,
   EntityFilterPill,
+  EntityInitialsAvatar,
   EntityPageHeader,
   EntityStatusBadge,
   Field,
@@ -71,79 +60,60 @@ import {
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
-import {
-  describe,
-  formatDate,
-  formatMoney,
-} from "@/lib/list-helpers";
+import { describe, formatDate, slugify } from "@/lib/list-helpers";
+import { EntityAuditSection } from "@/components/entity-audit-section";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
+// ── Types ───────────────────────────────────────────────────────────────────
 type EditorState =
   | { mode: "closed" }
   | { mode: "create" }
   | { mode: "edit"; product: ProductDto }
   | { mode: "delete"; product: ProductDto }
-  | { mode: "price"; product: ProductDto }
-  | { mode: "stock"; product: ProductDto };
+  | { mode: "publish"; product: ProductDto }
+  | { mode: "archive"; product: ProductDto }
+  | { mode: "restore"; product: ProductDto };
 
-type ProductRow = ProductDto & {
-  brandName: string;
-  categoryName: string;
-  priceLabel: string;
-  activeLabel: string;
-  visibleLabel: string;
-};
+type ProductRow = ProductDto & { typeLabel: string; statusLabel: string };
 
-function triToBool(v: string | null): boolean | undefined {
-  return v === null ? undefined : v === "true";
-}
+const PRODUCT_TYPES: ProductType[] = ["Simple", "Variable", "Bundle", "Service"];
+const PRODUCT_STATUSES: ProductStatus[] = ["Draft", "Active", "Archived"];
 
-// Category / Brand filter dropdowns: match the MakaGrid action button's surface
-// (card bg, hairline border, accent hover) and the SKU input's footprint
-// (h-8, min-w-40) so the filter row reads as one consistent set of controls.
-const FILTER_COMBO_CLASS =
-  "h-8 min-w-40 rounded-md border-[var(--color-border)] bg-[var(--color-card)] shadow-none " +
-  "hover:border-[var(--color-border)] hover:bg-[var(--color-accent)]";
-
-// ── Cell templates (hook-free; read enriched row fields) ──────────────────
+// ── Cell templates ───────────────────────────────────────────────────────────
 function ProdImageCell(row: ProductRow) {
-  return <ProductImage imageUrl={row.thumbnailUrl} initial={row.name.trim().charAt(0).toUpperCase() || "·"} size={32} />;
-}
-function ProdSkuCell(row: ProductRow) {
-  // Mono is a deliberate, register-allowed convention for codes/SKUs; colour
-  // and size match the rest of the row so only the glyph shape sets it apart.
-  return <code className="font-mono text-[13px] text-[var(--color-foreground)]">{row.sku}</code>;
+  if (row.thumbnailUrl) {
+    return (
+      <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)]">
+        <img src={row.thumbnailUrl} alt="" className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+      </span>
+    );
+  }
+  return <EntityInitialsAvatar name={row.name} size={32} />;
 }
 function ProdNameCell(row: ProductRow) {
   return (
     <div className="min-w-0">
       <div className="truncate text-[13px] font-medium text-[var(--color-foreground)]">{row.name}</div>
-      {row.description && (
-        <div className="truncate text-[12px] text-[var(--color-muted-foreground)]" title={row.description}>
-          {row.description}
-        </div>
+      {row.shortDescription && (
+        <div className="truncate text-[12px] text-[var(--color-muted-foreground)]">{row.shortDescription}</div>
       )}
     </div>
   );
 }
 function ProdBrandCell(row: ProductRow) {
-  return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.brandName}</span>;
+  return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.brandName ?? "—"}</span>;
 }
-function ProdCategoryCell(row: ProductRow) {
-  return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.categoryName}</span>;
+function ProdTypeCell(row: ProductRow) {
+  return <EntityStatusBadge tone="info">{row.typeLabel}</EntityStatusBadge>;
 }
-function ProdPriceCell(row: ProductRow) {
-  // Same weight/size/colour as every other data cell — only tabular-nums (digit
-  // alignment) sets it apart. No display font, no bold (product register bans
-  // display fonts in data; bold made the column read as a different typeface).
-  return <span className="text-[13px] tabular-nums text-[var(--color-foreground)]">{row.priceLabel}</span>;
+function ProdStatusCell(row: ProductRow) {
+  const tone = row.status === "Active" ? "success" : row.status === "Draft" ? "default" : "warning";
+  return <EntityStatusBadge tone={tone}>{row.statusLabel}</EntityStatusBadge>;
 }
-function ProdActiveCell(row: ProductRow) {
-  return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
-}
-function ProdVisibleCell(row: ProductRow) {
-  return <EntityStatusBadge tone={row.isVisible ? "info" : "default"}>{row.visibleLabel}</EntityStatusBadge>;
+function ProdSkuCell(row: ProductRow) {
+  if (!row.defaultSku) return <span className="text-[var(--color-muted-foreground)]">—</span>;
+  return <code className="font-mono text-[11.5px] text-[var(--color-muted-foreground)]">{row.defaultSku}</code>;
 }
 
 function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
@@ -162,137 +132,126 @@ function KpiCard({ label, value, tone }: { label: string; value: number; tone: s
   );
 }
 
-// ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
 //  Page
-// ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
 
 export function ProductsPage() {
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const { can } = usePerm();
+
   const [panelOpen, setPanelOpen] = useState(true);
-  const [skuFilter, setSkuFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
-  const [debouncedSku, setDebouncedSku] = useState("");
   const [debouncedName, setDebouncedName] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "createdAtUtc", dir: "desc" });
-  const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
-
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [visibleFilter, setVisibleFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(25);
+  const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "name", dir: "asc" });
+  const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
+  const [trashOpen, setTrashOpen] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSku(skuFilter.trim()), 250);
-    return () => clearTimeout(timer);
-  }, [skuFilter]);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedName(nameFilter.trim()), 250);
+    const timer = setTimeout(() => { setDebouncedName(nameFilter.trim()); setPage(1); }, 250);
     return () => clearTimeout(timer);
   }, [nameFilter]);
 
-  const filters = useMemo(
-    () => ({
-      sku: debouncedSku || undefined,
-      name: debouncedName || undefined,
-      brandId: brandFilter,
-      categoryId: categoryFilter,
-      isActive: triToBool(activeFilter),
-      isVisible: triToBool(visibleFilter),
-    }),
-    [debouncedSku, debouncedName, brandFilter, categoryFilter, activeFilter, visibleFilter],
-  );
-  useEffect(() => setPage(1), [filters]);
+  const queryParams = useMemo(() => ({
+    search: debouncedName || undefined,
+    brandId: brandFilter ?? undefined,
+    type: (typeFilter as ProductType | null) ?? undefined,
+    status: (statusFilter as ProductStatus | null) ?? undefined,
+    pageNumber: page,
+    pageSize,
+    sort: sort.dir === "desc" ? `-${sort.by}` : sort.by,
+  }), [debouncedName, brandFilter, typeFilter, statusFilter, page, pageSize, sort]);
 
   const query = useQuery({
-    queryKey: ["catalog", "products", filters, page, pageSize, sort],
-    queryFn: () =>
-      searchProducts({ ...filters, pageNumber: page, pageSize, sortBy: sort.by, sortDir: sort.dir }),
+    queryKey: ["catalog", "products", "list", queryParams],
+    queryFn: () => searchProducts(queryParams),
+    placeholderData: keepPreviousData,
+  });
+
+  const trashQuery = useQuery({
+    queryKey: ["catalog", "products", "trash"],
+    queryFn: () => listTrashedProducts(1, 200),
+    enabled: trashOpen,
     placeholderData: keepPreviousData,
   });
 
   const brandsQuery = useQuery({
-    queryKey: ["catalog", "brands", "all-for-products-filter"],
-    queryFn: () => searchBrands({ pageSize: 200 }),
-    staleTime: 60_000,
-  });
-  const categoriesQuery = useQuery({
-    queryKey: ["catalog", "categories", "all-for-products-filter"],
-    queryFn: () => searchCategories({ pageSize: 200 }),
+    queryKey: ["catalog", "brands", "list"],
+    queryFn: () => searchBrands({ pageSize: 200, sort: "name" }),
     staleTime: 60_000,
   });
 
-  // KPI counts — one server-side aggregate query instead of three count probes.
-  const statsQuery = useQuery({
-    queryKey: ["catalog", "products", "stats"],
-    queryFn: getProductStats,
-    staleTime: 30_000,
-  });
-
-  const data = query.data;
-
-  const brandsById = useMemo(() => {
-    const map = new Map<string, BrandDto>();
-    (brandsQuery.data?.items ?? []).forEach((b) => map.set(b.id, b));
-    return map;
-  }, [brandsQuery.data]);
-
-  const categoriesById = useMemo(() => {
-    const map = new Map<string, CategoryDto>();
-    (categoriesQuery.data?.items ?? []).forEach((c) => map.set(c.id, c));
-    return map;
-  }, [categoriesQuery.data]);
-
-  const rows: ProductRow[] = useMemo(
-    () =>
-      (data?.items ?? []).map((p) => ({
-        ...p,
-        brandName: brandsById.get(p.brandId)?.name ?? "—",
-        categoryName: categoriesById.get(p.categoryId ?? "")?.name ?? "—",
-        priceLabel: p.price ? formatMoney(p.price.amount, p.price.currency) : "—",
-        activeLabel: p.isActive ? tc("status.active") : tc("status.inactive"),
-        visibleLabel: p.isVisible ? t("products.filters.visibleYes") : t("products.filters.visibleNo"),
-      })),
-    [data, brandsById, categoriesById, t, tc],
+  const brandOptions = useMemo(() =>
+    (brandsQuery.data?.items ?? []).map((b: BrandDto) => ({ value: b.id, label: b.name })),
+    [brandsQuery.data],
   );
 
-  const sortFieldFor = (field: string): string | undefined =>
-    ({ name: "name", sku: "sku", stock: "stock", priceLabel: "price", createdAtUtc: "createdAtUtc" })[field];
+  const allItems = query.data?.items ?? [];
+  const kpiDraft = allItems.filter(p => p.status === "Draft").length;
+  const kpiActive = allItems.filter(p => p.status === "Active").length;
+  const kpiTrashed = trashQuery.data?.totalCount ?? 0;
 
-  const columns: ColumnModel[] = useMemo(
-    () => [
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "thumbnailUrl", headerText: t("products.fields.image"), template: ProdImageCell as any, width: 96, allowSorting: false, textAlign: "Center" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "categoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 170, minWidth: 140, allowSorting: false },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 170, minWidth: 140, allowSorting: false },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "sku", headerText: t("products.fields.sku"), template: ProdSkuCell as any, width: 140 },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 220 },
-      { field: "stock", headerText: t("products.fields.stock"), width: 90, textAlign: "Right" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "priceLabel", headerText: t("products.fields.price"), template: ProdPriceCell as any, width: 130, textAlign: "Right" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "isActive", headerText: t("products.fields.active"), template: ProdActiveCell as any, width: 100, allowSorting: false, textAlign: "Center" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { field: "isVisible", headerText: t("products.fields.visible"), template: ProdVisibleCell as any, width: 100, allowSorting: false, textAlign: "Center" },
-    ],
+  const rows: ProductRow[] = useMemo(() =>
+    allItems.map(p => ({
+      ...p,
+      typeLabel: t(`products.types.${p.type}`, p.type),
+      statusLabel: t(`products.statuses.${p.status}`, p.status),
+    })),
+    [allItems, t],
+  );
+
+  const trashedRows: ProductRow[] = useMemo(() =>
+    (trashQuery.data?.items ?? []).map(p => ({
+      ...p,
+      typeLabel: t(`products.types.${p.type}`, p.type),
+      statusLabel: t(`products.statuses.${p.status}`, p.status),
+    })),
+    [trashQuery.data, t],
+  );
+
+  const columns: ColumnModel[] = useMemo(() => [
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "thumbnailUrl", headerText: t("products.fields.image"), template: ProdImageCell as any, width: 72, allowSorting: false, textAlign: "Center" },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 220 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 150 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "status", headerText: t("products.fields.status"), template: ProdStatusCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "defaultSku", headerText: t("products.fields.defaultSku"), template: ProdSkuCell as any, width: 160 },
+    { field: "createdAtUtc", headerText: t("products.fields.created"), width: 140, type: "date" },
+  ], [t]);
+
+  const trashColumns: ColumnModel[] = useMemo(() => [
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 180 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, textAlign: "Center" },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "status", headerText: t("products.fields.status"), template: ProdStatusCell as any, width: 110, textAlign: "Center" },
+  ], [t]);
+
+  const typeOptions = useMemo(() =>
+    PRODUCT_TYPES.map(type => ({ value: type, label: t(`products.types.${type}`, type) })),
+    [t],
+  );
+
+  const statusOptions = useMemo(() =>
+    PRODUCT_STATUSES.map(status => ({ value: status, label: t(`products.statuses.${status}`, status) })),
     [t],
   );
 
   const resetFilters = () => {
-    setSkuFilter("");
-    setNameFilter("");
-    setBrandFilter(null);
-    setCategoryFilter(null);
-    setActiveFilter(null);
-    setVisibleFilter(null);
-    setPage(1);
+    setNameFilter(""); setDebouncedName(""); setBrandFilter(null); setTypeFilter(null); setStatusFilter(null); setPage(1);
   };
 
   return (
@@ -300,13 +259,27 @@ export function ProductsPage() {
       <EntityPageHeader
         icon={Package}
         title={t("products.title")}
-        total={data?.totalCount ?? null}
+        total={query.data?.totalCount ?? null}
         unit={t("products.singular")}
         description={t("products.description")}
       >
         <Button
           variant="outline"
-          onClick={() => setPanelOpen((v) => !v)}
+          onClick={() => setTrashOpen(v => !v)}
+          aria-pressed={trashOpen}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Trash2 className="size-4" />
+          {t("products.actions.viewTrash")}
+          {kpiTrashed > 0 && (
+            <span className="ml-1 rounded-full bg-[var(--color-destructive)] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {kpiTrashed}
+            </span>
+          )}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setPanelOpen(v => !v)}
           aria-pressed={panelOpen}
           className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
         >
@@ -323,48 +296,38 @@ export function ProductsPage() {
         </Button>
       </EntityPageHeader>
 
+      {trashOpen && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[var(--color-foreground)]">
+              {t("products.trash.title")}
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => setTrashOpen(false)}>
+              {tc("actions.close")}
+            </Button>
+          </div>
+          <MakaGridServer<ProductRow>
+            dataSource={trashedRows}
+            columns={trashColumns}
+            isLoading={trashQuery.isFetching}
+            totalCount={trashQuery.data?.totalCount ?? 0}
+            page={1}
+            pageSize={200}
+            onPageChange={() => {}}
+            onSortChange={() => {}}
+            fileName="productos-papelera"
+            entityName={t("products.singular")}
+            permissions={{ edit: P.catalog.products.restore }}
+            onEdit={row => setEditor({ mode: "restore", product: row })}
+          />
+        </div>
+      )}
+
       <MakaGridFilters
         open={panelOpen}
         onClear={resetFilters}
         filters={
           <>
-            <MakaFilterField label={t("products.fields.category")}>
-              <Combobox
-                id="product-category-filter"
-                label={t("products.fields.category")}
-                placeholder={tc("status.all")}
-                value={categoryFilter}
-                onChange={setCategoryFilter}
-                options={(categoriesQuery.data?.items ?? []).map((c) => ({ value: c.id, label: c.name }))}
-                searchable
-                clearable
-                emptyOptionLabel={tc("status.all")}
-                className={FILTER_COMBO_CLASS}
-              />
-            </MakaFilterField>
-            <MakaFilterField label={t("products.fields.brand")}>
-              <Combobox
-                id="product-brand-filter"
-                label={t("products.fields.brand")}
-                placeholder={tc("status.all")}
-                value={brandFilter}
-                onChange={setBrandFilter}
-                options={(brandsQuery.data?.items ?? []).map((b) => ({ value: b.id, label: b.name }))}
-                searchable
-                clearable
-                emptyOptionLabel={tc("status.all")}
-                className={FILTER_COMBO_CLASS}
-              />
-            </MakaFilterField>
-            <MakaFilterField label={t("products.fields.sku")}>
-              <MakaFilterInput
-                value={skuFilter}
-                onChange={setSkuFilter}
-                placeholder={t("products.filters.skuPlaceholder")}
-                ariaLabel={t("products.fields.sku")}
-                className="min-w-40 font-mono"
-              />
-            </MakaFilterField>
             <MakaFilterField label={t("products.singular")} className="grow">
               <MakaFilterInput
                 value={nameFilter}
@@ -374,27 +337,38 @@ export function ProductsPage() {
                 className="min-w-48"
               />
             </MakaFilterField>
-            <MakaFilterField label={t("products.fields.active")}>
+            <MakaFilterField label={t("products.fields.brand")}>
+              <Combobox
+                id="brand-filter"
+                label={t("products.fields.brand")}
+                placeholder={t("products.allBrands")}
+                value={brandFilter}
+                onChange={v => { setBrandFilter(v); setPage(1); }}
+                options={brandOptions}
+                searchable
+                clearable
+                emptyOptionLabel={t("products.allBrands")}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.type")}>
               <EntityFilterPill<string | null>
-                label={t("products.fields.active")}
-                value={activeFilter}
-                onChange={setActiveFilter}
+                label={t("products.fields.type")}
+                value={typeFilter}
+                onChange={v => { setTypeFilter(v); setPage(1); }}
                 options={[
                   { value: null, label: tc("status.all") },
-                  { value: "true", label: tc("status.active") },
-                  { value: "false", label: tc("status.inactive") },
+                  ...typeOptions.map(o => ({ value: o.value, label: o.label })),
                 ]}
               />
             </MakaFilterField>
-            <MakaFilterField label={t("products.fields.visible")}>
+            <MakaFilterField label={t("products.fields.status")}>
               <EntityFilterPill<string | null>
-                label={t("products.fields.visible")}
-                value={visibleFilter}
-                onChange={setVisibleFilter}
+                label={t("products.fields.status")}
+                value={statusFilter}
+                onChange={v => { setStatusFilter(v); setPage(1); }}
                 options={[
                   { value: null, label: tc("status.all") },
-                  { value: "true", label: t("products.filters.visibleYes") },
-                  { value: "false", label: t("products.filters.visibleNo") },
+                  ...statusOptions.map(o => ({ value: o.value, label: o.label })),
                 ]}
               />
             </MakaFilterField>
@@ -402,9 +376,10 @@ export function ProductsPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("products.kpi.total")} value={statsQuery.data?.total ?? 0} tone="var(--color-primary)" />
-            <KpiCard label={t("products.kpi.active")} value={statsQuery.data?.active ?? 0} tone="var(--color-success)" />
-            <KpiCard label={t("products.kpi.visible")} value={statsQuery.data?.visible ?? 0} tone="var(--color-info)" />
+            <KpiCard label={t("products.kpi.total")} value={query.data?.totalCount ?? 0} tone="var(--color-primary)" />
+            <KpiCard label={t("products.kpi.draft")} value={kpiDraft} tone="var(--color-muted-foreground)" />
+            <KpiCard label={t("products.kpi.active")} value={kpiActive} tone="var(--color-success)" />
+            <KpiCard label={t("products.kpi.trashed")} value={kpiTrashed} tone="var(--color-destructive)" />
           </>
         }
       />
@@ -413,197 +388,102 @@ export function ProductsPage() {
         dataSource={rows}
         columns={columns}
         isLoading={query.isFetching}
+        totalCount={query.data?.totalCount ?? 0}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onSortChange={(by, dir) => setSort({ by, dir })}
         fileName="productos"
         entityName={t("products.singular")}
-        onRowClick={(row) => can(P.catalog.products.update) && setEditor({ mode: "edit", product: row })}
+        onRowClick={row => can(P.catalog.products.update) && setEditor({ mode: "edit", product: row })}
         onClearFilters={resetFilters}
         permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
-        onEdit={(row) => setEditor({ mode: "edit", product: row })}
-        onDelete={(row) => setEditor({ mode: "delete", product: row })}
-        extraActions={[
-          ...(can(P.catalog.products.update)
-            ? [{ key: "price", label: t("products.actions.changePrice"), icon: CircleDollarSign, onClick: (row: ProductRow) => setEditor({ mode: "price", product: row }) }]
-            : []),
-          ...(can(P.catalog.products.adjustStock)
-            ? [{ key: "stock", label: t("products.actions.adjustStock"), icon: PackageX, onClick: (row: ProductRow) => setEditor({ mode: "stock", product: row }) }]
-            : []),
-        ]}
-        serverPaging={{
-          totalCount: data?.totalCount ?? 0,
-          page,
-          pageSize,
-          pageSizes: [25, 50, 100],
-          onChange: ({ page: p, pageSize: ps }) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-          onSortChange: (s) => {
-            setPage(1);
-            if (!s) setSort({ by: "createdAtUtc", dir: "desc" });
-            else {
-              const by = sortFieldFor(s.field);
-              setSort(by ? { by, dir: s.dir } : { by: "createdAtUtc", dir: "desc" });
-            }
-          },
-        }}
+        onEdit={row => setEditor({ mode: "edit", product: row })}
+        onDelete={row => setEditor({ mode: "delete", product: row })}
       />
-
-      {query.isError && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.30)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.06)] px-3 py-2 text-sm text-[var(--color-destructive)]"
-        >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>{describe(query.error)}</span>
-        </div>
-      )}
 
       <ProductEditorDialog
         state={editor}
         onClose={() => setEditor({ mode: "closed" })}
+        onPublish={p => { setEditor({ mode: "closed" }); setTimeout(() => setEditor({ mode: "publish", product: p }), 50); }}
+        onArchive={p => { setEditor({ mode: "closed" }); setTimeout(() => setEditor({ mode: "archive", product: p }), 50); }}
         brands={brandsQuery.data?.items ?? []}
-        categories={categoriesQuery.data?.items ?? []}
       />
-      <PriceDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
-      <StockDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <DeleteProductDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <PublishProductDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <ArchiveProductDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <RestoreProductDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
     </div>
   );
 }
 
-
-// ───────────────────────────────────────────────────────────────────────
-//  Product image
-// ───────────────────────────────────────────────────────────────────────
-
-function ProductImage({
-  imageUrl,
-  initial,
-  size,
-}: {
-  imageUrl: string | null | undefined;
-  initial: string;
-  size: number;
-}) {
-  const style = { width: size, height: size };
-  if (imageUrl) {
-    return (
-      <span
-        style={style}
-        className={cn(
-          "relative grid shrink-0 place-items-center overflow-hidden rounded-xl",
-          "bg-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)]",
-        )}
-      >
-        <img
-          src={imageUrl}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={(e) => {
-            const target = e.currentTarget;
-            target.style.display = "none";
-            target.parentElement
-              ?.querySelector<HTMLElement>("[data-fallback]")
-              ?.style.removeProperty("display");
-          }}
-        />
-        <span
-          data-fallback
-          style={{ display: "none" }}
-          className="absolute inset-0 grid place-items-center font-display text-[14px] font-bold tracking-tight text-[var(--color-muted-foreground)]"
-        >
-          {initial}
-        </span>
-      </span>
-    );
-  }
-  return (
-    <span
-      aria-hidden
-      style={style}
-      className={cn(
-        "relative grid shrink-0 place-items-center overflow-hidden rounded-xl",
-        "bg-[oklch(from_var(--color-primary)_l_c_h_/_0.10)]",
-        "ring-1 ring-inset ring-[oklch(from_var(--color-primary)_l_c_h_/_0.22)]",
-      )}
-    >
-      <span className="font-display text-[12px] font-bold text-[var(--color-primary)]">
-        {initial}
-      </span>
-    </span>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Editor dialog (create + edit)
-// ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
+//  Editor dialog — Create + Edit
+// ───────────────────────────────────────────────────────────────────────────
 
 function ProductEditorDialog({
   state,
   onClose,
+  onPublish,
+  onArchive,
   brands,
-  categories,
 }: {
   state: EditorState;
   onClose: () => void;
+  onPublish: (p: ProductDto) => void;
+  onArchive: (p: ProductDto) => void;
   brands: BrandDto[];
-  categories: CategoryDto[];
 }) {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "create" || state.mode === "edit";
   const product = state.mode === "edit" ? state.product : undefined;
   const queryClient = useQueryClient();
 
-  const initial = useMemo(
-    () => ({
-      sku: product?.sku ?? "",
-      name: product?.name ?? "",
-      description: product?.description ?? "",
-      // Defaults for new products: "Genérica" brand (GEN) and "Sin categoría"
-      // category (SIN-CAT) when present in this tenant.
-      brandId: product?.brandId ?? brands.find((b) => b.code === "GEN")?.id ?? "",
-      categoryId: product?.categoryId ?? categories.find((c) => c.code === "SIN-CAT")?.id ?? "",
-      priceAmount: product?.price?.amount ?? 0,
-      priceCurrency: product?.price?.currency ?? "USD",
-      stock: product?.stock ?? 0,
-      isActive: product?.isActive ?? true,
-      isVisible: product?.isVisible ?? true,
-    }),
-    [product, brands, categories],
+  const brandOptions = useMemo(() =>
+    brands.map(b => ({ value: b.id, label: b.name })),
+    [brands],
   );
 
-  const [sku, setSku] = useState(initial.sku);
+  const typeOptions = PRODUCT_TYPES.map(type => ({
+    value: type,
+    label: t(`products.types.${type}`, type),
+  }));
+
+  const initial = useMemo(() => ({
+    name: product?.name ?? "",
+    type: (product?.type ?? "Simple") as ProductType,
+    shortDescription: product?.shortDescription ?? "",
+    brandId: product?.brandId ?? "",
+    defaultSku: product?.defaultSku ?? "",
+    isVirtual: false,
+    isPublic: product?.isPublic ?? false,
+  }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [product?.id]);
+
   const [name, setName] = useState(initial.name);
-  const [description, setDescription] = useState(initial.description);
+  const [type, setType] = useState<ProductType>(initial.type);
+  const [shortDescription, setShortDescription] = useState(initial.shortDescription);
   const [brandId, setBrandId] = useState(initial.brandId);
-  const [categoryId, setCategoryId] = useState(initial.categoryId);
-  const [priceAmount, setPriceAmount] = useState(String(initial.priceAmount));
-  const [priceCurrency, setPriceCurrency] = useState(initial.priceCurrency);
-  const [stock, setStock] = useState(String(initial.stock));
-  const [isActive, setIsActive] = useState(initial.isActive);
-  const [isVisible, setIsVisible] = useState(initial.isVisible);
-  const [quickCreate, setQuickCreate] = useState<{ type: "brand" | "category"; name: string } | null>(null);
+  const [defaultSku, setDefaultSku] = useState(initial.defaultSku);
+  const [isVirtual, setIsVirtual] = useState(initial.isVirtual);
+  const [isPublic, setIsPublic] = useState(initial.isPublic);
 
   useEffect(() => {
     if (isOpen) {
-      setSku(initial.sku);
       setName(initial.name);
-      setDescription(initial.description);
+      setType(initial.type);
+      setShortDescription(initial.shortDescription);
       setBrandId(initial.brandId);
-      setCategoryId(initial.categoryId);
-      setPriceAmount(String(initial.priceAmount));
-      setPriceCurrency(initial.priceCurrency);
-      setStock(String(initial.stock));
-      setIsActive(initial.isActive);
-      setIsVisible(initial.isVisible);
+      setDefaultSku(initial.defaultSku);
+      setIsVirtual(initial.isVirtual);
+      setIsPublic(initial.isPublic);
     }
-    // Reset only when the dialog opens or the edited product changes — NOT when
-    // brands/categories refetch (e.g. after inline create), which would clobber
-    // a just-created selection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, product?.id]);
+  }, [isOpen, initial]);
+
+  const slugPreview = useMemo(() => slugify(name) || "—", [name]);
+  const showDefaultSku = type === "Simple" || type === "Service";
 
   const createMutation = useMutation({
     mutationFn: (input: CreateProductInput) => createProduct(input),
@@ -612,7 +492,7 @@ function ProductEditorDialog({
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: (err) => toast.error(t("products.createFailed"), { description: describe(err) }),
+    onError: err => toast.error(t("products.createFailed"), { description: describe(err) }),
   });
 
   const updateMutation = useMutation({
@@ -622,316 +502,197 @@ function ProductEditorDialog({
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: (err) => toast.error(t("products.updateFailed"), { description: describe(err) }),
+    onError: err => toast.error(t("products.updateFailed"), { description: describe(err) }),
   });
 
   const isPending = createMutation.isPending || updateMutation.isPending;
-  const trimmedName = name.trim();
-  const trimmedSku = sku.trim();
-  const validBrand = brandId !== "";
-  const validCategory = categoryId !== "";
-  const priceNum = Number.parseFloat(priceAmount);
-  const stockNum = Number.parseInt(stock, 10);
-  const valid =
-    trimmedName.length > 0 &&
-    (product || trimmedSku.length > 0) &&
-    validBrand &&
-    validCategory &&
-    !Number.isNaN(priceNum) &&
-    priceNum >= 0 &&
-    !Number.isNaN(stockNum) &&
-    stockNum >= 0;
+  const canSubmit = !!name.trim();
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!valid) return;
+    if (!canSubmit) return;
     if (state.mode === "edit" && product) {
       updateMutation.mutate({
         productId: product.id,
-        name: trimmedName,
-        description: description.trim() || null,
-        brandId,
-        categoryId,
-        isActive,
-        isVisible,
+        name: name.trim(),
+        shortDescription: shortDescription.trim() || null,
+        brandId: brandId || null,
+        isVirtual,
+        isPublic,
+        isDownloadable: false,
+        weightUnit: "KG",
+        dimensionUnit: "CM",
       });
     } else {
       createMutation.mutate({
-        sku: trimmedSku,
-        name: trimmedName,
-        description: description.trim() || null,
-        brandId,
-        categoryId,
-        priceAmount: priceNum,
-        priceCurrency,
-        stock: stockNum,
-        isActive,
-        isVisible,
+        name: name.trim(),
+        type,
+        shortDescription: shortDescription.trim() || null,
+        brandId: brandId || null,
+        defaultSku: defaultSku.trim() || null,
+        isPublic,
       });
     }
   };
 
   return (
-    <>
-    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+    <Dialog open={isOpen} onOpenChange={o => (!o ? onClose() : undefined)}>
       <DialogContent size="form">
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle>
-              {product ? t("products.editTitle") : t("products.createTitle")}
-            </DialogTitle>
+            <DialogTitle>{product ? t("products.editTitle") : t("products.createTitle")}</DialogTitle>
             <DialogDescription>
               {product
-                ? t("products.editDetailsDesc", { name: product.name })
-                : t("products.createDetailsDesc")}
+                ? t("products.editDesc", { name: product.name })
+                : t("products.createDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody>
             <FormGrid>
-              <Field id="product-name" span={8} label={t("products.fields.name")} required>
+              <Field id="prod-name" span={8} label={t("products.fields.name")} required>
                 <Input
-                  id="product-name"
+                  id="prod-name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   placeholder={t("products.fields.namePlaceholder")}
                   autoFocus
                   required
                   maxLength={200}
                 />
               </Field>
-              <Field
-                id="product-sku"
-                span={4}
-                label={t("products.fields.sku")}
-                required={!product}
-                hint={product ? t("products.fields.skuFixedHint") : t("products.fields.skuHint")}
-              >
-                <Input
-                  id="product-sku"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value.toUpperCase())}
-                  placeholder={t("products.fields.skuPlaceholder")}
-                  required={!product}
-                  disabled={!!product}
-                  maxLength={64}
-                  className="font-mono text-[13px] tracking-tight"
-                />
-              </Field>
-
-              <Field id="product-brand" span={6} label={t("products.fields.brand")} required>
-                <Combobox
-                  id="product-brand"
-                  label={t("products.fields.brand")}
-                  placeholder={t("products.fields.brandPlaceholder")}
-                  value={brandId || null}
-                  onChange={(v) => setBrandId(v ?? "")}
-                  options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                  searchable
-                  required
-                  onCreate={(q) => setQuickCreate({ type: "brand", name: q })}
-                  createLabel={t("products.createBrand")}
-                />
-              </Field>
-              <Field id="product-category" span={6} label={t("products.fields.category")} required>
-                <Combobox
-                  id="product-category"
-                  label={t("products.fields.category")}
-                  placeholder={t("products.fields.categoryPlaceholder")}
-                  value={categoryId || null}
-                  onChange={(v) => setCategoryId(v ?? "")}
-                  options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                  searchable
-                  required
-                  onCreate={(q) => setQuickCreate({ type: "category", name: q })}
-                  createLabel={t("products.createCategory")}
-                />
-              </Field>
 
               {!product && (
-                <>
-                  <Field id="product-price" span={4} label={t("products.fields.price")} required>
-                    <Input
-                      id="product-price"
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min="0"
-                      value={priceAmount}
-                      onChange={(e) => setPriceAmount(e.target.value)}
-                      required
-                      className="tabular-nums"
-                    />
-                  </Field>
-                  <Field id="product-currency" span={4} label={t("products.fields.currency")} required>
-                    <Input
-                      id="product-currency"
-                      value={priceCurrency}
-                      onChange={(e) => setPriceCurrency(e.target.value.toUpperCase().slice(0, 3))}
-                      required
-                      maxLength={3}
-                      className="font-mono uppercase tracking-tight"
-                    />
-                  </Field>
-                  <Field id="product-stock" span={4} label={t("products.fields.stock")} required>
-                    <Input
-                      id="product-stock"
-                      type="number"
-                      inputMode="numeric"
-                      step="1"
-                      min="0"
-                      value={stock}
-                      onChange={(e) => setStock(e.target.value)}
-                      required
-                      className="tabular-nums"
-                    />
-                  </Field>
-                </>
+                <Field id="prod-type" span={4} label={t("products.fields.type")} required>
+                  <Combobox
+                    id="prod-type"
+                    label={t("products.fields.type")}
+                    placeholder={t("products.typePlaceholder")}
+                    value={type}
+                    onChange={v => setType((v ?? "Simple") as ProductType)}
+                    options={typeOptions}
+                  />
+                </Field>
               )}
 
-              <Field
-                id="product-description"
-                span={12}
-                label={t("products.fields.description")}
-                hint={t("products.fields.descHint")}
-              >
+              {product && (
+                <Field id="prod-slug" span={4} label={t("products.fields.slug")} hint={t("products.slugHint")}>
+                  <div className="flex h-9 items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
+                    <code className="truncate font-mono text-[12.5px] text-[var(--color-foreground)]">
+                      {product.slug}
+                    </code>
+                  </div>
+                </Field>
+              )}
+
+              {!product && (
+                <Field id="prod-slug-preview" span={12} label={t("products.fields.slug")} hint={t("products.slugHint")}>
+                  <div className="flex h-9 items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-3">
+                    <code className="truncate font-mono text-[12.5px] text-[var(--color-foreground)]">
+                      {slugPreview}
+                    </code>
+                  </div>
+                </Field>
+              )}
+
+              <Field id="prod-brand" span={6} label={t("products.fields.brand")}>
+                <Combobox
+                  id="prod-brand"
+                  label={t("products.fields.brand")}
+                  placeholder={t("products.allBrands")}
+                  value={brandId || null}
+                  onChange={v => setBrandId(v ?? "")}
+                  options={brandOptions}
+                  searchable
+                  clearable
+                  emptyOptionLabel={t("products.noBrand")}
+                />
+              </Field>
+
+              {showDefaultSku && !product && (
+                <Field id="prod-sku" span={6} label={t("products.fields.defaultSku")} hint={t("products.defaultSkuHint")}>
+                  <Input
+                    id="prod-sku"
+                    value={defaultSku}
+                    onChange={e => setDefaultSku(e.target.value.toUpperCase())}
+                    placeholder="PROD-001"
+                    maxLength={64}
+                    className="font-mono"
+                  />
+                </Field>
+              )}
+
+              <Field id="prod-shortdesc" span={12} label={t("products.fields.shortDescription")} hint={t("products.descriptionHint")}>
                 <textarea
-                  id="product-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  id="prod-shortdesc"
+                  value={shortDescription}
+                  onChange={e => setShortDescription(e.target.value)}
                   rows={3}
-                  maxLength={4000}
+                  maxLength={500}
                   className={cn(
                     "flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm shadow-xs",
                     "placeholder:text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]",
                     "focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]",
                   )}
-                  placeholder={t("products.fields.descPlaceholder")}
+                  placeholder={t("products.shortDescPlaceholder")}
                 />
               </Field>
 
               <div className="col-span-1 flex items-center gap-8 sm:col-span-12">
                 <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <Switch checked={isActive} onCheckedChange={setIsActive} aria-label={t("products.fields.active")} />
-                  {t("products.fields.active")}
+                  <Switch checked={isVirtual} onCheckedChange={setIsVirtual} aria-label={t("products.fields.isVirtual")} />
+                  {t("products.fields.isVirtual")}
                 </label>
                 <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <Switch checked={isVisible} onCheckedChange={setIsVisible} aria-label={t("products.fields.visible")} />
-                  {t("products.fields.visible")}
+                  <Switch checked={isPublic} onCheckedChange={setIsPublic} aria-label={t("products.fields.isPublic")} />
+                  {t("products.fields.isPublic")}
                 </label>
               </div>
+
+              {product && (
+                <>
+                  {product.status === "Draft" && (
+                    <div className="col-span-1 sm:col-span-12">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        perm={P.catalog.products.publish}
+                        onClick={() => onPublish(product)}
+                        className="w-full gap-2 text-[var(--color-success)]"
+                      >
+                        {t("products.actions.publish")}
+                      </Button>
+                    </div>
+                  )}
+                  {product.status === "Active" && (
+                    <div className="col-span-1 sm:col-span-12">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        perm={P.catalog.products.archive}
+                        onClick={() => onArchive(product)}
+                        className="w-full gap-2 text-[var(--color-warning)]"
+                      >
+                        {t("products.actions.archive")}
+                      </Button>
+                    </div>
+                  )}
+                  <div className="col-span-1 border-t border-[var(--color-border)] pt-4 sm:col-span-12">
+                    <EntityAuditSection entityKey={product.id} entityName="Product" />
+                  </div>
+                </>
+              )}
             </FormGrid>
           </DialogBody>
 
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isPending}>
-                {t("common:actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isPending || !valid}>
-              {isPending
-                ? t("common:feedback.saving")
-                : product
-                  ? t("common:actions.saveChanges")
-                  : t("products.actions.add")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-
-      {quickCreate && (
-        <QuickCreateDialog
-          type={quickCreate.type}
-          name={quickCreate.name}
-          onClose={() => setQuickCreate(null)}
-          onCreated={(newId) => {
-            if (quickCreate.type === "brand") setBrandId(newId);
-            else setCategoryId(newId);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Quick-create dialog — create a brand/category inline from the product form
-//  (the combo's "+ Crear" action). Refreshes the option list (hot reload) and
-//  selects the new record so the user can keep creating the product.
-// ───────────────────────────────────────────────────────────────────────
-
-function QuickCreateDialog({
-  type,
-  name,
-  onClose,
-  onCreated,
-}: {
-  type: "brand" | "category";
-  name: string;
-  onClose: () => void;
-  onCreated: (id: string) => void;
-}) {
-  const { t } = useTranslation("catalog");
-  const { t: tc } = useTranslation("common");
-  const queryClient = useQueryClient();
-  const [n, setN] = useState(name);
-  const [code, setCode] = useState(
-    name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32),
-  );
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      type === "brand"
-        ? createBrand({ code: code.trim(), name: n.trim(), isActive: true, isVisible: true })
-        : createCategory({ code: code.trim(), name: n.trim(), isActive: true, isVisible: true }),
-    onSuccess: (newId) => {
-      toast.success(tc("feedback.created"));
-      queryClient.invalidateQueries({
-        queryKey: ["catalog", type === "brand" ? "brands" : "categories"],
-      });
-      onCreated(newId);
-      onClose();
-    },
-    onError: (err) => toast.error(tc("feedback.createFailed"), { description: describe(err) }),
-  });
-
-  const canSubmit = !!n.trim() && !!code.trim();
-
-  return (
-    <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (canSubmit) mutation.mutate();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {type === "brand" ? t("products.createBrand") : t("products.createCategory")}
-            </DialogTitle>
-            <DialogDescription>{t("products.quickCreateDesc")}</DialogDescription>
-          </DialogHeader>
-          <DialogBody className="space-y-4">
-            <div className="grid grid-cols-[160px_1fr] gap-4">
-              <Field id="qc-code" label={t("brands.fields.code")} required>
-                <Input id="qc-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={32} />
-              </Field>
-              <Field id="qc-name" label={t("brands.fields.name")} required>
-                <Input id="qc-name" value={n} onChange={(e) => setN(e.target.value)} required maxLength={128} autoFocus />
-              </Field>
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={mutation.isPending}>
                 {tc("actions.cancel")}
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={mutation.isPending || !canSubmit}>
-              {mutation.isPending ? tc("feedback.saving") : tc("actions.create")}
+            <Button type="submit" disabled={isPending || !canSubmit}>
+              {isPending ? tc("feedback.saving") : product ? tc("actions.saveChanges") : t("products.actions.add")}
             </Button>
           </DialogFooter>
         </form>
@@ -940,291 +701,13 @@ function QuickCreateDialog({
   );
 }
 
-// ───────────────────────────────────────────────────────────────────────
-//  Price dialog
-// ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
+//  Delete dialog
+// ───────────────────────────────────────────────────────────────────────────
 
-function PriceDialog({
-  state,
-  onClose,
-}: {
-  state: EditorState;
-  onClose: () => void;
-}) {
+function DeleteProductDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
   const { t } = useTranslation("catalog");
-  const isOpen = state.mode === "price";
-  const product = state.mode === "price" ? state.product : undefined;
-  const queryClient = useQueryClient();
-
-  const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("USD");
-
-  useEffect(() => {
-    if (isOpen && product) {
-      setAmount(String(product.price?.amount ?? 0));
-      setCurrency(product.price?.currency ?? "COP");
-    }
-  }, [isOpen, product]);
-
-  const mutation = useMutation({
-    mutationFn: (input: ChangeProductPriceInput) => changeProductPrice(input),
-    onSuccess: () => {
-      toast.success(t("products.priceChanged"));
-      queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
-      onClose();
-    },
-    onError: (err) => toast.error(t("products.changePriceFailed"), { description: describe(err) }),
-  });
-
-  const newAmount = Number.parseFloat(amount);
-  const valid = !Number.isNaN(newAmount) && newAmount >= 0 && currency.length === 3;
-  const oldAmount = product?.price?.amount ?? 0;
-  const delta = !Number.isNaN(newAmount) ? newAmount - oldAmount : 0;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!valid || !product) return;
-            mutation.mutate({ productId: product.id, amount: newAmount, currency });
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CircleDollarSign className="size-4 text-[var(--color-primary)]" />
-              {t("products.actions.changePrice")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("products.changePriceDomainDesc", { name: product?.name })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody className="space-y-4">
-            <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  {t("products.priceWas")}
-                </div>
-                <div className="mt-1 font-display text-[18px] font-semibold tabular-nums">
-                  {product?.price ? formatMoney(product.price.amount, product.price.currency) : "—"}
-                </div>
-              </div>
-              <ArrowDown className="size-4 -rotate-90 text-[var(--color-muted-foreground)]" />
-              <div className="text-right">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
-                  {t("products.priceBecomes")}
-                </div>
-                <div
-                  className={cn(
-                    "mt-1 font-display text-[18px] font-semibold tabular-nums",
-                    delta > 0
-                      ? "text-[var(--color-success)]"
-                      : delta < 0
-                        ? "text-[var(--color-destructive)]"
-                        : "",
-                  )}
-                >
-                  {!Number.isNaN(newAmount)
-                    ? formatMoney(newAmount, currency || "USD")
-                    : "—"}
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <Field id="price-amount" label={t("products.priceNewAmount")} required>
-                <Input
-                  id="price-amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  className="tabular-nums"
-                  autoFocus
-                />
-              </Field>
-              <Field id="price-currency" label={t("products.fields.currency")} required>
-                <Input
-                  id="price-currency"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))}
-                  required
-                  maxLength={3}
-                  className="w-20 font-mono uppercase tracking-tight"
-                />
-              </Field>
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={mutation.isPending}>
-                {t("common:actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={mutation.isPending || !valid}>
-              {mutation.isPending ? t("common:feedback.saving") : t("products.actions.changePrice")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Stock dialog
-// ───────────────────────────────────────────────────────────────────────
-
-function StockDialog({
-  state,
-  onClose,
-}: {
-  state: EditorState;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation("catalog");
-  const isOpen = state.mode === "stock";
-  const product = state.mode === "stock" ? state.product : undefined;
-  const queryClient = useQueryClient();
-
-  const [delta, setDelta] = useState("0");
-
-  useEffect(() => {
-    if (isOpen) setDelta("0");
-  }, [isOpen]);
-
-  const mutation = useMutation({
-    mutationFn: (input: AdjustProductStockInput) => adjustProductStock(input),
-    onSuccess: () => {
-      toast.success(t("products.stockAdjusted"));
-      queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
-      onClose();
-    },
-    onError: (err) => toast.error(t("products.adjustmentFailed"), { description: describe(err) }),
-  });
-
-  const deltaNum = Number.parseInt(delta, 10);
-  const valid = !Number.isNaN(deltaNum) && deltaNum !== 0;
-  const newStock = (product?.stock ?? 0) + (Number.isNaN(deltaNum) ? 0 : deltaNum);
-  const willGoNegative = newStock < 0;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!valid || willGoNegative || !product) return;
-            mutation.mutate({ productId: product.id, delta: deltaNum });
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="size-4 text-[var(--color-primary)]" />
-              {t("products.actions.adjustStock")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("products.adjustStockDomainDesc", { name: product?.name })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody className="space-y-4">
-            <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3 tabular-nums">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  {t("products.stockCurrentLabel")}
-                </div>
-                <div className="mt-1 font-display text-[18px] font-semibold">
-                  {product?.stock ?? 0}
-                </div>
-              </div>
-              <ArrowDown className="size-4 -rotate-90 text-[var(--color-muted-foreground)]" />
-              <div className="text-right">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">
-                  {t("products.priceBecomes")}
-                </div>
-                <div
-                  className={cn(
-                    "mt-1 font-display text-[18px] font-semibold",
-                    willGoNegative
-                      ? "text-[var(--color-destructive)]"
-                      : deltaNum > 0
-                        ? "text-[var(--color-success)]"
-                        : deltaNum < 0
-                          ? "text-[var(--color-warning)]"
-                          : "",
-                  )}
-                >
-                  {newStock}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setDelta(String((Number.parseInt(delta, 10) || 0) - 1))}
-              >
-                <Minus className="size-3.5" />
-              </Button>
-              <Input
-                value={delta}
-                onChange={(e) => setDelta(e.target.value)}
-                type="number"
-                step="1"
-                className="text-center font-mono text-[15px] tabular-nums"
-                aria-label={t("products.adjustDeltaAria")}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setDelta(String((Number.parseInt(delta, 10) || 0) + 1))}
-              >
-                <Plus className="size-3.5" />
-              </Button>
-            </div>
-
-            {willGoNegative && (
-              <div className="flex items-start gap-2 rounded-lg border border-[oklch(from_var(--color-destructive)_l_c_h_/_0.20)] bg-[oklch(from_var(--color-destructive)_l_c_h_/_0.08)] px-3 py-2 text-[12.5px] text-[var(--color-destructive)]">
-                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                <span>
-                  {t("products.stockNegativeWarning", { max: product?.stock ?? 0 })}
-                </span>
-              </div>
-            )}
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={mutation.isPending}>
-                {t("common:actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={mutation.isPending || !valid || willGoNegative}>
-              {mutation.isPending ? t("products.adjusting") : t("products.actions.adjustStock")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-//  Delete confirmation
-// ───────────────────────────────────────────────────────────────────────
-
-function DeleteProductDialog({
-  state,
-  onClose,
-}: {
-  state: EditorState;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
   const isOpen = state.mode === "delete";
   const product = state.mode === "delete" ? state.product : undefined;
   const queryClient = useQueryClient();
@@ -1236,19 +719,17 @@ function DeleteProductDialog({
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: (err) => toast.error(t("products.deleteFailed"), { description: describe(err) }),
+    onError: err => toast.error(t("products.deleteFailed"), { description: describe(err) }),
   });
 
   return (
-    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+    <Dialog open={isOpen} onOpenChange={o => (!o ? onClose() : undefined)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-[var(--color-destructive)]">
-            {t("products.actions.delete")}
-          </DialogTitle>
+          <DialogTitle className="text-[var(--color-destructive)]">{t("products.actions.delete")}</DialogTitle>
           <DialogDescription>
             {t("products.deleteFullDesc", {
-              name: product?.name,
+              name: product?.name ?? "",
               date: product ? formatDate(product.createdAtUtc) : "",
             })}
           </DialogDescription>
@@ -1256,7 +737,7 @@ function DeleteProductDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={deleteMutation.isPending}>
-              {t("common:actions.cancel")}
+              {tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -1264,7 +745,147 @@ function DeleteProductDialog({
             onClick={() => product && deleteMutation.mutate(product.id)}
             disabled={deleteMutation.isPending || !product}
           >
-            {deleteMutation.isPending ? t("common:feedback.deleting") : t("products.actions.delete")}
+            {deleteMutation.isPending ? tc("feedback.deleting") : t("products.actions.delete")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Publish dialog
+// ───────────────────────────────────────────────────────────────────────────
+
+function PublishProductDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const isOpen = state.mode === "publish";
+  const product = state.mode === "publish" ? state.product : undefined;
+  const queryClient = useQueryClient();
+
+  const publishMutation = useMutation({
+    mutationFn: (id: string) => publishProduct(id),
+    onSuccess: () => {
+      toast.success(t("products.published"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+      onClose();
+    },
+    onError: err => toast.error(t("products.publishFailed"), { description: describe(err) }),
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={o => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("products.publishConfirmTitle", { name: product?.name ?? "" })}</DialogTitle>
+          <DialogDescription>{t("products.publishConfirmDesc")}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={publishMutation.isPending}>
+              {tc("actions.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            onClick={() => product && publishMutation.mutate(product.id)}
+            disabled={publishMutation.isPending || !product}
+          >
+            {publishMutation.isPending ? tc("feedback.saving") : t("products.actions.publish")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Archive dialog
+// ───────────────────────────────────────────────────────────────────────────
+
+function ArchiveProductDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const isOpen = state.mode === "archive";
+  const product = state.mode === "archive" ? state.product : undefined;
+  const queryClient = useQueryClient();
+
+  const archiveMutation = useMutation({
+    mutationFn: (id: string) => archiveProduct(id),
+    onSuccess: () => {
+      toast.success(t("products.archived"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+      onClose();
+    },
+    onError: err => toast.error(t("products.archiveFailed"), { description: describe(err) }),
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={o => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("products.archiveConfirmTitle", { name: product?.name ?? "" })}</DialogTitle>
+          <DialogDescription>{t("products.archiveConfirmDesc")}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={archiveMutation.isPending}>
+              {tc("actions.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            variant="outline"
+            onClick={() => product && archiveMutation.mutate(product.id)}
+            disabled={archiveMutation.isPending || !product}
+            className="text-[var(--color-warning)]"
+          >
+            {archiveMutation.isPending ? tc("feedback.saving") : t("products.actions.archive")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Restore dialog
+// ───────────────────────────────────────────────────────────────────────────
+
+function RestoreProductDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const isOpen = state.mode === "restore";
+  const product = state.mode === "restore" ? state.product : undefined;
+  const queryClient = useQueryClient();
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => restoreProduct(id),
+    onSuccess: () => {
+      toast.success(t("products.restored"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+      onClose();
+    },
+    onError: err => toast.error(t("products.restoreFailed"), { description: describe(err) }),
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={o => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("products.trash.restoreTitle")}</DialogTitle>
+          <DialogDescription>{t("products.trash.restoreDesc", { name: product?.name ?? "" })}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={restoreMutation.isPending}>
+              {tc("actions.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            onClick={() => product && restoreMutation.mutate(product.id)}
+            disabled={restoreMutation.isPending || !product}
+          >
+            {restoreMutation.isPending ? tc("feedback.saving") : t("products.trash.restoreAction")}
           </Button>
         </DialogFooter>
       </DialogContent>
