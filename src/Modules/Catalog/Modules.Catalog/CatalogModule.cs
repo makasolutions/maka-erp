@@ -42,6 +42,7 @@ using FSH.Modules.Catalog.Features.v1.ProductCodes.AddProductCode;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.GetProductCodes;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.RemoveProductCode;
 using FSH.Modules.Catalog.Features.v1.Variations.AddVariation;
+using FSH.Modules.Catalog.Features.v1.Variations.GenerateVariations;
 using FSH.Modules.Catalog.Features.v1.Variations.DeleteVariation;
 using FSH.Modules.Catalog.Features.v1.Variations.GetVariationsByProduct;
 using FSH.Modules.Catalog.Features.v1.Variations.RestoreVariation;
@@ -147,6 +148,7 @@ public sealed class CatalogModule : IModule
             .WithTags("Catalog - Variations");
 
         variations.MapGetVariationsByProductEndpoint();
+        variations.MapGenerateVariationsEndpoint();
         variations.MapAddVariationEndpoint();
         variations.MapUpdateVariationEndpoint();
         variations.MapDeleteVariationEndpoint();

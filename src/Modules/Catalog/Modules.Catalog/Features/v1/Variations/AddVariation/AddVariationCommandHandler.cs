@@ -37,6 +37,19 @@ public sealed class AddVariationCommandHandler(CatalogDbContext db)
                 Enumerable.Empty<string>(),
                 HttpStatusCode.Conflict);
 
+        // Validate the attribute-value combination (if supplied) before creating.
+        List<CatalogAttributeValue> attributeValues = [];
+        if (command.AttributeValueIds is { Count: > 0 })
+        {
+            attributeValues = await VariationAttributeHelper
+                .LoadAndValidateValuesAsync(db, command.AttributeValueIds, cancellationToken)
+                .ConfigureAwait(false);
+
+            await VariationAttributeHelper
+                .EnsureCombinationUniqueAsync(db, command.ProductId, command.AttributeValueIds, null, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         // If new variation is default, clear IsDefault from the current default variation
         if (command.IsDefault)
         {
@@ -72,6 +85,9 @@ public sealed class AddVariationCommandHandler(CatalogDbContext db)
             command.SoldIndividually,
             command.LowStockThreshold,
             command.IsVirtual);
+
+        if (attributeValues.Count > 0)
+            variation.SetAttributeValues(attributeValues);
 
         db.Variations.Add(variation);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

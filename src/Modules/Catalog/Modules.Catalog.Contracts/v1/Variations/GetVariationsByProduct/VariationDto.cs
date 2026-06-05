@@ -1,5 +1,12 @@
 namespace FSH.Modules.Catalog.Contracts.v1.Variations.GetVariationsByProduct;
 
+public sealed record VariationAttributeValueDto(
+    Guid    AttributeId,
+    string  AttributeName,
+    Guid    ValueId,
+    string  Value,
+    string? ColorCode);
+
 public sealed record VariationDto(
     Guid      Id,
     Guid      ProductId,
@@ -18,4 +25,5 @@ public sealed record VariationDto(
     bool      IsVirtual,
     int?      WooCommerceId,
     DateTime  CreatedAtUtc,
-    DateTime? UpdatedAtUtc);
+    DateTime? UpdatedAtUtc,
+    IReadOnlyList<VariationAttributeValueDto> AttributeValues);

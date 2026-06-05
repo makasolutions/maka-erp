@@ -15,4 +15,5 @@ public sealed record AddVariationCommand(
     bool     AllowBackorders    = false,
     bool     SoldIndividually   = false,
     int?     LowStockThreshold  = null,
-    bool     IsVirtual          = false) : ICommand<Guid>;
+    bool     IsVirtual          = false,
+    IReadOnlyList<Guid>? AttributeValueIds = null) : ICommand<Guid>;

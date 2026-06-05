@@ -116,5 +116,15 @@ public sealed class ProductVariation : BaseEntity<Guid>, ISoftDeletable
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    /// <summary>Replaces the attribute-value combination that defines this variation (spec §2.7).</summary>
+    public void SetAttributeValues(IEnumerable<CatalogAttributeValue> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        AttributeValues.Clear();
+        foreach (var value in values)
+            AttributeValues.Add(value);
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void SyncWooCommerce(int wooCommerceId) => WooCommerceId = wooCommerceId;
 }

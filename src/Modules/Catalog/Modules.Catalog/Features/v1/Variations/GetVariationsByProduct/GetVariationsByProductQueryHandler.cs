@@ -23,12 +23,31 @@ public sealed class GetVariationsByProductQueryHandler(CatalogDbContext db)
         if (!productExists)
             throw new NotFoundException($"Product {query.ProductId} not found.");
 
-        return await db.Variations
+        var variations = await db.Variations
             .IgnoreQueryFilters()   // include soft-deleted so UI can show them
             .AsNoTracking()
+            .Include(v => v.AttributeValues)
             .Where(v => v.ProductId == query.ProductId)
             .OrderByDescending(v => v.IsDefault)
             .ThenBy(v => v.Sku)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // Resolve attribute names for the values referenced by these variations.
+        var attributeIds = variations
+            .SelectMany(v => v.AttributeValues.Select(av => av.AttributeId))
+            .Distinct()
+            .ToList();
+
+        var attributeNames = attributeIds.Count > 0
+            ? await db.Attributes
+                .AsNoTracking()
+                .Where(a => attributeIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken)
+                .ConfigureAwait(false)
+            : [];
+
+        return variations
             .Select(v => new VariationDto(
                 v.Id,
                 v.ProductId,
@@ -38,7 +57,7 @@ public sealed class GetVariationsByProductQueryHandler(CatalogDbContext db)
                 v.IsActive,
                 v.IsDeleted,
                 v.Weight,
-                v.WeightUnit != null ? v.WeightUnit.ToString() : null,
+                v.WeightUnit?.ToString(),
                 v.ImageUrl,
                 v.ManageStock,
                 v.AllowBackorders,
@@ -47,8 +66,16 @@ public sealed class GetVariationsByProductQueryHandler(CatalogDbContext db)
                 v.IsVirtual,
                 v.WooCommerceId,
                 v.CreatedAtUtc,
-                v.UpdatedAtUtc))
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+                v.UpdatedAtUtc,
+                v.AttributeValues
+                    .Select(av => new VariationAttributeValueDto(
+                        av.AttributeId,
+                        attributeNames.GetValueOrDefault(av.AttributeId, string.Empty),
+                        av.Id,
+                        av.Value,
+                        av.ColorCode))
+                    .OrderBy(x => x.AttributeName)
+                    .ToList()))
+            .ToList();
     }
 }
