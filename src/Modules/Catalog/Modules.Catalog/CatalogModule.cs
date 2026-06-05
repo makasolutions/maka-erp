@@ -12,6 +12,9 @@ using FSH.Modules.Catalog.Features.v1.Attributes.GetAttributes;
 using FSH.Modules.Catalog.Features.v1.Attributes.RemoveAttributeValue;
 using FSH.Modules.Catalog.Features.v1.Attributes.UpdateAttribute;
 using FSH.Modules.Catalog.Features.v1.Attributes.UpdateAttributeValue;
+using FSH.Modules.Catalog.Features.v1.Bundles.AddBundleItem;
+using FSH.Modules.Catalog.Features.v1.Bundles.GetBundleItems;
+using FSH.Modules.Catalog.Features.v1.Bundles.RemoveBundleItem;
 using FSH.Modules.Catalog.Features.v1.Brands.CreateBrand;
 using FSH.Modules.Catalog.Features.v1.Brands.DeleteBrand;
 using FSH.Modules.Catalog.Features.v1.Brands.GetBrandById;
@@ -177,6 +180,14 @@ public sealed class CatalogModule : IModule
 
         tags.MapGetProductTagsEndpoint();
         tags.MapSetProductTagsEndpoint();
+
+        var bundleItems = products
+            .MapGroup("/{productId:guid}/bundle-items")
+            .WithTags("Catalog - Bundle Items");
+
+        bundleItems.MapGetBundleItemsEndpoint();
+        bundleItems.MapAddBundleItemEndpoint();
+        bundleItems.MapRemoveBundleItemEndpoint();
 
         var codes = variations
             .MapGroup("/{variationId:guid}/codes")
