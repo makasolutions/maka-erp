@@ -38,8 +38,13 @@
       "shortDescription": "Descripción corta",
       "isVirtual": "Virtual",
       "isPublic": "Público",
-      "slug": "Slug"
+      "slug": "Slug",
+      "categories": "Categorías"
     },
+    "categoriesHint": "Selecciona una o más categorías. Marca una como principal.",
+    "noCategories": "No hay categorías. Crea categorías primero.",
+    "primaryCategory": "Principal",
+    "makePrimary": "Hacer principal",
     "actions": {
       "create": "Nuevo producto",
       "add": "Agregar producto",

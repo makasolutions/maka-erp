@@ -35,11 +35,17 @@
       "isVirtual": "Virtual",
       "isPublic": "Public",
       "slug": "Slug",
+      "categories": "Categories",
       "categoryPlaceholder": "Select a category…",
       "image": "Image",
       "active": "Active",
-      "visible": "Visible"
+      "visible": "Visible",
+      "categories": "Categories"
     },
+    "categoriesHint": "Select one or more categories. Mark one as primary.",
+    "noCategories": "No categories yet. Create categories first.",
+    "primaryCategory": "Primary",
+    "makePrimary": "Make primary",
     "actions": {
       "create": "New product",
       "add": "Add product",

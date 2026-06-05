@@ -21,6 +21,7 @@ using FSH.Modules.Catalog.Features.v1.Products.GetProducts;
 using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
 using FSH.Modules.Catalog.Features.v1.Products.PublishProduct;
 using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
+using FSH.Modules.Catalog.Features.v1.Products.SetProductCategories;
 using FSH.Modules.Catalog.Features.v1.Products.UpdateProduct;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.AddProductCode;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.GetProductCodes;
@@ -123,6 +124,7 @@ public sealed class CatalogModule : IModule
         products.MapRestoreProductEndpoint();
         products.MapPublishProductEndpoint();
         products.MapArchiveProductEndpoint();
+        products.MapSetProductCategoriesEndpoint();
 
         var variations = products
             .MapGroup("/{productId:guid}/variations")

@@ -17,13 +17,17 @@ import {
   archiveProduct,
   createProduct,
   deleteProduct,
+  getCategoryTree,
+  getProductById,
   listTrashedProducts,
   publishProduct,
   restoreProduct,
   searchBrands,
   searchProducts,
+  setProductCategories,
   updateProduct,
   type BrandDto,
+  type CategoryDto,
   type CreateProductInput,
   type ProductDto,
   type ProductStatus,
@@ -79,6 +83,18 @@ type ProductRow = ProductDto & { typeLabel: string; statusLabel: string };
 
 const PRODUCT_TYPES: ProductType[] = ["Simple", "Variable", "Bundle", "Service"];
 const PRODUCT_STATUSES: ProductStatus[] = ["Draft", "Active", "Archived"];
+
+type FlatCat = { id: string; name: string; depth: number };
+function flattenCats(nodes: CategoryDto[], depth = 0): FlatCat[] {
+  const out: FlatCat[] = [];
+  for (const n of nodes) {
+    out.push({ id: n.id, name: n.name, depth });
+    if (n.children?.length) out.push(...flattenCats(n.children, depth + 1));
+  }
+  return out;
+}
+
+type CatSelection = { categoryId: string; isPrimary: boolean };
 
 // ── Cell templates ───────────────────────────────────────────────────────────
 function ProdImageCell(row: ProductRow) {
@@ -485,54 +501,89 @@ function ProductEditorDialog({
   const slugPreview = useMemo(() => slugify(name) || "—", [name]);
   const showDefaultSku = type === "Simple" || type === "Service";
 
-  const createMutation = useMutation({
-    mutationFn: (input: CreateProductInput) => createProduct(input),
+  // Category tree for the selector + the product's current category assignments.
+  const categoryTreeQuery = useQuery({
+    queryKey: ["catalog", "categories", "tree"],
+    queryFn: getCategoryTree,
+    staleTime: 60_000,
+  });
+  const flatCats = useMemo(() => flattenCats(categoryTreeQuery.data ?? []), [categoryTreeQuery.data]);
+
+  const detailQuery = useQuery({
+    queryKey: ["catalog", "products", "detail", product?.id],
+    queryFn: () => getProductById(product!.id),
+    enabled: isOpen && !!product,
+  });
+
+  const [selectedCats, setSelectedCats] = useState<CatSelection[]>([]);
+  useEffect(() => {
+    if (!isOpen) return;
+    if (product && detailQuery.data) {
+      setSelectedCats(detailQuery.data.categories.map(c => ({ categoryId: c.id, isPrimary: c.isPrimary })));
+    } else if (!product) {
+      setSelectedCats([]);
+    }
+  }, [isOpen, product, detailQuery.data]);
+
+  const toggleCat = (id: string) => setSelectedCats(prev => {
+    const exists = prev.find(c => c.categoryId === id);
+    if (exists) {
+      const next = prev.filter(c => c.categoryId !== id);
+      if (exists.isPrimary && next.length > 0) next[0] = { ...next[0], isPrimary: true };
+      return next;
+    }
+    return [...prev, { categoryId: id, isPrimary: prev.length === 0 }];
+  });
+  const setPrimaryCat = (id: string) =>
+    setSelectedCats(prev => prev.map(c => ({ ...c, isPrimary: c.categoryId === id })));
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      let productId: string;
+      if (state.mode === "edit" && product) {
+        const input: UpdateProductInput = {
+          productId: product.id,
+          name: name.trim(),
+          shortDescription: shortDescription.trim() || null,
+          brandId: brandId || null,
+          isVirtual,
+          isPublic,
+          isDownloadable: false,
+          weightUnit: "KG",
+          dimensionUnit: "CM",
+        };
+        await updateProduct(input);
+        productId = product.id;
+      } else {
+        const input: CreateProductInput = {
+          name: name.trim(),
+          type,
+          shortDescription: shortDescription.trim() || null,
+          brandId: brandId || null,
+          defaultSku: defaultSku.trim() || null,
+          isPublic,
+        };
+        productId = await createProduct(input);
+      }
+      await setProductCategories({ productId, categories: selectedCats });
+      return productId;
+    },
     onSuccess: () => {
-      toast.success(t("products.created"));
+      toast.success(product ? t("products.updated") : t("products.created"));
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
       onClose();
     },
-    onError: err => toast.error(t("products.createFailed"), { description: describe(err) }),
+    onError: err =>
+      toast.error(product ? t("products.updateFailed") : t("products.createFailed"), { description: describe(err) }),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (input: UpdateProductInput) => updateProduct(input),
-    onSuccess: () => {
-      toast.success(t("products.updated"));
-      queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
-      onClose();
-    },
-    onError: err => toast.error(t("products.updateFailed"), { description: describe(err) }),
-  });
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = saveMutation.isPending;
   const canSubmit = !!name.trim();
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!canSubmit) return;
-    if (state.mode === "edit" && product) {
-      updateMutation.mutate({
-        productId: product.id,
-        name: name.trim(),
-        shortDescription: shortDescription.trim() || null,
-        brandId: brandId || null,
-        isVirtual,
-        isPublic,
-        isDownloadable: false,
-        weightUnit: "KG",
-        dimensionUnit: "CM",
-      });
-    } else {
-      createMutation.mutate({
-        name: name.trim(),
-        type,
-        shortDescription: shortDescription.trim() || null,
-        brandId: brandId || null,
-        defaultSku: defaultSku.trim() || null,
-        isPublic,
-      });
-    }
+    saveMutation.mutate();
   };
 
   return (
@@ -636,6 +687,52 @@ function ProductEditorDialog({
                   )}
                   placeholder={t("products.shortDescPlaceholder")}
                 />
+              </Field>
+
+              <Field id="prod-categories" span={12} label={t("products.fields.categories")} hint={t("products.categoriesHint")}>
+                <div className="max-h-52 overflow-y-auto rounded-lg border border-[var(--color-input)] bg-transparent p-2">
+                  {flatCats.length === 0 ? (
+                    <p className="px-2 py-3 text-[13px] text-[var(--color-muted-foreground)]">
+                      {t("products.noCategories")}
+                    </p>
+                  ) : (
+                    flatCats.map(cat => {
+                      const sel = selectedCats.find(c => c.categoryId === cat.id);
+                      return (
+                        <div
+                          key={cat.id}
+                          className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-[var(--color-accent)]"
+                          style={{ paddingLeft: `${8 + cat.depth * 16}px` }}
+                        >
+                          <input
+                            type="checkbox"
+                            id={`cat-${cat.id}`}
+                            checked={!!sel}
+                            onChange={() => toggleCat(cat.id)}
+                            className="size-4 accent-[var(--color-primary)]"
+                          />
+                          <label htmlFor={`cat-${cat.id}`} className="flex-1 cursor-pointer truncate text-[13px] text-[var(--color-foreground)]">
+                            {cat.name}
+                          </label>
+                          {sel && (
+                            <button
+                              type="button"
+                              onClick={() => setPrimaryCat(cat.id)}
+                              className={cn(
+                                "rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
+                                sel.isPrimary
+                                  ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
+                                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]",
+                              )}
+                            >
+                              {sel.isPrimary ? t("products.primaryCategory") : t("products.makePrimary")}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </Field>
 
               <div className="col-span-1 flex items-center gap-8 sm:col-span-12">

@@ -398,8 +398,32 @@ export function searchProducts(
   );
 }
 
-export function getProductById(id: string): Promise<ProductDto> {
-  return apiFetch<ProductDto>(`/api/v1/catalog/products/${encodeURIComponent(id)}`);
+export type ProductCategoryRef = {
+  id: string;
+  name: string;
+  slug: string;
+  isPrimary: boolean;
+};
+
+export type ProductDetailDto = ProductDto & {
+  categories: ProductCategoryRef[];
+  tags?: string[];
+};
+
+export function getProductById(id: string): Promise<ProductDetailDto> {
+  return apiFetch<ProductDetailDto>(`/api/v1/catalog/products/${encodeURIComponent(id)}`);
+}
+
+export type SetProductCategoriesInput = {
+  productId: string;
+  categories: { categoryId: string; isPrimary: boolean }[];
+};
+
+export async function setProductCategories(input: SetProductCategoriesInput): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(input.productId)}/categories`,
+    { method: "PUT", body: JSON.stringify({ categories: input.categories }) },
+  );
 }
 
 export async function createProduct(input: CreateProductInput): Promise<string> {

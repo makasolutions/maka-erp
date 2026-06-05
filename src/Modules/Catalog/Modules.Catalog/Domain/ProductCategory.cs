@@ -22,4 +22,7 @@ public sealed class ProductCategory : BaseEntity<Guid>
             IsPrimary    = isPrimary,
             CreatedAtUtc = DateTime.UtcNow,
         };
+
+    /// <summary>Toggles the primary flag without recreating the row (avoids unique-index churn).</summary>
+    public void SetPrimary(bool isPrimary) => IsPrimary = isPrimary;
 }
