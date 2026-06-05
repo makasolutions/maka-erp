@@ -368,6 +368,7 @@ export type UpdateProductInput = {
   seoTitle?: string | null;
   seoDescription?: string | null;
   seoKeywords?: string | null;
+  specs?: string | null;
 };
 
 /** @deprecated v1 type */
@@ -410,6 +411,22 @@ export type ProductCategoryRef = {
 export type ProductDetailDto = ProductDto & {
   categories: ProductCategoryRef[];
   tags?: string[];
+  // §2.6 full fields returned by GetProductById
+  description?: string | null;
+  technicalSpecs?: string | null;
+  specs?: string | null;
+  taxRateId?: string | null;
+  shippingClassId?: string | null;
+  isDownloadable?: boolean;
+  weight?: number | null;
+  weightUnit?: string;
+  dimensionLength?: number | null;
+  dimensionWidth?: number | null;
+  dimensionHeight?: number | null;
+  dimensionUnit?: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
 };
 
 export function getProductById(id: string): Promise<ProductDetailDto> {
@@ -924,4 +941,37 @@ export function setProductTags(
     `/api/v1/catalog/products/${encodeURIComponent(productId)}/tags`,
     { method: "PUT", body: JSON.stringify({ tags }) },
   );
+}
+
+// ─── Tax rates (§2.3) & shipping classes (§2.4) ─────────────────────────
+
+export type TaxRateDto = {
+  id: string;
+  name: string;
+  rate: number;
+  description: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+};
+
+export function getTaxRates(activeOnly = false): Promise<TaxRateDto[]> {
+  return apiFetch<TaxRateDto[]>(
+    `/api/v1/catalog/tax-rates${activeOnly ? "?activeOnly=true" : ""}`,
+  );
+}
+
+export type ShippingClassDto = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+export function getShippingClasses(): Promise<ShippingClassDto[]> {
+  return apiFetch<ShippingClassDto[]>(`/api/v1/catalog/shipping-classes`);
+}
+
+/** Returns the SKU of the product's default variation (Simple/Service), if any. */
+export async function getDefaultVariation(productId: string): Promise<VariationDto | null> {
+  const variations = await getVariations(productId);
+  return variations.find((v) => v.isDefault && !v.isDeleted) ?? null;
 }

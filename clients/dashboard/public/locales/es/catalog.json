@@ -418,7 +418,7 @@
     "generateFailed": "No se pudieron generar las variaciones"
   },
   "codes": {
-    "title": "Códigos de la variación",
+    "title": "Códigos",
     "manage": "Códigos",
     "desc": "Identificadores de {{sku}} (SKU, EAN, UPC, código de proveedor…).",
     "empty": "Sin códigos. Agrega uno abajo.",
@@ -435,6 +435,22 @@
     "supplierHint": "Obligatorio para código de proveedor.",
     "actions": {
       "add": "Agregar código"
+    },
+    "skuRequired": "El SKU es obligatorio.",
+    "add": "Agregar código",
+    "type": "Tipo",
+    "value": "Valor",
+    "supplier": "Proveedor",
+    "primary": "Principal",
+    "errors": {
+      "required": "Requerido.",
+      "ean": "EAN debe tener 8 o 13 dígitos.",
+      "upc": "UPC debe tener 12 dígitos.",
+      "gtin": "GTIN debe tener 8, 12, 13 o 14 dígitos.",
+      "isbn": "ISBN-10 o ISBN-13 inválido.",
+      "checkDigit": "Dígito de control inválido.",
+      "tooLong": "Demasiado largo.",
+      "duplicate": "Ese código ya existe."
     }
   },
   "attributes": {
@@ -518,5 +534,37 @@
       "saveFailed": "No se pudieron guardar las etiquetas",
       "empty": "Sin etiquetas todavía."
     }
+  },
+  "wizard": {
+    "step": "Paso",
+    "of": "de",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "finish": "Finalizar",
+    "saveDraft": "Guardar",
+    "creating": "Creando…",
+    "steps": {
+      "general": "General",
+      "description": "Descripción",
+      "attributes": "Atributos y variaciones",
+      "media": "Imágenes y etiquetas",
+      "specs": "Especificaciones"
+    },
+    "createTitle": "Nuevo producto",
+    "editTitle": "Editar producto",
+    "requiredStep1": "Completa tipo, nombre y SKU para continuar",
+    "variableOnly": "Las variaciones aplican solo a productos de tipo Variable.",
+    "descShort": "Descripción corta",
+    "descShortHint": "Texto plano, máx. 500 caracteres.",
+    "descLong": "Descripción larga",
+    "descLongHint": "HTML enriquecido.",
+    "specsJsonHint": "JSON estructurado para filtros (ej. {\"sensor\":\"12MP\"}).",
+    "specsInvalid": "El JSON no es válido."
+  },
+  "inlineCreate": {
+    "create": "Crear «{{name}}»",
+    "creating": "Creando…",
+    "created": "Creado",
+    "failed": "No se pudo crear"
   }
 }

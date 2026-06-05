@@ -333,7 +333,7 @@ export function ProductsPage() {
         </Button>
         <Button
           perm={P.catalog.products.create}
-          onClick={() => setEditor({ mode: "create" })}
+          onClick={() => navigate("/catalog/products/new")}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
           <Plus className="size-4" />
@@ -456,10 +456,10 @@ export function ProductsPage() {
         }}
         fileName="productos"
         entityName={t("products.singular")}
-        onRowClick={row => can(P.catalog.products.update) && setEditor({ mode: "edit", product: row })}
+        onRowClick={row => can(P.catalog.products.update) && navigate(`/catalog/products/${row.id}`)}
         onClearFilters={resetFilters}
         permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
-        onEdit={row => setEditor({ mode: "edit", product: row })}
+        onEdit={row => navigate(`/catalog/products/${row.id}`)}
         onDelete={row => setEditor({ mode: "delete", product: row })}
         extraActions={[
           {

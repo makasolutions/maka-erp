@@ -418,7 +418,7 @@
     "generateFailed": "Could not generate variations"
   },
   "codes": {
-    "title": "Variation codes",
+    "title": "Codes",
     "manage": "Codes",
     "desc": "Identifiers for {{sku}} (SKU, EAN, UPC, supplier code…).",
     "empty": "No codes yet. Add one below.",
@@ -435,6 +435,22 @@
     "supplierHint": "Required for supplier codes.",
     "actions": {
       "add": "Add code"
+    },
+    "skuRequired": "SKU is required.",
+    "add": "Add code",
+    "type": "Type",
+    "value": "Value",
+    "supplier": "Supplier",
+    "primary": "Primary",
+    "errors": {
+      "required": "Required.",
+      "ean": "EAN must be 8 or 13 digits.",
+      "upc": "UPC must be 12 digits.",
+      "gtin": "GTIN must be 8, 12, 13 or 14 digits.",
+      "isbn": "Invalid ISBN-10 or ISBN-13.",
+      "checkDigit": "Invalid check digit.",
+      "tooLong": "Too long.",
+      "duplicate": "That code already exists."
     }
   },
   "attributes": {
@@ -518,5 +534,37 @@
       "saveFailed": "Could not save tags",
       "empty": "No tags yet."
     }
+  },
+  "wizard": {
+    "step": "Step",
+    "of": "of",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Finish",
+    "saveDraft": "Save",
+    "creating": "Creating…",
+    "steps": {
+      "general": "General",
+      "description": "Description",
+      "attributes": "Attributes & variations",
+      "media": "Images & tags",
+      "specs": "Specifications"
+    },
+    "createTitle": "New product",
+    "editTitle": "Edit product",
+    "requiredStep1": "Fill type, name and SKU to continue",
+    "variableOnly": "Variations only apply to Variable products.",
+    "descShort": "Short description",
+    "descShortHint": "Plain text, max 500 chars.",
+    "descLong": "Long description",
+    "descLongHint": "Rich HTML.",
+    "specsJsonHint": "Structured JSON for filters (e.g. {\"sensor\":\"12MP\"}).",
+    "specsInvalid": "Invalid JSON."
+  },
+  "inlineCreate": {
+    "create": "Create \"{{name}}\"",
+    "creating": "Creating…",
+    "created": "Created",
+    "failed": "Could not create"
   }
 }

@@ -55,9 +55,9 @@ import { describe } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
-const WEIGHT_UNITS = ["KG", "G", "LB", "OZ"];
+export const WEIGHT_UNITS = ["KG", "G", "LB", "OZ"];
 
-type VarEditor =
+export type VarEditor =
   | { mode: "closed" }
   | { mode: "create" }
   | { mode: "edit"; variation: VariationDto }
@@ -65,7 +65,7 @@ type VarEditor =
   | { mode: "codes"; variation: VariationDto };
 
 // ── Cell templates ───────────────────────────────────────────────────────────
-function VarSkuCell(row: VariationDto) {
+export function VarSkuCell(row: VariationDto) {
   return (
     <div className="flex items-center gap-2">
       <code className="font-mono text-[13px] font-medium text-[var(--color-foreground)]">{row.sku}</code>
@@ -77,10 +77,10 @@ function VarSkuCell(row: VariationDto) {
     </div>
   );
 }
-function VarDescCell(row: VariationDto) {
+export function VarDescCell(row: VariationDto) {
   return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.description || "—"}</span>;
 }
-function VarCombinationCell(row: VariationDto) {
+export function VarCombinationCell(row: VariationDto) {
   if (!row.attributeValues || row.attributeValues.length === 0) {
     return <span className="text-[12px] text-[var(--color-muted-foreground)]">—</span>;
   }
@@ -286,7 +286,7 @@ export function ProductDetailPage() {
 //  Generate variations button
 // ───────────────────────────────────────────────────────────────────────────
 
-function GenerateVariationsButton({ productId, disabled }: { productId: string; disabled: boolean }) {
+export function GenerateVariationsButton({ productId, disabled }: { productId: string; disabled: boolean }) {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
 
@@ -317,7 +317,7 @@ function GenerateVariationsButton({ productId, disabled }: { productId: string; 
 //  Attributes tab — assign attributes + values, then generate
 // ───────────────────────────────────────────────────────────────────────────
 
-function ProductAttributesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+export function ProductAttributesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
 
@@ -509,7 +509,7 @@ function AttributeAssignmentRow({
 //  Images tab
 // ───────────────────────────────────────────────────────────────────────────
 
-function ProductImagesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+export function ProductImagesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
   const imagesQuery = useQuery({
     queryKey: ["catalog", "product-images", productId],
     queryFn: () => getProductImages(productId),
@@ -530,7 +530,7 @@ function ProductImagesTab({ productId, canEdit }: { productId: string; canEdit: 
 //  Tags tab
 // ───────────────────────────────────────────────────────────────────────────
 
-function ProductTagsTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+export function ProductTagsTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
 
@@ -658,7 +658,7 @@ function ProductTagsTab({ productId, canEdit }: { productId: string; canEdit: bo
 //  Variation editor (add / edit)
 // ───────────────────────────────────────────────────────────────────────────
 
-function VariationEditorDialog({
+export function VariationEditorDialog({
   productId,
   state,
   onClose,
@@ -847,7 +847,7 @@ function VariationEditorDialog({
 //  Delete variation
 // ───────────────────────────────────────────────────────────────────────────
 
-function DeleteVariationDialog({
+export function DeleteVariationDialog({
   productId,
   state,
   onClose,
@@ -896,7 +896,7 @@ function DeleteVariationDialog({
 //  Codes dialog (per variation)
 // ───────────────────────────────────────────────────────────────────────────
 
-function CodesDialog({
+export function CodesDialog({
   productId,
   state,
   onClose,
