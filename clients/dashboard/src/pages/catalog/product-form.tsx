@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list";
-import { MakaGridClient } from "@/components/maka";
+import { MakaGridClient, MakaRichTextEditor } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
 import { describe, slugify } from "@/lib/list-helpers";
@@ -82,6 +82,16 @@ export function ProductFormPage() {
     queryFn: () => getProductById(productId!),
     enabled: !!productId,
   });
+
+  // Hydrate the SKU field from the default variation (edit mode).
+  const defaultVarQuery = useQuery({
+    queryKey: ["catalog", "default-variation", productId],
+    queryFn: () => getDefaultVariation(productId!),
+    enabled: !!productId,
+  });
+  useEffect(() => {
+    if (defaultVarQuery.data?.sku) setSku(defaultVarQuery.data.sku);
+  }, [defaultVarQuery.data]);
 
   // Hydrate form from the loaded product (edit / after create).
   useEffect(() => {
@@ -380,9 +390,9 @@ function GeneralStep({
         <Field id="p-sku" span={6} label="SKU" required hint={isNew ? undefined : t("variations.skuImmutable", "")}>
           <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
             maxLength={64} required disabled={!isNew} placeholder="SONY-FX3" className="font-mono uppercase"
-            aria-invalid={skuTooLong || !sku.trim()} />
+            aria-invalid={skuTooLong || (isNew && !sku.trim())} />
           {skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.errors.tooLong")}</p>}
-          {!sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
+          {isNew && !sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
         </Field>
       </FormGrid>
 
@@ -523,9 +533,8 @@ function DescriptionStep({
         <p className="mt-1 text-right text-[11px] text-[var(--color-muted-foreground)]">{shortDescription.length}/500</p>
       </Field>
       <Field id="p-long" span={12} label={t("wizard.descLong")} hint={t("wizard.descLongHint")}>
-        <textarea id="p-long" value={description} onChange={(e) => setDescription(e.target.value)}
-          rows={10} maxLength={50000}
-          className="flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 font-mono text-[12.5px] focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]" />
+        <MakaRichTextEditor id="p-long" value={description} onChange={setDescription}
+          height={260} maxLength={50000} placeholder={t("wizard.descLong")} />
       </Field>
     </FormGrid>
   );
@@ -645,8 +654,8 @@ function SpecsStep(props: {
       </Field>
 
       <Field id="p-tech" span={12} label={t("detail.tabs.specs", "Especificaciones técnicas")}>
-        <textarea id="p-tech" value={props.technicalSpecs} onChange={(e) => props.setTechnicalSpecs(e.target.value)} rows={5} maxLength={10000}
-          className="flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 font-mono text-[12.5px] focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]" />
+        <MakaRichTextEditor id="p-tech" value={props.technicalSpecs} onChange={props.setTechnicalSpecs}
+          height={220} maxLength={10000} placeholder={t("detail.tabs.specs", "")} />
       </Field>
       <Field id="p-specs" span={12} label="Specs (JSON)" hint={t("wizard.specsJsonHint")}>
         <textarea id="p-specs" value={props.specs} onChange={(e) => props.setSpecs(e.target.value)} rows={5}

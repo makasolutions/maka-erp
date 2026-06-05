@@ -28,6 +28,7 @@
     "@syncfusion/ej2-react-notifications": "^33.1.44",
     "@syncfusion/ej2-react-pivotview": "^33.1.44",
     "@syncfusion/ej2-react-popups": "^33.1.44",
+    "@syncfusion/ej2-react-richtexteditor": "^33.2.10",
     "@syncfusion/ej2-react-schedule": "^33.1.44",
     "@tanstack/react-query": "^5.100.11",
     "@tanstack/react-virtual": "^3.13.25",

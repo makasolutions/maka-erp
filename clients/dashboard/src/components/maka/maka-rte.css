@@ -1,0 +1,34 @@
+/* MakaRichTextEditor — Maka design tokens over the Syncfusion bootstrap5 theme. */
+
+.maka-rte .e-richtexteditor {
+  border-color: var(--color-input);
+  border-radius: 0.5rem;
+  background: transparent;
+}
+.maka-rte .e-richtexteditor .e-rte-content,
+.maka-rte .e-richtexteditor .e-source-content {
+  background: transparent;
+  color: var(--color-foreground);
+}
+.maka-rte .e-richtexteditor .e-toolbar {
+  background: var(--color-muted);
+  border-bottom-color: var(--color-border);
+}
+.maka-rte .e-richtexteditor.e-rte-focus,
+.maka-rte .e-richtexteditor:focus-within {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px oklch(from var(--color-ring) l c h / 0.4);
+}
+
+/* Dark mode — Syncfusion canvas/DOM doesn't read our tokens automatically. */
+[data-theme="dark"] .maka-rte .e-richtexteditor .e-toolbar .e-tbar-btn,
+[data-theme="dark"] .maka-rte .e-richtexteditor .e-toolbar .e-tbar-btn .e-icons {
+  color: var(--color-foreground);
+}
+[data-theme="dark"] .maka-rte .e-richtexteditor .e-rte-content .e-content {
+  background: transparent;
+  color: var(--color-foreground);
+}
+[data-theme="dark"] .maka-rte .e-richtexteditor .e-toolbar .e-toolbar-item .e-tbar-btn:hover {
+  background: oklch(from var(--color-accent) l c h / 0.4);
+}

@@ -38,3 +38,6 @@ export type { MakaPivotProps } from "./MakaPivot";
 
 export { MakaScheduler } from "./MakaScheduler";
 export type { MakaSchedulerProps } from "./MakaScheduler";
+
+export { MakaRichTextEditor } from "./MakaRichTextEditor";
+export type { MakaRichTextEditorProps } from "./MakaRichTextEditor";
