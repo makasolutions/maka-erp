@@ -21,13 +21,14 @@ namespace FSH.Modules.Files.Features.v1.Internal;
 ///
 /// Auth: the one-shot token IS the credential — no JWT check on this route.
 /// </summary>
-public static class LocalUploadEndpoint
+public static class UploadEndpoint
 {
     /// <summary>
     /// Registers PUT /local-upload/{token} only when Storage:Provider == "local".
-    /// Call from the host's app-building phase AFTER MapEndpoints().
+    /// Call from the host's app-building phase AFTER MapEndpoints(). Returns the route
+    /// builder when registered, or <c>null</c> when the local provider is not active.
     /// </summary>
-    public static void MapLocalUploadEndpoint(this IEndpointRouteBuilder app, IConfiguration configuration)
+    public static RouteHandlerBuilder? MapUploadEndpoint(this IEndpointRouteBuilder app, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(configuration);
@@ -35,11 +36,11 @@ public static class LocalUploadEndpoint
         var provider = configuration["Storage:Provider"]?.Trim().ToUpperInvariant();
         if (provider != "LOCAL")
         {
-            return;
+            return null;
         }
 
         // Unversioned, unauthenticated route — the token itself is the credential.
-        app.MapPut("/local-upload/{token}", HandleAsync)
+        return app.MapPut("/local-upload/{token}", HandleAsync)
            .WithTags("Files (local dev)")
            .WithSummary("[Dev only] Receive a presigned local upload")
            .WithDescription(

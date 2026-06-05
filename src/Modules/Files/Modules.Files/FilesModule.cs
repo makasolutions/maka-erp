@@ -113,8 +113,8 @@ public sealed class FilesModule : IModule
         }
 
         // Dev-only: bridges the local:// presigned scheme to a real HTTP PUT endpoint.
-        // MapLocalUploadEndpoint is a no-op when Storage:Provider != "local".
+        // MapUploadEndpoint is a no-op when Storage:Provider != "local".
         var configuration = endpoints.ServiceProvider.GetRequiredService<IConfiguration>();
-        endpoints.MapLocalUploadEndpoint(configuration);
+        endpoints.MapUploadEndpoint(configuration);
     }
 }

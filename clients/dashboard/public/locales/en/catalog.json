@@ -39,7 +39,9 @@
       "categoryPlaceholder": "Select a category…",
       "image": "Image",
       "active": "Active",
-      "visible": "Visible"
+      "visible": "Visible",
+      "taxRate": "Tax rate",
+      "shippingClass": "Shipping class"
     },
     "categoriesHint": "Select one or more categories. Mark one as primary.",
     "noCategories": "No categories yet. Create categories first.",
@@ -559,7 +561,14 @@
     "descLong": "Long description",
     "descLongHint": "Rich HTML.",
     "specsJsonHint": "Structured JSON for filters (e.g. {\"sensor\":\"12MP\"}).",
-    "specsInvalid": "Invalid JSON."
+    "specsInvalid": "Invalid JSON.",
+    "specsKey": "Key",
+    "specsValue": "Value",
+    "specsAddRow": "Add specification",
+    "specsEmpty": "No specs yet. Add key-value pairs (e.g. sensor → 12MP).",
+    "specsKeyPlaceholder": "sensor",
+    "specsValuePlaceholder": "12MP",
+    "specsRawToggle": "Edit as JSON"
   },
   "inlineCreate": {
     "create": "Create \"{{name}}\"",

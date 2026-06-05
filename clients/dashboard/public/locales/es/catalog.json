@@ -39,7 +39,9 @@
       "isVirtual": "Virtual",
       "isPublic": "Público",
       "slug": "Slug",
-      "categories": "Categorías"
+      "categories": "Categorías",
+      "taxRate": "Impuesto",
+      "shippingClass": "Clase de envío"
     },
     "categoriesHint": "Selecciona una o más categorías. Marca una como principal.",
     "noCategories": "No hay categorías. Crea categorías primero.",
@@ -559,7 +561,14 @@
     "descLong": "Descripción larga",
     "descLongHint": "HTML enriquecido.",
     "specsJsonHint": "JSON estructurado para filtros (ej. {\"sensor\":\"12MP\"}).",
-    "specsInvalid": "El JSON no es válido."
+    "specsInvalid": "El JSON no es válido.",
+    "specsKey": "Clave",
+    "specsValue": "Valor",
+    "specsAddRow": "Agregar especificación",
+    "specsEmpty": "Sin especificaciones. Agrega pares clave-valor (ej. sensor → 12MP).",
+    "specsKeyPlaceholder": "sensor",
+    "specsValuePlaceholder": "12MP",
+    "specsRawToggle": "Editar como JSON"
   },
   "inlineCreate": {
     "create": "Crear «{{name}}»",

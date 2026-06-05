@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -527,10 +527,8 @@ function DescriptionStep({
   return (
     <FormGrid>
       <Field id="p-short" span={12} label={t("wizard.descShort")} hint={t("wizard.descShortHint")}>
-        <textarea id="p-short" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)}
-          rows={2} maxLength={500}
-          className="flex w-full rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2 text-sm focus-visible:border-[var(--color-ring)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]" />
-        <p className="mt-1 text-right text-[11px] text-[var(--color-muted-foreground)]">{shortDescription.length}/500</p>
+        <MakaRichTextEditor id="p-short" value={shortDescription} onChange={setShortDescription}
+          height={120} maxLength={500} placeholder={t("wizard.descShort")} />
       </Field>
       <Field id="p-long" span={12} label={t("wizard.descLong")} hint={t("wizard.descLongHint")}>
         <MakaRichTextEditor id="p-long" value={description} onChange={setDescription}
@@ -612,6 +610,93 @@ function VariationsStep({ productId, canEdit }: { productId: string; canEdit: bo
 //  Step 5 — Technical specs + shipping/config
 // ───────────────────────────────────────────────────────────────────────────
 
+// ── Friendly key-value editor for the Specs JSONB field (§2.6) ──
+function specsToRows(json: string): { k: string; v: string }[] {
+  try {
+    const o = json.trim() ? JSON.parse(json) : {};
+    if (o && typeof o === "object" && !Array.isArray(o)) {
+      return Object.entries(o).map(([k, v]) => ({ k, v: typeof v === "string" ? v : JSON.stringify(v) }));
+    }
+  } catch { /* ignore malformed */ }
+  return [];
+}
+function rowsToJson(rows: { k: string; v: string }[]): string {
+  const o: Record<string, string> = {};
+  for (const { k, v } of rows) {
+    const key = k.trim();
+    if (key) o[key] = v;
+  }
+  return Object.keys(o).length ? JSON.stringify(o) : "";
+}
+
+function SpecsEditor({ value, onChange }: { value: string; onChange: (json: string) => void }) {
+  const { t } = useTranslation("catalog");
+  const [rows, setRows] = useState<{ k: string; v: string }[]>(() => specsToRows(value));
+  const lastEmit = useRef(value);
+
+  // Re-sync from an external value change (e.g. product loads), but ignore our own emits.
+  useEffect(() => {
+    if (value !== lastEmit.current) {
+      setRows(specsToRows(value));
+      lastEmit.current = value;
+    }
+  }, [value]);
+
+  const commit = (next: { k: string; v: string }[]) => {
+    setRows(next);
+    const json = rowsToJson(next);
+    lastEmit.current = json;
+    onChange(json);
+  };
+
+  const setRow = (i: number, patch: Partial<{ k: string; v: string }>) =>
+    commit(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const removeRow = (i: number) => commit(rows.filter((_, idx) => idx !== i));
+  const addRow = () => setRows((r) => [...r, { k: "", v: "" }]);
+
+  return (
+    <div className="space-y-2">
+      {rows.length === 0 && (
+        <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("wizard.specsEmpty")}</p>
+      )}
+      {rows.map((row, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Input
+            value={row.k}
+            onChange={(e) => setRow(i, { k: e.target.value })}
+            placeholder={t("wizard.specsKeyPlaceholder")}
+            className="w-1/3 font-mono text-[12.5px]"
+            aria-label={t("wizard.specsKey")}
+          />
+          <span aria-hidden className="text-[var(--color-muted-foreground)]">→</span>
+          <Input
+            value={row.v}
+            onChange={(e) => setRow(i, { v: e.target.value })}
+            placeholder={t("wizard.specsValuePlaceholder")}
+            className="grow text-[12.5px]"
+            aria-label={t("wizard.specsValue")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); if (i === rows.length - 1) addRow(); }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => removeRow(i)}
+            aria-label={t("wizard.specsKey")}
+            className="text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-destructive)]"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={addRow}>
+        <Plus className="size-4" />
+        {t("wizard.specsAddRow")}
+      </Button>
+    </div>
+  );
+}
+
 function SpecsStep(props: {
   technicalSpecs: string; setTechnicalSpecs: (v: string) => void;
   specs: string; setSpecs: (v: string) => void; specsValid: boolean;
@@ -631,10 +716,12 @@ function SpecsStep(props: {
   return (
     <FormGrid>
       <Field id="p-tax" span={6} label={t("products.fields.taxRate", "Impuesto")}>
-        <Combobox id="p-tax" label="tax" value={props.taxRateId} onChange={props.setTaxRateId} options={taxOptions} clearable searchable />
+        <Combobox id="p-tax" label={t("products.fields.taxRate", "Impuesto")} placeholder={t("products.fields.taxRate", "Impuesto")}
+          value={props.taxRateId} onChange={props.setTaxRateId} options={taxOptions} clearable searchable />
       </Field>
       <Field id="p-ship" span={6} label={t("products.fields.shippingClass", "Clase de envío")}>
-        <Combobox id="p-ship" label="ship" value={props.shippingClassId} onChange={props.setShippingClassId} options={shipOptions} clearable searchable />
+        <Combobox id="p-ship" label={t("products.fields.shippingClass", "Clase de envío")} placeholder={t("products.fields.shippingClass", "Clase de envío")}
+          value={props.shippingClassId} onChange={props.setShippingClassId} options={shipOptions} clearable searchable />
       </Field>
 
       <Field id="p-weight" span={3} label={t("inventory.weight", "Peso")}>
@@ -657,12 +744,8 @@ function SpecsStep(props: {
         <MakaRichTextEditor id="p-tech" value={props.technicalSpecs} onChange={props.setTechnicalSpecs}
           height={220} maxLength={10000} placeholder={t("detail.tabs.specs", "")} />
       </Field>
-      <Field id="p-specs" span={12} label="Specs (JSON)" hint={t("wizard.specsJsonHint")}>
-        <textarea id="p-specs" value={props.specs} onChange={(e) => props.setSpecs(e.target.value)} rows={5}
-          aria-invalid={!props.specsValid}
-          className={cn("flex w-full rounded-lg border bg-transparent px-3 py-2 font-mono text-[12.5px] focus-visible:outline-none focus-visible:ring-[3px]",
-            props.specsValid ? "border-[var(--color-input)] focus-visible:border-[var(--color-ring)] focus-visible:ring-[oklch(from_var(--color-ring)_l_c_h_/_0.5)]" : "border-[var(--color-destructive)] focus-visible:ring-[oklch(from_var(--color-destructive)_l_c_h_/_0.4)]")} />
-        {!props.specsValid && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("wizard.specsInvalid")}</p>}
+      <Field id="p-specs" span={12} label={t("wizard.specsJsonHint")}>
+        <SpecsEditor value={props.specs} onChange={props.setSpecs} />
       </Field>
     </FormGrid>
   );
