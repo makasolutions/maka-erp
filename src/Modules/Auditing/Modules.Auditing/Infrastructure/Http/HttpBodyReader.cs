@@ -51,9 +51,13 @@ internal static class HttpBodyReader
             using var doc = JsonDocument.Parse(ms.ToArray());
             return (ToPlain(doc.RootElement), totalBytes);
         }
-        catch (JsonException)
+        // Best-effort preview only — it must NEVER break the actual request.
+        // JsonException = not valid JSON; InvalidOperationException = a string token
+        // held bytes that could not be transcoded (e.g. a multi-byte UTF-8 char split
+        // by the body cap, or a non-UTF-8 body). Fall back to a lossy UTF-8 snippet
+        // (Encoding.UTF8 substitutes U+FFFD for invalid bytes and never throws).
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
-            // Not valid JSON; return UTF8 snippet as fallback
             ms.Position = 0;
             var text = Encoding.UTF8.GetString(ms.ToArray());
             var snippet = text.Length > 2000 ? text[..2000] + ".(truncated)" : text;
