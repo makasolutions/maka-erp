@@ -57,6 +57,14 @@ public sealed class PriceListItemHistoryConfiguration : IEntityTypeConfiguration
         ArgumentNullException.ThrowIfNull(builder);
         builder.ToTable("PriceListItemHistory");
         builder.HasKey(x => x.Id);
+        // History rows are created with a client-generated Guid (Guid.CreateVersion7)
+        // and ALWAYS added through the PriceListItem.History navigation of an already-
+        // tracked parent (via ChangePrice). Without ValueGeneratedNever, EF's default
+        // Guid-key convention (ValueGeneratedOnAdd) sees the non-default key on a
+        // navigation-added child and marks it Modified instead of Added → the UPDATE
+        // affects 0 rows → DbUpdateConcurrencyException. ValueGeneratedNever makes EF
+        // treat the new instance as Added.
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.OldPrice).HasPrecision(18, 4).IsRequired();
         builder.Property(x => x.NewPrice).HasPrecision(18, 4).IsRequired();
         builder.Property(x => x.OldSalePrice).HasPrecision(18, 4);
