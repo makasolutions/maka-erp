@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Routing;
 
 namespace FSH.Modules.Catalog.Features.v1.PriceProposals.BulkUpdatePrices;
 
-public static class BulkUpdatePricesEndpoint
+public static class ImportPricesEndpoint
 {
-    public static RouteHandlerBuilder MapBulkUpdatePricesEndpoint(this IEndpointRouteBuilder group) =>
+    public static RouteHandlerBuilder MapImportPricesEndpoint(this IEndpointRouteBuilder group) =>
         group.MapPost(
                 "/{id:guid}/bulk-import",
                 async (Guid id, BulkUpdatePricesFromCsvCommand command, IMediator mediator, CancellationToken cancellationToken) =>

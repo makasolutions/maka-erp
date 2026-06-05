@@ -169,7 +169,7 @@ public sealed class CatalogModule : IModule
         prices.MapGetPriceHistoryEndpoint();
 
         // Bulk import lives under the price-lists group (POST /{id}/bulk-import).
-        priceLists.MapBulkUpdatePricesEndpoint();
+        priceLists.MapImportPricesEndpoint();
 
         var priceProposals = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/price-proposals")
