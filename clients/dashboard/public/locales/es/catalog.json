@@ -430,5 +430,59 @@
     "actions": {
       "add": "Agregar código"
     }
+  },
+  "attributes": {
+    "title": "Atributos",
+    "singular": "Atributo",
+    "description": "Define atributos como Color o Talla y sus valores para generar variaciones de producto.",
+    "fields": {
+      "name": "Nombre",
+      "slug": "Slug",
+      "type": "Tipo",
+      "usedForVariations": "Para variaciones",
+      "visibleOnProduct": "Visible en producto",
+      "sortOrder": "Orden",
+      "values": "Valores",
+      "valueCount": "N.º de valores",
+      "color": "Color"
+    },
+    "type": {
+      "Text": "Texto",
+      "Color": "Color",
+      "Image": "Imagen",
+      "Select": "Selección"
+    },
+    "actions": {
+      "create": "Nuevo atributo",
+      "add": "Crear atributo",
+      "edit": "Editar atributo",
+      "delete": "Eliminar atributo",
+      "manageValues": "Gestionar valores",
+      "addValue": "Agregar valor"
+    },
+    "filters": {
+      "namePlaceholder": "Buscar atributo…",
+      "usedForVariations": "Para variaciones"
+    },
+    "kpi": {
+      "total": "Total",
+      "forVariations": "Para variaciones"
+    },
+    "namePlaceholder": "Ej. Color, Talla",
+    "createDesc": "Crea un atributo para clasificar y generar variaciones.",
+    "editDesc": "Editando «{{name}}».",
+    "deleteDesc": "¿Eliminar el atributo «{{name}}» y todos sus valores? No se puede si está en uso por algún producto.",
+    "slugHint": "Identificador en URL; se genera automáticamente.",
+    "usedForVariationsHint": "Si está activo, sus valores generan variaciones (estilo WooCommerce).",
+    "visibleHint": "Mostrar este atributo en la ficha del producto.",
+    "values": {
+      "title": "Valores",
+      "empty": "Aún no hay valores. Agrega el primero.",
+      "valuePlaceholder": "Ej. Rojo, XL",
+      "colorHint": "Color hex para mostrar (solo tipo Color).",
+      "name": "Valor",
+      "addValue": "Agregar valor",
+      "removeConfirm": "¿Eliminar este valor?"
+    }
   }
 }

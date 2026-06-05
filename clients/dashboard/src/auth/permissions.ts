@@ -44,6 +44,10 @@ export const P = {
       archive:      "Permissions.Catalog.Products.Archive",
       adjustStock:  "Permissions.Catalog.Products.AdjustStock",
     },
+    attributes: {
+      view:   "Permissions.Catalog.Attributes.View",
+      manage: "Permissions.Catalog.Attributes.Manage",
+    },
   },
 
   // ── Identity ─────────────────────────────────────────────────────────────

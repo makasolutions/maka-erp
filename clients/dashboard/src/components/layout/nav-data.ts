@@ -11,6 +11,7 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
   Tags,
   Ticket,
   Trash2,
@@ -77,6 +78,7 @@ export const sections: NavSection[] = [
       { to: "/catalog/products",   label: "Products",   icon: Package,    permission: P.catalog.products.view },
       { to: "/catalog/brands",     label: "Brands",     icon: Tags,       permission: P.catalog.brands.view },
       { to: "/catalog/categories", label: "Categories", icon: FolderTree, permission: P.catalog.categories.view },
+      { to: "/catalog/attributes", label: "Attributes", icon: SlidersHorizontal, permission: P.catalog.attributes.view },
     ],
   },
   {

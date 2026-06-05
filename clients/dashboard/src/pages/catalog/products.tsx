@@ -175,7 +175,7 @@ export function ProductsPage() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(25);
   const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "name", dir: "asc" });
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
   const [trashOpen, setTrashOpen] = useState(false);
@@ -355,11 +355,12 @@ export function ProductsPage() {
             dataSource={trashedRows}
             columns={trashColumns}
             isLoading={trashQuery.isFetching}
-            totalCount={trashQuery.data?.totalCount ?? 0}
-            page={1}
-            pageSize={200}
-            onPageChange={() => {}}
-            onSortChange={() => {}}
+            serverPaging={{
+              totalCount: trashQuery.data?.totalCount ?? 0,
+              page: 1,
+              pageSize: 200,
+              onChange: () => {},
+            }}
             fileName="productos-papelera"
             entityName={t("products.singular")}
             permissions={{ edit: P.catalog.products.restore }}
@@ -446,11 +447,13 @@ export function ProductsPage() {
         dataSource={rows}
         columns={columns}
         isLoading={query.isFetching}
-        totalCount={query.data?.totalCount ?? 0}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onSortChange={(by, dir) => setSort({ by, dir })}
+        serverPaging={{
+          totalCount: query.data?.totalCount ?? 0,
+          page,
+          pageSize,
+          onChange: (next) => { setPage(next.page); setPageSize(next.pageSize); },
+          onSortChange: (s) => setSort(s ? { by: s.field, dir: s.dir } : { by: "name", dir: "asc" }),
+        }}
         fileName="productos"
         entityName={t("products.singular")}
         onRowClick={row => can(P.catalog.products.update) && setEditor({ mode: "edit", product: row })}

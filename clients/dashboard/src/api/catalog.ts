@@ -721,3 +721,136 @@ export function restoreProduct(id: string): Promise<string> {
     method: "POST",
   });
 }
+
+// ─── Attributes (spec §2.5) ─────────────────────────────────────────────
+
+export type CatalogAttributeType = "Text" | "Color" | "Image" | "Select";
+
+export const ATTRIBUTE_TYPES: CatalogAttributeType[] = ["Text", "Color", "Image", "Select"];
+
+export type AttributeValueDto = {
+  id: string;
+  attributeId: string;
+  value: string;
+  colorCode: string | null;
+  imageUrl: string | null;
+  sortOrder: number;
+  wooCommerceId: number | null;
+};
+
+export type AttributeDto = {
+  id: string;
+  name: string;
+  slug: string;
+  type: CatalogAttributeType;
+  isVisibleOnProduct: boolean;
+  isUsedForVariations: boolean;
+  sortOrder: number;
+  valueCount: number;
+  wooCommerceId: number | null;
+};
+
+export type AttributeDetailDto = Omit<AttributeDto, "valueCount"> & {
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+  values: AttributeValueDto[];
+};
+
+export type SearchAttributesParams = {
+  pageNumber?: number;
+  pageSize?: number;
+  sort?: string;
+  search?: string;
+  isUsedForVariations?: boolean;
+};
+
+export type CreateAttributeInput = {
+  name: string;
+  slug?: string | null;
+  type: CatalogAttributeType;
+  isVisibleOnProduct?: boolean;
+  isUsedForVariations?: boolean;
+  sortOrder?: number;
+};
+
+export type UpdateAttributeInput = {
+  attributeId: string;
+  name: string;
+  type: CatalogAttributeType;
+  isVisibleOnProduct: boolean;
+  isUsedForVariations: boolean;
+  sortOrder: number;
+};
+
+export type AttributeValueInput = {
+  value: string;
+  colorCode?: string | null;
+  imageUrl?: string | null;
+  sortOrder?: number;
+};
+
+export function searchAttributes(
+  params: SearchAttributesParams = {},
+): Promise<PagedResponse<AttributeDto>> {
+  const qs = new URLSearchParams();
+  if (params.pageNumber) qs.set("pageNumber", String(params.pageNumber));
+  if (params.pageSize) qs.set("pageSize", String(params.pageSize));
+  if (params.sort) qs.set("sort", params.sort);
+  if (params.search) qs.set("search", params.search);
+  if (params.isUsedForVariations !== undefined)
+    qs.set("isUsedForVariations", String(params.isUsedForVariations));
+  const q = qs.toString();
+  return apiFetch<PagedResponse<AttributeDto>>(
+    `/api/v1/catalog/attributes${q ? `?${q}` : ""}`,
+  );
+}
+
+export function getAttributeById(id: string): Promise<AttributeDetailDto> {
+  return apiFetch<AttributeDetailDto>(`/api/v1/catalog/attributes/${encodeURIComponent(id)}`);
+}
+
+export function createAttribute(input: CreateAttributeInput): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/attributes`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAttribute(input: UpdateAttributeInput): Promise<string> {
+  const { attributeId, ...body } = input;
+  return apiFetch<string>(`/api/v1/catalog/attributes/${encodeURIComponent(attributeId)}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAttribute(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/catalog/attributes/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export function addAttributeValue(attributeId: string, input: AttributeValueInput): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/attributes/${encodeURIComponent(attributeId)}/values`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export function updateAttributeValue(
+  attributeId: string,
+  valueId: string,
+  input: AttributeValueInput,
+): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/attributes/${encodeURIComponent(attributeId)}/values/${encodeURIComponent(valueId)}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function removeAttributeValue(attributeId: string, valueId: string): Promise<void> {
+  await apiFetch<void>(
+    `/api/v1/catalog/attributes/${encodeURIComponent(attributeId)}/values/${encodeURIComponent(valueId)}`,
+    { method: "DELETE" },
+  );
+}

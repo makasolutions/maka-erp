@@ -430,5 +430,59 @@
     "actions": {
       "add": "Add code"
     }
+  },
+  "attributes": {
+    "title": "Attributes",
+    "singular": "Attribute",
+    "description": "Define attributes like Color or Size and their values to generate product variations.",
+    "fields": {
+      "name": "Name",
+      "slug": "Slug",
+      "type": "Type",
+      "usedForVariations": "For variations",
+      "visibleOnProduct": "Visible on product",
+      "sortOrder": "Order",
+      "values": "Values",
+      "valueCount": "# of values",
+      "color": "Color"
+    },
+    "type": {
+      "Text": "Text",
+      "Color": "Color",
+      "Image": "Image",
+      "Select": "Select"
+    },
+    "actions": {
+      "create": "New attribute",
+      "add": "Create attribute",
+      "edit": "Edit attribute",
+      "delete": "Delete attribute",
+      "manageValues": "Manage values",
+      "addValue": "Add value"
+    },
+    "filters": {
+      "namePlaceholder": "Search attribute…",
+      "usedForVariations": "For variations"
+    },
+    "kpi": {
+      "total": "Total",
+      "forVariations": "For variations"
+    },
+    "namePlaceholder": "e.g. Color, Size",
+    "createDesc": "Create an attribute to classify and generate variations.",
+    "editDesc": "Editing \"{{name}}\".",
+    "deleteDesc": "Delete attribute \"{{name}}\" and all its values? Not allowed if it is used by any product.",
+    "slugHint": "URL identifier; generated automatically.",
+    "usedForVariationsHint": "When on, its values generate variations (WooCommerce style).",
+    "visibleHint": "Show this attribute on the product page.",
+    "values": {
+      "title": "Values",
+      "empty": "No values yet. Add the first one.",
+      "valuePlaceholder": "e.g. Red, XL",
+      "colorHint": "Hex color to display (Color type only).",
+      "name": "Value",
+      "addValue": "Add value",
+      "removeConfirm": "Remove this value?"
+    }
   }
 }

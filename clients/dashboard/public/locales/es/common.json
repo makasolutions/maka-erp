@@ -64,7 +64,9 @@
     "all": "Todos",
     "draft": "Borrador",
     "published": "Publicado",
-    "archived": "Archivado"
+    "archived": "Archivado",
+    "yes": "Sí",
+    "no": "No"
   },
   "feedback": {
     "loading": "Cargando…",
