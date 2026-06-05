@@ -63,6 +63,14 @@ using FSH.Modules.Catalog.Features.v1.PriceProposals.ApprovePriceProposals;
 using FSH.Modules.Catalog.Features.v1.PriceProposals.BulkUpdatePrices;
 using FSH.Modules.Catalog.Features.v1.PriceProposals.GetPriceProposals;
 using FSH.Modules.Catalog.Features.v1.PriceProposals.RejectPriceProposals;
+using FSH.Modules.Catalog.Features.v1.TaxRates.CreateTaxRate;
+using FSH.Modules.Catalog.Features.v1.TaxRates.DeleteTaxRate;
+using FSH.Modules.Catalog.Features.v1.TaxRates.GetTaxRates;
+using FSH.Modules.Catalog.Features.v1.TaxRates.UpdateTaxRate;
+using FSH.Modules.Catalog.Features.v1.ShippingClasses.CreateShippingClass;
+using FSH.Modules.Catalog.Features.v1.ShippingClasses.DeleteShippingClass;
+using FSH.Modules.Catalog.Features.v1.ShippingClasses.GetShippingClasses;
+using FSH.Modules.Catalog.Features.v1.ShippingClasses.UpdateShippingClass;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -232,5 +240,25 @@ public sealed class CatalogModule : IModule
         priceProposals.MapGetPriceProposalsEndpoint();
         priceProposals.MapApprovePriceProposalsEndpoint();
         priceProposals.MapRejectPriceProposalsEndpoint();
+
+        var taxRates = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/tax-rates")
+            .WithTags("Catalog - Tax Rates")
+            .WithApiVersionSet(apiVersionSet);
+
+        taxRates.MapGetTaxRatesEndpoint();
+        taxRates.MapCreateTaxRateEndpoint();
+        taxRates.MapUpdateTaxRateEndpoint();
+        taxRates.MapDeleteTaxRateEndpoint();
+
+        var shippingClasses = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/shipping-classes")
+            .WithTags("Catalog - Shipping Classes")
+            .WithApiVersionSet(apiVersionSet);
+
+        shippingClasses.MapGetShippingClassesEndpoint();
+        shippingClasses.MapCreateShippingClassEndpoint();
+        shippingClasses.MapUpdateShippingClassEndpoint();
+        shippingClasses.MapDeleteShippingClassEndpoint();
     }
 }
