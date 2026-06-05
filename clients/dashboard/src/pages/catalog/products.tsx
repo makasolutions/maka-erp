@@ -10,8 +10,9 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Archive, BadgeCheck, Eye, Package, Plus, Trash2 } from "lucide-react";
+import { Archive, BadgeCheck, Eye, Layers, Package, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   archiveProduct,
@@ -164,6 +165,7 @@ export function ProductsPage() {
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const { can } = usePerm();
+  const navigate = useNavigate();
 
   const [panelOpen, setPanelOpen] = useState(true);
   const [nameFilter, setNameFilter] = useState("");
@@ -457,6 +459,14 @@ export function ProductsPage() {
         onEdit={row => setEditor({ mode: "edit", product: row })}
         onDelete={row => setEditor({ mode: "delete", product: row })}
         extraActions={[
+          {
+            key: "variations",
+            label: t("products.actions.manageVariations"),
+            icon: Layers,
+            perm: P.catalog.products.view,
+            dividerBefore: true,
+            onClick: row => navigate(`/catalog/products/${row.id}`),
+          },
           {
             key: "publish",
             label: t("products.actions.publish"),

@@ -53,12 +53,11 @@
       "add": "Agregar producto",
       "edit": "Editar producto",
       "delete": "Eliminar producto",
-      "duplicate": "Duplicar producto",
       "publish": "Publicar",
-      "unpublish": "Despublicar",
-      "syncWoo": "Sincronizar con WooCommerce",
-      "adjustStock": "Ajustar stock",
-      "changePrice": "Cambiar precio"
+      "archive": "Archivar",
+      "viewTrash": "Papelera",
+      "restore": "Restaurar",
+      "manageVariations": "Variaciones y códigos"
     },
     "status": {
       "active": "Activo",
@@ -179,7 +178,10 @@
     "kpi": {
       "total": "Productos totales",
       "active": "Activos",
-      "visible": "Visibles"
+      "visible": "Visibles",
+      "trashed": "En papelera",
+      "draft": "Borradores",
+      "archived": "Archivados"
     },
     "createBrand": "Crear marca",
     "createCategory": "Crear categoría",
@@ -195,16 +197,6 @@
       "Active": "Activo",
       "Archived": "Archivado"
     },
-    "actions": {
-      "create": "Nuevo producto",
-      "add": "Agregar producto",
-      "edit": "Editar producto",
-      "delete": "Eliminar producto",
-      "publish": "Publicar",
-      "archive": "Archivar",
-      "viewTrash": "Papelera",
-      "restore": "Restaurar"
-    },
     "trash": {
       "title": "Productos en papelera",
       "restoreTitle": "Restaurar producto",
@@ -217,14 +209,6 @@
     "archiveFailed": "Error al archivar",
     "restored": "Producto restaurado",
     "restoreFailed": "Error al restaurar",
-    "kpi": {
-      "total": "Productos totales",
-      "active": "Activos",
-      "visible": "Visibles",
-      "trashed": "En papelera",
-      "draft": "Borradores",
-      "archived": "Archivados"
-    },
     "defaultSkuHint": "Identificador único de la variación base. Si se deja vacío se genera como «{slug}-default».",
     "typePlaceholder": "Selecciona el tipo…",
     "shortDescPlaceholder": "Breve descripción para listados.",
@@ -392,6 +376,59 @@
       "active": "Activas",
       "visible": "Visibles",
       "trashed": "En papelera"
+    }
+  },
+  "variations": {
+    "title": "Variaciones",
+    "singular": "Variación",
+    "backToProducts": "Volver a productos",
+    "fields": {
+      "sku": "SKU",
+      "description": "Descripción",
+      "active": "Activa",
+      "weight": "Peso",
+      "weightUnit": "Unidad",
+      "isDefault": "Por defecto",
+      "manageStock": "Gestionar stock",
+      "allowBackorders": "Permitir pedidos pendientes",
+      "isVirtual": "Virtual"
+    },
+    "actions": {
+      "add": "Agregar variación",
+      "delete": "Eliminar variación"
+    },
+    "createTitle": "Agregar variación",
+    "editTitle": "Editar variación",
+    "createDesc": "Agrega un SKU al producto. El SKU es único y fijo tras crearlo.",
+    "editDesc": "Actualiza los detalles de {{sku}}. El SKU no se puede cambiar.",
+    "descPlaceholder": "Ej. Rojo XL, 128GB Negro",
+    "skuImmutable": "El SKU es fijo tras la creación.",
+    "created": "Variación creada",
+    "updated": "Variación actualizada",
+    "deleted": "Variación eliminada",
+    "createFailed": "Error al crear",
+    "updateFailed": "Error al actualizar",
+    "deleteFailed": "Error al eliminar",
+    "deleteDesc": "¿Eliminar la variación {{sku}}? No se puede eliminar la variación por defecto."
+  },
+  "codes": {
+    "title": "Códigos de la variación",
+    "manage": "Códigos",
+    "desc": "Identificadores de {{sku}} (SKU, EAN, UPC, código de proveedor…).",
+    "empty": "Sin códigos. Agrega uno abajo.",
+    "remove": "Eliminar",
+    "removed": "Código eliminado",
+    "removeFailed": "Error al eliminar",
+    "added": "Código agregado",
+    "addFailed": "Error al agregar",
+    "fields": {
+      "type": "Tipo",
+      "code": "Código",
+      "supplierId": "ID proveedor"
+    },
+    "supplierHint": "Obligatorio para código de proveedor.",
+    "actions": {
+      "add": "Agregar código"
     }
   }
 }

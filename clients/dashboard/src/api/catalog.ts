@@ -524,6 +524,147 @@ export async function deleteProduct(id: string): Promise<void> {
   });
 }
 
+// ─── Variations (C6) ──────────────────────────────────────────────────
+
+export type VariationDto = {
+  id: string;
+  productId: string;
+  sku: string;
+  description?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  isDeleted: boolean;
+  weight?: number | null;
+  weightUnit?: string | null;
+  imageUrl?: string | null;
+  manageStock: boolean;
+  allowBackorders: boolean;
+  soldIndividually: boolean;
+  lowStockThreshold?: number | null;
+  isVirtual: boolean;
+  wooCommerceId?: number | null;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+};
+
+export type AddVariationInput = {
+  sku: string;
+  description?: string | null;
+  isDefault?: boolean;
+  isActive?: boolean;
+  weight?: number | null;
+  weightUnit?: string | null;
+  imageUrl?: string | null;
+  manageStock?: boolean;
+  allowBackorders?: boolean;
+  soldIndividually?: boolean;
+  lowStockThreshold?: number | null;
+  isVirtual?: boolean;
+};
+
+export type UpdateVariationInput = {
+  description?: string | null;
+  isActive: boolean;
+  weight?: number | null;
+  weightUnit?: string | null;
+  imageUrl?: string | null;
+  manageStock: boolean;
+  allowBackorders: boolean;
+  soldIndividually: boolean;
+  lowStockThreshold?: number | null;
+  isVirtual: boolean;
+};
+
+export function getVariations(productId: string): Promise<VariationDto[]> {
+  return apiFetch<VariationDto[]>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations`,
+  );
+}
+
+export async function addVariation(productId: string, input: AddVariationInput): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function updateVariation(
+  productId: string,
+  variationId: string,
+  input: UpdateVariationInput,
+): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/${encodeURIComponent(variationId)}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+}
+
+export async function deleteVariation(productId: string, variationId: string): Promise<void> {
+  await apiFetch<void>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/${encodeURIComponent(variationId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function restoreVariation(productId: string, variationId: string): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/${encodeURIComponent(variationId)}/restore`,
+    { method: "POST" },
+  );
+}
+
+// ─── Product Codes (C7) ───────────────────────────────────────────────
+
+export const PRODUCT_CODE_TYPES = [
+  "SKU", "EAN", "UPC", "ISBN", "GTIN", "PartNumber", "ManufacturerCode", "SupplierCode",
+] as const;
+export type ProductCodeType = (typeof PRODUCT_CODE_TYPES)[number];
+
+export type ProductCodeDto = {
+  id: string;
+  variationId: string;
+  codeType: string;
+  code: string;
+  isPrimary: boolean;
+  supplierId?: string | null;
+  createdAtUtc: string;
+};
+
+export type AddProductCodeInput = {
+  codeType: string;
+  code: string;
+  isPrimary?: boolean;
+  supplierId?: string | null;
+};
+
+export function getProductCodes(productId: string, variationId: string): Promise<ProductCodeDto[]> {
+  return apiFetch<ProductCodeDto[]>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/${encodeURIComponent(variationId)}/codes`,
+  );
+}
+
+export async function addProductCode(
+  productId: string,
+  variationId: string,
+  input: AddProductCodeInput,
+): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/${encodeURIComponent(variationId)}/codes`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function removeProductCode(
+  productId: string,
+  variationId: string,
+  codeId: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/${encodeURIComponent(variationId)}/codes/${encodeURIComponent(codeId)}`,
+    { method: "DELETE" },
+  );
+}
+
 // ─── Trash + Restore ──────────────────────────────────────────────────
 
 export function listTrashedBrands(

@@ -39,8 +39,7 @@
       "categoryPlaceholder": "Select a category…",
       "image": "Image",
       "active": "Active",
-      "visible": "Visible",
-      "categories": "Categories"
+      "visible": "Visible"
     },
     "categoriesHint": "Select one or more categories. Mark one as primary.",
     "noCategories": "No categories yet. Create categories first.",
@@ -54,12 +53,11 @@
       "add": "Add product",
       "edit": "Edit product",
       "delete": "Delete product",
-      "duplicate": "Duplicate product",
       "publish": "Publish",
-      "unpublish": "Unpublish",
-      "syncWoo": "Sync with WooCommerce",
-      "adjustStock": "Adjust stock",
-      "changePrice": "Change price"
+      "archive": "Archive",
+      "viewTrash": "Trash",
+      "restore": "Restore",
+      "manageVariations": "Variations & codes"
     },
     "status": {
       "active": "Active",
@@ -180,7 +178,10 @@
     "kpi": {
       "total": "Total products",
       "active": "Active",
-      "visible": "Visible"
+      "visible": "Visible",
+      "trashed": "In trash",
+      "draft": "Drafts",
+      "archived": "Archived"
     },
     "createBrand": "Create brand",
     "createCategory": "Create category",
@@ -196,16 +197,6 @@
       "Active": "Active",
       "Archived": "Archived"
     },
-    "actions": {
-      "create": "New product",
-      "add": "Add product",
-      "edit": "Edit product",
-      "delete": "Delete product",
-      "publish": "Publish",
-      "archive": "Archive",
-      "viewTrash": "Trash",
-      "restore": "Restore"
-    },
     "trash": {
       "title": "Deleted products",
       "restoreTitle": "Restore product",
@@ -218,14 +209,6 @@
     "archiveFailed": "Archive failed",
     "restored": "Product restored",
     "restoreFailed": "Restore failed",
-    "kpi": {
-      "total": "Total products",
-      "active": "Active",
-      "visible": "Visible",
-      "trashed": "In trash",
-      "draft": "Drafts",
-      "archived": "Archived"
-    },
     "defaultSkuHint": "Unique identifier for the default variation. Leave blank to auto-generate as «{slug}-default».",
     "typePlaceholder": "Select type…",
     "shortDescPlaceholder": "Short description for listings.",
@@ -393,6 +376,59 @@
       "active": "Active",
       "visible": "Visible",
       "trashed": "In trash"
+    }
+  },
+  "variations": {
+    "title": "Variations",
+    "singular": "Variation",
+    "backToProducts": "Back to products",
+    "fields": {
+      "sku": "SKU",
+      "description": "Description",
+      "active": "Active",
+      "weight": "Weight",
+      "weightUnit": "Unit",
+      "isDefault": "Default",
+      "manageStock": "Manage stock",
+      "allowBackorders": "Allow backorders",
+      "isVirtual": "Virtual"
+    },
+    "actions": {
+      "add": "Add variation",
+      "delete": "Delete variation"
+    },
+    "createTitle": "Add variation",
+    "editTitle": "Edit variation",
+    "createDesc": "Add a SKU to the product. The SKU is unique and fixed after creation.",
+    "editDesc": "Update details for {{sku}}. The SKU cannot be changed.",
+    "descPlaceholder": "e.g. Red XL, 128GB Black",
+    "skuImmutable": "SKU is fixed after creation.",
+    "created": "Variation created",
+    "updated": "Variation updated",
+    "deleted": "Variation deleted",
+    "createFailed": "Create failed",
+    "updateFailed": "Update failed",
+    "deleteFailed": "Delete failed",
+    "deleteDesc": "Delete variation {{sku}}? The default variation cannot be deleted."
+  },
+  "codes": {
+    "title": "Variation codes",
+    "manage": "Codes",
+    "desc": "Identifiers for {{sku}} (SKU, EAN, UPC, supplier code…).",
+    "empty": "No codes yet. Add one below.",
+    "remove": "Remove",
+    "removed": "Code removed",
+    "removeFailed": "Remove failed",
+    "added": "Code added",
+    "addFailed": "Add failed",
+    "fields": {
+      "type": "Type",
+      "code": "Code",
+      "supplierId": "Supplier ID"
+    },
+    "supplierHint": "Required for supplier codes.",
+    "actions": {
+      "add": "Add code"
     }
   }
 }
