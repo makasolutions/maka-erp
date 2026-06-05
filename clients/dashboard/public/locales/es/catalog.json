@@ -575,5 +575,19 @@
     "creating": "Creando…",
     "created": "Creado",
     "failed": "No se pudo crear"
+  },
+  "sheet": {
+    "title": "Ficha del producto",
+    "viewSheet": "Ver ficha",
+    "exportPdf": "Exportar PDF",
+    "codes": "Códigos",
+    "shortDescription": "Descripción corta",
+    "description": "Descripción",
+    "specs": "Especificaciones técnicas",
+    "variations": "Variaciones",
+    "bundle": "Items del combo",
+    "noImages": "Sin imágenes",
+    "print": "Imprimir / PDF",
+    "back": "Volver"
   }
 }

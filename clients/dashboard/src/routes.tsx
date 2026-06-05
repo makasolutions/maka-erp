@@ -51,6 +51,7 @@ const CategoriesPage = lazyNamed(() => import("@/pages/catalog/categories"), "Ca
 const ProductsPage = lazyNamed(() => import("@/pages/catalog/products"), "ProductsPage");
 const AttributesPage = lazyNamed(() => import("@/pages/catalog/attributes"), "AttributesPage");
 const ProductFormPage = lazyNamed(() => import("@/pages/catalog/product-form"), "ProductFormPage");
+const ProductSheetPage = lazyNamed(() => import("@/pages/catalog/product-sheet"), "ProductSheetPage");
 const ProductDetailPage = lazyNamed(
   () => import("@/pages/catalog/product-detail"),
   "ProductDetailPage",
@@ -259,6 +260,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "catalog/products", element: withSuspense(<ProductsPage />) },
               { path: "catalog/products/new", element: withSuspense(<ProductFormPage />) },
+              { path: "catalog/products/:productId/sheet", element: withSuspense(<ProductSheetPage />) },
               { path: "catalog/products/:productId", element: withSuspense(<ProductFormPage />) },
               { path: "catalog/products/:productId/legacy", element: withSuspense(<ProductDetailPage />) },
             ],

@@ -975,3 +975,23 @@ export async function getDefaultVariation(productId: string): Promise<VariationD
   const variations = await getVariations(productId);
   return variations.find((v) => v.isDefault && !v.isDeleted) ?? null;
 }
+
+// ─── Bundle items (§2.13) ───────────────────────────────────────────────
+
+export type BundleItemDto = {
+  id: string;
+  productId: string;
+  itemVariationId: string;
+  itemSku: string;
+  quantity: number;
+  discountPercent: number | null;
+  discountFixed: number | null;
+  isOptional: boolean;
+  sortOrder: number;
+};
+
+export function getBundleItems(productId: string): Promise<BundleItemDto[]> {
+  return apiFetch<BundleItemDto[]>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/bundle-items`,
+  );
+}

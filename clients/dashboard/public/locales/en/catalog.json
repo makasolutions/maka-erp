@@ -575,5 +575,19 @@
     "creating": "Creating…",
     "created": "Created",
     "failed": "Could not create"
+  },
+  "sheet": {
+    "title": "Product sheet",
+    "viewSheet": "View sheet",
+    "exportPdf": "Export PDF",
+    "codes": "Codes",
+    "shortDescription": "Short description",
+    "description": "Description",
+    "specs": "Technical specifications",
+    "variations": "Variations",
+    "bundle": "Bundle items",
+    "noImages": "No images",
+    "print": "Print / PDF",
+    "back": "Back"
   }
 }

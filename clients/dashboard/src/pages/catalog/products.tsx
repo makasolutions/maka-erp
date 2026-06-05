@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Archive, BadgeCheck, Eye, Layers, Package, Plus, Trash2 } from "lucide-react";
+import { Archive, BadgeCheck, Eye, FileText, Layers, Package, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -463,11 +463,18 @@ export function ProductsPage() {
         onDelete={row => setEditor({ mode: "delete", product: row })}
         extraActions={[
           {
+            key: "sheet",
+            label: t("sheet.viewSheet"),
+            icon: FileText,
+            perm: P.catalog.products.view,
+            dividerBefore: true,
+            onClick: row => navigate(`/catalog/products/${row.id}/sheet`),
+          },
+          {
             key: "variations",
             label: t("products.actions.manageVariations"),
             icon: Layers,
             perm: P.catalog.products.view,
-            dividerBefore: true,
             onClick: row => navigate(`/catalog/products/${row.id}`),
           },
           {
