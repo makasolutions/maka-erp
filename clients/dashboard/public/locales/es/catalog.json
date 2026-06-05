@@ -45,6 +45,9 @@
     "noCategories": "No hay categorías. Crea categorías primero.",
     "primaryCategory": "Principal",
     "makePrimary": "Hacer principal",
+    "shareDropshipLabel": "Compartir (dropshipping)",
+    "shareDropshipHint": "Hace el producto visible a otros tenants para dropshipping. No afecta la tienda.",
+    "statusHint": "Cambia el estado desde el menú ⋮ de la fila (Publicar / Archivar).",
     "actions": {
       "create": "Nuevo producto",
       "add": "Agregar producto",

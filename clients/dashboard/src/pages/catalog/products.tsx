@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Eye, Package, Plus, Trash2 } from "lucide-react";
+import { Archive, BadgeCheck, Eye, Package, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -120,6 +120,14 @@ function ProdNameCell(row: ProductRow) {
 function ProdBrandCell(row: ProductRow) {
   return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.brandName ?? "—"}</span>;
 }
+function ProdCategoryCell(row: ProductRow) {
+  if (!row.primaryCategoryName) return <span className="text-[var(--color-muted-foreground)]">—</span>;
+  return (
+    <span className="truncate rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-[12px] text-[var(--color-foreground)]">
+      {row.primaryCategoryName}
+    </span>
+  );
+}
 function ProdTypeCell(row: ProductRow) {
   return <EntityStatusBadge tone="info">{row.typeLabel}</EntityStatusBadge>;
 }
@@ -161,6 +169,7 @@ export function ProductsPage() {
   const [nameFilter, setNameFilter] = useState("");
   const [debouncedName, setDebouncedName] = useState("");
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -177,12 +186,13 @@ export function ProductsPage() {
   const queryParams = useMemo(() => ({
     search: debouncedName || undefined,
     brandId: brandFilter ?? undefined,
+    categoryId: categoryFilter ?? undefined,
     type: (typeFilter as ProductType | null) ?? undefined,
     status: (statusFilter as ProductStatus | null) ?? undefined,
     pageNumber: page,
     pageSize,
     sort: sort.dir === "desc" ? `-${sort.by}` : sort.by,
-  }), [debouncedName, brandFilter, typeFilter, statusFilter, page, pageSize, sort]);
+  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, page, pageSize, sort]);
 
   const query = useQuery({
     queryKey: ["catalog", "products", "list", queryParams],
@@ -206,6 +216,20 @@ export function ProductsPage() {
   const brandOptions = useMemo(() =>
     (brandsQuery.data?.items ?? []).map((b: BrandDto) => ({ value: b.id, label: b.name })),
     [brandsQuery.data],
+  );
+
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog", "categories", "tree"],
+    queryFn: getCategoryTree,
+    staleTime: 60_000,
+  });
+
+  const categoryOptions = useMemo(() =>
+    flattenCats(categoriesQuery.data ?? []).map(c => ({
+      value: c.id,
+      label: `${"— ".repeat(c.depth)}${c.name}`,
+    })),
+    [categoriesQuery.data],
   );
 
   const allItems = query.data?.items ?? [];
@@ -237,7 +261,9 @@ export function ProductsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "name", headerText: t("products.singular"), template: ProdNameCell as any, minWidth: 220 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 150 },
+    { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 140 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "primaryCategoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, allowSorting: false, textAlign: "Center" },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -267,7 +293,8 @@ export function ProductsPage() {
   );
 
   const resetFilters = () => {
-    setNameFilter(""); setDebouncedName(""); setBrandFilter(null); setTypeFilter(null); setStatusFilter(null); setPage(1);
+    setNameFilter(""); setDebouncedName(""); setBrandFilter(null); setCategoryFilter(null);
+    setTypeFilter(null); setStatusFilter(null); setPage(1);
   };
 
   return (
@@ -366,6 +393,19 @@ export function ProductsPage() {
                 emptyOptionLabel={t("products.allBrands")}
               />
             </MakaFilterField>
+            <MakaFilterField label={t("products.fields.category")}>
+              <Combobox
+                id="category-filter"
+                label={t("products.fields.category")}
+                placeholder={t("products.allCategories")}
+                value={categoryFilter}
+                onChange={v => { setCategoryFilter(v); setPage(1); }}
+                options={categoryOptions}
+                searchable
+                clearable
+                emptyOptionLabel={t("products.allCategories")}
+              />
+            </MakaFilterField>
             <MakaFilterField label={t("products.fields.type")}>
               <EntityFilterPill<string | null>
                 label={t("products.fields.type")}
@@ -416,13 +456,28 @@ export function ProductsPage() {
         permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
         onEdit={row => setEditor({ mode: "edit", product: row })}
         onDelete={row => setEditor({ mode: "delete", product: row })}
+        extraActions={[
+          {
+            key: "publish",
+            label: t("products.actions.publish"),
+            icon: BadgeCheck,
+            perm: P.catalog.products.publish,
+            dividerBefore: true,
+            onClick: row => setEditor({ mode: "publish", product: row }),
+          },
+          {
+            key: "archive",
+            label: t("products.actions.archive"),
+            icon: Archive,
+            perm: P.catalog.products.archive,
+            onClick: row => setEditor({ mode: "archive", product: row }),
+          },
+        ]}
       />
 
       <ProductEditorDialog
         state={editor}
         onClose={() => setEditor({ mode: "closed" })}
-        onPublish={p => { setEditor({ mode: "closed" }); setTimeout(() => setEditor({ mode: "publish", product: p }), 50); }}
-        onArchive={p => { setEditor({ mode: "closed" }); setTimeout(() => setEditor({ mode: "archive", product: p }), 50); }}
         brands={brandsQuery.data?.items ?? []}
       />
       <DeleteProductDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
@@ -440,14 +495,10 @@ export function ProductsPage() {
 function ProductEditorDialog({
   state,
   onClose,
-  onPublish,
-  onArchive,
   brands,
 }: {
   state: EditorState;
   onClose: () => void;
-  onPublish: (p: ProductDto) => void;
-  onArchive: (p: ProductDto) => void;
   brands: BrandDto[];
 }) {
   const { t } = useTranslation("catalog");
@@ -735,49 +786,36 @@ function ProductEditorDialog({
                 </div>
               </Field>
 
-              <div className="col-span-1 flex items-center gap-8 sm:col-span-12">
-                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <Switch checked={isVirtual} onCheckedChange={setIsVirtual} aria-label={t("products.fields.isVirtual")} />
-                  {t("products.fields.isVirtual")}
-                </label>
-                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <Switch checked={isPublic} onCheckedChange={setIsPublic} aria-label={t("products.fields.isPublic")} />
-                  {t("products.fields.isPublic")}
-                </label>
+              <div className="col-span-1 sm:col-span-12">
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+                  <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                    <Switch checked={isVirtual} onCheckedChange={setIsVirtual} aria-label={t("products.fields.isVirtual")} />
+                    {t("products.fields.isVirtual")}
+                  </label>
+                  <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                    <Switch checked={isPublic} onCheckedChange={setIsPublic} aria-label={t("products.shareDropshipLabel")} />
+                    {t("products.shareDropshipLabel")}
+                  </label>
+                </div>
+                <p className="mt-1.5 text-[12px] text-[var(--color-muted-foreground)]">{t("products.shareDropshipHint")}</p>
               </div>
 
               {product && (
-                <>
-                  {product.status === "Draft" && (
-                    <div className="col-span-1 sm:col-span-12">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        perm={P.catalog.products.publish}
-                        onClick={() => onPublish(product)}
-                        className="w-full gap-2 text-[var(--color-success)]"
-                      >
-                        {t("products.actions.publish")}
-                      </Button>
-                    </div>
-                  )}
-                  {product.status === "Active" && (
-                    <div className="col-span-1 sm:col-span-12">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        perm={P.catalog.products.archive}
-                        onClick={() => onArchive(product)}
-                        className="w-full gap-2 text-[var(--color-warning)]"
-                      >
-                        {t("products.actions.archive")}
-                      </Button>
-                    </div>
-                  )}
-                  <div className="col-span-1 border-t border-[var(--color-border)] pt-4 sm:col-span-12">
-                    <EntityAuditSection entityKey={product.id} entityName="Product" />
+                <div className="col-span-1 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)] px-3 py-2 sm:col-span-12">
+                  <div className="flex items-center gap-2 text-[13px]">
+                    <span className="text-[var(--color-muted-foreground)]">{t("products.fields.status")}:</span>
+                    <EntityStatusBadge tone={product.status === "Active" ? "success" : product.status === "Draft" ? "default" : "warning"}>
+                      {t(`products.statuses.${product.status}`, product.status)}
+                    </EntityStatusBadge>
                   </div>
-                </>
+                  <span className="text-[12px] text-[var(--color-muted-foreground)]">{t("products.statusHint")}</span>
+                </div>
+              )}
+
+              {product && (
+                <div className="col-span-1 border-t border-[var(--color-border)] pt-4 sm:col-span-12">
+                  <EntityAuditSection entityKey={product.id} entityName="Product" />
+                </div>
               )}
             </FormGrid>
           </DialogBody>

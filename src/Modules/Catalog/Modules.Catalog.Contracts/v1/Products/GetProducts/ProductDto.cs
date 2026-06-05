@@ -15,6 +15,8 @@ public sealed record ProductDto(
     bool           IsVirtual,
     bool           IsPublic,
     string?        DefaultSku,
+    Guid?          PrimaryCategoryId,
+    string?        PrimaryCategoryName,
     int?           WooCommerceId,
     DateTime       CreatedAtUtc,
     DateTime?      UpdatedAtUtc);

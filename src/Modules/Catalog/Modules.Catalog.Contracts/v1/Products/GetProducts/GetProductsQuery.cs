@@ -11,6 +11,7 @@ public sealed record GetProductsQuery : IPagedQuery, IQuery<PagedResponse<Produc
     public string?       Sort       { get; set; }
     public string?       Search     { get; set; }
     public Guid?         BrandId    { get; set; }
+    public Guid?         CategoryId { get; set; }
     public ProductType?  Type       { get; set; }
     public ProductStatus? Status    { get; set; }
 }

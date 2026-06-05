@@ -31,6 +31,10 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
         if (query.BrandId.HasValue)
             products = products.Where(p => p.BrandId == query.BrandId.Value);
 
+        if (query.CategoryId.HasValue)
+            products = products.Where(p =>
+                db.Set<ProductCategory>().Any(pc => pc.ProductId == p.Id && pc.CategoryId == query.CategoryId.Value));
+
         if (query.Type.HasValue)
             products = products.Where(p => p.Type == query.Type.Value);
 
@@ -61,6 +65,14 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
                 p.IsVirtual,
                 p.IsPublic,
                 p.Variations.Where(v => v.IsDefault && !v.IsDeleted).Select(v => (string?)v.Sku).FirstOrDefault(),
+                db.Set<ProductCategory>()
+                    .Where(pc => pc.ProductId == p.Id && pc.IsPrimary)
+                    .Select(pc => (Guid?)pc.CategoryId)
+                    .FirstOrDefault(),
+                db.Set<ProductCategory>()
+                    .Where(pc => pc.ProductId == p.Id && pc.IsPrimary)
+                    .Join(db.Categories, pc => pc.CategoryId, c => c.Id, (pc, c) => (string?)c.Name)
+                    .FirstOrDefault(),
                 p.WooCommerceId,
                 p.CreatedAtUtc,
                 p.UpdatedAtUtc))

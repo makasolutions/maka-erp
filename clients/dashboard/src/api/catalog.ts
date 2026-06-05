@@ -296,6 +296,8 @@ export type ProductDto = {
   isVirtual: boolean;
   isPublic: boolean;
   defaultSku?: string | null;
+  primaryCategoryId?: string | null;
+  primaryCategoryName?: string | null;
   wooCommerceId?: number | null;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
@@ -388,6 +390,7 @@ export function searchProducts(
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.brandId) query.set("brandId", params.brandId);
+  if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.type) query.set("type", params.type);
   if (params.status) query.set("status", params.status);
   query.set("pageNumber", String(params.pageNumber ?? 1));
