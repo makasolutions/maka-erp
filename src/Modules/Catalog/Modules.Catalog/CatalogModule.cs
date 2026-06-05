@@ -2,8 +2,10 @@ using Asp.Versioning;
 using FSH.Framework.Persistence;
 using FSH.Framework.Shared.Constants;
 using FSH.Framework.Web.Modules;
+using FSH.Modules.Catalog.Authorization;
 using FSH.Modules.Catalog.Contracts.Authorization;
 using FSH.Modules.Catalog.Data;
+using FSH.Modules.Files.Contracts;
 using FSH.Modules.Catalog.Features.v1.Attributes.AddAttributeValue;
 using FSH.Modules.Catalog.Features.v1.Attributes.CreateAttribute;
 using FSH.Modules.Catalog.Features.v1.Attributes.DeleteAttribute;
@@ -98,6 +100,12 @@ public sealed class CatalogModule : IModule
 
         builder.Services.AddHeroDbContext<CatalogDbContext>();
         builder.Services.AddScoped<IDbInitializer, CatalogDbInitializer>();
+
+        // File access policies for Catalog owner types (product/brand/category images).
+        // Without these the Files module returns 403 "No file access policy registered".
+        builder.Services.AddScoped<IFileAccessPolicy>(_ => new CatalogFileAccessPolicy("Product"));
+        builder.Services.AddScoped<IFileAccessPolicy>(_ => new CatalogFileAccessPolicy("Brand"));
+        builder.Services.AddScoped<IFileAccessPolicy>(_ => new CatalogFileAccessPolicy("Category"));
 
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<CatalogDbContext>(

@@ -52,6 +52,9 @@ export default defineConfig(({ mode }) => {
         // Dev-only: local storage presigned upload receiver (PUT /local-upload/{token}).
         // Only active when Storage:Provider = "local" on the backend.
         "/local-upload": { target: apiBase, changeOrigin: true, secure: false },
+        // Local storage serves public files at /tenants/... (server-relative publicUrl).
+        // Proxy them so product/brand images render in dev.
+        "/tenants": { target: apiBase, changeOrigin: true, secure: false },
       },
     },
   };

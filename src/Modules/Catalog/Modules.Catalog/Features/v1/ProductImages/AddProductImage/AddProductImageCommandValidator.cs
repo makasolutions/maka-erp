@@ -9,11 +9,14 @@ public sealed class AddProductImageCommandValidator : AbstractValidator<AddProdu
     {
         RuleFor(x => x.ProductId).NotEmpty();
 
+        // Accept absolute URLs (S3/CDN) and root-relative paths (local storage
+        // returns "/tenants/{tenant}/product/...", served by the API).
         RuleFor(x => x.Url)
             .NotEmpty()
             .MaximumLength(512)
-            .Must(url => Uri.TryCreate(url, UriKind.Absolute, out _))
-            .WithMessage("Url debe ser una URL absoluta válida.");
+            .Must(url => !string.IsNullOrWhiteSpace(url)
+                && (url.StartsWith('/') || Uri.TryCreate(url, UriKind.Absolute, out _)))
+            .WithMessage("Url debe ser una URL absoluta o una ruta relativa válida.");
 
         RuleFor(x => x.AltText)
             .MaximumLength(256)

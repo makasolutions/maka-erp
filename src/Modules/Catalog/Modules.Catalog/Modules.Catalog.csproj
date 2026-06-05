@@ -14,8 +14,8 @@
 		<ProjectReference Include="..\..\..\BuildingBlocks\Persistence\Persistence.csproj" />
 		<ProjectReference Include="..\..\..\BuildingBlocks\Web\Web.csproj" />
 		<ProjectReference Include="..\Modules.Catalog.Contracts\Modules.Catalog.Contracts.csproj" />
-		<!-- Files.Contracts restored in Fase C2 when product image features are added -->
-		<!-- <ProjectReference Include="..\..\Files\Modules.Files.Contracts\Modules.Files.Contracts.csproj" /> -->
+		<!-- Files.Contracts: product/brand/category images register IFileAccessPolicy. -->
+		<ProjectReference Include="..\..\Files\Modules.Files.Contracts\Modules.Files.Contracts.csproj" />
 	</ItemGroup>
 
 </Project>
