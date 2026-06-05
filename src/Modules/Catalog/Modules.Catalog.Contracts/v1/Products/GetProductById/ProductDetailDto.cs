@@ -9,6 +9,7 @@ public sealed record ProductDetailDto(
     string?        ShortDescription,
     string?        Description,
     string?        TechnicalSpecs,
+    string?        Specs,
     string?        ThumbnailUrl,
     Guid?          BrandId,
     string?        BrandName,

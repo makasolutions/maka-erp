@@ -23,4 +23,5 @@ public sealed record UpdateProductCommand(
     string   DimensionUnit,
     string?  SeoTitle,
     string?  SeoDescription,
-    string?  SeoKeywords) : ICommand<Guid>;
+    string?  SeoKeywords,
+    string?  Specs = null) : ICommand<Guid>;

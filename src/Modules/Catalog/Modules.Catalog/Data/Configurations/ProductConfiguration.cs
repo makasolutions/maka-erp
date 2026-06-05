@@ -1,11 +1,25 @@
+using System.Text.Json;
 using FSH.Modules.Catalog.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace FSH.Modules.Catalog.Data.Configurations;
 
 public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
+    // JsonDocument ↔ string (raw JSON). Avoids requiring Npgsql EnableDynamicJson
+    // (which lives in protected BuildingBlocks). The column stays jsonb.
+    private static readonly ValueConverter<JsonDocument?, string> SpecsConverter = new(
+        v => v!.RootElement.GetRawText(),
+        v => JsonDocument.Parse(v, default));
+
+    private static readonly ValueComparer<JsonDocument?> SpecsComparer = new(
+        (a, b) => (a == null ? null : a.RootElement.GetRawText()) == (b == null ? null : b.RootElement.GetRawText()),
+        v => v == null ? 0 : v.RootElement.GetRawText().GetHashCode(StringComparison.Ordinal),
+        v => v == null ? null : JsonDocument.Parse(v.RootElement.GetRawText(), default));
+
     public void Configure(EntityTypeBuilder<Product> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -19,7 +33,9 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.ShortDescription).HasMaxLength(500);
         builder.Property(x => x.Description).HasMaxLength(50_000);
         builder.Property(x => x.TechnicalSpecs).HasMaxLength(10_000);
-        builder.Property(x => x.Specs).HasColumnType("jsonb");
+        builder.Property(x => x.Specs)
+            .HasColumnType("jsonb")
+            .HasConversion(SpecsConverter, SpecsComparer);
 
         builder.Property(x => x.Type).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16).IsRequired();

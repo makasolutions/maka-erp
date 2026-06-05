@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentValidation;
 using FSH.Modules.Catalog.Contracts.Enums;
 using FSH.Modules.Catalog.Contracts.v1.Products.UpdateProduct;
@@ -44,5 +45,24 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
         RuleFor(x => x.DimensionUnit)
             .Must(u => Array.Exists(ValidDimensionUnits, d => string.Equals(d, u, StringComparison.OrdinalIgnoreCase)))
             .WithMessage($"DimensionUnit debe ser uno de: {string.Join(", ", ValidDimensionUnits)}");
+
+        RuleFor(x => x.Specs)
+            .Must(BeValidJson)
+            .When(x => !string.IsNullOrWhiteSpace(x.Specs))
+            .WithMessage("Specs debe ser un JSON válido.");
+    }
+
+    private static bool BeValidJson(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        try
+        {
+            using var _ = JsonDocument.Parse(value);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 }

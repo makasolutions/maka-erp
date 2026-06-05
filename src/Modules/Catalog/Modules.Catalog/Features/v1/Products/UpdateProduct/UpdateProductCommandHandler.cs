@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FSH.Framework.Core.Exceptions;
 using FSH.Modules.Catalog.Contracts.Enums;
 using FSH.Modules.Catalog.Contracts.v1.Products.UpdateProduct;
@@ -33,6 +34,24 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext db)
                 throw new NotFoundException($"Brand {command.BrandId.Value} not found.");
         }
 
+        if (command.TaxRateId.HasValue)
+        {
+            bool taxExists = await db.TaxRates.AsNoTracking()
+                .AnyAsync(t => t.Id == command.TaxRateId.Value, cancellationToken)
+                .ConfigureAwait(false);
+            if (!taxExists)
+                throw new NotFoundException($"TaxRate {command.TaxRateId.Value} not found.");
+        }
+
+        if (command.ShippingClassId.HasValue)
+        {
+            bool shipExists = await db.ShippingClasses.AsNoTracking()
+                .AnyAsync(s => s.Id == command.ShippingClassId.Value, cancellationToken)
+                .ConfigureAwait(false);
+            if (!shipExists)
+                throw new NotFoundException($"ShippingClass {command.ShippingClassId.Value} not found.");
+        }
+
         if (!Enum.TryParse<WeightUnit>(command.WeightUnit, ignoreCase: true, out var weightUnit))
             weightUnit = WeightUnit.KG;
 
@@ -56,6 +75,17 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext db)
             command.DimensionLength, command.DimensionWidth, command.DimensionHeight, dimUnit);
 
         product.UpdateSeo(command.SeoTitle, command.SeoDescription, command.SeoKeywords);
+
+        // Specs (JSONB §2.6): null/blank clears it; otherwise parse the supplied JSON.
+        if (string.IsNullOrWhiteSpace(command.Specs))
+        {
+            product.UpdateSpecs(null);
+        }
+        else
+        {
+            // Validity is enforced by the validator; parse defensively here too.
+            product.UpdateSpecs(JsonDocument.Parse(command.Specs));
+        }
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

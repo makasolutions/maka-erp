@@ -48,6 +48,7 @@ public sealed class GetProductByIdQueryHandler(CatalogDbContext db)
             p.ShortDescription,
             p.Description,
             p.TechnicalSpecs,
+            p.Specs != null ? p.Specs.RootElement.GetRawText() : null,
             p.Images.Where(i => i.IsPrimary).Select(i => i.Url).FirstOrDefault(),
             p.BrandId,
             brandName,
