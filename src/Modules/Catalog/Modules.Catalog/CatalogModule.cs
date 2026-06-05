@@ -32,6 +32,12 @@ using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
 using FSH.Modules.Catalog.Features.v1.Products.SetProductAttributes;
 using FSH.Modules.Catalog.Features.v1.Products.SetProductCategories;
 using FSH.Modules.Catalog.Features.v1.Products.UpdateProduct;
+using FSH.Modules.Catalog.Features.v1.ProductImages.AddProductImage;
+using FSH.Modules.Catalog.Features.v1.ProductImages.GetProductImages;
+using FSH.Modules.Catalog.Features.v1.ProductImages.RemoveProductImage;
+using FSH.Modules.Catalog.Features.v1.ProductImages.SetPrimaryImage;
+using FSH.Modules.Catalog.Features.v1.ProductTags.GetProductTags;
+using FSH.Modules.Catalog.Features.v1.ProductTags.SetProductTags;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.AddProductCode;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.GetProductCodes;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.RemoveProductCode;
@@ -145,6 +151,22 @@ public sealed class CatalogModule : IModule
         variations.MapUpdateVariationEndpoint();
         variations.MapDeleteVariationEndpoint();
         variations.MapRestoreVariationEndpoint();
+
+        var images = products
+            .MapGroup("/{productId:guid}/images")
+            .WithTags("Catalog - Product Images");
+
+        images.MapGetProductImagesEndpoint();
+        images.MapAddProductImageEndpoint();
+        images.MapRemoveProductImageEndpoint();
+        images.MapSetPrimaryImageEndpoint();
+
+        var tags = products
+            .MapGroup("/{productId:guid}/tags")
+            .WithTags("Catalog - Product Tags");
+
+        tags.MapGetProductTagsEndpoint();
+        tags.MapSetProductTagsEndpoint();
 
         var codes = variations
             .MapGroup("/{variationId:guid}/codes")

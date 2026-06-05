@@ -29,4 +29,6 @@ public sealed class ProductImage : BaseEntity<Guid>
             CreatedAtUtc = DateTime.UtcNow,
         };
     }
+
+    public void SetPrimary(bool isPrimary) => IsPrimary = isPrimary;
 }
