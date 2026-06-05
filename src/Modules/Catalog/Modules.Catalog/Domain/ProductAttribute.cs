@@ -34,4 +34,13 @@ public sealed class ProductAttribute : BaseEntity<Guid>
             SortOrder           = sortOrder,
             CreatedAtUtc        = DateTime.UtcNow,
         };
+
+    /// <summary>Replaces the selected values for this product-attribute assignment.</summary>
+    public void SetSelectedValues(IEnumerable<CatalogAttributeValue> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        SelectedValues.Clear();
+        foreach (var value in values)
+            SelectedValues.Add(value);
+    }
 }

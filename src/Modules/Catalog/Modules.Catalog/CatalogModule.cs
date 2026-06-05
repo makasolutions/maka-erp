@@ -4,6 +4,14 @@ using FSH.Framework.Shared.Constants;
 using FSH.Framework.Web.Modules;
 using FSH.Modules.Catalog.Contracts.Authorization;
 using FSH.Modules.Catalog.Data;
+using FSH.Modules.Catalog.Features.v1.Attributes.AddAttributeValue;
+using FSH.Modules.Catalog.Features.v1.Attributes.CreateAttribute;
+using FSH.Modules.Catalog.Features.v1.Attributes.DeleteAttribute;
+using FSH.Modules.Catalog.Features.v1.Attributes.GetAttributeById;
+using FSH.Modules.Catalog.Features.v1.Attributes.GetAttributes;
+using FSH.Modules.Catalog.Features.v1.Attributes.RemoveAttributeValue;
+using FSH.Modules.Catalog.Features.v1.Attributes.UpdateAttribute;
+using FSH.Modules.Catalog.Features.v1.Attributes.UpdateAttributeValue;
 using FSH.Modules.Catalog.Features.v1.Brands.CreateBrand;
 using FSH.Modules.Catalog.Features.v1.Brands.DeleteBrand;
 using FSH.Modules.Catalog.Features.v1.Brands.GetBrandById;
@@ -21,6 +29,7 @@ using FSH.Modules.Catalog.Features.v1.Products.GetProducts;
 using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
 using FSH.Modules.Catalog.Features.v1.Products.PublishProduct;
 using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
+using FSH.Modules.Catalog.Features.v1.Products.SetProductAttributes;
 using FSH.Modules.Catalog.Features.v1.Products.SetProductCategories;
 using FSH.Modules.Catalog.Features.v1.Products.UpdateProduct;
 using FSH.Modules.Catalog.Features.v1.ProductCodes.AddProductCode;
@@ -125,6 +134,7 @@ public sealed class CatalogModule : IModule
         products.MapPublishProductEndpoint();
         products.MapArchiveProductEndpoint();
         products.MapSetProductCategoriesEndpoint();
+        products.MapSetProductAttributesEndpoint();
 
         var variations = products
             .MapGroup("/{productId:guid}/variations")
@@ -170,6 +180,25 @@ public sealed class CatalogModule : IModule
 
         // Bulk import lives under the price-lists group (POST /{id}/bulk-import).
         priceLists.MapImportPricesEndpoint();
+
+        var attributes = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/attributes")
+            .WithTags("Catalog - Attributes")
+            .WithApiVersionSet(apiVersionSet);
+
+        attributes.MapGetAttributesEndpoint();
+        attributes.MapGetAttributeByIdEndpoint();
+        attributes.MapCreateAttributeEndpoint();
+        attributes.MapUpdateAttributeEndpoint();
+        attributes.MapDeleteAttributeEndpoint();
+
+        var attributeValues = attributes
+            .MapGroup("/{attributeId:guid}/values")
+            .WithTags("Catalog - Attribute Values");
+
+        attributeValues.MapAddAttributeValueEndpoint();
+        attributeValues.MapUpdateAttributeValueEndpoint();
+        attributeValues.MapRemoveAttributeValueEndpoint();
 
         var priceProposals = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/price-proposals")

@@ -1,13 +1,13 @@
 using FSH.Framework.Core.Domain;
+using FSH.Modules.Catalog.Contracts.Enums;
 
 namespace FSH.Modules.Catalog.Domain;
 
 /// <summary>
 /// CatalogAttribute + CatalogAttributeValue — spec §2.5.
 /// Prefijo "Catalog" para evitar conflicto con System.Attribute.
+/// El enum <see cref="CatalogAttributeType"/> vive en Contracts.Enums.
 /// </summary>
-public enum CatalogAttributeType { Text, Color, Image, Select }
-
 public sealed class CatalogAttribute : BaseEntity<Guid>
 {
     public string               Name                { get; private set; } = default!;
@@ -103,6 +103,15 @@ public sealed class CatalogAttributeValue : BaseEntity<Guid>
             SortOrder    = sortOrder,
             CreatedAtUtc = DateTime.UtcNow,
         };
+    }
+
+    public void Update(string value, string? colorCode, string? imageUrl, int sortOrder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        Value     = value.Trim();
+        ColorCode = colorCode;
+        ImageUrl  = imageUrl;
+        SortOrder = sortOrder;
     }
 
     public void SyncWooCommerce(int wooCommerceId) => WooCommerceId = wooCommerceId;
