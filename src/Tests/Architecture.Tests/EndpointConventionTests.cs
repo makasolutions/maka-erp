@@ -275,6 +275,7 @@ public class EndpointConventionTests
                                name.StartsWith("Reject", StringComparison.Ordinal) ||
                                name.StartsWith("Import", StringComparison.Ordinal) ||
                                name.StartsWith("Generate", StringComparison.Ordinal) ||
+                               name.StartsWith("Clone", StringComparison.Ordinal) ||
                                name.StartsWith("Find", StringComparison.Ordinal) ||
                                name.StartsWith("Edit", StringComparison.Ordinal) ||
                                name.StartsWith("Send", StringComparison.Ordinal) ||

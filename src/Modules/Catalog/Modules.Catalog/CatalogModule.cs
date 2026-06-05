@@ -74,6 +74,9 @@ using FSH.Modules.Catalog.Features.v1.ShippingClasses.CreateShippingClass;
 using FSH.Modules.Catalog.Features.v1.ShippingClasses.DeleteShippingClass;
 using FSH.Modules.Catalog.Features.v1.ShippingClasses.GetShippingClasses;
 using FSH.Modules.Catalog.Features.v1.ShippingClasses.UpdateShippingClass;
+using FSH.Modules.Catalog.Features.v1.TenantProducts.CloneProduct;
+using FSH.Modules.Catalog.Features.v1.TenantProducts.GetResolvedProduct;
+using FSH.Modules.Catalog.Features.v1.TenantProducts.UpdateTenantProduct;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -271,5 +274,14 @@ public sealed class CatalogModule : IModule
         shippingClasses.MapCreateShippingClassEndpoint();
         shippingClasses.MapUpdateShippingClassEndpoint();
         shippingClasses.MapDeleteShippingClassEndpoint();
+
+        var tenantProducts = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/tenant-products")
+            .WithTags("Catalog - Tenant Products")
+            .WithApiVersionSet(apiVersionSet);
+
+        tenantProducts.MapCloneProductToTenantEndpoint();
+        tenantProducts.MapUpdateTenantProductEndpoint();
+        tenantProducts.MapGetResolvedProductEndpoint();
     }
 }
