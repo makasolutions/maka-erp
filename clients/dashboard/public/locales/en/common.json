@@ -123,7 +123,8 @@
     "trash": "Trash",
     "primaryNavAriaLabel": "Primary navigation",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "attributes": "Attributes"
   },
   "auth": {
     "welcomeBack": "Welcome",

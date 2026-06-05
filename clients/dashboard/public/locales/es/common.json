@@ -123,7 +123,8 @@
     "trash": "Papelera",
     "primaryNavAriaLabel": "Navegación principal",
     "collapseSidebar": "Colapsar barra lateral",
-    "expandSidebar": "Expandir barra lateral"
+    "expandSidebar": "Expandir barra lateral",
+    "attributes": "Atributos"
   },
   "auth": {
     "welcomeBack": "Bienvenido",
