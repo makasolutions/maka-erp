@@ -8,7 +8,8 @@
     "apiKeys": "API Keys",
     "tenant": "Tenant",
     "billing": "Facturación",
-    "localization": "Localización"
+    "localization": "Localización",
+    "catalog": "Catálogo"
   },
   "profile": {
     "title": "Perfil",
@@ -262,7 +263,8 @@
     "appearanceHint": "Tema y preferencias visuales",
     "notificationsHint": "Cómo nos comunicamos contigo",
     "apiKeysHint": "Tokens de acceso personal",
-    "localizationHint": "Fecha, hora, moneda e idioma"
+    "localizationHint": "Fecha, hora, moneda e idioma",
+    "catalogHint": "Impuestos y clases de envío"
   },
   "localization": {
     "title": "Localización",
@@ -322,5 +324,27 @@
       "commaDot": "1,000.00 (coma miles, punto decimal)"
     },
     "languageTopbarNote": "El idioma también se puede cambiar desde el botón en la barra superior."
+  },
+  "catalogSettings": {
+    "section": "Catálogo",
+    "hint": "Impuestos y clases de envío",
+    "taxRates": "Impuestos",
+    "taxRatesHint": "Tarifas de IVA usadas en los productos.",
+    "shippingClasses": "Clases de envío",
+    "shippingClassesHint": "Categorías de envío (Normal, Frágil, etc.).",
+    "statuses": "Estados de producto",
+    "statusesHint": "Borrador, Activo y Archivado son estados fijos del sistema; se cambian con Publicar/Archivar desde cada producto.",
+    "name": "Nombre",
+    "rate": "Tarifa %",
+    "description": "Descripción",
+    "default": "Por defecto",
+    "active": "Activo",
+    "add": "Agregar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "empty": "Sin elementos.",
+    "ratePlaceholder": "19",
+    "namePlaceholder": "IVA 19%"
   }
 }

@@ -8,7 +8,8 @@
     "apiKeys": "API Keys",
     "tenant": "Tenant",
     "billing": "Billing",
-    "localization": "Localization"
+    "localization": "Localization",
+    "catalog": "Catalog"
   },
   "profile": {
     "title": "Profile",
@@ -262,7 +263,8 @@
     "appearanceHint": "Theme and visual preferences",
     "notificationsHint": "How we reach you",
     "apiKeysHint": "Personal access tokens",
-    "localizationHint": "Date, time, currency and language"
+    "localizationHint": "Date, time, currency and language",
+    "catalogHint": "Taxes and shipping classes"
   },
   "localization": {
     "title": "Localization",
@@ -322,5 +324,27 @@
       "commaDot": "1,000.00 (comma thousands, dot decimal)"
     },
     "languageTopbarNote": "The interface language can also be changed from the button in the top bar."
+  },
+  "catalogSettings": {
+    "section": "Catalog",
+    "hint": "Taxes and shipping classes",
+    "taxRates": "Tax rates",
+    "taxRatesHint": "VAT rates used on products.",
+    "shippingClasses": "Shipping classes",
+    "shippingClassesHint": "Shipping categories (Normal, Fragile, etc.).",
+    "statuses": "Product statuses",
+    "statusesHint": "Draft, Active and Archived are fixed system statuses; change them via Publish/Archive on each product.",
+    "name": "Name",
+    "rate": "Rate %",
+    "description": "Description",
+    "default": "Default",
+    "active": "Active",
+    "add": "Add",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "empty": "No items.",
+    "ratePlaceholder": "19",
+    "namePlaceholder": "VAT 19%"
   }
 }

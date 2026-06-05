@@ -995,3 +995,33 @@ export function getBundleItems(productId: string): Promise<BundleItemDto[]> {
     `/api/v1/catalog/products/${encodeURIComponent(productId)}/bundle-items`,
   );
 }
+
+// ─── Tax rates / shipping classes CRUD (admin settings §6) ──────────────
+
+export type CreateTaxRateInput = { name: string; rate: number; description?: string | null; isDefault?: boolean };
+export type UpdateTaxRateInput = { id: string; name: string; rate: number; description?: string | null; isDefault: boolean; isActive: boolean };
+
+export function createTaxRate(input: CreateTaxRateInput): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/tax-rates`, { method: "POST", body: JSON.stringify(input) });
+}
+export function updateTaxRate(input: UpdateTaxRateInput): Promise<string> {
+  const { id, ...body } = input;
+  return apiFetch<string>(`/api/v1/catalog/tax-rates/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export async function deleteTaxRate(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/catalog/tax-rates/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export type CreateShippingClassInput = { name: string; description?: string | null };
+export type UpdateShippingClassInput = { id: string; name: string; description?: string | null };
+
+export function createShippingClass(input: CreateShippingClassInput): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/shipping-classes`, { method: "POST", body: JSON.stringify(input) });
+}
+export function updateShippingClass(input: UpdateShippingClassInput): Promise<string> {
+  const { id, ...body } = input;
+  return apiFetch<string>(`/api/v1/catalog/shipping-classes/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export async function deleteShippingClass(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/catalog/shipping-classes/${encodeURIComponent(id)}`, { method: "DELETE" });
+}

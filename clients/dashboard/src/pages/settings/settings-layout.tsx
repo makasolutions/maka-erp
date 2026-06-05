@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Globe,
   KeyRound,
+  Package,
   Palette,
   Settings as SettingsIcon,
   Shield,
@@ -28,6 +29,7 @@ const TAB_DEFS: TabDef[] = [
   { to: "/settings/notifications", labelKey: "sections.notifications", hintKey: "tabs.notificationsHint", icon: Bell },
   { to: "/settings/api-keys", labelKey: "sections.apiKeys", hintKey: "tabs.apiKeysHint", icon: KeyRound },
   { to: "/settings/localization", labelKey: "sections.localization", hintKey: "tabs.localizationHint", icon: Globe },
+  { to: "/settings/catalog", labelKey: "sections.catalog", hintKey: "tabs.catalogHint", icon: Package },
 ];
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");

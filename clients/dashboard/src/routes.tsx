@@ -52,6 +52,7 @@ const ProductsPage = lazyNamed(() => import("@/pages/catalog/products"), "Produc
 const AttributesPage = lazyNamed(() => import("@/pages/catalog/attributes"), "AttributesPage");
 const ProductFormPage = lazyNamed(() => import("@/pages/catalog/product-form"), "ProductFormPage");
 const ProductSheetPage = lazyNamed(() => import("@/pages/catalog/product-sheet"), "ProductSheetPage");
+const CatalogSettings = lazyNamed(() => import("@/pages/settings/catalog"), "CatalogSettings");
 const ProductDetailPage = lazyNamed(
   () => import("@/pages/catalog/product-detail"),
   "ProductDetailPage",
@@ -282,6 +283,7 @@ export const router = createBrowserRouter([
               { path: "notifications", element: withSuspense(<NotificationsSettings />) },
               { path: "api-keys", element: withSuspense(<ApiKeysSettings />) },
               { path: "localization", element: withSuspense(<LocalizationSettings />) },
+              { path: "catalog", element: withSuspense(<CatalogSettings />) },
             ],
           },
         ],
