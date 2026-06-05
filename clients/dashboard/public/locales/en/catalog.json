@@ -409,7 +409,13 @@
     "createFailed": "Create failed",
     "updateFailed": "Update failed",
     "deleteFailed": "Delete failed",
-    "deleteDesc": "Delete variation {{sku}}? The default variation cannot be deleted."
+    "deleteDesc": "Delete variation {{sku}}? The default variation cannot be deleted.",
+    "combination": "Combination",
+    "noCombination": "—",
+    "generate": "Generate variations",
+    "generating": "Generating…",
+    "generated": "{{created}} variations created, {{skipped}} skipped",
+    "generateFailed": "Could not generate variations"
   },
   "codes": {
     "title": "Variation codes",
@@ -483,6 +489,34 @@
       "name": "Value",
       "addValue": "Add value",
       "removeConfirm": "Remove this value?"
+    }
+  },
+  "detail": {
+    "tabs": {
+      "variations": "Variations",
+      "attributes": "Attributes",
+      "images": "Images",
+      "tags": "Tags"
+    },
+    "attributes": {
+      "title": "Product attributes",
+      "intro": "Pick attributes and their values. Mark \"for variations\", then generate variations automatically.",
+      "forVariations": "For variations",
+      "apply": "Apply attributes",
+      "applied": "Attributes applied",
+      "applyFailed": "Could not apply attributes",
+      "noAttributes": "No attributes yet. Create them first in Catalog → Attributes.",
+      "selectValues": "Select at least one value"
+    },
+    "tags": {
+      "title": "Tags",
+      "intro": "Tags like \"Sale\" or \"New\" to classify the product.",
+      "placeholder": "Tag name",
+      "add": "Add",
+      "save": "Save tags",
+      "saved": "Tags saved",
+      "saveFailed": "Could not save tags",
+      "empty": "No tags yet."
     }
   }
 }

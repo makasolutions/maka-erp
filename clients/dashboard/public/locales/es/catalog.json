@@ -409,7 +409,13 @@
     "createFailed": "Error al crear",
     "updateFailed": "Error al actualizar",
     "deleteFailed": "Error al eliminar",
-    "deleteDesc": "¿Eliminar la variación {{sku}}? No se puede eliminar la variación por defecto."
+    "deleteDesc": "¿Eliminar la variación {{sku}}? No se puede eliminar la variación por defecto.",
+    "combination": "Combinación",
+    "noCombination": "—",
+    "generate": "Generar variaciones",
+    "generating": "Generando…",
+    "generated": "{{created}} variaciones creadas, {{skipped}} omitidas",
+    "generateFailed": "No se pudieron generar las variaciones"
   },
   "codes": {
     "title": "Códigos de la variación",
@@ -483,6 +489,34 @@
       "name": "Valor",
       "addValue": "Agregar valor",
       "removeConfirm": "¿Eliminar este valor?"
+    }
+  },
+  "detail": {
+    "tabs": {
+      "variations": "Variaciones",
+      "attributes": "Atributos",
+      "images": "Imágenes",
+      "tags": "Etiquetas"
+    },
+    "attributes": {
+      "title": "Atributos del producto",
+      "intro": "Selecciona atributos y sus valores. Marca «para variaciones» y luego genera las variaciones automáticamente.",
+      "forVariations": "Para variaciones",
+      "apply": "Aplicar atributos",
+      "applied": "Atributos aplicados",
+      "applyFailed": "No se pudieron aplicar los atributos",
+      "noAttributes": "No hay atributos. Créalos primero en Catálogo → Atributos.",
+      "selectValues": "Selecciona al menos un valor"
+    },
+    "tags": {
+      "title": "Etiquetas",
+      "intro": "Etiquetas como «Oferta» o «Nuevo» para clasificar el producto.",
+      "placeholder": "Nombre de la etiqueta",
+      "add": "Agregar",
+      "save": "Guardar etiquetas",
+      "saved": "Etiquetas guardadas",
+      "saveFailed": "No se pudieron guardar las etiquetas",
+      "empty": "Sin etiquetas todavía."
     }
   }
 }

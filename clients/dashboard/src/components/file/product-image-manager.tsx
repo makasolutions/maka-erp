@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   addProductImage,
   removeProductImage,
-  setProductThumbnail,
+  setPrimaryImage,
   type ProductImageDto,
 } from "@/api/catalog";
 import { getFileMetadata, Visibility } from "@/api/files";
@@ -62,8 +62,8 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
   });
 
   const attachMutation = useMutation({
-    mutationFn: (input: { fileAssetId: string; url: string }) =>
-      addProductImage(productId, input),
+    mutationFn: (input: { url: string }) =>
+      addProductImage(productId, { url: input.url }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: invalidateKey });
     },
@@ -73,7 +73,7 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
   });
 
   const thumbnailMutation = useMutation({
-    mutationFn: (imageId: string) => setProductThumbnail(productId, imageId),
+    mutationFn: (imageId: string) => setPrimaryImage(productId, imageId),
     onSuccess: () => {
       toast.success(t("productImages.toastCoverUpdated"));
       void queryClient.invalidateQueries({ queryKey: invalidateKey });
@@ -106,7 +106,7 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
           if (!meta.publicUrl) {
             throw new Error("Server returned no publicUrl for the uploaded image.");
           }
-          await attachMutation.mutateAsync({ fileAssetId: asset.id, url: meta.publicUrl });
+          await attachMutation.mutateAsync({ url: meta.publicUrl });
         } catch (e) {
           toast.error(extract(e, t("productImages.uploadFailed", { name: file.name })));
         }
@@ -193,7 +193,7 @@ function ImageTile({
     <div
       className={cn(
         "group relative overflow-hidden rounded-xl border bg-[var(--color-card)] shadow-xs transition-colors",
-        image.isThumbnail
+        image.isPrimary
           ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
           : "border-border hover:bg-[oklch(from_var(--color-accent)_l_c_h_/_0.4)]",
       )}
@@ -212,7 +212,7 @@ function ImageTile({
         />
       </button>
 
-      {image.isThumbnail && (
+      {image.isPrimary && (
         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary-foreground)]">
           <Star className="h-3 w-3 fill-current" />
           {t("productImages.cover")}
@@ -221,7 +221,7 @@ function ImageTile({
 
       {!readOnly && (
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-[oklch(0_0_0/0.65)] to-transparent p-2 opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover:opacity-100 focus-within:opacity-100">
-          {!image.isThumbnail && (
+          {!image.isPrimary && (
             <Button
               type="button"
               size="icon"
@@ -267,7 +267,7 @@ function PreviewDialog({ image, onClose }: { image: ProductImageDto | null; onCl
         <DialogHeader>
           <DialogTitle className="truncate">{t("productImages.dialogTitle")}</DialogTitle>
           <DialogDescription>
-            {image?.isThumbnail ? t("productImages.dialogDescCover") : t("productImages.dialogDescClose")}
+            {image?.isPrimary ? t("productImages.dialogDescCover") : t("productImages.dialogDescClose")}
           </DialogDescription>
         </DialogHeader>
         {image && (
@@ -311,7 +311,7 @@ function RemoveDialog({
           <DialogTitle>{t("productImages.removeDialogTitle")}</DialogTitle>
           <DialogDescription>
             {t("productImages.removeDialogBody")}{" "}
-            {image?.isThumbnail ? t("productImages.removeDialogBodyThumbnail") : ""}
+            {image?.isPrimary ? t("productImages.removeDialogBodyThumbnail") : ""}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

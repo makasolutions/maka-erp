@@ -1,24 +1,34 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Hash, Layers, Plus, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Hash, ImageIcon, Layers, Plus, SlidersHorizontal, Sparkles, Star, Tag, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
   addProductCode,
   addVariation,
   deleteVariation,
+  generateVariations,
+  getAttributeById,
   getProductById,
   getProductCodes,
+  getProductImages,
+  getProductTags,
   getVariations,
   removeProductCode,
+  searchAttributes,
+  setProductAttributes,
+  setProductTags,
   updateVariation,
   PRODUCT_CODE_TYPES,
   type AddVariationInput,
+  type AttributeDto,
+  type ProductAttributeAssignmentInput,
   type ProductCodeType,
   type UpdateVariationInput,
   type VariationDto,
 } from "@/api/catalog";
+import { ProductImageManager } from "@/components/file/product-image-manager";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -70,6 +80,33 @@ function VarSkuCell(row: VariationDto) {
 function VarDescCell(row: VariationDto) {
   return <span className="truncate text-[13px] text-[var(--color-foreground)]">{row.description || "—"}</span>;
 }
+function VarCombinationCell(row: VariationDto) {
+  if (!row.attributeValues || row.attributeValues.length === 0) {
+    return <span className="text-[12px] text-[var(--color-muted-foreground)]">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {row.attributeValues.map((av) => (
+        <span
+          key={av.valueId}
+          className="inline-flex items-center gap-1 rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-[11px] text-[var(--color-foreground)]"
+          title={`${av.attributeName}: ${av.value}`}
+        >
+          {av.colorCode && (
+            <span
+              aria-hidden
+              className="size-2.5 rounded-full ring-1 ring-inset ring-[var(--color-border)]"
+              style={{ backgroundColor: av.colorCode }}
+            />
+          )}
+          {av.value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+type DetailTab = "variations" | "attributes" | "images" | "tags";
 
 // ───────────────────────────────────────────────────────────────────────────
 //  Page
@@ -109,14 +146,26 @@ export function ProductDetailPage() {
 
   const columns: ColumnModel[] = useMemo(() => [
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "sku", headerText: t("variations.fields.sku"), template: VarSkuCell as any, minWidth: 200 },
+    { field: "sku", headerText: t("variations.fields.sku"), template: VarSkuCell as any, minWidth: 180 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "description", headerText: t("variations.fields.description"), template: VarDescCell as any, minWidth: 220 },
+    { field: "attributeValues", headerText: t("variations.combination"), template: VarCombinationCell as any, minWidth: 200, allowSorting: false },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "description", headerText: t("variations.fields.description"), template: VarDescCell as any, minWidth: 180 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "isActive", headerText: t("variations.fields.active"), template: StatusActiveCell as any, width: 120, allowSorting: false, textAlign: "Center" },
   ], [t, StatusActiveCell]);
 
   const statusTone = product?.status === "Active" ? "success" : product?.status === "Draft" ? "default" : "warning";
+
+  const [tab, setTab] = useState<DetailTab>("variations");
+  const canEdit = can(P.catalog.products.update);
+
+  const tabs: { id: DetailTab; label: string; icon: typeof Layers }[] = [
+    { id: "variations", label: t("detail.tabs.variations"), icon: Layers },
+    { id: "attributes", label: t("detail.tabs.attributes"), icon: SlidersHorizontal },
+    { id: "images", label: t("detail.tabs.images"), icon: ImageIcon },
+    { id: "tags", label: t("detail.tabs.tags"), icon: Tag },
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -149,50 +198,458 @@ export function ProductDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Layers className="size-4 text-[var(--color-muted-foreground)]" />
-            <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("variations.title")}</h2>
-            <span className="rounded-full bg-[var(--color-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-muted-foreground)]">
-              {variations.length}
-            </span>
-          </div>
-          <Button
-            perm={P.catalog.products.update}
-            onClick={() => setEditor({ mode: "create" })}
-            className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
-          >
-            <Plus className="size-4" />
-            {t("variations.actions.add")}
-          </Button>
-        </div>
+      {/* Tab bar */}
+      <div role="tablist" className="flex flex-wrap gap-1 border-b border-[var(--color-border)]">
+        {tabs.map((tb) => {
+          const active = tab === tb.id;
+          const Icon = tb.icon;
+          return (
+            <button
+              key={tb.id}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(tb.id)}
+              className={cn(
+                "-mb-px flex items-center gap-1.5 border-b-2 px-3.5 py-2 text-[13px] font-semibold transition-colors",
+                active
+                  ? "border-[var(--color-primary)] text-[var(--color-foreground)]"
+                  : "border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+              )}
+            >
+              <Icon className="size-4" />
+              {tb.label}
+            </button>
+          );
+        })}
+      </div>
 
-        <MakaGridClient<VariationDto>
-          dataSource={variations}
-          columns={columns}
-          isLoading={variationsQuery.isFetching}
-          fileName="variaciones"
-          entityName={t("variations.singular")}
-          permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
-          onEdit={row => setEditor({ mode: "edit", variation: row })}
-          onDelete={row => setEditor({ mode: "delete", variation: row })}
-          extraActions={[
-            {
-              key: "codes",
-              label: t("codes.manage"),
-              icon: Hash,
-              perm: P.catalog.products.update,
-              dividerBefore: true,
-              onClick: row => setEditor({ mode: "codes", variation: row }),
-            },
-          ]}
-        />
+      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+        {tab === "variations" && (
+          <>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Layers className="size-4 text-[var(--color-muted-foreground)]" />
+                <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("variations.title")}</h2>
+                <span className="rounded-full bg-[var(--color-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-muted-foreground)]">
+                  {variations.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <GenerateVariationsButton productId={productId} disabled={!canEdit} />
+                <Button
+                  perm={P.catalog.products.update}
+                  onClick={() => setEditor({ mode: "create" })}
+                  className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+                >
+                  <Plus className="size-4" />
+                  {t("variations.actions.add")}
+                </Button>
+              </div>
+            </div>
+
+            <MakaGridClient<VariationDto>
+              dataSource={variations}
+              columns={columns}
+              isLoading={variationsQuery.isFetching}
+              fileName="variaciones"
+              entityName={t("variations.singular")}
+              permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
+              onEdit={row => setEditor({ mode: "edit", variation: row })}
+              onDelete={row => setEditor({ mode: "delete", variation: row })}
+              extraActions={[
+                {
+                  key: "codes",
+                  label: t("codes.manage"),
+                  icon: Hash,
+                  perm: P.catalog.products.update,
+                  dividerBefore: true,
+                  onClick: row => setEditor({ mode: "codes", variation: row }),
+                },
+              ]}
+            />
+          </>
+        )}
+
+        {tab === "attributes" && <ProductAttributesTab productId={productId} canEdit={canEdit} />}
+        {tab === "images" && <ProductImagesTab productId={productId} canEdit={canEdit} />}
+        {tab === "tags" && <ProductTagsTab productId={productId} canEdit={canEdit} />}
       </div>
 
       <VariationEditorDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <DeleteVariationDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <CodesDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} canEdit={can(P.catalog.products.update)} />
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Generate variations button
+// ───────────────────────────────────────────────────────────────────────────
+
+function GenerateVariationsButton({ productId, disabled }: { productId: string; disabled: boolean }) {
+  const { t } = useTranslation("catalog");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: () => generateVariations(productId),
+    onSuccess: (res) => {
+      toast.success(t("variations.generated", { created: res.created, skipped: res.skipped }));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "variations", productId] });
+    },
+    onError: (err) => toast.error(t("variations.generateFailed"), { description: describe(err) }),
+  });
+
+  if (disabled) return null;
+  return (
+    <Button
+      variant="outline"
+      onClick={() => mutation.mutate()}
+      disabled={mutation.isPending}
+      className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+    >
+      <Wand2 className="size-4" />
+      {mutation.isPending ? t("variations.generating") : t("variations.generate")}
+    </Button>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Attributes tab — assign attributes + values, then generate
+// ───────────────────────────────────────────────────────────────────────────
+
+function ProductAttributesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+  const { t } = useTranslation("catalog");
+  const queryClient = useQueryClient();
+
+  const attrsQuery = useQuery({
+    queryKey: ["catalog", "attributes", "list"],
+    queryFn: () => searchAttributes({ pageSize: 200, sort: "name" }),
+  });
+
+  // Selection state: attributeId -> { valueIds, forVariations }
+  const [selection, setSelection] = useState<Record<string, { valueIds: Set<string>; forVariations: boolean }>>({});
+
+  const attributes = attrsQuery.data?.items ?? [];
+
+  const toggleAttribute = (attr: AttributeDto, on: boolean) => {
+    setSelection((prev) => {
+      const next = { ...prev };
+      if (on) next[attr.id] = { valueIds: new Set(), forVariations: attr.isUsedForVariations };
+      else delete next[attr.id];
+      return next;
+    });
+  };
+
+  const applyMutation = useMutation({
+    mutationFn: () => {
+      const payload: ProductAttributeAssignmentInput[] = Object.entries(selection).map(
+        ([attributeId, sel]) => ({
+          attributeId,
+          valueIds: [...sel.valueIds],
+          isUsedForVariations: sel.forVariations,
+        }),
+      );
+      return setProductAttributes(productId, payload);
+    },
+    onSuccess: () => {
+      toast.success(t("detail.attributes.applied"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "variations", productId] });
+    },
+    onError: (err) => toast.error(t("detail.attributes.applyFailed"), { description: describe(err) }),
+  });
+
+  if (attrsQuery.isLoading) return <p className="text-[13px] text-[var(--color-muted-foreground)]">…</p>;
+  if (attributes.length === 0)
+    return <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("detail.attributes.noAttributes")}</p>;
+
+  const canApply =
+    Object.keys(selection).length > 0 &&
+    Object.values(selection).every((s) => !s.forVariations || s.valueIds.size > 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <SlidersHorizontal className="size-4 text-[var(--color-muted-foreground)]" />
+        <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("detail.attributes.title")}</h2>
+      </div>
+      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("detail.attributes.intro")}</p>
+
+      <div className="space-y-3">
+        {attributes.map((attr) => (
+          <AttributeAssignmentRow
+            key={attr.id}
+            attribute={attr}
+            selected={selection[attr.id]}
+            disabled={!canEdit}
+            onToggle={(on) => toggleAttribute(attr, on)}
+            onToggleValue={(valueId, on) =>
+              setSelection((prev) => {
+                const cur = prev[attr.id];
+                if (!cur) return prev;
+                const valueIds = new Set(cur.valueIds);
+                if (on) valueIds.add(valueId);
+                else valueIds.delete(valueId);
+                return { ...prev, [attr.id]: { ...cur, valueIds } };
+              })
+            }
+            onToggleForVariations={(on) =>
+              setSelection((prev) => {
+                const cur = prev[attr.id];
+                if (!cur) return prev;
+                return { ...prev, [attr.id]: { ...cur, forVariations: on } };
+              })
+            }
+          />
+        ))}
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
+          <Button onClick={() => applyMutation.mutate()} disabled={!canApply || applyMutation.isPending}>
+            <Sparkles className="size-4" />
+            {applyMutation.isPending ? "…" : t("detail.attributes.apply")}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AttributeAssignmentRow({
+  attribute,
+  selected,
+  disabled,
+  onToggle,
+  onToggleValue,
+  onToggleForVariations,
+}: {
+  attribute: AttributeDto;
+  selected: { valueIds: Set<string>; forVariations: boolean } | undefined;
+  disabled: boolean;
+  onToggle: (on: boolean) => void;
+  onToggleValue: (valueId: string, on: boolean) => void;
+  onToggleForVariations: (on: boolean) => void;
+}) {
+  const { t } = useTranslation("catalog");
+  const isOn = !!selected;
+
+  const detail = useQuery({
+    queryKey: ["catalog", "attributes", "detail", attribute.id],
+    queryFn: () => getAttributeById(attribute.id),
+    enabled: isOn,
+  });
+
+  const values = detail.data?.values ?? [];
+
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+          <Switch checked={isOn} onCheckedChange={onToggle} disabled={disabled} aria-label={attribute.name} />
+          {attribute.name}
+          <code className="font-mono text-[11px] text-[var(--color-muted-foreground)]">{attribute.slug}</code>
+        </label>
+        {isOn && (
+          <label className="flex items-center gap-2 text-[12px] text-[var(--color-muted-foreground)]">
+            <Switch
+              checked={selected!.forVariations}
+              onCheckedChange={onToggleForVariations}
+              disabled={disabled}
+              aria-label={t("detail.attributes.forVariations")}
+            />
+            {t("detail.attributes.forVariations")}
+          </label>
+        )}
+      </div>
+
+      {isOn && (
+        <div className="mt-3">
+          {values.length === 0 ? (
+            <span className="text-[12px] text-[var(--color-muted-foreground)]">…</span>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {values.map((v) => {
+                const on = selected!.valueIds.has(v.id);
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onToggleValue(v.id, !on)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12.5px] transition-colors",
+                      on
+                        ? "border-[var(--color-primary)] bg-[oklch(from_var(--color-primary)_l_c_h_/_0.12)] text-[var(--color-foreground)]"
+                        : "border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+                    )}
+                  >
+                    {v.colorCode && (
+                      <span
+                        aria-hidden
+                        className="size-3 rounded-full ring-1 ring-inset ring-[var(--color-border)]"
+                        style={{ backgroundColor: v.colorCode }}
+                      />
+                    )}
+                    {v.value}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {selected!.forVariations && selected!.valueIds.size === 0 && (
+            <p className="mt-2 text-[11.5px] text-[var(--color-warning)]">{t("detail.attributes.selectValues")}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Images tab
+// ───────────────────────────────────────────────────────────────────────────
+
+function ProductImagesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+  const imagesQuery = useQuery({
+    queryKey: ["catalog", "product-images", productId],
+    queryFn: () => getProductImages(productId),
+    enabled: !!productId,
+  });
+
+  return (
+    <ProductImageManager
+      productId={productId}
+      images={imagesQuery.data ?? []}
+      invalidateKey={["catalog", "product-images", productId]}
+      readOnly={!canEdit}
+    />
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Tags tab
+// ───────────────────────────────────────────────────────────────────────────
+
+function ProductTagsTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+  const { t } = useTranslation("catalog");
+  const queryClient = useQueryClient();
+
+  const tagsQuery = useQuery({
+    queryKey: ["catalog", "product-tags", productId],
+    queryFn: () => getProductTags(productId),
+    enabled: !!productId,
+  });
+
+  const [draft, setDraft] = useState<{ name: string; color: string | null }[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState("#3b82f6");
+  const [useColor, setUseColor] = useState(false);
+
+  useEffect(() => {
+    if (tagsQuery.data) setDraft(tagsQuery.data.map((tg) => ({ name: tg.name, color: tg.color })));
+  }, [tagsQuery.data]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => setProductTags(productId, draft),
+    onSuccess: () => {
+      toast.success(t("detail.tags.saved"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "product-tags", productId] });
+    },
+    onError: (err) => toast.error(t("detail.tags.saveFailed"), { description: describe(err) }),
+  });
+
+  const addDraft = () => {
+    const name = newName.trim();
+    if (!name) return;
+    if (draft.some((d) => d.name.toLowerCase() === name.toLowerCase())) {
+      setNewName("");
+      return;
+    }
+    setDraft((prev) => [...prev, { name, color: useColor ? newColor : null }]);
+    setNewName("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Tag className="size-4 text-[var(--color-muted-foreground)]" />
+        <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("detail.tags.title")}</h2>
+      </div>
+      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("detail.tags.intro")}</p>
+
+      {draft.length === 0 ? (
+        <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("detail.tags.empty")}</p>
+      ) : (
+        <ul className="flex flex-wrap gap-2">
+          {draft.map((tg) => (
+            <li
+              key={tg.name}
+              className="flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-2.5 py-1.5 text-[12.5px]"
+            >
+              {tg.color && (
+                <span
+                  aria-hidden
+                  className="size-3 rounded-full ring-1 ring-inset ring-[var(--color-border)]"
+                  style={{ backgroundColor: tg.color }}
+                />
+              )}
+              <span className="font-medium text-[var(--color-foreground)]">{tg.name}</span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setDraft((prev) => prev.filter((d) => d.name !== tg.name))}
+                  aria-label={tg.name}
+                  className="text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-destructive)]"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canEdit && (
+        <>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grow">
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder={t("detail.tags.placeholder")}
+                maxLength={64}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addDraft();
+                  }
+                }}
+              />
+            </div>
+            <label className="flex h-9 items-center gap-1.5">
+              <Switch checked={useColor} onCheckedChange={setUseColor} aria-label="color" />
+              {useColor && (
+                <input
+                  type="color"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  className="h-9 w-12 cursor-pointer rounded-md border border-[var(--color-border)] bg-transparent p-1"
+                />
+              )}
+            </label>
+            <Button type="button" variant="outline" disabled={!newName.trim()} onClick={addDraft}>
+              <Plus className="size-4" />
+              {t("detail.tags.add")}
+            </Button>
+          </div>
+
+          <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
+            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? "…" : t("detail.tags.save")}
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

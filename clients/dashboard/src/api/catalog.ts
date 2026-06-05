@@ -275,12 +275,11 @@ export type MoneyDto = {
 
 export type ProductImageDto = {
   id: string;
-  fileAssetId?: string | null;
+  productId: string;
   url: string;
-  isThumbnail: boolean;
+  altText: string | null;
+  isPrimary: boolean;
   sortOrder: number;
-  /** @deprecated v1 field */
-  createdAtUtc?: string;
 };
 
 export type ProductDto = {
@@ -458,26 +457,32 @@ export async function archiveProduct(id: string): Promise<string> {
   });
 }
 
-// ─── Product images ───────────────────────────────────────────────────
+// ─── Product images (spec §2.8) ─────────────────────────────────────────
 
-/** @todo Fase C4 — backend endpoint not yet implemented */
+export function getProductImages(productId: string): Promise<ProductImageDto[]> {
+  return apiFetch<ProductImageDto[]>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/images`,
+  );
+}
+
 export function addProductImage(
   productId: string,
-  input: { fileAssetId?: string | null; url: string },
-): Promise<ProductImageDto> {
-  return apiFetch<ProductImageDto>(
+  input: { url: string; altText?: string | null; isPrimary?: boolean; sortOrder?: number },
+): Promise<string> {
+  return apiFetch<string>(
     `/api/v1/catalog/products/${encodeURIComponent(productId)}/images`,
     {
       method: "POST",
       body: JSON.stringify({
-        fileAssetId: input.fileAssetId ?? null,
         url: input.url,
+        altText: input.altText ?? null,
+        isPrimary: input.isPrimary ?? false,
+        sortOrder: input.sortOrder ?? 0,
       }),
     },
   );
 }
 
-/** @todo Fase C4 */
 export async function removeProductImage(productId: string, imageId: string): Promise<void> {
   await apiFetch<void>(
     `/api/v1/catalog/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}`,
@@ -485,10 +490,9 @@ export async function removeProductImage(productId: string, imageId: string): Pr
   );
 }
 
-/** @todo Fase C4 */
-export async function setProductThumbnail(productId: string, imageId: string): Promise<void> {
-  await apiFetch<void>(
-    `/api/v1/catalog/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}/thumbnail`,
+export function setPrimaryImage(productId: string, imageId: string): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/images/${encodeURIComponent(imageId)}/primary`,
     { method: "PUT" },
   );
 }
@@ -545,6 +549,15 @@ export type VariationDto = {
   wooCommerceId?: number | null;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
+  attributeValues: VariationAttributeValueDto[];
+};
+
+export type VariationAttributeValueDto = {
+  attributeId: string;
+  attributeName: string;
+  valueId: string;
+  value: string;
+  colorCode: string | null;
 };
 
 export type AddVariationInput = {
@@ -852,5 +865,63 @@ export async function removeAttributeValue(attributeId: string, valueId: string)
   await apiFetch<void>(
     `/api/v1/catalog/attributes/${encodeURIComponent(attributeId)}/values/${encodeURIComponent(valueId)}`,
     { method: "DELETE" },
+  );
+}
+
+// ─── Product attributes / variations generation (spec §2.12 / §5.4) ──────
+
+export type ProductAttributeAssignmentInput = {
+  attributeId: string;
+  valueIds: string[];
+  isUsedForVariations?: boolean;
+  isVisibleOnProduct?: boolean;
+  sortOrder?: number;
+};
+
+export function setProductAttributes(
+  productId: string,
+  attributes: ProductAttributeAssignmentInput[],
+): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/attributes`,
+    { method: "PUT", body: JSON.stringify({ attributes }) },
+  );
+}
+
+export type GenerateVariationsResult = {
+  created: number;
+  skipped: number;
+  createdVariationIds: string[];
+};
+
+export function generateVariations(productId: string): Promise<GenerateVariationsResult> {
+  return apiFetch<GenerateVariationsResult>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/variations/generate`,
+    { method: "POST" },
+  );
+}
+
+// ─── Product tags (spec §2.10) ──────────────────────────────────────────
+
+export type ProductTagDto = {
+  id: string;
+  productId: string;
+  name: string;
+  color: string | null;
+};
+
+export function getProductTags(productId: string): Promise<ProductTagDto[]> {
+  return apiFetch<ProductTagDto[]>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/tags`,
+  );
+}
+
+export function setProductTags(
+  productId: string,
+  tags: { name: string; color?: string | null }[],
+): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/tags`,
+    { method: "PUT", body: JSON.stringify({ tags }) },
   );
 }
