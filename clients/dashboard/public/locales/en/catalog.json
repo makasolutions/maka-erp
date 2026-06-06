@@ -620,5 +620,45 @@
     "selectProduct": "Search product…",
     "add": "Add",
     "remove": "Remove"
+  },
+  "priceLists": {
+    "title": "Price lists",
+    "singular": "list",
+    "description": "Prices by customer segment, volume and sale.",
+    "fields": {
+      "name": "Name",
+      "segment": "Segment",
+      "items": "Items",
+      "validity": "Validity",
+      "active": "Active",
+      "description": "Description",
+      "validFrom": "Valid from"
+    },
+    "actions": {
+      "create": "New list"
+    },
+    "filters": {
+      "namePlaceholder": "Search list…"
+    },
+    "createDesc": "Create a price list for a customer segment (Retail, B2B, VIP…).",
+    "namePlaceholder": "B2B Wholesale",
+    "segmentHint": "Retail, B2B, VIP or custom.",
+    "validFromHint": "Optional. If omitted, valid immediately.",
+    "empty": "This list has no items yet.",
+    "addItem": "Add item",
+    "product": "Product",
+    "variation": "Variation",
+    "selectProduct": "Search product…",
+    "price": "Price",
+    "minQty": "Min. qty",
+    "minQtyHint": "For volume pricing (optional).",
+    "salePrice": "Sale price",
+    "salePriceHint": "Discounted price (optional).",
+    "onSale": "Sale",
+    "effectivePrice": "Effective price",
+    "list": "List",
+    "editPrice": "Edit price",
+    "changeReason": "Change reason",
+    "changeReasonHint": "Recorded in the price history."
   }
 }

@@ -620,5 +620,45 @@
     "selectProduct": "Buscar producto…",
     "add": "Agregar",
     "remove": "Quitar"
+  },
+  "priceLists": {
+    "title": "Listas de precios",
+    "singular": "lista",
+    "description": "Precios por segmento de cliente, volumen y oferta.",
+    "fields": {
+      "name": "Nombre",
+      "segment": "Segmento",
+      "items": "Ítems",
+      "validity": "Vigencia",
+      "active": "Activa",
+      "description": "Descripción",
+      "validFrom": "Vigente desde"
+    },
+    "actions": {
+      "create": "Nueva lista"
+    },
+    "filters": {
+      "namePlaceholder": "Buscar lista…"
+    },
+    "createDesc": "Crea una lista de precios para un segmento de cliente (Retail, B2B, VIP…).",
+    "namePlaceholder": "Mayoristas B2B",
+    "segmentHint": "Retail, B2B, VIP o personalizado.",
+    "validFromHint": "Opcional. Si se omite, vigente de inmediato.",
+    "empty": "La lista no tiene ítems aún.",
+    "addItem": "Agregar ítem",
+    "product": "Producto",
+    "variation": "Variación",
+    "selectProduct": "Buscar producto…",
+    "price": "Precio",
+    "minQty": "Cant. mínima",
+    "minQtyHint": "Para precio por volumen (opcional).",
+    "salePrice": "Precio oferta",
+    "salePriceHint": "Precio con descuento (opcional).",
+    "onSale": "Oferta",
+    "effectivePrice": "Precio efectivo",
+    "list": "Lista",
+    "editPrice": "Editar precio",
+    "changeReason": "Motivo del cambio",
+    "changeReasonHint": "Queda en el historial de precios."
   }
 }

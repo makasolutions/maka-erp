@@ -124,7 +124,8 @@
     "primaryNavAriaLabel": "Navegación principal",
     "collapseSidebar": "Colapsar barra lateral",
     "expandSidebar": "Expandir barra lateral",
-    "attributes": "Atributos"
+    "attributes": "Atributos",
+    "priceLists": "Listas de precios"
   },
   "auth": {
     "welcomeBack": "Bienvenido",
