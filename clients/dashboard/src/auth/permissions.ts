@@ -48,6 +48,11 @@ export const P = {
       view:   "Permissions.Catalog.Attributes.View",
       manage: "Permissions.Catalog.Attributes.Manage",
     },
+    priceLists: {
+      view:        "Permissions.Catalog.PriceLists.View",
+      manage:      "Permissions.Catalog.PriceLists.Manage",
+      approveBulk: "Permissions.Catalog.PriceLists.ApproveBulk",
+    },
   },
 
   // ── Identity ─────────────────────────────────────────────────────────────

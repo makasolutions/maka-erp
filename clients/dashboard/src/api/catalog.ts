@@ -1085,3 +1085,122 @@ export async function removeBundleItem(productId: string, itemId: string): Promi
     { method: "DELETE" },
   );
 }
+
+// ─── Price lists (RF-CAT-4) ─────────────────────────────────────────────
+
+export type PriceListDto = {
+  id: string;
+  name: string;
+  description?: string | null;
+  customerSegment: string;
+  validFrom: string;
+  validTo?: string | null;
+  isActive: boolean;
+  itemCount: number;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+};
+
+export type PriceListItemDto = {
+  id: string;
+  variationId: string;
+  variationSku?: string | null;
+  price: number;
+  minQuantity?: number | null;
+  salePrice?: number | null;
+  salePriceFrom?: string | null;
+  salePriceTo?: string | null;
+  createdAt: string;
+  updatedAtUtc?: string | null;
+};
+
+export type PriceListDetailDto = Omit<PriceListDto, "itemCount"> & {
+  items: PriceListItemDto[];
+};
+
+export type EffectivePriceDto = {
+  variationId: string;
+  effectivePrice: number;
+  listPrice: number;
+  isSalePrice: boolean;
+  customerSegment: string;
+  priceListName: string;
+  priceListId: string;
+};
+
+export type GetPriceListsParams = {
+  search?: string;
+  customerSegment?: string;
+  isActive?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+  sort?: string;
+};
+
+export function getPriceLists(params: GetPriceListsParams = {}): Promise<PagedResponse<PriceListDto>> {
+  const q = new URLSearchParams();
+  if (params.search) q.set("search", params.search);
+  if (params.customerSegment) q.set("customerSegment", params.customerSegment);
+  if (params.isActive != null) q.set("isActive", String(params.isActive));
+  q.set("pageNumber", String(params.pageNumber ?? 1));
+  q.set("pageSize", String(params.pageSize ?? 50));
+  if (params.sort) q.set("sort", params.sort);
+  return apiFetch<PagedResponse<PriceListDto>>(`/api/v1/catalog/price-lists?${q.toString()}`);
+}
+
+export function getPriceListById(id: string): Promise<PriceListDetailDto> {
+  return apiFetch<PriceListDetailDto>(`/api/v1/catalog/price-lists/${encodeURIComponent(id)}`);
+}
+
+export type CreatePriceListInput = {
+  name: string;
+  customerSegment: string;
+  validFrom?: string | null;
+  description?: string | null;
+};
+
+export function createPriceList(input: CreatePriceListInput): Promise<string> {
+  return apiFetch<string>("/api/v1/catalog/price-lists", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export type AddPriceListItemInput = {
+  variationId: string;
+  price: number;
+  minQuantity?: number | null;
+  salePrice?: number | null;
+  salePriceFrom?: string | null;
+  salePriceTo?: string | null;
+};
+
+export function addPriceListItem(priceListId: string, input: AddPriceListItemInput): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/price-lists/${encodeURIComponent(priceListId)}/items`,
+    { method: "POST", body: JSON.stringify({ priceListId, ...input }) },
+  );
+}
+
+export type UpdatePriceListItemInput = {
+  price: number;
+  changeReason?: string | null;
+  salePrice?: number | null;
+  salePriceFrom?: string | null;
+  salePriceTo?: string | null;
+};
+
+export function updatePriceListItem(
+  priceListId: string, itemId: string, input: UpdatePriceListItemInput,
+): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/price-lists/${encodeURIComponent(priceListId)}/items/${encodeURIComponent(itemId)}`,
+    { method: "PUT", body: JSON.stringify({ priceListId, itemId, ...input }) },
+  );
+}
+
+export function getEffectivePrice(variationId: string, segment?: string): Promise<EffectivePriceDto> {
+  const q = new URLSearchParams({ variationId });
+  if (segment) q.set("segment", segment);
+  return apiFetch<EffectivePriceDto>(`/api/v1/catalog/prices/effective?${q.toString()}`);
+}
