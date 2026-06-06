@@ -550,7 +550,9 @@
       "description": "Descripción",
       "attributes": "Atributos y variaciones",
       "media": "Imágenes y etiquetas",
-      "specs": "Especificaciones"
+      "specs": "Especificaciones",
+      "attributesOnly": "Atributos",
+      "bundle": "Items del combo"
     },
     "createTitle": "Nuevo producto",
     "editTitle": "Editar producto",
@@ -572,8 +574,10 @@
     "typeHint": {
       "simple": "Las variaciones aplican solo a productos Variable.",
       "bundle": "Configura los items del combo en este paso.",
-      "immutable": "El tipo no se puede cambiar después de crear."
-    }
+      "immutable": "El tipo no se puede cambiar después de crear.",
+      "simpleAttr": "Este producto puede tener atributos (p. ej. montura: Nikon F, Canon EF), pero no variaciones."
+    },
+    "cancel": "Cancelar"
   },
   "inlineCreate": {
     "create": "Crear «{{name}}»",

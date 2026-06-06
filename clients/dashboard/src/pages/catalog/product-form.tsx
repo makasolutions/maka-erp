@@ -133,8 +133,9 @@ export function ProductFormPage() {
       toast.success(tc("feedback.created"));
       setProductId(id);
       queryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+      // Stay on the General step (replace URL) so the codes section appears
+      // in place now that the product (and its default variation) exists.
       navigate(`/catalog/products/${id}`, { replace: true });
-      setStep(1);
     },
     onError: (err) => toast.error(tc("feedback.createFailed"), { description: describe(err) }),
   });
@@ -181,6 +182,15 @@ export function ProductFormPage() {
 
   const currentStep = STEPS[step].id;
 
+  // Step-3 label adapts to the product type: Variable → "Attributes & variations",
+  // Bundle → "Bundle items", Simple/Service → "Attributes" (no variations).
+  const stepLabel = (id: StepId) =>
+    id !== "attributes"
+      ? t(`wizard.steps.${id}`)
+      : type === "Variable" ? t("wizard.steps.attributes")
+      : type === "Bundle" ? t("wizard.steps.bundle")
+      : t("wizard.steps.attributesOnly");
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
@@ -218,7 +228,7 @@ export function ProductFormPage() {
                   done ? "bg-[var(--color-success)] text-white" : active ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]" : "bg-[var(--color-muted)]")}>
                   {done ? <Check className="size-3" /> : i + 1}
                 </span>
-                <span className="flex items-center gap-1 truncate"><Icon className="size-3.5" />{t(`wizard.steps.${s.id}`)}</span>
+                <span className="flex items-center gap-1 truncate"><Icon className="size-3.5" />{stepLabel(s.id)}</span>
               </button>
             </li>
           );
@@ -243,7 +253,7 @@ export function ProductFormPage() {
         {currentStep === "attributes" && productId && (
           type === "Variable" ? <VariationsStep productId={productId} canEdit={canEdit} />
           : type === "Bundle" ? <BundleStep productId={productId} canEdit={canEdit} />
-          : <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("wizard.typeHint.simple")}</p>
+          : <AttributesOnlyStep productId={productId} canEdit={canEdit} />
         )}
         {currentStep === "media" && productId && (
           <div className="space-y-8">
@@ -268,9 +278,14 @@ export function ProductFormPage() {
 
       {/* Footer nav */}
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
-          {t("wizard.back")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => navigate("/catalog/products")}>
+            {t("wizard.cancel")}
+          </Button>
+          <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+            {t("wizard.back")}
+          </Button>
+        </div>
         <div className="flex items-center gap-2">
           {!isNew || productId ? (
             <Button variant="outline" onClick={() => saveMutation.mutate()} disabled={!canEdit || saveMutation.isPending}>
@@ -603,6 +618,20 @@ function VariationsStep({ productId, canEdit }: { productId: string; canEdit: bo
       <VariationEditorDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <DeleteVariationDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <CodesDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} canEdit={canEdit} />
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Step 3 (Simple / Service) — attributes only (no variations)
+// ───────────────────────────────────────────────────────────────────────────
+
+function AttributesOnlyStep({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+  const { t } = useTranslation("catalog");
+  return (
+    <div className="space-y-4">
+      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("wizard.typeHint.simpleAttr")}</p>
+      <ProductAttributesTab productId={productId} canEdit={canEdit} />
     </div>
   );
 }

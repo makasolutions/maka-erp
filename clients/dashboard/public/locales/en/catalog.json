@@ -550,7 +550,9 @@
       "description": "Description",
       "attributes": "Attributes & variations",
       "media": "Images & tags",
-      "specs": "Specifications"
+      "specs": "Specifications",
+      "attributesOnly": "Attributes",
+      "bundle": "Bundle items"
     },
     "createTitle": "New product",
     "editTitle": "Edit product",
@@ -572,8 +574,10 @@
     "typeHint": {
       "simple": "Variations only apply to Variable products.",
       "bundle": "Configure the bundle items in this step.",
-      "immutable": "Type cannot be changed after creation."
-    }
+      "immutable": "Type cannot be changed after creation.",
+      "simpleAttr": "This product can have attributes (e.g. mount: Nikon F, Canon EF), but no variations."
+    },
+    "cancel": "Cancel"
   },
   "inlineCreate": {
     "create": "Create \"{{name}}\"",
