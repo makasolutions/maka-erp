@@ -588,6 +588,15 @@
     "bundle": "Items del combo",
     "noImages": "Sin imágenes",
     "print": "Imprimir / PDF",
-    "back": "Volver"
+    "back": "Volver",
+    "share": "Compartir",
+    "shareVia": "Compartir por",
+    "copyUrl": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X (Twitter)",
+    "email": "Correo",
+    "publicHint": "Enlace público (solo productos activos)"
   }
 }

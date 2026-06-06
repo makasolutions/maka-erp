@@ -53,6 +53,7 @@ const AttributesPage = lazyNamed(() => import("@/pages/catalog/attributes"), "At
 const ProductFormPage = lazyNamed(() => import("@/pages/catalog/product-form"), "ProductFormPage");
 const ProductSheetPage = lazyNamed(() => import("@/pages/catalog/product-sheet"), "ProductSheetPage");
 const CatalogSettings = lazyNamed(() => import("@/pages/settings/catalog"), "CatalogSettings");
+const PublicProductPage = lazyNamed(() => import("@/pages/catalog/public-product"), "PublicProductPage");
 const ProductDetailPage = lazyNamed(
   () => import("@/pages/catalog/product-detail"),
   "ProductDetailPage",
@@ -151,6 +152,12 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: withSuspense(<LoginPage />),
+    errorElement: <RouteError />,
+  },
+  {
+    // Public, anonymous, friendly product sheet (shareable).
+    path: "/p/:tenant/:slug",
+    element: withSuspense(<PublicProductPage />),
     errorElement: <RouteError />,
   },
   {

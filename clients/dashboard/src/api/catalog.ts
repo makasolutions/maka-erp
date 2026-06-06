@@ -1025,3 +1025,38 @@ export function updateShippingClass(input: UpdateShippingClassInput): Promise<st
 export async function deleteShippingClass(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/catalog/shipping-classes/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
+
+// ─── Public (anonymous) product sheet — friendly shareable URL ──────────
+
+export type PublicImageDto = { url: string; altText: string | null; isPrimary: boolean; sortOrder: number };
+export type PublicCodeDto = { codeType: string; code: string };
+export type PublicVariationDto = { sku: string; combination: string };
+export type PublicProductDto = {
+  id: string;
+  name: string;
+  slug: string;
+  brandName: string | null;
+  type: ProductType;
+  shortDescription: string | null;
+  description: string | null;
+  technicalSpecs: string | null;
+  specs: string | null;
+  images: PublicImageDto[];
+  codes: PublicCodeDto[];
+  variations: PublicVariationDto[];
+};
+
+/**
+ * Fetches the public product sheet for a tenant + slug WITHOUT authentication.
+ * Raw fetch (not apiFetch) so it works for anonymous visitors: only the tenant
+ * header is sent, no Authorization. Goes through the Vite /api proxy in dev.
+ */
+export async function getPublicProduct(tenant: string, slug: string): Promise<PublicProductDto> {
+  const base = (await import("@/env")).env.apiBase || "";
+  const res = await fetch(
+    `${base}/api/v1/catalog/public/products/${encodeURIComponent(slug)}`,
+    { headers: { tenant, Accept: "application/json" } },
+  );
+  if (!res.ok) throw new Error(res.status === 404 ? "not-found" : `HTTP ${res.status}`);
+  return (await res.json()) as PublicProductDto;
+}

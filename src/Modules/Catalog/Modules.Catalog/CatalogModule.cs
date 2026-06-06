@@ -31,6 +31,7 @@ using FSH.Modules.Catalog.Features.v1.Products.CreateProduct;
 using FSH.Modules.Catalog.Features.v1.Products.DeleteProduct;
 using FSH.Modules.Catalog.Features.v1.Products.GetProductById;
 using FSH.Modules.Catalog.Features.v1.Products.GetProducts;
+using FSH.Modules.Catalog.Features.v1.Products.GetPublicProduct;
 using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
 using FSH.Modules.Catalog.Features.v1.Products.PublishProduct;
 using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
@@ -282,6 +283,14 @@ public sealed class CatalogModule : IModule
         shippingClasses.MapCreateShippingClassEndpoint();
         shippingClasses.MapUpdateShippingClassEndpoint();
         shippingClasses.MapDeleteShippingClassEndpoint();
+
+        // Public (anonymous) shareable product sheet — tenant resolved from the 'tenant' header.
+        var publicProducts = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/public/products")
+            .WithTags("Catalog - Public")
+            .WithApiVersionSet(apiVersionSet);
+
+        publicProducts.MapGetPublicProductEndpoint();
 
         var tenantProducts = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/tenant-products")

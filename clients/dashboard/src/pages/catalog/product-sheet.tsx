@@ -9,6 +9,8 @@ import {
 } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/list";
+import { ShareMenu } from "@/components/catalog/share-menu";
+import { tokenStore } from "@/auth/token-store";
 import { cn } from "@/lib/cn";
 
 const PRINT_CSS = `
@@ -55,9 +57,17 @@ export function ProductSheetPage() {
         <Link to={`/catalog/products/${productId}`} className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]">
           <ArrowLeft className="size-4" />{t("sheet.back")}
         </Link>
-        <Button onClick={() => window.print()} className="h-9 gap-1.5">
-          <FileDown className="size-4" />{t("sheet.exportPdf")}
-        </Button>
+        <div className="flex items-center gap-2">
+          {product?.slug && (
+            <ShareMenu
+              title={product.name}
+              url={`${window.location.origin}/p/${tokenStore.getTenant() ?? "root"}/${product.slug}`}
+            />
+          )}
+          <Button onClick={() => window.print()} className="h-9 gap-1.5">
+            <FileDown className="size-4" />{t("sheet.exportPdf")}
+          </Button>
+        </div>
       </div>
 
       <div id="product-sheet" className="space-y-6 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-5 sm:p-8">

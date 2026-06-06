@@ -588,6 +588,15 @@
     "bundle": "Bundle items",
     "noImages": "No images",
     "print": "Print / PDF",
-    "back": "Back"
+    "back": "Back",
+    "share": "Share",
+    "shareVia": "Share via",
+    "copyUrl": "Copy link",
+    "copied": "Link copied",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X (Twitter)",
+    "email": "Email",
+    "publicHint": "Public link (active products only)"
   }
 }
