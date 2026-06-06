@@ -1060,3 +1060,28 @@ export async function getPublicProduct(tenant: string, slug: string): Promise<Pu
   if (!res.ok) throw new Error(res.status === 404 ? "not-found" : `HTTP ${res.status}`);
   return (await res.json()) as PublicProductDto;
 }
+
+// ─── Bundle item mutations (§2.13) ──────────────────────────────────────
+
+export type AddBundleItemInput = {
+  itemVariationId: string;
+  quantity?: number;
+  discountPercent?: number | null;
+  discountFixed?: number | null;
+  isOptional?: boolean;
+  sortOrder?: number;
+};
+
+export function addBundleItem(productId: string, input: AddBundleItemInput): Promise<string> {
+  return apiFetch<string>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/bundle-items`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
+export async function removeBundleItem(productId: string, itemId: string): Promise<void> {
+  await apiFetch<void>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/bundle-items/${encodeURIComponent(itemId)}`,
+    { method: "DELETE" },
+  );
+}

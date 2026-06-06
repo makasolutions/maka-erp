@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Check, FileText, Hash, ImageIcon, Layers, Plus, SlidersHorizontal, Trash2,
+  ArrowLeft, Boxes, Check, FileText, Hash, ImageIcon, Layers, Plus, SlidersHorizontal, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
-  addProductCode, createBrand, createCategory, createProduct, getCategoryTree,
-  getDefaultVariation, getProductById, getProductCodes, getShippingClasses, getTaxRates,
-  getVariations, removeProductCode, searchBrands, setProductCategories, updateProduct,
+  addBundleItem, addProductCode, createBrand, createCategory, createProduct, getBundleItems,
+  getCategoryTree, getDefaultVariation, getProductById, getProductCodes, getShippingClasses,
+  getTaxRates, getVariations, removeBundleItem, removeProductCode, searchBrands, searchProducts,
+  setProductCategories, updateProduct,
   type BrandDto, type CategoryDto, type ProductType, type VariationDto,
 } from "@/api/catalog";
 import { PRODUCT_CODE_TYPES, validateProductCode, type ProductCodeType } from "@/lib/product-codes";
@@ -240,9 +241,9 @@ export function ProductFormPage() {
           />
         )}
         {currentStep === "attributes" && productId && (
-          type === "Variable"
-            ? <VariationsStep productId={productId} canEdit={canEdit} />
-            : <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("wizard.variableOnly")}</p>
+          type === "Variable" ? <VariationsStep productId={productId} canEdit={canEdit} />
+          : type === "Bundle" ? <BundleStep productId={productId} canEdit={canEdit} />
+          : <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("wizard.typeHint.simple")}</p>
         )}
         {currentStep === "media" && productId && (
           <div className="space-y-8">
@@ -367,9 +368,9 @@ function GeneralStep({
   return (
     <div className="space-y-6">
       <FormGrid>
-        <Field id="p-type" span={4} label={t("products.fields.type")} required>
+        <Field id="p-type" span={4} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
           <Combobox id="p-type" label={t("products.fields.type")} value={type}
-            onChange={(v) => v && setType(v as ProductType)} options={typeOptions} />
+            onChange={(v) => v && setType(v as ProductType)} options={typeOptions} disabled={!isNew} />
         </Field>
         <Field id="p-name" span={8} label={t("products.fields.name")} required>
           <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)}
@@ -609,6 +610,117 @@ function VariationsStep({ productId, canEdit }: { productId: string; canEdit: bo
 // ───────────────────────────────────────────────────────────────────────────
 //  Step 5 — Technical specs + shipping/config
 // ───────────────────────────────────────────────────────────────────────────
+
+// ───────────────────────────────────────────────────────────────────────────
+//  Step 3 (Bundle) — combo items
+// ───────────────────────────────────────────────────────────────────────────
+
+function BundleStep({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+
+  const itemsQ = useQuery({ queryKey: ["catalog", "bundle-items", productId], queryFn: () => getBundleItems(productId) });
+  const productsQ = useQuery({ queryKey: ["catalog", "products", "list-bundle"], queryFn: () => searchProducts({ pageSize: 100, sort: "name" }) });
+
+  const [pickProductId, setPickProductId] = useState<string | null>(null);
+  const [pickVariationId, setPickVariationId] = useState<string | null>(null);
+  const [qty, setQty] = useState("1");
+  const [discount, setDiscount] = useState("");
+
+  const variationsQ = useQuery({
+    queryKey: ["catalog", "variations", pickProductId],
+    queryFn: () => getVariations(pickProductId!),
+    enabled: !!pickProductId,
+  });
+
+  // Default to the (only / default) variation when a product is picked.
+  useEffect(() => {
+    const vs = (variationsQ.data ?? []).filter((v) => !v.isDeleted);
+    if (vs.length > 0) setPickVariationId(vs.find((v) => v.isDefault)?.id ?? vs[0].id);
+    else setPickVariationId(null);
+  }, [variationsQ.data]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["catalog", "bundle-items", productId] });
+  const add = useMutation({
+    mutationFn: () => addBundleItem(productId, {
+      itemVariationId: pickVariationId!,
+      quantity: Math.max(1, Number(qty) || 1),
+      discountPercent: discount ? Number(discount) : null,
+    }),
+    onSuccess: () => { setDiscount(""); setQty("1"); invalidate(); },
+    onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
+  });
+  const remove = useMutation({
+    mutationFn: (itemId: string) => removeBundleItem(productId, itemId),
+    onSuccess: invalidate,
+    onError: (e) => toast.error(tc("feedback.deleteFailed"), { description: describe(e) }),
+  });
+
+  const productOptions = (productsQ.data?.items ?? [])
+    .filter((p) => p.id !== productId)
+    .map((p) => ({ value: p.id, label: p.name }));
+  const variationOptions = (variationsQ.data ?? []).filter((v) => !v.isDeleted)
+    .map((v) => ({ value: v.id, label: v.sku + (v.isDefault ? " ★" : "") }));
+
+  const items = itemsQ.data ?? [];
+  const canAdd = !!pickVariationId && !add.isPending;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <Boxes className="size-4 text-[var(--color-muted-foreground)]" />
+        <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("bundle.title")}</h2>
+        <span className="rounded-full bg-[var(--color-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-muted-foreground)]">{items.length}</span>
+      </div>
+      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("bundle.intro")}</p>
+
+      {items.length === 0 ? (
+        <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("bundle.empty")}</p>
+      ) : (
+        <ul className="divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)]">
+          {items.map((it) => (
+            <li key={it.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-[13px]">
+              <div className="flex items-center gap-2">
+                <code className="font-mono text-[var(--color-foreground)]">{it.itemSku}</code>
+                <span className="text-[var(--color-muted-foreground)]">× {it.quantity}</span>
+                {it.discountPercent ? <span className="text-[var(--color-success)]">−{it.discountPercent}%</span> : null}
+              </div>
+              {canEdit && (
+                <button type="button" onClick={() => remove.mutate(it.id)} aria-label={t("bundle.remove")}
+                  className="text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]"><Trash2 className="size-4" /></button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canEdit && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+          <FormGrid>
+            <Field id="b-prod" span={4} label={t("bundle.item")}>
+              <Combobox id="b-prod" label={t("bundle.item")} value={pickProductId} onChange={(v) => { setPickProductId(v); }}
+                options={productOptions} searchable clearable placeholder={t("bundle.selectProduct")} />
+            </Field>
+            <Field id="b-var" span={4} label={t("bundle.variation")}>
+              <Combobox id="b-var" label={t("bundle.variation")} value={pickVariationId} onChange={setPickVariationId}
+                options={variationOptions} searchable />
+            </Field>
+            <Field id="b-qty" span={2} label={t("bundle.quantity")}>
+              <Input id="b-qty" type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} />
+            </Field>
+            <Field id="b-disc" span={2} label={t("bundle.discount")}>
+              <Input id="b-disc" type="number" min={0} max={100} step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+            </Field>
+          </FormGrid>
+          <div className="mt-3 flex justify-end">
+            <Button type="button" disabled={!canAdd} onClick={() => add.mutate()}><Plus className="size-4" />{t("bundle.add")}</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Friendly key-value editor for the Specs JSONB field (§2.6) ──
 function specsToRows(json: string): { k: string; v: string }[] {

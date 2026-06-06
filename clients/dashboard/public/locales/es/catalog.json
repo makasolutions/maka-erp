@@ -568,7 +568,12 @@
     "specsEmpty": "Sin especificaciones. Agrega pares clave-valor (ej. sensor → 12MP).",
     "specsKeyPlaceholder": "sensor",
     "specsValuePlaceholder": "12MP",
-    "specsRawToggle": "Editar como JSON"
+    "specsRawToggle": "Editar como JSON",
+    "typeHint": {
+      "simple": "Las variaciones aplican solo a productos Variable.",
+      "bundle": "Configura los items del combo en este paso.",
+      "immutable": "El tipo no se puede cambiar después de crear."
+    }
   },
   "inlineCreate": {
     "create": "Crear «{{name}}»",
@@ -598,5 +603,18 @@
     "x": "X (Twitter)",
     "email": "Correo",
     "publicHint": "Enlace público (solo productos activos)"
+  },
+  "bundle": {
+    "title": "Items del combo",
+    "intro": "Agrega productos/variaciones que componen este combo, con cantidad y descuento.",
+    "addItem": "Agregar item",
+    "item": "Producto",
+    "variation": "Variación",
+    "quantity": "Cantidad",
+    "discount": "Desc. %",
+    "empty": "El combo no tiene items aún.",
+    "selectProduct": "Buscar producto…",
+    "add": "Agregar",
+    "remove": "Quitar"
   }
 }
