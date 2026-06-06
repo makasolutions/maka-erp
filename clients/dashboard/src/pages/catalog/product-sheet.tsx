@@ -4,11 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, FileDown, ImageOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
-  getBundleItems, getDefaultVariation, getProductById, getProductCodes,
+  getBundleItems, getDefaultVariation, getEffectivePrice, getProductById, getProductCodes,
   getProductImages, getVariations,
 } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
-import { EntityStatusBadge } from "@/components/list";
+import { Combobox, EntityStatusBadge } from "@/components/list";
+import { formatMoney } from "@/lib/list-helpers";
 import { ShareMenu } from "@/components/catalog/share-menu";
 import { tokenStore } from "@/auth/token-store";
 import { cn } from "@/lib/cn";
@@ -123,6 +124,7 @@ export function ProductSheetPage() {
                 {!defVarQ.data?.sku && (codesQ.data ?? []).length === 0 && <span className="text-[12px] text-[var(--color-muted-foreground)]">—</span>}
               </ul>
             </section>
+            {defVarId && <EffectivePriceSection variationId={defVarId} />}
           </div>
         </div>
 
@@ -197,6 +199,48 @@ export function ProductSheetPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+const PRICE_SEGMENTS = ["Retail", "B2B", "VIP", "Mayorista"];
+
+function EffectivePriceSection({ variationId }: { variationId: string }) {
+  const { t } = useTranslation("catalog");
+  const [segment, setSegment] = useState("Retail");
+  const priceQ = useQuery({
+    queryKey: ["catalog", "effective-price", variationId, segment],
+    queryFn: () => getEffectivePrice(variationId, segment),
+    enabled: !!variationId,
+    retry: false,
+  });
+  const p = priceQ.data;
+
+  return (
+    <section className="no-print">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h2 className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">{t("priceLists.effectivePrice")}</h2>
+        <div className="w-32">
+          <Combobox id="ps-segment" label={t("priceLists.fields.segment")} value={segment}
+            onChange={(v) => v && setSegment(v)} options={PRICE_SEGMENTS.map((s) => ({ value: s, label: s }))} />
+        </div>
+      </div>
+      {priceQ.isError || !p ? (
+        <span className="text-[13px] text-[var(--color-muted-foreground)]">—</span>
+      ) : (
+        <div className="flex flex-wrap items-baseline gap-2">
+          <span className="font-display text-[22px] font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(p.effectivePrice)}</span>
+          {p.isSalePrice && (
+            <>
+              <span className="text-[13px] text-[var(--color-muted-foreground)] line-through tabular-nums">{formatMoney(p.listPrice)}</span>
+              <EntityStatusBadge tone="success">{t("priceLists.onSale")}</EntityStatusBadge>
+            </>
+          )}
+          {p.priceListName && (
+            <span className="text-[12px] text-[var(--color-muted-foreground)]">· {p.priceListName}</span>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
