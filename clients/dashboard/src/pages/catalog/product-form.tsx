@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
-  addBundleItem, addPriceListItem, addProductCode, changeProductType, createBrand, createCategory, createProduct, getBundleItems,
+  addBundleItem, addPriceListItem, addProductCode, addProductImage, changeProductType, createBrand, createCategory, createProduct, getBundleItems,
   getCategoryTree, getDefaultVariation, getEffectivePrice, getPriceListById, getPriceLists, getProductById, getProductCodes,
   getShippingClasses, getTaxRates, getVariations, removeBundleItem, removeProductCode, searchBrands,
   searchProducts, setProductCategories, updatePriceListItem, updateProduct,
@@ -25,6 +25,9 @@ import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list"
 import { MakaCurrencyInput, MakaRichTextEditor } from "@/components/maka";
 import { cn } from "@/lib/cn";
 import { deriveBaseFromDefault, describe, formatMoney, slugify, toTaxIncluded } from "@/lib/list-helpers";
+import { buildBundleCollage } from "@/lib/bundle-collage";
+import { useFileUpload } from "@/hooks/use-file-upload";
+import { getFileMetadata, Visibility } from "@/api/files";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -975,12 +978,39 @@ function BundleStep({ productId, canEdit }: { productId: string; canEdit: boolea
   const items = itemsQ.data ?? [];
   const canAdd = !!pickVariationId && !add.isPending;
 
+  // C10 — auto-generate the combo cover from the included products' images (canvas collage).
+  const { upload } = useFileUpload({ ownerType: "Product", ownerId: productId, category: "Image", visibility: Visibility.Public });
+  const [generating, setGenerating] = useState(false);
+  const collageUrls = items.map((it) => it.itemThumbnailUrl).filter((u): u is string => !!u);
+  const generateImage = async () => {
+    setGenerating(true);
+    try {
+      const blob = await buildBundleCollage(collageUrls);
+      const file = new File([blob], "combo.png", { type: "image/png" });
+      const asset = await upload(file);
+      const meta = await getFileMetadata(asset.id);
+      if (!meta.publicUrl) throw new Error("Sin publicUrl.");
+      await addProductImage(productId, { url: meta.publicUrl, isPrimary: true });
+      queryClient.invalidateQueries({ queryKey: ["catalog", "product-images", productId] });
+      toast.success(t("bundle.imageGenerated"));
+    } catch (e) {
+      toast.error(t("bundle.imageFailed"), { description: describe(e) });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
         <Boxes className="size-4 text-[var(--color-muted-foreground)]" />
         <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("bundle.title")}</h2>
         <span className="rounded-full bg-[var(--color-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-muted-foreground)]">{items.length}</span>
+        {canEdit && collageUrls.length > 0 && (
+          <Button type="button" variant="outline" size="sm" className="ml-auto" disabled={generating} onClick={generateImage}>
+            <ImageIcon className="size-4" />{generating ? t("bundle.imageGenerating") : t("bundle.generateImage")}
+          </Button>
+        )}
       </div>
       <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("bundle.intro")}</p>
 
@@ -990,10 +1020,18 @@ function BundleStep({ productId, canEdit }: { productId: string; canEdit: boolea
         <ul className="divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)]">
           {items.map((it) => (
             <li key={it.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-[13px]">
-              <div className="flex items-center gap-2">
-                <code className="font-mono text-[var(--color-foreground)]">{it.itemSku}</code>
-                <span className="text-[var(--color-muted-foreground)]">× {it.quantity}</span>
-                {it.discountPercent ? <span className="text-[var(--color-success)]">−{it.discountPercent}%</span> : null}
+              <div className="flex items-center gap-3">
+                {it.itemThumbnailUrl
+                  ? <img src={it.itemThumbnailUrl} alt="" className="size-9 shrink-0 rounded-md border border-[var(--color-border)] object-cover" />
+                  : <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)]"><ImageIcon className="size-4 text-[var(--color-muted-foreground)]" /></div>}
+                <div className="flex flex-col">
+                  {it.itemProductName && <span className="font-medium text-[var(--color-foreground)]">{it.itemProductName}</span>}
+                  <span className="flex items-center gap-2">
+                    <code className="font-mono text-[12px] text-[var(--color-muted-foreground)]">{it.itemSku}</code>
+                    <span className="text-[var(--color-muted-foreground)]">× {it.quantity}</span>
+                    {it.discountPercent ? <span className="text-[var(--color-success)]">−{it.discountPercent}%</span> : null}
+                  </span>
+                </div>
               </div>
               {canEdit && (
                 <button type="button" onClick={() => remove.mutate(it.id)} aria-label={t("bundle.remove")}

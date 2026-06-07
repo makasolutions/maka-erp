@@ -1019,6 +1019,9 @@ export type BundleItemDto = {
   discountFixed: number | null;
   isOptional: boolean;
   sortOrder: number;
+  itemProductId?: string | null;
+  itemProductName?: string | null;
+  itemThumbnailUrl?: string | null;
 };
 
 export function getBundleItems(productId: string): Promise<BundleItemDto[]> {

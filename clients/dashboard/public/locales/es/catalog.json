@@ -638,7 +638,11 @@
     "empty": "El combo no tiene items aún.",
     "selectProduct": "Buscar producto…",
     "add": "Agregar",
-    "remove": "Quitar"
+    "remove": "Quitar",
+    "generateImage": "Generar imagen",
+    "imageGenerating": "Generando…",
+    "imageGenerated": "Imagen del combo generada y asignada como principal.",
+    "imageFailed": "No se pudo generar la imagen del combo."
   },
   "priceLists": {
     "title": "Listas de precios",

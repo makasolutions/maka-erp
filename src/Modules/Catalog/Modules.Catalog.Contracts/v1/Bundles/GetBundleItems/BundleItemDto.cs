@@ -9,4 +9,7 @@ public sealed record BundleItemDto(
     decimal? DiscountPercent,
     decimal? DiscountFixed,
     bool     IsOptional,
-    int      SortOrder);
+    int      SortOrder,
+    Guid?    ItemProductId   = null,
+    string?  ItemProductName = null,
+    string?  ItemThumbnailUrl = null);

@@ -638,7 +638,11 @@
     "empty": "This bundle has no items yet.",
     "selectProduct": "Search product…",
     "add": "Add",
-    "remove": "Remove"
+    "remove": "Remove",
+    "generateImage": "Generate image",
+    "imageGenerating": "Generating…",
+    "imageGenerated": "Combo image generated and set as the cover.",
+    "imageFailed": "Could not generate the combo image."
   },
   "priceLists": {
     "title": "Price lists",
