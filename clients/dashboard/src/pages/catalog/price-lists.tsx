@@ -213,9 +213,10 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
   const [description, setDescription] = useState("");
   const [isDefault, setIsDefault] = useState(false);
   const [adjustmentPercent, setAdjustmentPercent] = useState("");
+  const [roundEnabled, setRoundEnabled] = useState(true);
 
   useEffect(() => {
-    if (isOpen) { setName(""); setSegment("Retail"); setValidFrom(""); setValidTo(""); setDescription(""); setIsDefault(false); setAdjustmentPercent(""); }
+    if (isOpen) { setName(""); setSegment("Retail"); setValidFrom(""); setValidTo(""); setDescription(""); setIsDefault(false); setAdjustmentPercent(""); setRoundEnabled(true); }
   }, [isOpen]);
 
   const createM = useMutation({
@@ -227,6 +228,7 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
       description: description.trim() || null,
       isDefault,
       adjustmentPercent: isDefault || !adjustmentPercent ? null : Number(adjustmentPercent),
+      roundEnabled,
     }),
     onSuccess: () => {
       toast.success(tc("feedback.created"));
@@ -273,10 +275,18 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                 </label>
               </div>
               {!isDefault && (
-                <Field id="pl-pct" span={6} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
+                <Field id="pl-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
                   <Input id="pl-pct" type="number" step="0.01" value={adjustmentPercent}
                     onChange={(e) => setAdjustmentPercent(e.target.value)} placeholder="-3 / 15" />
                 </Field>
+              )}
+              {!isDefault && (
+                <div className="col-span-1 flex items-end sm:col-span-2">
+                  <label className="flex items-center gap-2 pb-2 text-[13px] font-medium text-[var(--color-foreground)]">
+                    <input type="checkbox" checked={roundEnabled} onChange={(e) => setRoundEnabled(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
+                    {t("priceLists.roundEnabled")}
+                  </label>
+                </div>
               )}
               <Field id="pl-desc" span={isDefault ? 12 : 6} label={t("priceLists.fields.description")}>
                 <Input id="pl-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
@@ -320,6 +330,7 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
   const [isActive, setIsActive] = useState(true);
   const [isDefault, setIsDefault] = useState(false);
   const [adjustmentPercent, setAdjustmentPercent] = useState("");
+  const [roundEnabled, setRoundEnabled] = useState(true);
 
   useEffect(() => {
     if (isOpen && list) {
@@ -330,6 +341,7 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
       setIsActive(list.isActive);
       setIsDefault(list.isDefault);
       setAdjustmentPercent(list.adjustmentPercent != null ? String(list.adjustmentPercent) : "");
+      setRoundEnabled(list.roundEnabled);
     }
   }, [isOpen, list]);
 
@@ -343,6 +355,7 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
       isActive,
       isDefault,
       adjustmentPercent: isDefault || !adjustmentPercent ? null : Number(adjustmentPercent),
+      roundEnabled,
     }),
     onSuccess: () => {
       toast.success(tc("feedback.updated"));
@@ -388,10 +401,18 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                 </label>
               </div>
               {!isDefault && (
-                <Field id="ep-pct" span={6} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
+                <Field id="ep-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
                   <Input id="ep-pct" type="number" step="0.01" value={adjustmentPercent}
                     onChange={(e) => setAdjustmentPercent(e.target.value)} placeholder="-3 / 15" />
                 </Field>
+              )}
+              {!isDefault && (
+                <div className="col-span-1 flex items-end sm:col-span-2">
+                  <label className="flex items-center gap-2 pb-2 text-[13px] font-medium text-[var(--color-foreground)]">
+                    <input type="checkbox" checked={roundEnabled} onChange={(e) => setRoundEnabled(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
+                    {t("priceLists.roundEnabled")}
+                  </label>
+                </div>
               )}
               <Field id="ep-desc" span={isDefault ? 12 : 6} label={t("priceLists.fields.description")}>
                 <Input id="ep-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />

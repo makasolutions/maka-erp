@@ -95,6 +95,23 @@ export function derivePrice(base: number, pct: number): number {
   return roundSuggested(base * (1 + pct / 100));
 }
 
+/** General VAT (Colombia, 19%). Mirror of backend CatalogPricing.IvaRate. */
+export const IVA_RATE = 0.19;
+export const toTaxIncluded = (base: number) => base * (1 + IVA_RATE);
+export const fromTaxIncluded = (incl: number) => incl / (1 + IVA_RATE);
+
+/**
+ * Derived base price computed on the VAT-included value of the default list:
+ * inclDerived = inclDefault × (1 ± pct); rounded (10k − 1k) only when `round`;
+ * base = inclDerived / (1 + IVA). Mirror of backend CatalogPricing.DeriveBase.
+ */
+export function deriveBaseFromDefault(baseDefault: number, pct: number, round: boolean): number {
+  const inclDefault = toTaxIncluded(baseDefault);
+  let inclDerived = inclDefault * (1 + pct / 100);
+  if (round) inclDerived = roundSuggested(inclDerived);
+  return Math.round(fromTaxIncluded(inclDerived));
+}
+
 export function formatMoney(
   amount: number,
   currency?: string | null,

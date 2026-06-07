@@ -684,7 +684,11 @@
     "productPricesEmpty": "No hay listas de precios activas.",
     "base": "Base",
     "withTax": "IVA incl.",
-    "manageItems": "Gestionar ítems"
+    "manageItems": "Gestionar ítems",
+    "vatLabel": "% IVA",
+    "defaultRequired": "El precio de la lista por defecto es obligatorio.",
+    "roundEnabled": "Redondear",
+    "roundEnabledHint": "Redondea el valor con IVA al $10.000 más cercano menos $1.000."
   },
   "marketplace": {
     "Google": "Google",

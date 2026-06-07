@@ -684,7 +684,11 @@
     "productPricesEmpty": "No active price lists.",
     "base": "Base",
     "withTax": "VAT incl.",
-    "manageItems": "Manage items"
+    "manageItems": "Manage items",
+    "vatLabel": "% VAT",
+    "defaultRequired": "The default list price is required.",
+    "roundEnabled": "Round",
+    "roundEnabledHint": "Rounds the VAT-included value to nearest $10.000 minus $1.000."
   },
   "marketplace": {
     "Google": "Google",

@@ -1106,6 +1106,7 @@ export type PriceListDto = {
   isActive: boolean;
   isDefault: boolean;
   adjustmentPercent?: number | null;
+  roundEnabled: boolean;
   listKind: PriceListKind;
   campaignStatus?: CampaignStatus | null;
   itemCount: number;
@@ -1176,6 +1177,7 @@ export type CreatePriceListInput = {
   description?: string | null;
   isDefault?: boolean;
   adjustmentPercent?: number | null;
+  roundEnabled?: boolean;
 };
 
 export function createPriceList(input: CreatePriceListInput): Promise<string> {
@@ -1194,6 +1196,7 @@ export type UpdatePriceListInput = {
   isActive: boolean;
   isDefault: boolean;
   adjustmentPercent?: number | null;
+  roundEnabled?: boolean;
 };
 
 export function updatePriceList(input: UpdatePriceListInput): Promise<string> {

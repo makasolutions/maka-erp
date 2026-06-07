@@ -25,7 +25,7 @@ import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list"
 import { MakaGridClient, MakaRichTextEditor } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
-import { derivePrice, describe, formatMoney, slugify } from "@/lib/list-helpers";
+import { deriveBaseFromDefault, describe, slugify } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -481,16 +481,23 @@ function PriceWithTax({ id, value, onChange, disabled }: {
   };
 
   return (
-    <div className="flex items-stretch gap-1">
-      <Input id={id} type="number" min={0} step="1000" disabled={disabled}
-        className="min-w-0 flex-1" value={baseStr} onChange={(e) => onBase(e.target.value)}
-        aria-label={t("priceLists.base")} placeholder={t("priceLists.base")} />
-      <span aria-hidden className="grid w-10 shrink-0 place-items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] text-[11px] font-semibold text-[var(--color-muted-foreground)]">
-        19%
-      </span>
-      <Input type="number" min={0} step="1000" disabled={disabled}
-        className="min-w-0 flex-1" value={ivaStr} onChange={(e) => onIva(e.target.value)}
-        aria-label={t("priceLists.withTax")} placeholder={t("priceLists.withTax")} />
+    <div>
+      <div className="flex items-stretch gap-1">
+        <Input id={id} type="number" min={0} step="1000" disabled={disabled}
+          className="min-w-0 flex-1 text-right" value={baseStr} onChange={(e) => onBase(e.target.value)}
+          aria-label={t("priceLists.base")} placeholder={t("priceLists.base")} />
+        <span aria-hidden className="grid w-10 shrink-0 place-items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] text-[11px] font-semibold text-[var(--color-muted-foreground)]">
+          19%
+        </span>
+        <Input type="number" min={0} step="1000" disabled={disabled}
+          className="min-w-0 flex-1 text-right" value={ivaStr} onChange={(e) => onIva(e.target.value)}
+          aria-label={t("priceLists.withTax")} placeholder={t("priceLists.withTax")} />
+      </div>
+      <div className="mt-0.5 flex gap-1 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+        <span className="flex-1">{t("priceLists.base")}</span>
+        <span className="w-10 shrink-0 text-center">{t("priceLists.vatLabel")}</span>
+        <span className="flex-1">{t("priceLists.withTax")}</span>
+      </div>
     </div>
   );
 }
@@ -556,16 +563,20 @@ function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: 
       const next = { ...prev };
       if (defaultList) next[defaultList.id] = raw;
       const base = Number(raw);
+      // Derived lists are computed from the default list's VAT-included value,
+      // rounded only when the list has RoundEnabled.
       if (defaultList && raw && !Number.isNaN(base)) {
         for (const l of lists) {
           if (l.isDefault || l.adjustmentPercent == null) continue;
           if (touched[l.id]) continue; // respect manual override
-          next[l.id] = String(derivePrice(base, l.adjustmentPercent));
+          next[l.id] = String(deriveBaseFromDefault(base, l.adjustmentPercent, l.roundEnabled));
         }
       }
       return next;
     });
   };
+
+  const defaultPriceMissing = !!defaultList && !(values[defaultList.id] ?? "").trim();
 
   const saveM = useMutation({
     mutationFn: async () => {
@@ -610,13 +621,16 @@ function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: 
                 if (l.isDefault) { setBase(base); }
                 else { setValues((p) => ({ ...p, [l.id]: base })); setTouched((p) => ({ ...p, [l.id]: true })); }
               }} />
-            {values[l.id] && <p className="mt-0.5 text-[11px] text-[var(--color-muted-foreground)]">{formatMoney(Number(values[l.id]))}</p>}
           </Field>
         ))}
       </FormGrid>
       {canEdit && (
-        <div className="flex justify-end">
-          <Button type="button" variant="outline" onClick={() => saveM.mutate()} disabled={saveM.isPending}>
+        <div className="flex items-center justify-end gap-3">
+          {defaultPriceMissing && (
+            <span className="text-[11.5px] text-[var(--color-destructive)]">{t("priceLists.defaultRequired")}</span>
+          )}
+          <Button type="button" variant="outline" onClick={() => saveM.mutate()}
+            disabled={saveM.isPending || defaultPriceMissing}>
             {saveM.isPending ? tc("feedback.saving") : t("priceLists.savePrices")}
           </Button>
         </div>
