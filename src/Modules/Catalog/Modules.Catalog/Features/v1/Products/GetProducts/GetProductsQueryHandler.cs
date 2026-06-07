@@ -1,6 +1,5 @@
 using FSH.Framework.Persistence;
 using FSH.Framework.Shared.Persistence;
-using FSH.Modules.Catalog.Contracts.Enums;
 using FSH.Modules.Catalog.Contracts.v1.Products.GetProducts;
 using FSH.Modules.Catalog.Data;
 using FSH.Modules.Catalog.Domain;
@@ -41,14 +40,62 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
         if (query.Status.HasValue)
             products = products.Where(p => p.Status == query.Status.Value);
 
+        // Filter by any code (default-variation SKU or any product code).
+        if (!string.IsNullOrWhiteSpace(query.Code))
+        {
+            string pat = $"%{query.Code.Trim()}%";
+            products = products.Where(p =>
+                p.Variations.Any(v => v.IsDefault && !v.IsDeleted && EF.Functions.ILike(v.Sku, pat)) ||
+                db.ProductCodes.Any(c => c.ProductId == p.Id && EF.Functions.ILike(c.Code, pat)));
+        }
+
+        // Price range on the default-list price of the default variation.
+        if (query.MinPrice.HasValue)
+            products = products.Where(p => p.Variations
+                .Where(v => v.IsDefault && !v.IsDeleted)
+                .SelectMany(v => db.PriceListItems
+                    .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                    .Select(i => (decimal?)i.Price))
+                .FirstOrDefault() >= query.MinPrice.Value);
+        if (query.MaxPrice.HasValue)
+            products = products.Where(p => p.Variations
+                .Where(v => v.IsDefault && !v.IsDeleted)
+                .SelectMany(v => db.PriceListItems
+                    .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                    .Select(i => (decimal?)i.Price))
+                .FirstOrDefault() <= query.MaxPrice.Value);
+
         products = (query.Sort?.ToLowerInvariant()) switch
         {
-            "name"      => products.OrderBy(p => p.Name),
-            "-name"     => products.OrderByDescending(p => p.Name),
-            "createdat" => products.OrderBy(p => p.CreatedAtUtc),
-            "-createdat"=> products.OrderByDescending(p => p.CreatedAtUtc),
-            "status"    => products.OrderBy(p => p.Status),
-            _           => products.OrderBy(p => p.Name),
+            "name"        => products.OrderBy(p => p.Name),
+            "-name"       => products.OrderByDescending(p => p.Name),
+            "createdat"   => products.OrderBy(p => p.CreatedAtUtc),
+            "-createdat"  => products.OrderByDescending(p => p.CreatedAtUtc),
+            "updatedat"   => products.OrderBy(p => p.UpdatedAtUtc),
+            "-updatedat"  => products.OrderByDescending(p => p.UpdatedAtUtc),
+            "status"      => products.OrderBy(p => p.Status),
+            "-status"     => products.OrderByDescending(p => p.Status),
+            "type"        => products.OrderBy(p => p.Type),
+            "-type"       => products.OrderByDescending(p => p.Type),
+            "slug"        => products.OrderBy(p => p.Slug),
+            "-slug"       => products.OrderByDescending(p => p.Slug),
+            "brandname"   => products.OrderBy(p => db.Brands.Where(b => b.Id == p.BrandId).Select(b => b.Name).FirstOrDefault()),
+            "-brandname"  => products.OrderByDescending(p => db.Brands.Where(b => b.Id == p.BrandId).Select(b => b.Name).FirstOrDefault()),
+            "defaultsku"  => products.OrderBy(p => p.Variations.Where(v => v.IsDefault && !v.IsDeleted).Select(v => v.Sku).FirstOrDefault()),
+            "-defaultsku" => products.OrderByDescending(p => p.Variations.Where(v => v.IsDefault && !v.IsDeleted).Select(v => v.Sku).FirstOrDefault()),
+            "defaultprice"  => products.OrderBy(p => p.Variations
+                .Where(v => v.IsDefault && !v.IsDeleted)
+                .SelectMany(v => db.PriceListItems
+                    .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                    .Select(i => (decimal?)i.Price))
+                .FirstOrDefault()),
+            "-defaultprice" => products.OrderByDescending(p => p.Variations
+                .Where(v => v.IsDefault && !v.IsDeleted)
+                .SelectMany(v => db.PriceListItems
+                    .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                    .Select(i => (decimal?)i.Price))
+                .FirstOrDefault()),
+            _             => products.OrderBy(p => p.Name),
         };
 
         return await products
@@ -75,7 +122,18 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
                     .FirstOrDefault(),
                 p.WooCommerceId,
                 p.CreatedAtUtc,
-                p.UpdatedAtUtc))
+                p.UpdatedAtUtc,
+                p.Variations
+                    .Where(v => v.IsDefault && !v.IsDeleted)
+                    .SelectMany(v => db.PriceListItems
+                        .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                        .Select(i => (decimal?)i.Price))
+                    .FirstOrDefault(),
+                db.ProductCodes
+                    .Where(c => c.ProductId == p.Id)
+                    .OrderBy(c => c.CodeType)
+                    .Select(c => new ProductCodeBriefDto(c.CodeType, c.Code))
+                    .ToList()))
             .ToPagedResponseAsync(query, cancellationToken)
             .ConfigureAwait(false);
     }

@@ -19,4 +19,9 @@ public sealed record ProductDto(
     string?        PrimaryCategoryName,
     int?           WooCommerceId,
     DateTime       CreatedAtUtc,
-    DateTime?      UpdatedAtUtc);
+    DateTime?      UpdatedAtUtc,
+    decimal?       DefaultPrice,
+    IReadOnlyList<ProductCodeBriefDto> Codes);
+
+/// <summary>A product code shown in the catalog grid (SKU + EAN/UPC/…).</summary>
+public sealed record ProductCodeBriefDto(string CodeType, string Code);

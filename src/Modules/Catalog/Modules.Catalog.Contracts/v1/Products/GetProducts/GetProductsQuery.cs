@@ -14,4 +14,7 @@ public sealed record GetProductsQuery : IPagedQuery, IQuery<PagedResponse<Produc
     public Guid?         CategoryId { get; set; }
     public ProductType?  Type       { get; set; }
     public ProductStatus? Status    { get; set; }
+    public string?       Code       { get; set; }   // matches any product code (SKU/EAN/…)
+    public decimal?      MinPrice   { get; set; }   // on the default-list price
+    public decimal?      MaxPrice   { get; set; }
 }
