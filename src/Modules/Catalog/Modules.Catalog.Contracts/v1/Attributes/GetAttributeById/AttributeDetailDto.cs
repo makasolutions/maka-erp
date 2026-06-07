@@ -13,4 +13,5 @@ public sealed record AttributeDetailDto(
     int?                          WooCommerceId,
     DateTime                      CreatedAtUtc,
     DateTime?                     UpdatedAtUtc,
-    IReadOnlyList<AttributeValueDto> Values);
+    IReadOnlyList<AttributeValueDto> Values,
+    IReadOnlyList<Guid>           CategoryIds);

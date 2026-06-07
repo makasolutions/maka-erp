@@ -33,6 +33,13 @@ public sealed class DeleteAttributeCommandHandler(CatalogDbContext db)
                 Enumerable.Empty<string>(),
                 HttpStatusCode.BadRequest);
 
+        // Remove category associations (no FK cascade — standalone link table).
+        var categoryLinks = await db.CategoryAttributes
+            .Where(ca => ca.AttributeId == command.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        db.CategoryAttributes.RemoveRange(categoryLinks);
+
         // Values cascade-delete via the configured FK relationship.
         db.Attributes.Remove(attribute);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

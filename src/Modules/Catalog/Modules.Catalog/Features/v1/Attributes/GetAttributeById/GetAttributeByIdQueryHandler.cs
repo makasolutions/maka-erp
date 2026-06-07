@@ -38,6 +38,11 @@ public sealed class GetAttributeByIdQueryHandler(CatalogDbContext db)
                         v.ImageUrl,
                         v.SortOrder,
                         v.WooCommerceId))
+                    .ToList(),
+                db.CategoryAttributes
+                    .Where(ca => ca.AttributeId == a.Id)
+                    .OrderBy(ca => ca.SortOrder)
+                    .Select(ca => ca.CategoryId)
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);

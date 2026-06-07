@@ -10,4 +10,5 @@ public sealed record GetAttributesQuery : IPagedQuery, IQuery<PagedResponse<Attr
     public string? Sort       { get; set; }
     public string? Search     { get; set; }
     public bool?   IsUsedForVariations { get; set; }
+    public Guid?   CategoryId { get; set; }
 }

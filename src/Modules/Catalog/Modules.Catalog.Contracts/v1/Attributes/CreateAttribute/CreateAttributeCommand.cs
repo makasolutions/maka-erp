@@ -9,4 +9,5 @@ public sealed record CreateAttributeCommand(
     CatalogAttributeType Type,
     bool                 IsVisibleOnProduct  = true,
     bool                 IsUsedForVariations = false,
-    int                  SortOrder           = 0) : ICommand<Guid>;
+    int                  SortOrder           = 0,
+    IReadOnlyList<Guid>? CategoryIds         = null) : ICommand<Guid>;

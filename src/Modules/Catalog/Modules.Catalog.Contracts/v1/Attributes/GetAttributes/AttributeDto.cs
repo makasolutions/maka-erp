@@ -11,4 +11,5 @@ public sealed record AttributeDto(
     bool                 IsUsedForVariations,
     int                  SortOrder,
     int                  ValueCount,
-    int?                 WooCommerceId);
+    int?                 WooCommerceId,
+    IReadOnlyList<Guid>  CategoryIds);

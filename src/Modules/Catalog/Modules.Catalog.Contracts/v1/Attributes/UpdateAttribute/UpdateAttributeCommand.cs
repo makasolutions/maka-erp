@@ -9,4 +9,5 @@ public sealed record UpdateAttributeCommand(
     CatalogAttributeType Type,
     bool                 IsVisibleOnProduct,
     bool                 IsUsedForVariations,
-    int                  SortOrder) : ICommand<Guid>;
+    int                  SortOrder,
+    IReadOnlyList<Guid>? CategoryIds = null) : ICommand<Guid>;

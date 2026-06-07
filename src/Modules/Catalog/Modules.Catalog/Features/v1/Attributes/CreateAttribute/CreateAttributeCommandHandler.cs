@@ -35,6 +35,14 @@ public sealed class CreateAttributeCommandHandler(CatalogDbContext db)
             command.SortOrder);
 
         db.Attributes.Add(attribute);
+
+        if (command.CategoryIds is { Count: > 0 })
+        {
+            int order = 0;
+            foreach (var categoryId in command.CategoryIds.Distinct())
+                db.CategoryAttributes.Add(CategoryAttribute.Create(categoryId, attribute.Id, order++));
+        }
+
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return attribute.Id;

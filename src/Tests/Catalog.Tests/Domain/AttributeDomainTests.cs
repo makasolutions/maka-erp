@@ -46,6 +46,24 @@ public sealed class CatalogAttributeValueUpdateTests
     }
 }
 
+public sealed class CategoryAttributeTests
+{
+    [Fact]
+    public void Create_Should_SetLinkFields()
+    {
+        var categoryId = Guid.NewGuid();
+        var attributeId = Guid.NewGuid();
+
+        var link = CategoryAttribute.Create(categoryId, attributeId, sortOrder: 2);
+
+        link.Id.ShouldNotBe(Guid.Empty);
+        link.CategoryId.ShouldBe(categoryId);
+        link.AttributeId.ShouldBe(attributeId);
+        link.SortOrder.ShouldBe(2);
+        link.CreatedAtUtc.ShouldBeGreaterThan(DateTime.UtcNow.AddMinutes(-1));
+    }
+}
+
 public sealed class ProductAttributeTests
 {
     [Fact]

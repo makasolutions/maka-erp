@@ -9,10 +9,19 @@ namespace Catalog.Tests.Validators;
 public sealed class MediaValidatorTests
 {
     [Fact]
-    public void AddProductImage_Should_RejectRelativeUrl()
+    public void AddProductImage_Should_AcceptRootRelativeUrl()
+    {
+        // Local storage returns "/tenants/{tenant}/product/..." served by the API.
+        var r = new AddProductImageCommandValidator().Validate(
+            new AddProductImageCommand(Guid.NewGuid(), "/tenants/root/product/x.jpg"));
+        r.IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void AddProductImage_Should_RejectMalformedUrl()
     {
         var r = new AddProductImageCommandValidator().Validate(
-            new AddProductImageCommand(Guid.NewGuid(), "/images/x.jpg"));
+            new AddProductImageCommand(Guid.NewGuid(), "not a url"));
         r.IsValid.ShouldBeFalse();
     }
 

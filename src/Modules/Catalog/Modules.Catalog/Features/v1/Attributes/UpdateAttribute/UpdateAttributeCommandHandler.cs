@@ -26,6 +26,21 @@ public sealed class UpdateAttributeCommandHandler(CatalogDbContext db)
             command.IsUsedForVariations,
             command.SortOrder);
 
+        // Replace the category associations when the caller provides a list
+        // (null = leave untouched; empty = clear all).
+        if (command.CategoryIds is not null)
+        {
+            var existing = await db.CategoryAttributes
+                .Where(ca => ca.AttributeId == command.Id)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            db.CategoryAttributes.RemoveRange(existing);
+
+            int order = 0;
+            foreach (var categoryId in command.CategoryIds.Distinct())
+                db.CategoryAttributes.Add(Domain.CategoryAttribute.Create(categoryId, command.Id, order++));
+        }
+
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return attribute.Id;

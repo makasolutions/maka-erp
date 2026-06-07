@@ -21,6 +21,13 @@ public sealed class GetAttributesQueryHandler(CatalogDbContext db)
             attributes = attributes.Where(a => a.IsUsedForVariations == query.IsUsedForVariations.Value);
         }
 
+        if (query.CategoryId.HasValue)
+        {
+            var categoryId = query.CategoryId.Value;
+            attributes = attributes.Where(a =>
+                db.CategoryAttributes.Any(ca => ca.AttributeId == a.Id && ca.CategoryId == categoryId));
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string pattern = $"%{query.Search}%";
@@ -47,7 +54,12 @@ public sealed class GetAttributesQueryHandler(CatalogDbContext db)
                 a.IsUsedForVariations,
                 a.SortOrder,
                 a.Values.Count,
-                a.WooCommerceId))
+                a.WooCommerceId,
+                db.CategoryAttributes
+                    .Where(ca => ca.AttributeId == a.Id)
+                    .OrderBy(ca => ca.SortOrder)
+                    .Select(ca => ca.CategoryId)
+                    .ToList()))
             .ToPagedResponseAsync(query, cancellationToken)
             .ConfigureAwait(false);
     }
