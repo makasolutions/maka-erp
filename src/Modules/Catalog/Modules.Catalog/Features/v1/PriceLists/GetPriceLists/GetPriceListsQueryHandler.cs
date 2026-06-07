@@ -31,6 +31,10 @@ public sealed class GetPriceListsQueryHandler(CatalogDbContext db)
         if (query.IsActive.HasValue)
             lists = lists.Where(p => p.IsActive == query.IsActive.Value);
 
+        // Default to segment lists; the campaigns page passes Kind=Campaign.
+        var kind = query.Kind ?? Contracts.Enums.PriceListKind.Segment;
+        lists = lists.Where(p => p.ListKind == kind);
+
         lists = (query.Sort?.ToLowerInvariant()) switch
         {
             "name"       => lists.OrderBy(p => p.Name),
@@ -50,6 +54,8 @@ public sealed class GetPriceListsQueryHandler(CatalogDbContext db)
                 p.IsActive,
                 p.IsDefault,
                 p.AdjustmentPercent,
+                p.ListKind,
+                p.CampaignStatus,
                 p.Items.Count,
                 p.CreatedAtUtc,
                 p.UpdatedAtUtc))

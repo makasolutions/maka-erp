@@ -50,7 +50,8 @@ public sealed class ValidatorTests
     [Theory]
     [InlineData("retail", true)]
     [InlineData("wholesale", true)]
-    [InlineData("invalid-segment", false)]
+    [InlineData("MercadoLibre", true)]   // free-form segments are allowed now
+    [InlineData("", false)]              // empty is still rejected
     public void CreatePriceList_Should_ValidateSegment(string segment, bool expected)
     {
         var r = new CreatePriceListCommandValidator().Validate(

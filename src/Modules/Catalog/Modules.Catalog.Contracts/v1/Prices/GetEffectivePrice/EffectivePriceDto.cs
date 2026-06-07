@@ -7,4 +7,5 @@ public sealed record EffectivePriceDto(
     bool    IsSalePrice,
     string  CustomerSegment,
     string  PriceListName,
-    Guid    PriceListId);
+    Guid    PriceListId,
+    bool    IsCampaign = false);

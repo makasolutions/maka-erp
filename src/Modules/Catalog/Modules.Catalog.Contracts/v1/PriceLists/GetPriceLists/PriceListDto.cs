@@ -1,3 +1,5 @@
+using FSH.Modules.Catalog.Contracts.Enums;
+
 namespace FSH.Modules.Catalog.Contracts.v1.PriceLists.GetPriceLists;
 
 public sealed record PriceListDto(
@@ -10,6 +12,8 @@ public sealed record PriceListDto(
     bool      IsActive,
     bool      IsDefault,
     decimal?  AdjustmentPercent,
+    PriceListKind ListKind,
+    CampaignStatus? CampaignStatus,
     int       ItemCount,
     DateTime  CreatedAtUtc,
     DateTime? UpdatedAtUtc);

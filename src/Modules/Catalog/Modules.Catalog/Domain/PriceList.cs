@@ -23,6 +23,11 @@ public sealed class PriceList : BaseEntity<Guid>
     public PriceListKind ListKind      { get; private set; }
     public Guid?     OwnerId           { get; private set; }  // null = global
 
+    // Campaña (Fase 4) — solo cuando ListKind == Campaign
+    public CampaignStatus? CampaignStatus { get; private set; }
+    public string?   StartJobId        { get; private set; }
+    public string?   EndJobId          { get; private set; }
+
     public DateTime  CreatedAtUtc      { get; private set; }
     public DateTime? UpdatedAtUtc      { get; private set; }
 
@@ -57,8 +62,25 @@ public sealed class PriceList : BaseEntity<Guid>
             AdjustmentPercent = isDefault ? null : adjustmentPercent,
             ListKind          = listKind,
             OwnerId           = ownerId,
+            CampaignStatus    = listKind == PriceListKind.Campaign ? Contracts.Enums.CampaignStatus.Scheduled : null,
             CreatedAtUtc      = DateTime.UtcNow,
         };
+    }
+
+    // ── Campaña (Fase 4) ──
+    public void SetCampaignJobs(string? startJobId, string? endJobId)
+    {
+        StartJobId   = startJobId;
+        EndJobId     = endJobId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void TransitionCampaign(CampaignStatus status)
+    {
+        CampaignStatus = status;
+        if (status == Contracts.Enums.CampaignStatus.Ended || status == Contracts.Enums.CampaignStatus.Cancelled)
+            IsActive = false;
+        UpdatedAtUtc = DateTime.UtcNow;
     }
 
     public void Update(

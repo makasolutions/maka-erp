@@ -19,6 +19,10 @@ public sealed class PriceListItem : BaseEntity<Guid>
     // (no se recalcula al cambiar la lista por defecto). false = sigue el %.
     public bool      IsManualOverride { get; private set; }
 
+    // Campaña (Fase 4) — precio base del producto justo antes de iniciar la campaña,
+    // para revertir al terminar.
+    public decimal?  PreCampaignPrice { get; private set; }
+
     // Precio de oferta (§15) — efectivo dentro del rango de fechas
     public decimal?  SalePrice       { get; private set; }
     public DateTime? SalePriceFrom   { get; private set; }
@@ -64,6 +68,9 @@ public sealed class PriceListItem : BaseEntity<Guid>
 
     /// <summary>Marca si el precio fue fijado manualmente (excluido del recálculo).</summary>
     public void SetManualOverride(bool isManualOverride) => IsManualOverride = isManualOverride;
+
+    /// <summary>Guarda el precio base previo a la campaña (para revertir al terminar).</summary>
+    public void SnapshotPreCampaign(decimal price) => PreCampaignPrice = price;
 
     /// <summary>
     /// Aplica un precio derivado de la lista por defecto (recálculo automático).

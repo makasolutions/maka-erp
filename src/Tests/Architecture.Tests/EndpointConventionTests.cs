@@ -263,6 +263,7 @@ public class EndpointConventionTests
                                name.StartsWith("Test", StringComparison.Ordinal) ||
                                name.StartsWith("Void", StringComparison.Ordinal) ||
                                name.StartsWith("Mark", StringComparison.Ordinal) ||
+                               name.StartsWith("Cancel", StringComparison.Ordinal) ||
                                name.StartsWith("Issue", StringComparison.Ordinal) ||
                                name.StartsWith("Capture", StringComparison.Ordinal) ||
                                name.StartsWith("Request", StringComparison.Ordinal) ||

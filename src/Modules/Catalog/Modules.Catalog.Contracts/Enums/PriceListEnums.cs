@@ -9,3 +9,10 @@ namespace FSH.Modules.Catalog.Contracts.Enums;
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<PriceListKind>))]
 public enum PriceListKind { Segment, Campaign }
+
+/// <summary>
+/// Estado de una campaña (Fase 4). Scheduled = jobs programados; Running = vigente
+/// (precede a las listas de segmento); Ended = terminada (revierte); Cancelled.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<CampaignStatus>))]
+public enum CampaignStatus { Scheduled, Running, Ended, Cancelled }

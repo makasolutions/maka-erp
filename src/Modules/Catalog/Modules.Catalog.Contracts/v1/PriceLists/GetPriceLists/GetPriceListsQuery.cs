@@ -1,4 +1,5 @@
 using FSH.Framework.Shared.Persistence;
+using FSH.Modules.Catalog.Contracts.Enums;
 using Mediator;
 
 namespace FSH.Modules.Catalog.Contracts.v1.PriceLists.GetPriceLists;
@@ -11,4 +12,5 @@ public sealed record GetPriceListsQuery : IPagedQuery, IQuery<PagedResponse<Pric
     public string?  Search          { get; set; }
     public string?  CustomerSegment { get; set; }
     public bool?    IsActive        { get; set; }
+    public PriceListKind? Kind      { get; set; }
 }

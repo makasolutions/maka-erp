@@ -65,6 +65,9 @@ using FSH.Modules.Catalog.Features.v1.Categories.UpdateCategory;
 using FSH.Modules.Catalog.Features.v1.PriceLists.AddPriceListItem;
 using FSH.Modules.Catalog.Features.v1.PriceLists.CreatePriceList;
 using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceList;
+using FSH.Modules.Catalog.Features.v1.Campaigns.CreateCampaign;
+using FSH.Modules.Catalog.Features.v1.Campaigns.SetCampaignItems;
+using FSH.Modules.Catalog.Features.v1.Campaigns.CancelCampaign;
 using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceListById;
 using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceLists;
 using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceListItem;
@@ -106,6 +109,7 @@ public sealed class CatalogModule : IModule
 
         builder.Services.AddHeroDbContext<CatalogDbContext>();
         builder.Services.AddScoped<IDbInitializer, CatalogDbInitializer>();
+        builder.Services.AddScoped<Services.CampaignJob>();
 
         // File access policies for Catalog owner types (product/brand/category images).
         // Without these the Files module returns 403 "No file access policy registered".
@@ -234,6 +238,15 @@ public sealed class CatalogModule : IModule
         priceLists.MapUpdatePriceListEndpoint();
         priceLists.MapAddPriceListItemEndpoint();
         priceLists.MapUpdatePriceListItemEndpoint();
+
+        var campaigns = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/campaigns")
+            .WithTags("Catalog - Campaigns")
+            .WithApiVersionSet(apiVersionSet);
+
+        campaigns.MapCreateCampaignEndpoint();
+        campaigns.MapSetCampaignItemsEndpoint();
+        campaigns.MapCancelCampaignEndpoint();
 
         var prices = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/prices")
