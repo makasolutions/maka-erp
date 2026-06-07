@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileDown, ImageOff } from "lucide-react";
+import { ArrowLeft, FileDown, ImageOff, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   getBundleItems, getDefaultVariation, getEffectivePrice, getProductById, getProductCodes,
@@ -40,6 +40,7 @@ export function ProductSheetPage() {
 
   const images = useMemo(() => [...(imagesQ.data ?? [])].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder), [imagesQ.data]);
   const [selected, setSelected] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const main = images[selected] ?? images[0];
 
   const variations = (variationsQ.data ?? []).filter((v) => !v.isDeleted);
@@ -88,9 +89,12 @@ export function ProductSheetPage() {
         {/* Gallery + key info */}
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-3">
-            <div className="grid aspect-square w-full place-items-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)]">
+            <div className="grid aspect-square w-full max-w-[500px] place-items-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)]">
               {main ? (
-                <img src={main.url} alt={main.altText ?? ""} className="h-full w-full object-contain" />
+                <button type="button" onClick={() => setLightbox(true)}
+                  className="block h-full w-full cursor-zoom-in" aria-label={t("sheet.zoom", "Ampliar")}>
+                  <img src={main.url} alt={main.altText ?? ""} className="h-full w-full object-contain" />
+                </button>
               ) : (
                 <div className="flex flex-col items-center gap-2 text-[var(--color-muted-foreground)]">
                   <ImageOff className="size-8" /><span className="text-[12px]">{t("sheet.noImages")}</span>
@@ -198,6 +202,18 @@ export function ProductSheetPage() {
           {tc("appName", "Maka")} · {t("sheet.title")}
         </p>
       </div>
+
+      {/* Lightbox — click the cover to maximise (screen only). */}
+      {lightbox && main && (
+        <div className="no-print fixed inset-0 z-50 grid place-items-center bg-black/80 p-6"
+          role="dialog" aria-modal="true" onClick={() => setLightbox(false)}>
+          <img src={main.url} alt={main.altText ?? ""} className="max-h-[92vh] max-w-[92vw] object-contain" />
+          <button type="button" onClick={() => setLightbox(false)} aria-label={tc("actions.close")}
+            className="absolute right-4 top-4 grid size-9 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20">
+            <X className="size-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

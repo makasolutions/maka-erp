@@ -142,6 +142,8 @@
     "toastRemoved": "Image removed",
     "toastRemoveFailed": "Failed to remove image",
     "toastAttachFailed": "Failed to attach image",
-    "uploadFailed": "Upload failed: {{name}}"
+    "uploadFailed": "Upload failed: {{name}}",
+    "notSquare": "The image must be square (1:1 aspect ratio).",
+    "tooLarge": "The image cannot exceed 1000×1000 px."
   }
 }

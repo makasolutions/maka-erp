@@ -142,6 +142,8 @@
     "toastRemoved": "Imagen eliminada",
     "toastRemoveFailed": "Error al eliminar imagen",
     "toastAttachFailed": "Error al adjuntar imagen",
-    "uploadFailed": "Error al subir: {{name}}"
+    "uploadFailed": "Error al subir: {{name}}",
+    "notSquare": "La imagen debe ser cuadrada (relación 1:1).",
+    "tooLarge": "La imagen no puede superar 1000×1000 px."
   }
 }

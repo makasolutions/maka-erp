@@ -46,6 +46,18 @@ type Props = {
  *   - Renders the existing images as a grid; each tile has Set-as-cover, Remove, and click-to-preview.
  *   - Clicking an image opens a fullscreen preview modal.
  */
+
+/** Reads an image file's natural pixel dimensions (for 1:1 / max-size validation). */
+function loadImageDims(file: File): Promise<{ w: number; h: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { resolve({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(url); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode-failed")); };
+    img.src = url;
+  });
+}
+
 export function ProductImageManager({ productId, images, invalidateKey, className, readOnly = false }: Props) {
   const { t } = useTranslation("files");
   const queryClient = useQueryClient();
@@ -101,6 +113,12 @@ export function ProductImageManager({ productId, images, invalidateKey, classNam
       if (files.length === 0) return;
       for (const file of files) {
         try {
+          // Enforce 1:1 aspect ratio and a max of 1000×1000 px.
+          const dims = await loadImageDims(file).catch(() => null);
+          if (dims) {
+            if (dims.w !== dims.h) { toast.error(t("productImages.notSquare")); continue; }
+            if (dims.w > 1000 || dims.h > 1000) { toast.error(t("productImages.tooLarge")); continue; }
+          }
           const asset = await upload(file);
           const meta = await getFileMetadata(asset.id);
           if (!meta.publicUrl) {
