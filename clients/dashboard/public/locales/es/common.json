@@ -125,7 +125,8 @@
     "collapseSidebar": "Colapsar barra lateral",
     "expandSidebar": "Expandir barra lateral",
     "attributes": "Atributos",
-    "priceLists": "Listas de precios"
+    "priceLists": "Listas de precios",
+    "attributeCoverage": "Cobertura de atributos"
   },
   "auth": {
     "welcomeBack": "Bienvenido",

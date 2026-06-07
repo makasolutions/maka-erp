@@ -530,7 +530,10 @@
       "selectValues": "Selecciona al menos un valor",
       "showAll": "Ver todos",
       "introCategory": "Atributos sugeridos para la categoría del producto. Activa «Ver todos» para añadir cualquier otro.",
-      "noneForCategory": "La categoría no tiene atributos asociados. Activa «Ver todos» o asígnalos en Atributos."
+      "noneForCategory": "La categoría no tiene atributos asociados. Activa «Ver todos» o asígnalos en Atributos.",
+      "marketplaceTitle": "Validación marketplace",
+      "marketplaceOk": "Completo",
+      "marketplaceMissing": "Faltan {{count}}"
     },
     "tags": {
       "title": "Etiquetas",
@@ -666,5 +669,30 @@
     "editPrice": "Editar precio",
     "changeReason": "Motivo del cambio",
     "changeReasonHint": "Queda en el historial de precios."
+  },
+  "marketplace": {
+    "Google": "Google",
+    "MercadoLibre": "Mercado Libre"
+  },
+  "coverage": {
+    "title": "Cobertura de atributos",
+    "singular": "reporte",
+    "description": "Auditoría: qué atributos tienen los productos de una categoría.",
+    "category": "Categoría",
+    "marketplace": "Marketplace",
+    "template": "Plantilla de categoría",
+    "selectCategory": "Selecciona una categoría para ver la cobertura.",
+    "attribute": "Atributo",
+    "coveredOf": "{{covered}} de {{total}}",
+    "product": "Producto",
+    "coveredCount": "Cubiertos",
+    "missing": "Faltantes",
+    "noProducts": "No hay productos en esta categoría.",
+    "noAttributes": "No hay atributos esperados. Asígnalos a la categoría o configura requisitos.",
+    "configureRequirements": "Configurar requisitos",
+    "requirementsTitle": "Requisitos de {{marketplace}}",
+    "requirementsDesc": "Marca los atributos que {{marketplace}} exige para esta categoría.",
+    "showAll": "Ver todos",
+    "save": "Guardar requisitos"
   }
 }

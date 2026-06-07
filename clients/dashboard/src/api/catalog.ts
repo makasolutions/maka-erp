@@ -1209,3 +1209,65 @@ export function getEffectivePrice(variationId: string, segment?: string): Promis
   if (segment) q.set("segment", segment);
   return apiFetch<EffectivePriceDto>(`/api/v1/catalog/prices/effective?${q.toString()}`);
 }
+
+// ─── Marketplace requirements + coverage (Phase 2) ───────────────────────
+
+export type Marketplace = "Google" | "MercadoLibre";
+export const MARKETPLACES: Marketplace[] = ["Google", "MercadoLibre"];
+
+export type AttributeRef = { id: string; name: string };
+
+export type CategoryRequirementsDto = {
+  categoryId: string;
+  groups: { marketplace: Marketplace; attributeIds: string[] }[];
+};
+
+export function getCategoryRequirements(categoryId: string): Promise<CategoryRequirementsDto> {
+  return apiFetch<CategoryRequirementsDto>(
+    `/api/v1/catalog/categories/${encodeURIComponent(categoryId)}/marketplace-requirements`,
+  );
+}
+
+export function setCategoryRequirements(
+  categoryId: string, marketplace: Marketplace, attributeIds: string[],
+): Promise<number> {
+  return apiFetch<number>(
+    `/api/v1/catalog/categories/${encodeURIComponent(categoryId)}/marketplace-requirements`,
+    { method: "PUT", body: JSON.stringify({ categoryId, marketplace, attributeIds }) },
+  );
+}
+
+export type MarketplaceValidationGroup = {
+  marketplace: Marketplace;
+  required: AttributeRef[];
+  missing: AttributeRef[];
+};
+export type ProductMarketplaceValidationDto = {
+  productId: string;
+  marketplaces: MarketplaceValidationGroup[];
+};
+
+export function getProductMarketplaceValidation(productId: string): Promise<ProductMarketplaceValidationDto> {
+  return apiFetch<ProductMarketplaceValidationDto>(
+    `/api/v1/catalog/products/${encodeURIComponent(productId)}/marketplace-validation`,
+  );
+}
+
+export type CoverageProductRow = { productId: string; productName: string; coveredAttributeIds: string[] };
+export type CoverageAttributeSummary = { attributeId: string; name: string; covered: number; total: number };
+export type CategoryCoverageReportDto = {
+  categoryId: string;
+  marketplace: Marketplace | null;
+  attributes: AttributeRef[];
+  products: CoverageProductRow[];
+  summary: CoverageAttributeSummary[];
+};
+
+export function getCategoryCoverageReport(
+  categoryId: string, marketplace?: Marketplace,
+): Promise<CategoryCoverageReportDto> {
+  const q = marketplace ? `?marketplace=${encodeURIComponent(marketplace)}` : "";
+  return apiFetch<CategoryCoverageReportDto>(
+    `/api/v1/catalog/categories/${encodeURIComponent(categoryId)}/coverage${q}`,
+  );
+}

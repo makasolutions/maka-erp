@@ -530,7 +530,10 @@
       "selectValues": "Select at least one value",
       "showAll": "Show all",
       "introCategory": "Attributes suggested for the product category. Toggle “Show all” to add any other.",
-      "noneForCategory": "This category has no attributes yet. Toggle “Show all” or assign them in Attributes."
+      "noneForCategory": "This category has no attributes yet. Toggle “Show all” or assign them in Attributes.",
+      "marketplaceTitle": "Marketplace validation",
+      "marketplaceOk": "Complete",
+      "marketplaceMissing": "{{count}} missing"
     },
     "tags": {
       "title": "Tags",
@@ -666,5 +669,30 @@
     "editPrice": "Edit price",
     "changeReason": "Change reason",
     "changeReasonHint": "Recorded in the price history."
+  },
+  "marketplace": {
+    "Google": "Google",
+    "MercadoLibre": "Mercado Libre"
+  },
+  "coverage": {
+    "title": "Attribute coverage",
+    "singular": "report",
+    "description": "Audit: which attributes the products in a category have.",
+    "category": "Category",
+    "marketplace": "Marketplace",
+    "template": "Category template",
+    "selectCategory": "Pick a category to see coverage.",
+    "attribute": "Attribute",
+    "coveredOf": "{{covered}} of {{total}}",
+    "product": "Product",
+    "coveredCount": "Covered",
+    "missing": "Missing",
+    "noProducts": "No products in this category.",
+    "noAttributes": "No expected attributes. Assign them to the category or configure requirements.",
+    "configureRequirements": "Configure requirements",
+    "requirementsTitle": "{{marketplace}} requirements",
+    "requirementsDesc": "Check the attributes {{marketplace}} requires for this category.",
+    "showAll": "Show all",
+    "save": "Save requirements"
   }
 }

@@ -1,5 +1,6 @@
 import {
   Activity,
+  ClipboardCheck,
   DollarSign,
   FolderOpen,
   FolderTree,
@@ -80,6 +81,7 @@ export const sections: NavSection[] = [
       { to: "/catalog/brands",     label: "Brands",     icon: Tags,       permission: P.catalog.brands.view },
       { to: "/catalog/categories", label: "Categories", icon: FolderTree, permission: P.catalog.categories.view },
       { to: "/catalog/attributes", label: "Attributes", icon: SlidersHorizontal, permission: P.catalog.attributes.view },
+      { to: "/catalog/attribute-coverage", label: "Coverage", icon: ClipboardCheck, permission: P.catalog.attributes.view },
       { to: "/catalog/price-lists", label: "Price lists", icon: DollarSign, permission: P.catalog.priceLists.view },
     ],
   },

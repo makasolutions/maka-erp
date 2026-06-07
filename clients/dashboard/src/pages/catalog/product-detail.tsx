@@ -13,6 +13,7 @@ import {
   getProductById,
   getProductCodes,
   getProductImages,
+  getProductMarketplaceValidation,
   getProductTags,
   getVariations,
   removeProductCode,
@@ -388,6 +389,8 @@ export function ProductAttributesTab({ productId, canEdit, categoryId }: { produ
         {filteredByCategory ? t("detail.attributes.introCategory") : t("detail.attributes.intro")}
       </p>
 
+      <MarketplaceValidationPanel productId={productId} />
+
       {attrsQuery.isLoading ? (
         <p className="text-[13px] text-[var(--color-muted-foreground)]">…</p>
       ) : attributes.length === 0 ? (
@@ -433,6 +436,44 @@ export function ProductAttributesTab({ productId, canEdit, categoryId }: { produ
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function MarketplaceValidationPanel({ productId }: { productId: string }) {
+  const { t } = useTranslation("catalog");
+  const q = useQuery({
+    queryKey: ["catalog", "marketplace-validation", productId],
+    queryFn: () => getProductMarketplaceValidation(productId),
+  });
+  // Only marketplaces that actually have requirements for this product's category.
+  const groups = (q.data?.marketplaces ?? []).filter((g) => g.required.length > 0);
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="space-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+      <div className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+        {t("detail.attributes.marketplaceTitle")}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {groups.map((g) => {
+          const ok = g.missing.length === 0;
+          return (
+            <div key={g.marketplace}
+              className="flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] px-2.5 py-1.5 text-[12.5px]">
+              <span className={cn("size-2 rounded-full", ok ? "bg-[var(--color-success)]" : "bg-[var(--color-warning)]")} />
+              <span className="font-medium text-[var(--color-foreground)]">{t(`marketplace.${g.marketplace}`)}</span>
+              {ok ? (
+                <span className="text-[var(--color-success)]">{t("detail.attributes.marketplaceOk")}</span>
+              ) : (
+                <span className="text-[var(--color-warning)]">
+                  {t("detail.attributes.marketplaceMissing", { count: g.missing.length })}: {g.missing.map((a) => a.name).join(", ")}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

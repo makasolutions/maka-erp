@@ -125,7 +125,8 @@
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "attributes": "Attributes",
-    "priceLists": "Price lists"
+    "priceLists": "Price lists",
+    "attributeCoverage": "Attribute coverage"
   },
   "auth": {
     "welcomeBack": "Welcome",
