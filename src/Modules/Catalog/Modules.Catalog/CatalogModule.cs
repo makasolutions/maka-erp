@@ -36,6 +36,10 @@ using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
 using FSH.Modules.Catalog.Features.v1.Products.PublishProduct;
 using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
 using FSH.Modules.Catalog.Features.v1.Products.SetProductAttributes;
+using FSH.Modules.Catalog.Features.v1.Marketplaces.GetCategoryRequirements;
+using FSH.Modules.Catalog.Features.v1.Marketplaces.SetCategoryRequirements;
+using FSH.Modules.Catalog.Features.v1.Marketplaces.GetProductMarketplaceValidation;
+using FSH.Modules.Catalog.Features.v1.Marketplaces.GetCategoryCoverageReport;
 using FSH.Modules.Catalog.Features.v1.Products.SetProductCategories;
 using FSH.Modules.Catalog.Features.v1.Products.UpdateProduct;
 using FSH.Modules.Catalog.Features.v1.ProductImages.AddProductImage;
@@ -165,6 +169,7 @@ public sealed class CatalogModule : IModule
         products.MapArchiveProductEndpoint();
         products.MapSetProductCategoriesEndpoint();
         products.MapSetProductAttributesEndpoint();
+        products.MapGetProductMarketplaceValidationEndpoint();
 
         var variations = products
             .MapGroup("/{productId:guid}/variations")
@@ -213,6 +218,9 @@ public sealed class CatalogModule : IModule
         categories.MapUpdateCategoryEndpoint();
         categories.MapDeleteCategoryEndpoint();
         categories.MapRestoreCategoryEndpoint();
+        categories.MapGetCategoryRequirementsEndpoint();
+        categories.MapSetCategoryRequirementsEndpoint();
+        categories.MapGetCategoryCoverageReportEndpoint();
 
         var priceLists = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/price-lists")

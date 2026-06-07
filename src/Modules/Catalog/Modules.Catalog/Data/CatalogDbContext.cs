@@ -25,6 +25,7 @@ public sealed class CatalogDbContext : BaseDbContext
     public DbSet<ShippingClass>    ShippingClasses  => Set<ShippingClass>();
     public DbSet<CatalogAttribute> Attributes       => Set<CatalogAttribute>();
     public DbSet<CategoryAttribute> CategoryAttributes => Set<CategoryAttribute>();
+    public DbSet<MarketplaceAttributeRequirement> MarketplaceAttributeRequirements => Set<MarketplaceAttributeRequirement>();
     public DbSet<Product>          Products         => Set<Product>();
     public DbSet<ProductVariation> Variations       => Set<ProductVariation>();
     public DbSet<ProductCode>      ProductCodes     => Set<ProductCode>();
