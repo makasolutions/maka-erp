@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormGrid } from "@/components/list";
-import { MakaDateRangePicker, MakaGridClient, type MakaDateRange } from "@/components/maka";
+import { MakaDateTimeRangePicker, MakaGridClient, type MakaDateTimeRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe, formatMoney } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
@@ -38,8 +38,11 @@ const STATUS_TONE: Record<CampaignStatus, "success" | "warning" | "default" | "d
 
 function fmtDate(s?: string | null): string {
   if (!s) return "—";
-  try { return new Date(s).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" }); }
-  catch { return "—"; }
+  try {
+    return new Date(s).toLocaleString("es-CO", {
+      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return "—"; }
 }
 
 export function CampaignsPage() {
@@ -133,7 +136,7 @@ function EditCampaignDialog({ state, onClose }: { state: EditorState; onClose: (
   const campaign = state.mode === "edit" ? state.campaign : undefined;
 
   const [name, setName] = useState("");
-  const [range, setRange] = useState<MakaDateRange | null>(null);
+  const [range, setRange] = useState<MakaDateTimeRange | null>(null);
   const [description, setDescription] = useState("");
 
   useEffect(() => {
@@ -179,7 +182,7 @@ function EditCampaignDialog({ state, onClose }: { state: EditorState; onClose: (
                 <Input id="ce-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={128} autoFocus />
               </Field>
               <Field id="ce-range" span={12} label={t("campaigns.fields.window")} required hint={t("campaigns.windowHint")}>
-                <MakaDateRangePicker value={range} onChange={setRange} />
+                <MakaDateTimeRangePicker value={range} onChange={setRange} startLabel={t("campaigns.from")} endLabel={t("campaigns.to")} />
               </Field>
               <Field id="ce-desc" span={12} label={t("campaigns.fields.description")}>
                 <Input id="ce-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
@@ -209,7 +212,7 @@ function CreateCampaignDialog({ open, onClose, onCreated }: {
   const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
-  const [range, setRange] = useState<MakaDateRange | null>(null);
+  const [range, setRange] = useState<MakaDateTimeRange | null>(null);
   const [description, setDescription] = useState("");
   useEffect(() => { if (open) { setName(""); setRange(null); setDescription(""); } }, [open]);
 
@@ -252,7 +255,7 @@ function CreateCampaignDialog({ open, onClose, onCreated }: {
                   placeholder={t("campaigns.namePlaceholder")} autoFocus required maxLength={128} />
               </Field>
               <Field id="cp-range" span={12} label={t("campaigns.fields.window")} required hint={t("campaigns.windowHint")}>
-                <MakaDateRangePicker value={range} onChange={setRange} />
+                <MakaDateTimeRangePicker value={range} onChange={setRange} startLabel={t("campaigns.from")} endLabel={t("campaigns.to")} />
               </Field>
               <Field id="cp-desc" span={12} label={t("campaigns.fields.description")}>
                 <Input id="cp-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />

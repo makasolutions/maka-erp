@@ -755,6 +755,8 @@
       "Ended": "Ended",
       "Cancelled": "Cancelled"
     },
-    "editDesc": "Edit name and validity. Jobs are rescheduled to the new dates."
+    "editDesc": "Edit name and validity. Jobs are rescheduled to the new dates.",
+    "from": "From",
+    "to": "To"
   }
 }

@@ -755,6 +755,8 @@
       "Ended": "Terminada",
       "Cancelled": "Cancelada"
     },
-    "editDesc": "Edita el nombre y la vigencia. Las tareas se reprograman a las nuevas fechas."
+    "editDesc": "Edita el nombre y la vigencia. Las tareas se reprograman a las nuevas fechas.",
+    "from": "Desde",
+    "to": "Hasta"
   }
 }

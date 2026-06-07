@@ -16,6 +16,8 @@ export { MakaCurrencyInput } from "./MakaCurrencyInput";
 export type { MakaCurrencyInputProps } from "./MakaCurrencyInput";
 export { MakaPriceRangeFilter } from "./MakaPriceRangeFilter";
 export type { MakaPriceRange, MakaPriceRangeFilterProps } from "./MakaPriceRangeFilter";
+export { MakaDateTimeRangePicker } from "./MakaDateTimeRangePicker";
+export type { MakaDateTimeRange, MakaDateTimeRangePickerProps } from "./MakaDateTimeRangePicker";
 export type {
   MakaGridProps,
   MakaGridClientProps,
