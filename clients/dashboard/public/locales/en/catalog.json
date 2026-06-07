@@ -423,7 +423,8 @@
     "generate": "Generate variations",
     "generating": "Generating…",
     "generated": "{{created}} variations created, {{skipped}} skipped",
-    "generateFailed": "Could not generate variations"
+    "generateFailed": "Could not generate variations",
+    "empty": "No variations yet. Generate or add variations."
   },
   "codes": {
     "title": "Codes",

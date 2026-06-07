@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Boxes, Check, FileText, Hash, ImageIcon, Layers, Megaphone, Plus, SlidersHorizontal, Trash2,
+  ArrowLeft, Boxes, Check, ChevronDown, FileText, Hash, ImageIcon, Layers, Megaphone, Pencil, Plus, SlidersHorizontal, Star, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -16,14 +16,13 @@ import {
 import { PRODUCT_CODE_TYPES, validateProductCode, type ProductCodeType } from "@/lib/product-codes";
 import {
   GenerateVariationsButton, ProductAttributesTab, ProductImagesTab, ProductTagsTab,
-  VarCombinationCell, VarDescCell, VarSkuCell, VariationEditorDialog, DeleteVariationDialog,
+  VariationEditorDialog, DeleteVariationDialog,
   CodesDialog, type VarEditor,
 } from "@/pages/catalog/product-detail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list";
-import { MakaCurrencyInput, MakaGridClient, MakaRichTextEditor } from "@/components/maka";
-import type { ColumnModel } from "@syncfusion/ej2-react-grids";
+import { MakaCurrencyInput, MakaRichTextEditor } from "@/components/maka";
 import { cn } from "@/lib/cn";
 import { deriveBaseFromDefault, describe, formatMoney, slugify, toTaxIncluded } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
@@ -809,7 +808,6 @@ function DescriptionStep({
 
 function VariationsStep({ productId, canEdit, categoryId }: { productId: string; canEdit: boolean; categoryId?: string | null }) {
   const { t } = useTranslation("catalog");
-  const { t: tc } = useTranslation("common");
   const [editor, setEditor] = useState<VarEditor>({ mode: "closed" });
 
   const variationsQuery = useQuery({
@@ -817,22 +815,6 @@ function VariationsStep({ productId, canEdit, categoryId }: { productId: string;
     queryFn: () => getVariations(productId),
   });
   const variations = useMemo(() => (variationsQuery.data ?? []).filter((v) => !v.isDeleted), [variationsQuery.data]);
-
-  const StatusActiveCell = useMemo(() => (row: VariationDto) =>
-    <EntityStatusBadge tone={row.isActive ? "success" : "default"}>
-      {row.isActive ? tc("status.active") : tc("status.inactive")}
-    </EntityStatusBadge>, [tc]);
-
-  const columns: ColumnModel[] = useMemo(() => [
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "sku", headerText: t("variations.fields.sku"), template: VarSkuCell as any, minWidth: 180 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "attributeValues", headerText: t("variations.combination"), template: VarCombinationCell as any, minWidth: 200, allowSorting: false },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "description", headerText: t("variations.fields.description"), template: VarDescCell as any, minWidth: 160 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "isActive", headerText: t("variations.fields.active"), template: StatusActiveCell as any, width: 110, allowSorting: false, textAlign: "Center" },
-  ], [t, StatusActiveCell]);
 
   return (
     <div className="space-y-8">
@@ -854,17 +836,19 @@ function VariationsStep({ productId, canEdit, categoryId }: { productId: string;
           </div>
         </div>
 
-        <MakaGridClient<VariationDto>
-          dataSource={variations} columns={columns} isLoading={variationsQuery.isFetching}
-          fileName="variaciones" entityName={t("variations.singular")}
-          permissions={{ edit: P.catalog.products.update, delete: P.catalog.products.delete }}
-          onEdit={(row) => setEditor({ mode: "edit", variation: row })}
-          onDelete={(row) => setEditor({ mode: "delete", variation: row })}
-          extraActions={[{ key: "codes", label: t("codes.manage"), icon: Hash, perm: P.catalog.products.update, dividerBefore: true, onClick: (row) => setEditor({ mode: "codes", variation: row }) }]}
-        />
+        {variations.length === 0 ? (
+          <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("variations.empty")}</p>
+        ) : (
+          <div className="space-y-2">
+            {variations.map((v) => (
+              <VariationAccordionItem key={v.id} productId={productId} canEdit={canEdit} variation={v}
+                onEdit={() => setEditor({ mode: "edit", variation: v })}
+                onDelete={() => setEditor({ mode: "delete", variation: v })}
+                onCodes={() => setEditor({ mode: "codes", variation: v })} />
+            ))}
+          </div>
+        )}
       </div>
-
-      <VariationPricesSection productId={productId} canEdit={canEdit} variations={variations} />
 
       <VariationEditorDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <DeleteVariationDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
@@ -873,36 +857,51 @@ function VariationsStep({ productId, canEdit, categoryId }: { productId: string;
   );
 }
 
-// ── Precios por variación (productos Variable) ──
-function VariationPricesSection({ productId, canEdit, variations }: {
-  productId: string; canEdit: boolean; variations: VariationDto[];
+// ── Accordion item: a variation with its price lists inside (50% column) ──
+function VariationAccordionItem({ productId, canEdit, variation, onEdit, onDelete, onCodes }: {
+  productId: string; canEdit: boolean; variation: VariationDto;
+  onEdit: () => void; onDelete: () => void; onCodes: () => void;
 }) {
   const { t } = useTranslation("catalog");
-  if (variations.length === 0) return null;
+  const { t: tc } = useTranslation("common");
+  const [open, setOpen] = useState(false);
+  const combo = variation.attributeValues?.map((av) => `${av.attributeName}: ${av.value}`).join(" · ");
+
   return (
-    <div className="space-y-4 border-t border-[var(--color-border)] pt-6">
-      <div>
-        <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("priceLists.variationPricesTitle")}</h2>
-        <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("priceLists.productPricesHint")}</p>
-      </div>
-      <div className="space-y-4">
-        {variations.map((v) => (
-          <div key={v.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <div className="mb-2 flex items-center gap-2 text-[12.5px]">
-              <code className="font-mono text-[var(--color-foreground)]">{v.sku}</code>
-              {v.isDefault && <span className="text-[var(--color-muted-foreground)]">★</span>}
-              {v.attributeValues?.length ? (
-                <span className="text-[var(--color-muted-foreground)]">· {v.attributeValues.map((av) => av.value).join(" / ")}</span>
-              ) : null}
-            </div>
-            <PriceListsInputs productId={productId} canEdit={canEdit} variationId={v.id} hideTitle />
+    <div className="overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-background)]">
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+          <ChevronDown className={cn("size-4 shrink-0 text-[var(--color-muted-foreground)] transition-transform", open && "rotate-180")} />
+          <code className="font-mono text-[13px] text-[var(--color-foreground)]">{variation.sku}</code>
+          {variation.isDefault && <Star className="size-3.5 fill-[var(--color-warning)] text-[var(--color-warning)]" />}
+          {combo && <span className="truncate text-[12px] text-[var(--color-muted-foreground)]">· {combo}</span>}
+          <EntityStatusBadge tone={variation.isActive ? "success" : "default"}>
+            {variation.isActive ? tc("status.active") : tc("status.inactive")}
+          </EntityStatusBadge>
+        </button>
+        {canEdit && (
+          <div className="flex shrink-0 items-center gap-1">
+            <button type="button" onClick={onCodes} aria-label={t("codes.manage")} title={t("codes.manage")}
+              className="grid size-7 place-items-center rounded-md text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"><Hash className="size-4" /></button>
+            <button type="button" onClick={onEdit} aria-label={tc("actions.edit")} title={tc("actions.edit")}
+              className="grid size-7 place-items-center rounded-md text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]"><Pencil className="size-4" /></button>
+            <button type="button" onClick={onDelete} aria-label={tc("actions.delete")} title={tc("actions.delete")}
+              className="grid size-7 place-items-center rounded-md text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-destructive)]"><Trash2 className="size-4" /></button>
           </div>
-        ))}
+        )}
       </div>
+      {open && (
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-card)] p-3">
+          <div className="lg:w-1/2">
+            <PriceListsInputs productId={productId} canEdit={canEdit} variationId={variation.id} hideTitle />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+// ── Precios por variación (productos Variable) ──
 // ───────────────────────────────────────────────────────────────────────────
 //  Step 3 (Simple / Service) — attributes only (no variations)
 // ───────────────────────────────────────────────────────────────────────────

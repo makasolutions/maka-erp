@@ -423,7 +423,8 @@
     "generate": "Generar variaciones",
     "generating": "Generando…",
     "generated": "{{created}} variaciones creadas, {{skipped}} omitidas",
-    "generateFailed": "No se pudieron generar las variaciones"
+    "generateFailed": "No se pudieron generar las variaciones",
+    "empty": "Sin variaciones aún. Genera o agrega variaciones."
   },
   "codes": {
     "title": "Códigos",
