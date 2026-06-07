@@ -696,7 +696,9 @@
     "roundEnabled": "Redondear",
     "roundEnabledHint": "Redondea el valor con IVA al $10.000 más cercano menos $1.000.",
     "variationPricesTitle": "Precios por variación",
-    "withTaxIncluded": "IVA Incluido"
+    "withTaxIncluded": "IVA Incluido",
+    "noListsHint": "Aún no hay listas de precios. Crea una para fijar el precio del producto (la lista por defecto define la base y las demás derivan por %).",
+    "createFirst": "Crear lista de precios"
   },
   "marketplace": {
     "Google": "Google",

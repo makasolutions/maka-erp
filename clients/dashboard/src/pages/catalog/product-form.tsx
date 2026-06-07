@@ -405,7 +405,14 @@ function GeneralStep({
   return (
     <div className="space-y-6">
       <FormGrid>
-        <Field id="p-type" span={4} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
+        <Field id="p-sku" span={3} label="SKU" required hint={isNew ? undefined : t("variations.skuImmutable", "")}>
+          <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
+            maxLength={64} required disabled={!isNew} placeholder="SONY-FX3" className="font-mono uppercase"
+            aria-invalid={skuTooLong || (isNew && !sku.trim())} />
+          {skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.errors.tooLong")}</p>}
+          {isNew && !sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
+        </Field>
+        <Field id="p-type" span={3} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
           <Combobox id="p-type" label={t("products.fields.type")} value={type}
             onChange={(v) => v && setType(v as ProductType)} options={typeOptions} disabled={!isNew} />
           {!isNew && productId && canEdit && convertTarget && (
@@ -415,15 +422,9 @@ function GeneralStep({
             </button>
           )}
         </Field>
-        <Field id="p-name" span={8} label={t("products.fields.name")} required>
+        <Field id="p-name" span={6} label={t("products.fields.name")} required>
           <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)}
             maxLength={200} required autoFocus placeholder={t("products.namePlaceholder", "")} />
-        </Field>
-        <Field id="p-brand" span={6} label={t("products.fields.brand")}>
-          <CreateableCombobox id="p-brand" label={t("products.fields.brand")} value={brandId}
-            onChange={setBrandId} options={brandOptions} placeholder={t("products.allBrands", "")}
-            invalidateKey={["catalog", "brands", "list"]}
-            onCreate={(n) => createBrand({ name: n, slug: slugify(n), isActive: true })} />
         </Field>
         <Field id="p-cat" span={6} label={t("products.fields.category")}>
           <CreateableCombobox id="p-cat" label={t("products.fields.category")} value={categoryId}
@@ -431,24 +432,19 @@ function GeneralStep({
             invalidateKey={["catalog", "categories", "tree"]}
             onCreate={(n) => createCategory({ name: n, slug: slugify(n), isActive: true })} />
         </Field>
-        <Field id="p-sku" span={6} label="SKU" required hint={isNew ? undefined : t("variations.skuImmutable", "")}>
-          <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
-            maxLength={64} required disabled={!isNew} placeholder="SONY-FX3" className="font-mono uppercase"
-            aria-invalid={skuTooLong || (isNew && !sku.trim())} />
-          {skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.errors.tooLong")}</p>}
-          {isNew && !sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
+        <Field id="p-brand" span={6} label={t("products.fields.brand")}>
+          <CreateableCombobox id="p-brand" label={t("products.fields.brand")} value={brandId}
+            onChange={setBrandId} options={brandOptions} placeholder={t("products.allBrands", "")}
+            invalidateKey={["catalog", "brands", "list"]}
+            onCreate={(n) => createBrand({ name: n, slug: slugify(n), isActive: true })} />
         </Field>
       </FormGrid>
 
-      {/* Additional codes — only once the product (and its default variation) exists */}
+      {/* Two 50/50 columns: prices per list (left) + codes (right), both vertical. */}
       {productId && type !== "Variable" && (
-        <div className="border-t border-[var(--color-border)] pt-6">
-          <DefaultVariationCodes productId={productId} canEdit={canEdit} />
-        </div>
-      )}
-      {productId && type !== "Variable" && (
-        <div className="border-t border-[var(--color-border)] pt-6">
+        <div className="grid gap-6 border-t border-[var(--color-border)] pt-6 lg:grid-cols-2">
           <PriceListsInputs productId={productId} canEdit={canEdit} />
+          <DefaultVariationCodes productId={productId} canEdit={canEdit} />
         </div>
       )}
       {productId && type === "Variable" && (
@@ -538,6 +534,7 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const defVarQuery = useQuery({
     queryKey: ["catalog", "default-variation", productId],
@@ -632,7 +629,22 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
     onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
   });
 
-  if (!variationId || lists.length === 0) return null;
+  if (!variationId) return null;
+
+  // No price lists yet — remind what it's for and offer to create one.
+  if (lists.length === 0) {
+    return (
+      <div className="space-y-2 rounded-lg border border-dashed border-[var(--color-border)] p-4">
+        <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("priceLists.productPricesTitle")}</h3>
+        <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("priceLists.noListsHint")}</p>
+        {canEdit && (
+          <Button type="button" variant="outline" onClick={() => navigate("/catalog/price-lists")}>
+            <Plus className="size-4" />{t("priceLists.createFirst")}
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -648,7 +660,7 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
       )}
       <FormGrid>
         {lists.map((l) => (
-          <Field key={l.id} id={`plp-${l.id}`} span={4}
+          <Field key={l.id} id={`plp-${l.id}`} span={12}
             label={`${l.name}${l.isDefault ? " ★" : l.adjustmentPercent != null ? ` (${l.adjustmentPercent > 0 ? "+" : ""}${l.adjustmentPercent}%)` : ""}`}>
             <PriceWithTax id={`plp-${l.id}`} value={values[l.id] ?? ""} disabled={!canEdit}
               onChange={(base) => {
