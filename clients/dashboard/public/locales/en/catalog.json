@@ -62,7 +62,9 @@
       "archive": "Archive",
       "viewTrash": "Trash",
       "restore": "Restore",
-      "manageVariations": "Variations & codes"
+      "manageVariations": "Variations & codes",
+      "duplicate": "Duplicate",
+      "convertTo": "Convert to {{type}}"
     },
     "status": {
       "active": "Active",

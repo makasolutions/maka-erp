@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
-  addBundleItem, addPriceListItem, addProductCode, createBrand, createCategory, createProduct, getBundleItems,
+  addBundleItem, addPriceListItem, addProductCode, changeProductType, createBrand, createCategory, createProduct, getBundleItems,
   getCategoryTree, getDefaultVariation, getPriceListById, getPriceLists, getProductById, getProductCodes,
   getShippingClasses, getTaxRates, getVariations, removeBundleItem, removeProductCode, searchBrands,
   searchProducts, setProductCategories, updatePriceListItem, updateProduct,
@@ -368,6 +368,21 @@ function GeneralStep({
   sku: string; setSku: (v: string) => void;
 }) {
   const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+
+  // Convert Simple ↔ Variable (only those two; not allowed when creating).
+  const convertTarget: ProductType | null = type === "Simple" ? "Variable" : type === "Variable" ? "Simple" : null;
+  const convertM = useMutation({
+    mutationFn: (target: ProductType) => changeProductType(productId!, target),
+    onSuccess: (_id, target) => {
+      toast.success(tc("feedback.updated"));
+      setType(target);
+      queryClient.invalidateQueries({ queryKey: ["catalog", "products", "detail", productId] });
+      queryClient.invalidateQueries({ queryKey: ["catalog", "variations", productId] });
+    },
+    onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
+  });
 
   const brandsQuery = useQuery({
     queryKey: ["catalog", "brands", "list"],
@@ -393,6 +408,12 @@ function GeneralStep({
         <Field id="p-type" span={4} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
           <Combobox id="p-type" label={t("products.fields.type")} value={type}
             onChange={(v) => v && setType(v as ProductType)} options={typeOptions} disabled={!isNew} />
+          {!isNew && productId && canEdit && convertTarget && (
+            <button type="button" onClick={() => convertM.mutate(convertTarget)} disabled={convertM.isPending}
+              className="mt-1 text-[11.5px] font-medium text-[var(--color-primary)] hover:underline disabled:opacity-60">
+              {convertM.isPending ? tc("feedback.saving") : t("products.actions.convertTo", { type: t(`products.types.${convertTarget}`) })}
+            </button>
+          )}
         </Field>
         <Field id="p-name" span={8} label={t("products.fields.name")} required>
           <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)}

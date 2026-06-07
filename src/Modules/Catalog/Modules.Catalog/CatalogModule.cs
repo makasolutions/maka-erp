@@ -36,6 +36,8 @@ using FSH.Modules.Catalog.Features.v1.Products.ListTrashedProducts;
 using FSH.Modules.Catalog.Features.v1.Products.PublishProduct;
 using FSH.Modules.Catalog.Features.v1.Products.RestoreProduct;
 using FSH.Modules.Catalog.Features.v1.Products.SetProductAttributes;
+using FSH.Modules.Catalog.Features.v1.Products.ChangeProductType;
+using FSH.Modules.Catalog.Features.v1.Products.DuplicateProduct;
 using FSH.Modules.Catalog.Features.v1.Marketplaces.GetCategoryRequirements;
 using FSH.Modules.Catalog.Features.v1.Marketplaces.SetCategoryRequirements;
 using FSH.Modules.Catalog.Features.v1.Marketplaces.GetProductMarketplaceValidation;
@@ -176,6 +178,8 @@ public sealed class CatalogModule : IModule
         products.MapSetProductCategoriesEndpoint();
         products.MapSetProductAttributesEndpoint();
         products.MapGetProductMarketplaceValidationEndpoint();
+        products.MapChangeProductTypeEndpoint();
+        products.MapDuplicateProductEndpoint();
 
         var variations = products
             .MapGroup("/{productId:guid}/variations")

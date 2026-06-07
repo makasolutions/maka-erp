@@ -377,6 +377,19 @@ export type UpdateProductInput = {
   specs?: string | null;
 };
 
+export function changeProductType(productId: string, newType: ProductType): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/products/${encodeURIComponent(productId)}/type`, {
+    method: "PUT",
+    body: JSON.stringify({ productId, newType }),
+  });
+}
+
+export function duplicateProduct(productId: string): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/products/${encodeURIComponent(productId)}/duplicate`, {
+    method: "POST",
+  });
+}
+
 /** @deprecated v1 type */
 export type ChangeProductPriceInput = {
   productId: string;

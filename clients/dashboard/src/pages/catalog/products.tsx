@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Archive, BadgeCheck, Eye, FileText, Package, Plus, Trash2 } from "lucide-react";
+import { Archive, BadgeCheck, Copy, Eye, FileText, Package, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -19,6 +19,7 @@ import {
   createProduct,
   deleteProduct,
   getCategoryTree,
+  duplicateProduct,
   getProductById,
   listTrashedProducts,
   publishProduct,
@@ -233,6 +234,17 @@ export function ProductsPage() {
     queryKey: ["catalog", "products", "list", queryParams],
     queryFn: () => searchProducts(queryParams),
     placeholderData: keepPreviousData,
+  });
+
+  const pageQueryClient = useQueryClient();
+  const duplicateMutation = useMutation({
+    mutationFn: (id: string) => duplicateProduct(id),
+    onSuccess: (newId) => {
+      toast.success(tc("feedback.created"));
+      pageQueryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+      navigate(`/catalog/products/${newId}`);
+    },
+    onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
   });
 
   const trashQuery = useQuery({
@@ -516,6 +528,13 @@ export function ProductsPage() {
             perm: P.catalog.products.view,
             dividerBefore: true,
             onClick: row => navigate(`/catalog/products/${row.id}/sheet`),
+          },
+          {
+            key: "duplicate",
+            label: t("products.actions.duplicate"),
+            icon: Copy,
+            perm: P.catalog.products.create,
+            onClick: row => duplicateMutation.mutate(row.id),
           },
           {
             key: "publish",

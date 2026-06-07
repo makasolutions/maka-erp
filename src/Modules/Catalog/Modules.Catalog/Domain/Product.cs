@@ -113,6 +113,21 @@ public sealed class Product : AggregateRoot<Guid>, ISoftDeletable
         return product;
     }
 
+    /// <summary>
+    /// Convert between Simple and Variable (only). Variable→Simple requires that the
+    /// caller has verified a single (default) variation remains.
+    /// </summary>
+    public void ChangeType(ProductType newType)
+    {
+        if (Type == newType) return;
+        bool allowed = (Type is ProductType.Simple && newType is ProductType.Variable)
+                    || (Type is ProductType.Variable && newType is ProductType.Simple);
+        if (!allowed)
+            throw new InvalidOperationException("Solo se permite convertir entre Simple y Variable.");
+        Type = newType;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public void UpdateDetails(
         string name,
         string? shortDescription,
