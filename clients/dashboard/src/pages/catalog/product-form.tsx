@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list";
-import { MakaCurrencyInput, MakaRichTextEditor } from "@/components/maka";
+import { MakaPriceWithTax, MakaRichTextEditor } from "@/components/maka";
 import { cn } from "@/lib/cn";
 import { deriveBaseFromDefault, describe, formatMoney, slugify, toTaxIncluded } from "@/lib/list-helpers";
 import { buildBundleCollage } from "@/lib/bundle-collage";
@@ -465,42 +465,6 @@ function flatten(nodes: CategoryDto[], depth = 0, acc: FlatCat[] = []): FlatCat[
   return acc;
 }
 
-// ── Money control with VAT: base ↔ IVA-included (19%) ──
-// Three inputs sharing one field width: [base] [19%] [IVA incl.]. Editing the
-// base computes the VAT-included value; editing the VAT-included computes the
-// base. The stored value is always the base (price sin IVA).
-const IVA_RATE = 0.19;
-function PriceWithTax({ id, value, onChange, disabled }: {
-  id: string; value: string; onChange: (base: string) => void; disabled?: boolean;
-}) {
-  const { t } = useTranslation("catalog");
-  const baseNum = value === "" ? null : Number(value);
-  const ivaNum = baseNum == null ? null : Math.round(baseNum * (1 + IVA_RATE));
-
-  return (
-    <div>
-      <div className="flex items-stretch gap-1">
-        <div className="min-w-0 flex-1">
-          <MakaCurrencyInput id={id} value={baseNum} disabled={disabled}
-            onChange={(n) => onChange(n == null ? "" : String(n))} ariaLabel={t("priceLists.base")} />
-        </div>
-        <span aria-hidden className="grid w-10 shrink-0 place-items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] text-[11px] font-semibold text-[var(--color-muted-foreground)]">
-          19%
-        </span>
-        <div className="min-w-0 flex-1">
-          <MakaCurrencyInput value={ivaNum} disabled={disabled}
-            onChange={(n) => onChange(n == null ? "" : String(Math.round(n / (1 + IVA_RATE))))} ariaLabel={t("priceLists.withTax")} />
-        </div>
-      </div>
-      <div className="mt-0.5 flex gap-1 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        <span className="flex-1">{t("priceLists.base")}</span>
-        <span className="w-10 shrink-0 text-center">{t("priceLists.vatLabel")}</span>
-        <span className="flex-1">{t("priceLists.withTax")}</span>
-      </div>
-    </div>
-  );
-}
-
 // ── Campaign banner: shown when the product's default variation is in a running campaign ──
 function CampaignBanner({ variationId }: { variationId: string }) {
   const { t } = useTranslation("catalog");
@@ -687,7 +651,7 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
         {lists.map((l) => (
           <Field key={l.id} id={`plp-${l.id}`} span={12}
             label={`${l.name}${l.isDefault ? " ★" : l.adjustmentPercent != null ? ` (${l.adjustmentPercent > 0 ? "+" : ""}${l.adjustmentPercent}%)` : ""}`}>
-            <PriceWithTax id={`plp-${l.id}`} value={values[l.id] ?? ""} disabled={!canEdit}
+            <MakaPriceWithTax id={`plp-${l.id}`} value={values[l.id] ?? ""} disabled={!canEdit}
               onChange={(base) => {
                 if (l.isDefault) { setBase(base); }
                 else { setValues((p) => ({ ...p, [l.id]: base })); setTouched((p) => ({ ...p, [l.id]: true })); }

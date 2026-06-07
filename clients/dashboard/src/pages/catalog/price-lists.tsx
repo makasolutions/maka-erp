@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import {
   Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormGrid,
 } from "@/components/list";
-import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters } from "@/components/maka";
+import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters, MakaPriceWithTax } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
-import { describe, formatMoney } from "@/lib/list-helpers";
+import { describe, formatMoney, toTaxIncluded } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -518,13 +518,14 @@ function PriceListDetailDialog({ state, onClose, canEdit }: { state: EditorState
                   <li key={it.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-[13px]">
                     <div className="flex min-w-0 items-center gap-3">
                       <code className="font-mono text-[var(--color-foreground)]">{it.variationSku ?? it.variationId.slice(0, 8)}</code>
-                      <span className="font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(it.price)}</span>
+                      <span className="font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(toTaxIncluded(it.price))}</span>
                       {it.salePrice != null && (
-                        <span className="tabular-nums text-[var(--color-success)]">{t("priceLists.onSale")}: {formatMoney(it.salePrice)}</span>
+                        <span className="tabular-nums text-[var(--color-success)]">{t("priceLists.onSale")}: {formatMoney(toTaxIncluded(it.salePrice))}</span>
                       )}
                       {it.minQuantity != null && (
                         <span className="text-[var(--color-muted-foreground)]">≥{it.minQuantity}</span>
                       )}
+                      <span className="text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">{t("priceLists.withTaxIncluded")}</span>
                     </div>
                     {canEdit && (
                       <button type="button" onClick={() => setEditItem(it)} aria-label={tc("actions.edit")}
@@ -552,13 +553,13 @@ function PriceListDetailDialog({ state, onClose, canEdit }: { state: EditorState
                       options={variationOptions} searchable />
                   </Field>
                   <Field id="pi-price" span={4} label={t("priceLists.price")} required>
-                    <Input id="pi-price" type="number" min={0} step="1" value={price} onChange={(e) => setPrice(e.target.value)} />
+                    <MakaPriceWithTax id="pi-price" value={price} onChange={setPrice} />
                   </Field>
-                  <Field id="pi-min" span={6} label={t("priceLists.minQty")} hint={t("priceLists.minQtyHint")}>
+                  <Field id="pi-min" span={4} label={t("priceLists.minQty")} hint={t("priceLists.minQtyHint")}>
                     <Input id="pi-min" type="number" min={0} step="1" value={minQty} onChange={(e) => setMinQty(e.target.value)} />
                   </Field>
-                  <Field id="pi-sale" span={6} label={t("priceLists.salePrice")} hint={t("priceLists.salePriceHint")}>
-                    <Input id="pi-sale" type="number" min={0} step="1" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} />
+                  <Field id="pi-sale" span={4} label={t("priceLists.salePrice")} hint={t("priceLists.salePriceHint")}>
+                    <MakaPriceWithTax id="pi-sale" value={salePrice} onChange={setSalePrice} />
                   </Field>
                 </FormGrid>
                 <div className="mt-3 flex justify-end">
@@ -592,6 +593,7 @@ function EditItemPrice({ listId, item, onDone, onCancel }: {
   const { t: tc } = useTranslation("common");
   const [price, setPrice] = useState(String(item.price));
   const [reason, setReason] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const updM = useMutation({
     mutationFn: () => updatePriceListItem(listId, item.id, {
@@ -599,11 +601,16 @@ function EditItemPrice({ listId, item, onDone, onCancel }: {
       changeReason: reason.trim() || null,
       salePrice: item.salePrice ?? null,
     }),
-    onSuccess: () => { toast.success(tc("feedback.updated")); onDone(); },
+    onSuccess: () => { toast.success(tc("feedback.updated")); setConfirmOpen(false); onDone(); },
     onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
   });
 
-  const canSave = !!price && Number(price) > 0 && !updM.isPending;
+  const next = Number(price);
+  const prev = item.price;
+  const pct = prev > 0 ? ((next - prev) / prev) * 100 : 0;
+  const bigChange = !!price && prev > 0 && Math.abs(pct) > 10;
+  const canSave = !!price && next > 0 && !updM.isPending;
+  const requestSave = () => { if (bigChange) { setConfirmOpen(true); return; } updM.mutate(); };
 
   return (
     <div className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-background)] p-3">
@@ -612,7 +619,7 @@ function EditItemPrice({ listId, item, onDone, onCancel }: {
       </h3>
       <FormGrid>
         <Field id="ep-price" span={6} label={t("priceLists.price")} required>
-          <Input id="ep-price" type="number" min={0} step="1" value={price} onChange={(e) => setPrice(e.target.value)} autoFocus />
+          <MakaPriceWithTax id="ep-price" value={price} onChange={setPrice} />
         </Field>
         <Field id="ep-reason" span={6} label={t("priceLists.changeReason")} hint={t("priceLists.changeReasonHint")}>
           <Input id="ep-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
@@ -620,10 +627,35 @@ function EditItemPrice({ listId, item, onDone, onCancel }: {
       </FormGrid>
       <div className="mt-3 flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={updM.isPending}>{tc("actions.cancel")}</Button>
-        <Button type="button" disabled={!canSave} onClick={() => updM.mutate()}>
+        <Button type="button" disabled={!canSave} onClick={requestSave}>
           {updM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
         </Button>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("priceLists.bigChangeTitle")}</DialogTitle>
+            <DialogDescription>{t("priceLists.bigChangeBody")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-border)] px-3 py-2 text-[13px]">
+            <code className="font-mono">{item.variationSku ?? item.variationId.slice(0, 8)}</code>
+            <span className="flex items-center gap-2 tabular-nums">
+              <span className="text-[var(--color-muted-foreground)] line-through">{formatMoney(toTaxIncluded(prev))}</span>
+              <span className="text-[var(--color-foreground)]">{formatMoney(toTaxIncluded(next))}</span>
+              <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${pct > 0 ? "text-[var(--color-warning)]" : "text-[var(--color-success)]"}`}>
+                {pct > 0 ? "+" : ""}{pct.toFixed(1)}%
+              </span>
+            </span>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={updM.isPending}>{tc("actions.cancel")}</Button>
+            <Button type="button" onClick={() => updM.mutate()} disabled={updM.isPending}>
+              {updM.isPending ? tc("feedback.saving") : t("priceLists.bigChangeConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

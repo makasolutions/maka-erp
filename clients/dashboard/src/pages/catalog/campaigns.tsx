@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormGrid } from "@/components/list";
-import { MakaDateTimeRangePicker, MakaGridClient, type MakaDateTimeRange } from "@/components/maka";
+import { MakaDateTimeRangePicker, MakaGridClient, MakaPriceWithTax, type MakaDateTimeRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
-import { describe, formatMoney } from "@/lib/list-helpers";
+import { describe, formatMoney, toTaxIncluded } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -367,11 +367,10 @@ function CampaignItemsDialog({ state, onClose, canEdit }: {
                       <code className="font-mono text-[11px] text-[var(--color-muted-foreground)]">{r.sku}</code>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-40">
-                        <Input type="number" min={0} step="1000" value={r.price} disabled={!canEdit}
-                          placeholder={t("campaigns.price")}
-                          onChange={(e) => setRows((prev) => prev.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} />
-                        {r.price && <p className="mt-0.5 text-[11px] text-[var(--color-muted-foreground)]">{formatMoney(Number(r.price))}</p>}
+                      <div className="w-72">
+                        <MakaPriceWithTax id={`cp-price-${r.variationId}`} value={r.price} disabled={!canEdit}
+                          onChange={(v) => setRows((prev) => prev.map((x, idx) => idx === i ? { ...x, price: v } : x))} />
+                        {r.price && <p className="mt-0.5 text-right text-[11px] text-[var(--color-muted-foreground)]">{formatMoney(toTaxIncluded(Number(r.price)))} · {t("priceLists.withTaxIncluded")}</p>}
                       </div>
                       {canEdit && (
                         <button type="button" onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}
