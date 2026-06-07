@@ -9,6 +9,7 @@
 import { NumericTextBoxComponent } from "@syncfusion/ej2-react-inputs";
 import { loadCldr, setCulture, setCurrencyCode } from "@syncfusion/ej2-base";
 import { cn } from "@/lib/cn";
+import "./maka-currency.css";
 
 // CLDR for es-CO (Colombia): "$" before, "." thousands, no decimals.
 import numberingSystems from "cldr-data/supplemental/numberingSystems.json";

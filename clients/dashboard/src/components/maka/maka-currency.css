@@ -1,0 +1,64 @@
+/*
+ * maka-currency.css — Syncfusion NumericTextBox (MakaCurrencyInput) ↔ Maka tokens.
+ *
+ * The EJ2 NumericTextBox ships bootstrap5 colours that don't follow our CSS
+ * variables, so money inputs looked wrong (white field, dark text) in dark mode.
+ * This bridges the input chrome to the design tokens in both themes. Components
+ * carry the `maka-currency` cssClass (see MakaCurrencyInput.tsx).
+ */
+
+/* ── Input group shell (light + dark share the token-driven rules) ─────────── */
+.e-input-group.maka-currency,
+.e-input-group.maka-currency.e-control-wrapper {
+  background-color: var(--color-background) !important;
+  border-color: var(--color-border) !important;
+  border-radius: 0.5rem !important;
+  color: var(--color-foreground) !important;
+}
+.e-input-group.maka-currency .e-numerictextbox,
+.e-input-group.maka-currency input.e-input {
+  background-color: transparent !important;
+  color: var(--color-foreground) !important;
+  font-family: inherit !important;
+  text-align: right; /* money is always right-aligned */
+}
+.e-input-group.maka-currency input.e-input::placeholder {
+  color: var(--color-muted-foreground) !important;
+}
+/* Focus ring → accent */
+.e-input-group.maka-currency.e-input-focus,
+.e-input-group.maka-currency:focus-within {
+  border-color: var(--color-ring) !important;
+  box-shadow: 0 0 0 2px oklch(from var(--color-ring) l c h / 0.25) !important;
+}
+/* The animated bootstrap5 underline must not paint over our border */
+.e-input-group.maka-currency:not(.e-disabled) .e-input-group-icon,
+.e-input-group.maka-currency::before,
+.e-input-group.maka-currency::after {
+  background: transparent !important;
+}
+/* Disabled */
+.e-input-group.maka-currency.e-disabled,
+.e-input-group.maka-currency.e-disabled input.e-input {
+  background-color: var(--color-muted) !important;
+  color: var(--color-muted-foreground) !important;
+  opacity: 1 !important;
+}
+
+/* ── Dark mode (.dark on <html>) ───────────────────────────────────────────── */
+.dark .e-input-group.maka-currency,
+.dark .e-input-group.maka-currency.e-control-wrapper {
+  background-color: var(--color-background) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-foreground) !important;
+}
+.dark .e-input-group.maka-currency input.e-input {
+  color: var(--color-foreground) !important;
+  -webkit-text-fill-color: var(--color-foreground) !important;
+}
+.dark .e-input-group.maka-currency.e-disabled,
+.dark .e-input-group.maka-currency.e-disabled input.e-input {
+  background-color: var(--color-muted) !important;
+  color: var(--color-muted-foreground) !important;
+  -webkit-text-fill-color: var(--color-muted-foreground) !important;
+}

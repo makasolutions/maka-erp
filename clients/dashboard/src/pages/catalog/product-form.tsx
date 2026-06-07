@@ -13,13 +13,14 @@ import {
   searchProducts, setProductCategories, updatePriceListItem, updateProduct,
   type BrandDto, type CategoryDto, type ProductType, type VariationDto,
 } from "@/api/catalog";
-import { PRODUCT_CODE_TYPES, validateProductCode, type ProductCodeType } from "@/lib/product-codes";
+import { PRODUCT_CODE_TYPES, validateProductCode } from "@/lib/product-codes";
 import {
   GenerateVariationsButton, ProductAttributesTab, ProductImagesTab, ProductTagsTab,
   VariationEditorDialog, DeleteVariationDialog,
   CodesDialog, type VarEditor,
 } from "@/pages/catalog/product-detail";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list";
 import { MakaCurrencyInput, MakaRichTextEditor } from "@/components/maka";
@@ -276,11 +277,6 @@ export function ProductFormPage() {
               dimL={dimL} setDimL={setDimL} dimW={dimW} setDimW={setDimW} dimH={dimH} setDimH={setDimH}
               dimUnit={dimUnit} setDimUnit={setDimUnit}
             />
-            {productId && type !== "Variable" && (
-              <div className="border-t border-[var(--color-border)] pt-6">
-                <PriceListsInputs productId={productId} canEdit={canEdit} />
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -407,14 +403,16 @@ function GeneralStep({
   return (
     <div className="space-y-6">
       <FormGrid>
-        <Field id="p-sku" span={3} label="SKU" required hint={isNew ? undefined : t("variations.skuImmutable", "")}>
-          <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
-            maxLength={64} required disabled={!isNew} placeholder="SONY-FX3" className="font-mono uppercase"
-            aria-invalid={skuTooLong || (isNew && !sku.trim())} />
-          {skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.errors.tooLong")}</p>}
-          {isNew && !sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
-        </Field>
-        <Field id="p-type" span={3} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
+        {isNew && (
+          <Field id="p-sku" span={3} label="SKU" required>
+            <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
+              maxLength={64} required placeholder="SONY-FX3" className="font-mono uppercase"
+              aria-invalid={skuTooLong || !sku.trim()} />
+            {skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.errors.tooLong")}</p>}
+            {!sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
+          </Field>
+        )}
+        <Field id="p-type" span={isNew ? 3 : 4} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
           <Combobox id="p-type" label={t("products.fields.type")} value={type}
             onChange={(v) => v && setType(v as ProductType)} options={typeOptions} disabled={!isNew} />
           {!isNew && productId && canEdit && convertTarget && (
@@ -424,7 +422,7 @@ function GeneralStep({
             </button>
           )}
         </Field>
-        <Field id="p-name" span={6} label={t("products.fields.name")} required>
+        <Field id="p-name" span={isNew ? 6 : 8} label={t("products.fields.name")} required>
           <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)}
             maxLength={200} required autoFocus placeholder={t("products.namePlaceholder", "")} />
         </Field>
@@ -606,6 +604,30 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
 
   const defaultPriceMissing = !!defaultList && !(values[defaultList.id] ?? "").trim();
 
+  // >10% change guard: list every list whose new base differs from the saved base
+  // by more than 10%, so the user can confirm an unusually large price change.
+  const BIG_CHANGE = 0.10;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const bigChanges = useMemo(() => {
+    const info = pricesQuery.data ?? {};
+    const out: { name: string; oldPrice: number; newPrice: number; pct: number }[] = [];
+    for (const l of lists) {
+      const raw = values[l.id];
+      if (raw == null || raw === "") continue;
+      const next = Number(raw);
+      const prev = info[l.id]?.price ?? null;
+      if (Number.isNaN(next) || prev == null || prev <= 0) continue;
+      const pct = (next - prev) / prev;
+      if (Math.abs(pct) > BIG_CHANGE) out.push({ name: l.name, oldPrice: prev, newPrice: next, pct: pct * 100 });
+    }
+    return out;
+  }, [lists, values, pricesQuery.data]);
+
+  const requestSave = () => {
+    if (bigChanges.length > 0) { setConfirmOpen(true); return; }
+    saveM.mutate();
+  };
+
   const saveM = useMutation({
     mutationFn: async () => {
       if (!variationId) return;
@@ -625,6 +647,7 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
     },
     onSuccess: () => {
       toast.success(tc("feedback.updated"));
+      setConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ["catalog", "product-list-prices", productId] });
       queryClient.invalidateQueries({ queryKey: ["catalog", "price-lists"] });
     },
@@ -677,12 +700,44 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
           {defaultPriceMissing && (
             <span className="text-[11.5px] text-[var(--color-destructive)]">{t("priceLists.defaultRequired")}</span>
           )}
-          <Button type="button" variant="outline" onClick={() => saveM.mutate()}
+          <Button type="button" onClick={requestSave}
             disabled={saveM.isPending || defaultPriceMissing}>
             {saveM.isPending ? tc("feedback.saving") : t("priceLists.savePrices")}
           </Button>
         </div>
       )}
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("priceLists.bigChangeTitle")}</DialogTitle>
+            <DialogDescription>{t("priceLists.bigChangeBody")}</DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-1.5 text-[13px]">
+            {bigChanges.map((c) => (
+              <li key={c.name} className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-border)] px-3 py-2">
+                <span className="font-medium text-[var(--color-foreground)]">{c.name}</span>
+                <span className="flex items-center gap-2 tabular-nums">
+                  <span className="text-[var(--color-muted-foreground)] line-through">{formatMoney(toTaxIncluded(c.oldPrice))}</span>
+                  <span className="text-[var(--color-foreground)]">{formatMoney(toTaxIncluded(c.newPrice))}</span>
+                  <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                    c.pct > 0 ? "bg-[var(--color-success-subtle,var(--color-muted))] text-[var(--color-success)]" : "bg-[var(--color-muted)] text-[var(--color-destructive)]")}>
+                    {c.pct > 0 ? "+" : ""}{c.pct.toFixed(1)}%
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={saveM.isPending}>
+              {tc("actions.cancel")}
+            </Button>
+            <Button type="button" onClick={() => saveM.mutate()} disabled={saveM.isPending}>
+              {saveM.isPending ? tc("feedback.saving") : t("priceLists.bigChangeConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -705,25 +760,55 @@ function DefaultVariationCodes({ productId, canEdit }: { productId: string; canE
     enabled: !!variationId,
   });
 
-  const [codeType, setCodeType] = useState<ProductCodeType>("EAN");
-  const [codeValue, setCodeValue] = useState("");
-
-  const validation = codeValue ? validateProductCode(codeType, codeValue) : { valid: false };
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["catalog", "codes", productId, variationId] });
-
-  const addMutation = useMutation({
-    mutationFn: () => addProductCode(productId, variationId!, { codeType, code: codeValue.trim(), isPrimary: false }),
-    onSuccess: () => { setCodeValue(""); invalidate(); },
-    onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
-  });
-  const removeMutation = useMutation({
-    mutationFn: (codeId: string) => removeProductCode(productId, variationId!, codeId),
-    onSuccess: invalidate,
-    onError: (e) => toast.error(tc("feedback.deleteFailed"), { description: describe(e) }),
-  });
-
   const codes = codesQuery.data ?? [];
-  const typeOptions = PRODUCT_CODE_TYPES.filter((x) => x !== "SKU").map((x) => ({ value: x, label: x }));
+  // One editable row per code type (SKU is shown read-only — immutable after creation).
+  const editableTypes = PRODUCT_CODE_TYPES.filter((x) => x !== "SKU");
+
+  // Local draft: value per editable code type, hydrated from the saved codes.
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!codesQuery.data) return;
+    const d: Record<string, string> = {};
+    for (const ty of editableTypes) d[ty] = codesQuery.data.find((c) => c.codeType === ty)?.code ?? "";
+    setDraft(d);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [codesQuery.data]);
+
+  const rowErrors = useMemo(() => {
+    const e: Record<string, string | undefined> = {};
+    for (const ty of editableTypes) {
+      const v = (draft[ty] ?? "").trim();
+      if (!v) continue;
+      const res = validateProductCode(ty, v);
+      if (!res.valid) e[ty] = res.messageKey ? t(res.messageKey) : t("codes.errors.invalidFor", { type: ty });
+    }
+    return e;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, t]);
+  const hasErrors = Object.keys(rowErrors).length > 0;
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      if (!variationId) return;
+      for (const ty of editableTypes) {
+        const v = (draft[ty] ?? "").trim();
+        const existing = codes.find((c) => c.codeType === ty);
+        if (v && existing && existing.code !== v) {
+          await removeProductCode(productId, variationId, existing.id);
+          await addProductCode(productId, variationId, { codeType: ty, code: v, isPrimary: false });
+        } else if (v && !existing) {
+          await addProductCode(productId, variationId, { codeType: ty, code: v, isPrimary: false });
+        } else if (!v && existing) {
+          await removeProductCode(productId, variationId, existing.id);
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success(tc("feedback.updated"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "codes", productId, variationId] });
+    },
+    onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
+  });
 
   return (
     <div className="space-y-3">
@@ -731,48 +816,40 @@ function DefaultVariationCodes({ productId, canEdit }: { productId: string; canE
         <Hash className="size-4 text-[var(--color-muted-foreground)]" />
         <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("codes.title")}</h3>
       </div>
+      <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("codes.hint")}</p>
 
-      {variationQuery.data?.sku && (
-        <div className="flex items-center gap-2 text-[12.5px]">
-          <span className="rounded bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-primary-foreground)]">SKU</span>
-          <code className="font-mono text-[var(--color-foreground)]">{variationQuery.data.sku}</code>
+      <div className="space-y-2">
+        {/* SKU — required, immutable after creation */}
+        <div className="flex items-center gap-2">
+          <div className="flex w-1/2 items-center gap-1.5">
+            <span className="text-[12.5px] font-medium text-[var(--color-foreground)]">SKU</span>
+            <span className="text-[var(--color-destructive)]">*</span>
+          </div>
+          <div className="w-1/2">
+            <Input value={variationQuery.data?.sku ?? ""} disabled readOnly
+              className="font-mono uppercase" aria-label="SKU" title={t("variations.skuImmutable", "")} />
+          </div>
         </div>
-      )}
 
-      {codes.length > 0 && (
-        <ul className="flex flex-wrap gap-2">
-          {codes.filter((c) => c.codeType !== "SKU").map((c) => (
-            <li key={c.id} className="flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-2.5 py-1.5 text-[12.5px]">
-              <span className="font-semibold text-[var(--color-muted-foreground)]">{c.codeType}</span>
-              <code className="font-mono text-[var(--color-foreground)]">{c.code}</code>
-              {canEdit && (
-                <button type="button" onClick={() => removeMutation.mutate(c.id)} aria-label={tc("actions.delete")}
-                  className="text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]">
-                  <Trash2 className="size-3.5" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+        {/* Editable code types — label as wide as the value input */}
+        {editableTypes.map((ty) => (
+          <div key={ty} className="flex items-start gap-2">
+            <label htmlFor={`code-${ty}`} className="w-1/2 pt-2 text-[12.5px] font-medium text-[var(--color-foreground)]">{ty}</label>
+            <div className="w-1/2">
+              <Input id={`code-${ty}`} value={draft[ty] ?? ""} disabled={!canEdit}
+                onChange={(e) => setDraft((p) => ({ ...p, [ty]: e.target.value }))}
+                placeholder={t("codes.value")} className="font-mono"
+                aria-invalid={!!rowErrors[ty]} />
+              {rowErrors[ty] && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{rowErrors[ty]}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {canEdit && variationId && (
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="w-32">
-            <Combobox id="code-type" label={t("codes.type")} value={codeType}
-              onChange={(v) => v && setCodeType(v as ProductCodeType)} options={typeOptions} />
-          </div>
-          <div className="grow">
-            <Input value={codeValue} onChange={(e) => setCodeValue(e.target.value)} placeholder={t("codes.value")}
-              className="font-mono" aria-invalid={!!codeValue && !validation.valid}
-              onKeyDown={(e) => { if (e.key === "Enter" && validation.valid) { e.preventDefault(); addMutation.mutate(); } }} />
-            {!!codeValue && !validation.valid && validation.messageKey && (
-              <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t(validation.messageKey)}</p>
-            )}
-          </div>
-          <Button type="button" variant="outline" disabled={!validation.valid || addMutation.isPending}
-            onClick={() => addMutation.mutate()}>
-            <Plus className="size-4" />{t("codes.add")}
+        <div className="flex justify-end">
+          <Button type="button" onClick={() => saveM.mutate()} disabled={saveM.isPending || hasErrors}>
+            {saveM.isPending ? tc("feedback.saving") : t("codes.saveCodes")}
           </Button>
         </div>
       )}

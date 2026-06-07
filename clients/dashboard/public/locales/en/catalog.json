@@ -448,20 +448,23 @@
       "add": "Add code"
     },
     "skuRequired": "SKU is required.",
+    "hint": "Fill in the codes that apply and save. Leave the ones you don't use blank.",
+    "saveCodes": "Save codes",
     "add": "Add code",
     "type": "Type",
     "value": "Value",
     "supplier": "Supplier",
     "primary": "Primary",
     "errors": {
-      "required": "Required.",
-      "ean": "EAN must be 8 or 13 digits.",
-      "upc": "UPC must be 12 digits.",
-      "gtin": "GTIN must be 8, 12, 13 or 14 digits.",
-      "isbn": "Invalid ISBN-10 or ISBN-13.",
-      "checkDigit": "Invalid check digit.",
-      "tooLong": "Too long.",
-      "duplicate": "That code already exists."
+      "required": "This field is required.",
+      "invalidFor": "The value is not a valid {{type}} code.",
+      "ean": "EAN must be 8 or 13 numeric digits (e.g. 7701234567890).",
+      "upc": "UPC must be exactly 12 numeric digits.",
+      "gtin": "GTIN must be 8, 12, 13 or 14 numeric digits.",
+      "isbn": "Invalid ISBN. Use ISBN-10 (10 characters) or ISBN-13 (13 digits).",
+      "checkDigit": "Check digit doesn't match. Make sure you copied the whole code.",
+      "tooLong": "Value is too long (max 64 characters).",
+      "duplicate": "Another product already has that code."
     }
   },
   "attributes": {
@@ -701,6 +704,9 @@
     "manageItems": "Manage items",
     "vatLabel": "% VAT",
     "defaultRequired": "The default list price is required.",
+    "bigChangeTitle": "Large price change",
+    "bigChangeBody": "Some prices change by more than 10% from the saved value. Please confirm this is correct before continuing.",
+    "bigChangeConfirm": "Yes, save changes",
     "roundEnabled": "Round",
     "roundEnabledHint": "Rounds the VAT-included value to nearest $10.000 minus $1.000.",
     "variationPricesTitle": "Prices per variation",

@@ -448,20 +448,23 @@
       "add": "Agregar código"
     },
     "skuRequired": "El SKU es obligatorio.",
+    "hint": "Completa los códigos que apliquen y guarda. Deja en blanco los que no uses.",
+    "saveCodes": "Guardar códigos",
     "add": "Agregar código",
     "type": "Tipo",
     "value": "Valor",
     "supplier": "Proveedor",
     "primary": "Principal",
     "errors": {
-      "required": "Requerido.",
-      "ean": "EAN debe tener 8 o 13 dígitos.",
-      "upc": "UPC debe tener 12 dígitos.",
-      "gtin": "GTIN debe tener 8, 12, 13 o 14 dígitos.",
-      "isbn": "ISBN-10 o ISBN-13 inválido.",
-      "checkDigit": "Dígito de control inválido.",
-      "tooLong": "Demasiado largo.",
-      "duplicate": "Ese código ya existe."
+      "required": "Este campo es obligatorio.",
+      "invalidFor": "El valor no es un código {{type}} válido.",
+      "ean": "El EAN debe tener 8 o 13 dígitos numéricos (por ejemplo 7701234567890).",
+      "upc": "El UPC debe tener exactamente 12 dígitos numéricos.",
+      "gtin": "El GTIN debe tener 8, 12, 13 o 14 dígitos numéricos.",
+      "isbn": "El ISBN no es válido. Usa ISBN-10 (10 caracteres) o ISBN-13 (13 dígitos).",
+      "checkDigit": "El dígito de control no coincide. Revisa que copiaste el código completo.",
+      "tooLong": "El valor es demasiado largo (máximo 64 caracteres).",
+      "duplicate": "Ya existe otro producto con ese código."
     }
   },
   "attributes": {
@@ -701,6 +704,9 @@
     "manageItems": "Gestionar ítems",
     "vatLabel": "% IVA",
     "defaultRequired": "El precio de la lista por defecto es obligatorio.",
+    "bigChangeTitle": "Cambio de precio importante",
+    "bigChangeBody": "Algunos precios cambian más del 10% respecto al valor guardado. Revisa que sea correcto antes de continuar.",
+    "bigChangeConfirm": "Sí, guardar cambios",
     "roundEnabled": "Redondear",
     "roundEnabledHint": "Redondea el valor con IVA al $10.000 más cercano menos $1.000.",
     "variationPricesTitle": "Precios por variación",
