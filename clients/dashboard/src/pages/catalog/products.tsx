@@ -144,16 +144,16 @@ function ProdCodesCell(row: ProductRow) {
   const extras = (row.codes ?? []).filter((c) => c.codeType !== "SKU");
   if (!row.defaultSku && extras.length === 0) return <span className="text-[var(--color-muted-foreground)]">—</span>;
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-col gap-0.5 py-0.5">
       {row.defaultSku && (
-        <span className="inline-flex items-center gap-1 rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-[10.5px]">
-          <span className="font-semibold text-[var(--color-muted-foreground)]">SKU</span>
+        <span className="inline-flex items-center gap-1 text-[10.5px]">
+          <span className="w-16 shrink-0 font-semibold text-[var(--color-muted-foreground)]">SKU</span>
           <code className="font-mono text-[var(--color-foreground)]">{row.defaultSku}</code>
         </span>
       )}
       {extras.map((c) => (
-        <span key={`${c.codeType}-${c.code}`} className="inline-flex items-center gap-1 rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-[10.5px]">
-          <span className="font-semibold text-[var(--color-muted-foreground)]">{c.codeType}</span>
+        <span key={`${c.codeType}-${c.code}`} className="inline-flex items-center gap-1 text-[10.5px]">
+          <span className="w-16 shrink-0 truncate font-semibold text-[var(--color-muted-foreground)]" title={c.codeType}>{c.codeType}</span>
           <code className="font-mono text-[var(--color-foreground)]">{c.code}</code>
         </span>
       ))}
@@ -298,7 +298,7 @@ export function ProductsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "brandName", headerText: t("products.fields.brand"), template: ProdBrandCell as any, width: 140 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "primaryCategoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
+    { field: "primaryCategoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, textAlign: "Center" },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

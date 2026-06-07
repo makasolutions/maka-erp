@@ -133,6 +133,11 @@
 .maka-grid-wrapper .e-grid .e-altrow td.e-rowcell {
   background-color: oklch(from var(--color-muted) l c h / 0.28) !important;
 }
+/* Breathing room on the first column so data isn't flush against the edge. */
+.maka-grid-wrapper .e-grid .e-headercell:first-child,
+.maka-grid-wrapper .e-grid .e-row td.e-rowcell:first-child {
+  padding-left: 1rem !important;
+}
 /* Row hover — soft-accent fill, same as the selected item in the main menu */
 .maka-grid-wrapper .e-grid .e-row:hover td.e-rowcell,
 .maka-grid-wrapper .e-grid .e-row.e-hover td.e-rowcell,

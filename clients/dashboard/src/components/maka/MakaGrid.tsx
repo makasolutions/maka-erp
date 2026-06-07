@@ -897,7 +897,12 @@ export function MakaGrid<T extends object>({
     prevLenRef.current = len;
   }, [serverMode, dataSource]);
 
-  const pageSettings = { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: 5 };
+  // Numeric pager strip must reflect the REAL page count, not a fixed 5 — a
+  // dataset under one page should show a single page button (client grid).
+  const clientPageCount = serverMode
+    ? 5
+    : Math.max(1, Math.min(10, Math.ceil((Array.isArray(dataSource) ? dataSource.length : 0) / 20)));
+  const pageSettings = { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: clientPageCount };
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -956,6 +961,7 @@ export function MakaGrid<T extends object>({
           {allColumns.map((col) => (
             <ColumnDirective
               key={col.field ?? col.headerText}
+              headerTextAlign="Center"
               {...col}
             />
           ))}
