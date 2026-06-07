@@ -43,7 +43,8 @@ public sealed class CreatePriceListCommandHandler(CatalogDbContext db)
             ownerId: null,
             isDefault: command.IsDefault,
             adjustmentPercent: command.AdjustmentPercent,
-            validTo: command.ValidTo);
+            validTo: command.ValidTo,
+            roundEnabled: command.RoundEnabled);
 
         db.PriceLists.Add(priceList);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

@@ -4,13 +4,29 @@ namespace Catalog.Tests.Domain;
 
 public sealed class CatalogPricingTests
 {
-    [Theory]
-    [InlineData(7_000_000, 15, 8_049_000)]   // +15% → 8.050.000 → −1.000
-    [InlineData(7_000_000, -3, 6_789_000)]   // −3%  → 6.790.000 → −1.000
-    [InlineData(1_000_000, 0, 999_000)]      // 0%   → 1.000.000 → −1.000
-    public void Derive_Should_ApplyPercent_AndRound(decimal basePrice, decimal pct, decimal expected)
+    [Fact]
+    public void TaxRoundTrip_Should_Match()
     {
-        CatalogPricing.Derive(basePrice, pct).ShouldBe(expected);
+        CatalogPricing.ToTaxIncluded(7_000_000).ShouldBe(8_330_000);
+        CatalogPricing.FromTaxIncluded(8_330_000).ShouldBe(7_000_000);
+    }
+
+    [Theory]
+    // base default 7.000.000 → IVA incl. 8.330.000
+    [InlineData(7_000_000, 15, 9_579_000)]   // ×1.15 = 9.579.500 → round → 9.579.000
+    [InlineData(7_000_000, -3, 8_079_000)]   // ×0.97 = 8.080.100 → round → 8.079.000
+    public void DeriveBase_WithRound_TaxIncluded_IsRounded(decimal baseDefault, decimal pct, decimal expectedTaxIncl)
+    {
+        var derivedBase = CatalogPricing.DeriveBase(baseDefault, pct, round: true);
+        Math.Round(CatalogPricing.ToTaxIncluded(derivedBase)).ShouldBe(expectedTaxIncl);
+    }
+
+    [Fact]
+    public void DeriveBase_NoRound_KeepsExactTaxIncluded()
+    {
+        var derivedBase = CatalogPricing.DeriveBase(7_000_000, 15, round: false);
+        // 8.330.000 × 1.15 = 9.579.500 (no rounding)
+        Math.Round(CatalogPricing.ToTaxIncluded(derivedBase)).ShouldBe(9_579_500);
     }
 
     [Fact]

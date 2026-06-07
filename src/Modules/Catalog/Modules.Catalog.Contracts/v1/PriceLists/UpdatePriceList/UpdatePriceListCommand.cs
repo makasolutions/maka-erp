@@ -10,4 +10,5 @@ public sealed record UpdatePriceListCommand(
     DateTime? ValidTo,
     bool      IsActive,
     bool      IsDefault,
-    decimal?  AdjustmentPercent) : ICommand<Guid>;
+    decimal?  AdjustmentPercent,
+    bool      RoundEnabled = true) : ICommand<Guid>;

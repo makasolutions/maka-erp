@@ -16,7 +16,7 @@ internal static class PriceRecalculator
     /// default list's base prices. Used when a list's % changes.
     /// </summary>
     public static async Task RecalculateListAsync(
-        CatalogDbContext db, string userId, Guid listId, decimal adjustmentPercent, CancellationToken ct)
+        CatalogDbContext db, string userId, Guid listId, decimal adjustmentPercent, bool roundEnabled, CancellationToken ct)
     {
         var defaultListId = await db.PriceLists
             .Where(p => p.IsDefault && p.OwnerId == null)
@@ -40,7 +40,7 @@ internal static class PriceRecalculator
         {
             if (item.IsManualOverride) continue;
             if (!basePrices.TryGetValue(item.VariationId, out var basePrice)) continue;
-            item.ApplyDerived(CatalogPricing.Derive(basePrice, adjustmentPercent), userId);
+            item.ApplyDerived(CatalogPricing.DeriveBase(basePrice, adjustmentPercent, roundEnabled), userId);
         }
     }
 
@@ -63,7 +63,7 @@ internal static class PriceRecalculator
             .Where(p => !p.IsDefault && p.OwnerId == null && p.IsActive
                      && p.ListKind == Contracts.Enums.PriceListKind.Segment
                      && p.AdjustmentPercent != null)
-            .Select(p => new { p.Id, p.AdjustmentPercent })
+            .Select(p => new { p.Id, p.AdjustmentPercent, p.RoundEnabled })
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
@@ -77,7 +77,7 @@ internal static class PriceRecalculator
 
         foreach (var list in derivedLists)
         {
-            decimal derived = CatalogPricing.Derive(basePrice.Value, list.AdjustmentPercent!.Value);
+            decimal derived = CatalogPricing.DeriveBase(basePrice.Value, list.AdjustmentPercent!.Value, list.RoundEnabled);
             var existing = existingItems.FirstOrDefault(i => i.PriceListId == list.Id);
             if (existing is null)
             {

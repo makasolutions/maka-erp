@@ -9,4 +9,5 @@ public sealed record CreatePriceListCommand(
     DateTime? ValidTo           = null,
     string?   Description       = null,
     bool      IsDefault         = false,
-    decimal?  AdjustmentPercent = null) : ICommand<Guid>;
+    decimal?  AdjustmentPercent = null,
+    bool      RoundEnabled      = true) : ICommand<Guid>;

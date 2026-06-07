@@ -16,6 +16,7 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
         builder.Property(x => x.CustomerSegment).IsRequired().HasMaxLength(32);
         builder.Property(x => x.IsActive).IsRequired();
         builder.Property(x => x.IsDefault).IsRequired();
+        builder.Property(x => x.RoundEnabled).IsRequired();
         builder.Property(x => x.AdjustmentPercent).HasPrecision(7, 4);
         builder.Property(x => x.ListKind).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(x => x.CampaignStatus).HasConversion<string>().HasMaxLength(16);

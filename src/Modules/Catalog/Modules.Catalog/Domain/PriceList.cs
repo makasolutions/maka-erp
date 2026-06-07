@@ -20,6 +20,7 @@ public sealed class PriceList : BaseEntity<Guid>
     public bool      IsActive          { get; private set; }
     public bool      IsDefault         { get; private set; }
     public decimal?  AdjustmentPercent { get; private set; }  // null en la default; +/− en derivadas
+    public bool      RoundEnabled      { get; private set; }  // redondear el IVA incl. derivado
     public PriceListKind ListKind      { get; private set; }
     public Guid?     OwnerId           { get; private set; }  // null = global
 
@@ -44,7 +45,8 @@ public sealed class PriceList : BaseEntity<Guid>
         bool isDefault = false,
         decimal? adjustmentPercent = null,
         PriceListKind listKind = PriceListKind.Segment,
-        DateTime? validTo = null)
+        DateTime? validTo = null,
+        bool roundEnabled = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(customerSegment);
@@ -60,6 +62,7 @@ public sealed class PriceList : BaseEntity<Guid>
             IsActive          = true,
             IsDefault         = isDefault,
             AdjustmentPercent = isDefault ? null : adjustmentPercent,
+            RoundEnabled      = roundEnabled,
             ListKind          = listKind,
             OwnerId           = ownerId,
             CampaignStatus    = listKind == PriceListKind.Campaign ? Contracts.Enums.CampaignStatus.Scheduled : null,
@@ -89,7 +92,8 @@ public sealed class PriceList : BaseEntity<Guid>
         DateTime validFrom,
         DateTime? validTo,
         bool isActive,
-        decimal? adjustmentPercent)
+        decimal? adjustmentPercent,
+        bool roundEnabled = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         Name              = name.Trim();
@@ -98,6 +102,7 @@ public sealed class PriceList : BaseEntity<Guid>
         ValidTo           = validTo;
         IsActive          = isActive;
         AdjustmentPercent = IsDefault ? null : adjustmentPercent;
+        RoundEnabled      = roundEnabled;
         UpdatedAtUtc      = DateTime.UtcNow;
     }
 

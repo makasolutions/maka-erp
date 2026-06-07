@@ -10,6 +10,7 @@ public sealed record PriceListDetailDto(
     bool      IsActive,
     bool      IsDefault,
     decimal?  AdjustmentPercent,
+    bool      RoundEnabled,
     DateTime  CreatedAtUtc,
     DateTime? UpdatedAtUtc,
     IReadOnlyList<PriceListItemDto> Items);

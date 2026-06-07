@@ -41,12 +41,14 @@ public sealed class UpdatePriceListCommandHandler(CatalogDbContext db, ICurrentU
             command.ValidFrom,
             command.ValidTo,
             command.IsActive,
-            command.AdjustmentPercent);
+            command.AdjustmentPercent,
+            command.RoundEnabled);
 
-        // If this is a derived list and its % changed, recompute its non-override items.
+        // If this is a derived list, recompute its non-override items (the % or the
+        // rounding toggle may have changed).
         if (!list.IsDefault && command.AdjustmentPercent is { } pct)
             await PriceRecalculator.RecalculateListAsync(
-                db, currentUser.GetUserId().ToString(), list.Id, pct, cancellationToken).ConfigureAwait(false);
+                db, currentUser.GetUserId().ToString(), list.Id, pct, command.RoundEnabled, cancellationToken).ConfigureAwait(false);
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

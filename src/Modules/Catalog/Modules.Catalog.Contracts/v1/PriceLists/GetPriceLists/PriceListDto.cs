@@ -12,6 +12,7 @@ public sealed record PriceListDto(
     bool      IsActive,
     bool      IsDefault,
     decimal?  AdjustmentPercent,
+    bool      RoundEnabled,
     PriceListKind ListKind,
     CampaignStatus? CampaignStatus,
     int       ItemCount,

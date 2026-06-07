@@ -54,6 +54,7 @@ public sealed class GetPriceListsQueryHandler(CatalogDbContext db)
                 p.IsActive,
                 p.IsDefault,
                 p.AdjustmentPercent,
+                p.RoundEnabled,
                 p.ListKind,
                 p.CampaignStatus,
                 p.Items.Count,

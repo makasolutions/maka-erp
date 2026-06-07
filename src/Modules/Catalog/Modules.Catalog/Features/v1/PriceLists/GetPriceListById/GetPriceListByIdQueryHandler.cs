@@ -58,6 +58,7 @@ public sealed class GetPriceListByIdQueryHandler(CatalogDbContext db)
             priceList.IsActive,
             priceList.IsDefault,
             priceList.AdjustmentPercent,
+            priceList.RoundEnabled,
             priceList.CreatedAtUtc,
             priceList.UpdatedAtUtc,
             items);
