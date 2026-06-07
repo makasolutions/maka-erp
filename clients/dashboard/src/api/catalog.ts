@@ -301,6 +301,8 @@ export type ProductDto = {
   createdAtUtc: string;
   updatedAtUtc?: string | null;
   defaultPrice?: number | null;
+  minVariationPrice?: number | null;
+  maxVariationPrice?: number | null;
   codes: ProductCodeBriefDto[];
 
   /** @deprecated v1 fields — kept for backward compat */

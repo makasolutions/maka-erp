@@ -137,6 +137,18 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
                         .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
                         .Select(i => (decimal?)i.Price))
                     .FirstOrDefault(),
+                p.Variations
+                    .Where(v => !v.IsDeleted)
+                    .SelectMany(v => db.PriceListItems
+                        .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                        .Select(i => (decimal?)i.Price))
+                    .Min(),
+                p.Variations
+                    .Where(v => !v.IsDeleted)
+                    .SelectMany(v => db.PriceListItems
+                        .Where(i => i.VariationId == v.Id && db.PriceLists.Any(l => l.Id == i.PriceListId && l.IsDefault && l.OwnerId == null))
+                        .Select(i => (decimal?)i.Price))
+                    .Max(),
                 db.ProductCodes
                     .Where(c => c.ProductId == p.Id)
                     .OrderBy(c => c.CodeType)

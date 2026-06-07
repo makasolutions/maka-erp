@@ -21,6 +21,8 @@ public sealed record ProductDto(
     DateTime       CreatedAtUtc,
     DateTime?      UpdatedAtUtc,
     decimal?       DefaultPrice,
+    decimal?       MinVariationPrice,
+    decimal?       MaxVariationPrice,
     IReadOnlyList<ProductCodeBriefDto> Codes);
 
 /// <summary>A product code shown in the catalog grid (SKU + EAN/UPC/…).</summary>

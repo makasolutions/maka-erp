@@ -64,12 +64,11 @@ import {
   MakaFilterField,
   MakaFilterInput,
   MakaPriceRangeFilter,
-  makaCurrencyColumn,
   type MakaPriceRange,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
-import { describe, formatDate, slugify } from "@/lib/list-helpers";
+import { describe, formatDate, formatMoney, slugify, toTaxIncluded } from "@/lib/list-helpers";
 import { EntityAuditSection } from "@/components/entity-audit-section";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
@@ -158,6 +157,24 @@ function ProdCodesCell(row: ProductRow) {
           <code className="font-mono text-[var(--color-foreground)]">{c.code}</code>
         </span>
       ))}
+    </div>
+  );
+}
+
+function ProdPriceCell(row: ProductRow) {
+  // Variable products: show the IVA-included price range across variations.
+  // Simple products: show the single default-list price (IVA included).
+  const min = row.minVariationPrice ?? row.defaultPrice ?? null;
+  const max = row.maxVariationPrice ?? row.defaultPrice ?? null;
+  if (min == null && max == null) return <span className="text-[var(--color-muted-foreground)]">—</span>;
+  const isRange = row.type === "Variable" && min != null && max != null && min !== max;
+  const label = isRange
+    ? `${formatMoney(toTaxIncluded(min))} – ${formatMoney(toTaxIncluded(max))}`
+    : formatMoney(toTaxIncluded((min ?? max) as number));
+  return (
+    <div className="flex flex-col items-end gap-0 py-0.5 text-right">
+      <span className="font-medium text-[var(--color-foreground)]">{label}</span>
+      <span className="text-[9.5px] uppercase tracking-wide text-[var(--color-muted-foreground)]">IVA incl.</span>
     </div>
   );
 }
@@ -323,7 +340,8 @@ export function ProductsPage() {
     { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, textAlign: "Center" },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "status", headerText: t("products.fields.status"), template: ProdStatusCell as any, width: 110, textAlign: "Center" },
-    makaCurrencyColumn("defaultPrice", t("products.fields.defaultPrice"), { width: 140 }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "defaultPrice", headerText: t("products.fields.defaultPrice"), template: ProdPriceCell as any, width: 160, textAlign: "Right" },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "codes", headerText: t("products.fields.codes"), template: ProdCodesCell as any, minWidth: 200, allowSorting: false },
     { field: "createdAtUtc", headerText: t("products.fields.created"), width: 140, type: "date" },
