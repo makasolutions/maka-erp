@@ -54,8 +54,6 @@ import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
   Copy,
-  FileSpreadsheet,
-  FileText,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -591,23 +589,6 @@ export function MakaGrid<T extends object>({
                     {a.label}
                   </DropdownMenuItem>
                 ))}
-
-                {/* Export row */}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  const props: ExcelExportProperties = { dataSource: [rowData], fileName: `${ctx.fileName}-row.xlsx` };
-                  void ctx.gridRef.current?.excelExport(props);
-                }}>
-                  <FileSpreadsheet className="size-3.5" />
-                  {ctx.tExcelRow}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  const props: PdfExportProperties = { dataSource: { result: [rowData], count: 1 }, fileName: `${ctx.fileName}-row.pdf` };
-                  void ctx.gridRef.current?.pdfExport(props);
-                }}>
-                  <FileText className="size-3.5" />
-                  {ctx.tPdfRow}
-                </DropdownMenuItem>
 
                 {/* Divider-before extras */}
                 {visExtras.filter(a => a.dividerBefore).map(a => (
