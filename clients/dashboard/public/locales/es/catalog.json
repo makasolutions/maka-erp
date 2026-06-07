@@ -692,7 +692,8 @@
     "vatLabel": "% IVA",
     "defaultRequired": "El precio de la lista por defecto es obligatorio.",
     "roundEnabled": "Redondear",
-    "roundEnabledHint": "Redondea el valor con IVA al $10.000 más cercano menos $1.000."
+    "roundEnabledHint": "Redondea el valor con IVA al $10.000 más cercano menos $1.000.",
+    "variationPricesTitle": "Precios por variación"
   },
   "marketplace": {
     "Google": "Google",

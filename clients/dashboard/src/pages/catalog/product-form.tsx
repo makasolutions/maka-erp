@@ -488,7 +488,9 @@ function PriceWithTax({ id, value, onChange, disabled }: {
 // The default list drives the others: editing the base price recomputes the
 // derived lists (suggested, rounded, editable). Each derived input the user
 // edits becomes a manual override.
-function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hideTitle }: {
+  productId: string; canEdit: boolean; variationId?: string; hideTitle?: boolean;
+}) {
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const queryClient = useQueryClient();
@@ -496,8 +498,9 @@ function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: 
   const defVarQuery = useQuery({
     queryKey: ["catalog", "default-variation", productId],
     queryFn: () => getDefaultVariation(productId),
+    enabled: !variationIdProp,
   });
-  const variationId = defVarQuery.data?.id;
+  const variationId = variationIdProp ?? defVarQuery.data?.id;
 
   const listsQuery = useQuery({
     queryKey: ["catalog", "price-lists", "active"],
@@ -589,11 +592,15 @@ function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: 
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("priceLists.productPricesTitle")}</h3>
-        {!defaultList && <span className="text-[12px] text-[var(--color-warning)]">{t("priceLists.noDefault")}</span>}
-      </div>
-      <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("priceLists.productPricesHint")}</p>
+      {!hideTitle && (
+        <>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("priceLists.productPricesTitle")}</h3>
+            {!defaultList && <span className="text-[12px] text-[var(--color-warning)]">{t("priceLists.noDefault")}</span>}
+          </div>
+          <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("priceLists.productPricesHint")}</p>
+        </>
+      )}
       <FormGrid>
         {lists.map((l) => (
           <Field key={l.id} id={`plp-${l.id}`} span={4}
@@ -800,9 +807,41 @@ function VariationsStep({ productId, canEdit, categoryId }: { productId: string;
         />
       </div>
 
+      <VariationPricesSection productId={productId} canEdit={canEdit} variations={variations} />
+
       <VariationEditorDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <DeleteVariationDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <CodesDialog productId={productId} state={editor} onClose={() => setEditor({ mode: "closed" })} canEdit={canEdit} />
+    </div>
+  );
+}
+
+// ── Precios por variación (productos Variable) ──
+function VariationPricesSection({ productId, canEdit, variations }: {
+  productId: string; canEdit: boolean; variations: VariationDto[];
+}) {
+  const { t } = useTranslation("catalog");
+  if (variations.length === 0) return null;
+  return (
+    <div className="space-y-4 border-t border-[var(--color-border)] pt-6">
+      <div>
+        <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("priceLists.variationPricesTitle")}</h2>
+        <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("priceLists.productPricesHint")}</p>
+      </div>
+      <div className="space-y-4">
+        {variations.map((v) => (
+          <div key={v.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+            <div className="mb-2 flex items-center gap-2 text-[12.5px]">
+              <code className="font-mono text-[var(--color-foreground)]">{v.sku}</code>
+              {v.isDefault && <span className="text-[var(--color-muted-foreground)]">★</span>}
+              {v.attributeValues?.length ? (
+                <span className="text-[var(--color-muted-foreground)]">· {v.attributeValues.map((av) => av.value).join(" / ")}</span>
+              ) : null}
+            </div>
+            <PriceListsInputs productId={productId} canEdit={canEdit} variationId={v.id} hideTitle />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
