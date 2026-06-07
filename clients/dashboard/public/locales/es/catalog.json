@@ -44,7 +44,8 @@
       "shippingClass": "Clase de envío",
       "codes": "Códigos",
       "defaultPrice": "Precio",
-      "codeFilter": "Código"
+      "codeFilter": "Código",
+      "tagFilter": "Etiqueta"
     },
     "categoriesHint": "Selecciona una o más categorías. Marca una como principal.",
     "noCategories": "No hay categorías. Crea categorías primero.",
@@ -81,7 +82,8 @@
       "visibleNo": "No",
       "skuPlaceholder": "Buscar por SKU…",
       "namePlaceholder": "Buscar por nombre…",
-      "codePlaceholder": "Buscar por código…"
+      "codePlaceholder": "Buscar por código…",
+      "tagPlaceholder": "Buscar por etiqueta…"
     },
     "empty": {
       "title": "Sin productos aún",
@@ -606,6 +608,7 @@
     "viewSheet": "Ver ficha",
     "exportPdf": "Exportar PDF",
     "codes": "Códigos",
+    "tags": "Etiquetas",
     "shortDescription": "Descripción corta",
     "description": "Descripción",
     "specs": "Especificaciones técnicas",

@@ -49,6 +49,12 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
                 db.ProductCodes.Any(c => c.ProductId == p.Id && EF.Functions.ILike(c.Code, pat)));
         }
 
+        if (!string.IsNullOrWhiteSpace(query.Tag))
+        {
+            string tagPat = $"%{query.Tag.Trim()}%";
+            products = products.Where(p => p.Tags.Any(tg => EF.Functions.ILike(tg.Name, tagPat)));
+        }
+
         // Price range on the default-list price of the default variation.
         if (query.MinPrice.HasValue)
             products = products.Where(p => p.Variations

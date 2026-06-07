@@ -197,6 +197,8 @@ export function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [codeFilter, setCodeFilter] = useState("");
   const [debouncedCode, setDebouncedCode] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [debouncedTag, setDebouncedTag] = useState("");
   const [priceRange, setPriceRange] = useState<MakaPriceRange>({ min: null, max: null });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -214,6 +216,11 @@ export function ProductsPage() {
     return () => clearTimeout(timer);
   }, [codeFilter]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedTag(tagFilter.trim()); setPage(1); }, 250);
+    return () => clearTimeout(timer);
+  }, [tagFilter]);
+
   useEffect(() => { setPage(1); }, [priceRange]);
 
   const queryParams = useMemo(() => ({
@@ -223,12 +230,13 @@ export function ProductsPage() {
     type: (typeFilter as ProductType | null) ?? undefined,
     status: (statusFilter as ProductStatus | null) ?? undefined,
     code: debouncedCode || undefined,
+    tag: debouncedTag || undefined,
     minPrice: priceRange.min ?? undefined,
     maxPrice: priceRange.max ?? undefined,
     pageNumber: page,
     pageSize,
     sort: sort.dir === "desc" ? `-${sort.by}` : sort.by,
-  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, debouncedCode, priceRange, page, pageSize, sort]);
+  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, debouncedCode, debouncedTag, priceRange, page, pageSize, sort]);
 
   const query = useQuery({
     queryKey: ["catalog", "products", "list", queryParams],
@@ -343,6 +351,7 @@ export function ProductsPage() {
   const resetFilters = () => {
     setNameFilter(""); setDebouncedName(""); setBrandFilter(null); setCategoryFilter(null);
     setTypeFilter(null); setStatusFilter(null); setCodeFilter(""); setDebouncedCode("");
+    setTagFilter(""); setDebouncedTag("");
     setPriceRange({ min: null, max: null }); setPage(1);
   };
 
@@ -437,6 +446,15 @@ export function ProductsPage() {
                 placeholder={t("products.filters.codePlaceholder")}
                 ariaLabel={t("products.fields.codeFilter")}
                 className="min-w-44"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.tagFilter")}>
+              <MakaFilterInput
+                value={tagFilter}
+                onChange={setTagFilter}
+                placeholder={t("products.filters.tagPlaceholder")}
+                ariaLabel={t("products.fields.tagFilter")}
+                className="min-w-40"
               />
             </MakaFilterField>
             <MakaFilterField label={t("products.fields.defaultPrice")}>

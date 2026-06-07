@@ -44,7 +44,8 @@
       "shippingClass": "Shipping class",
       "codes": "Codes",
       "defaultPrice": "Price",
-      "codeFilter": "Code"
+      "codeFilter": "Code",
+      "tagFilter": "Tag"
     },
     "categoriesHint": "Select one or more categories. Mark one as primary.",
     "noCategories": "No categories yet. Create categories first.",
@@ -81,7 +82,8 @@
       "visibleNo": "No",
       "skuPlaceholder": "Search by SKU…",
       "namePlaceholder": "Search by name…",
-      "codePlaceholder": "Search by code…"
+      "codePlaceholder": "Search by code…",
+      "tagPlaceholder": "Search by tag…"
     },
     "empty": {
       "title": "No products yet",
@@ -606,6 +608,7 @@
     "viewSheet": "View sheet",
     "exportPdf": "Export PDF",
     "codes": "Codes",
+    "tags": "Tags",
     "shortDescription": "Short description",
     "description": "Description",
     "specs": "Technical specifications",

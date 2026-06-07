@@ -134,6 +134,16 @@ export function ProductSheetPage() {
                 {!defVarQ.data?.sku && (codesQ.data ?? []).length === 0 && <span className="text-[12px] text-[var(--color-muted-foreground)]">—</span>}
               </ul>
             </section>
+            {(product?.tags ?? []).length > 0 && (
+              <section>
+                <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">{t("sheet.tags")}</h2>
+                <ul className="flex flex-wrap gap-2">
+                  {(product?.tags ?? []).map((tag) => (
+                    <li key={tag} className="rounded-full bg-[var(--color-muted)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-foreground)]">{tag}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {defVarId && <EffectivePriceSection variationId={defVarId} />}
           </div>
         </div>

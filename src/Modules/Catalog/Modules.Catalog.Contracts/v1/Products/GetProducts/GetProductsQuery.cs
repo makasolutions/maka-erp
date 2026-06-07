@@ -15,6 +15,7 @@ public sealed record GetProductsQuery : IPagedQuery, IQuery<PagedResponse<Produc
     public ProductType?  Type       { get; set; }
     public ProductStatus? Status    { get; set; }
     public string?       Code       { get; set; }   // matches any product code (SKU/EAN/…)
+    public string?       Tag        { get; set; }   // matches a product tag name
     public decimal?      MinPrice   { get; set; }   // on the default-list price
     public decimal?      MaxPrice   { get; set; }
 }
