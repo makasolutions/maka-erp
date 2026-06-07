@@ -48,6 +48,8 @@ public sealed class GetPriceListsQueryHandler(CatalogDbContext db)
                 p.ValidFrom,
                 p.ValidTo,
                 p.IsActive,
+                p.IsDefault,
+                p.AdjustmentPercent,
                 p.Items.Count,
                 p.CreatedAtUtc,
                 p.UpdatedAtUtc))

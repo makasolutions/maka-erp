@@ -16,12 +16,14 @@ public sealed class AddPriceListItemCommandHandler(CatalogDbContext db, ICurrent
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        bool listExists = await db.PriceLists
+        var list = await db.PriceLists
             .AsNoTracking()
-            .AnyAsync(p => p.Id == command.PriceListId, cancellationToken)
+            .Where(p => p.Id == command.PriceListId)
+            .Select(p => new { p.IsDefault })
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        if (!listExists)
+        if (list is null)
             throw new NotFoundException($"Price list {command.PriceListId} not found.");
 
         bool variationExists = await db.Variations
@@ -55,6 +57,12 @@ public sealed class AddPriceListItemCommandHandler(CatalogDbContext db, ICurrent
             command.SalePriceTo);
 
         db.PriceListItems.Add(item);
+
+        // Setting the base price (default list) cascades to derived lists.
+        if (list.IsDefault)
+            await PriceRecalculator.RecalculateDerivedAsync(
+                db, currentUser.GetUserId().ToString(), command.VariationId, cancellationToken).ConfigureAwait(false);
+
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return item.Id;

@@ -15,6 +15,10 @@ public sealed class PriceListItem : BaseEntity<Guid>
     public decimal   Price           { get; private set; }  // COP
     public decimal?  MinQuantity     { get; private set; }
 
+    // Fase 3 — en listas derivadas, true si el usuario fijó el precio a mano
+    // (no se recalcula al cambiar la lista por defecto). false = sigue el %.
+    public bool      IsManualOverride { get; private set; }
+
     // Precio de oferta (§15) — efectivo dentro del rango de fechas
     public decimal?  SalePrice       { get; private set; }
     public DateTime? SalePriceFrom   { get; private set; }
@@ -36,24 +40,41 @@ public sealed class PriceListItem : BaseEntity<Guid>
         decimal? minQuantity = null,
         decimal? salePrice = null,
         DateTime? salePriceFrom = null,
-        DateTime? salePriceTo = null)
+        DateTime? salePriceTo = null,
+        bool isManualOverride = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(price);
         ArgumentException.ThrowIfNullOrWhiteSpace(createdByUserId);
 
         return new PriceListItem
         {
-            Id              = Guid.CreateVersion7(),
-            PriceListId     = priceListId,
-            VariationId     = variationId,
-            Price           = price,
-            MinQuantity     = minQuantity,
-            SalePrice       = salePrice,
-            SalePriceFrom   = salePriceFrom,
-            SalePriceTo     = salePriceTo,
-            CreatedAt       = DateTime.UtcNow,
-            CreatedByUserId = createdByUserId,
+            Id               = Guid.CreateVersion7(),
+            PriceListId      = priceListId,
+            VariationId      = variationId,
+            Price            = price,
+            MinQuantity      = minQuantity,
+            IsManualOverride = isManualOverride,
+            SalePrice        = salePrice,
+            SalePriceFrom    = salePriceFrom,
+            SalePriceTo      = salePriceTo,
+            CreatedAt        = DateTime.UtcNow,
+            CreatedByUserId  = createdByUserId,
         };
+    }
+
+    /// <summary>Marca si el precio fue fijado manualmente (excluido del recálculo).</summary>
+    public void SetManualOverride(bool isManualOverride) => IsManualOverride = isManualOverride;
+
+    /// <summary>
+    /// Aplica un precio derivado de la lista por defecto (recálculo automático).
+    /// No marca override y registra el cambio en History.
+    /// </summary>
+    public void ApplyDerived(decimal newPrice, string changedByUserId)
+    {
+        if (IsManualOverride) return;       // respeta el override del usuario
+        if (newPrice == Price) return;      // nada que cambiar
+        ChangePrice(newPrice, changedByUserId, changeReason: "auto:default", sourceReference: "auto:default");
+        IsManualOverride = false;           // ChangePrice no lo toca; lo dejamos explícito
     }
 
     /// <summary>

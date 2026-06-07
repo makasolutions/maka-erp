@@ -20,15 +20,31 @@ public sealed class UpdatePriceListItemCommandHandler(CatalogDbContext db, ICurr
             .ConfigureAwait(false)
             ?? throw new NotFoundException($"Price list item {command.ItemId} not found in list {command.PriceListId}.");
 
+        var list = await db.PriceLists
+            .AsNoTracking()
+            .Where(p => p.Id == command.PriceListId)
+            .Select(p => new { p.IsDefault })
+            .FirstAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        string userId = currentUser.GetUserId().ToString();
+
         // ChangePrice records an immutable history entry automatically (spec §7).
         item.ChangePrice(
             command.Price,
-            currentUser.GetUserId().ToString(),
+            userId,
             command.ChangeReason,
             sourceReference: null,
             newSalePrice: command.SalePrice,
             newSalePriceFrom: command.SalePriceFrom,
             newSalePriceTo: command.SalePriceTo);
+
+        // An explicit edit on a derived list pins the price (excluded from recalc).
+        if (!list.IsDefault)
+            item.SetManualOverride(true);
+        else
+            // Changing the base price cascades to derived lists.
+            await PriceRecalculator.RecalculateDerivedAsync(db, userId, item.VariationId, cancellationToken).ConfigureAwait(false);
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

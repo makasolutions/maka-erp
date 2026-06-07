@@ -5,5 +5,8 @@ namespace FSH.Modules.Catalog.Contracts.v1.PriceLists.CreatePriceList;
 public sealed record CreatePriceListCommand(
     string    Name,
     string    CustomerSegment,
-    DateTime? ValidFrom   = null,
-    string?   Description = null) : ICommand<Guid>;
+    DateTime? ValidFrom         = null,
+    DateTime? ValidTo           = null,
+    string?   Description       = null,
+    bool      IsDefault         = false,
+    decimal?  AdjustmentPercent = null) : ICommand<Guid>;

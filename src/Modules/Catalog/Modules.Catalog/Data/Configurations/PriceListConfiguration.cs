@@ -15,6 +15,9 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
         builder.Property(x => x.Description).HasMaxLength(512);
         builder.Property(x => x.CustomerSegment).IsRequired().HasMaxLength(32);
         builder.Property(x => x.IsActive).IsRequired();
+        builder.Property(x => x.IsDefault).IsRequired();
+        builder.Property(x => x.AdjustmentPercent).HasPrecision(7, 4);
+        builder.Property(x => x.ListKind).HasConversion<string>().HasMaxLength(16).IsRequired();
 
         builder.HasMany(x => x.Items)
             .WithOne()
@@ -35,6 +38,7 @@ public sealed class PriceListItemConfiguration : IEntityTypeConfiguration<PriceL
         builder.ToTable("PriceListItems");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Price).HasPrecision(18, 4).IsRequired();
+        builder.Property(x => x.IsManualOverride).IsRequired();
         builder.Property(x => x.MinQuantity).HasPrecision(18, 4);
         builder.Property(x => x.SalePrice).HasPrecision(18, 4);
         builder.Property(x => x.CreatedByUserId).IsRequired().HasMaxLength(64);

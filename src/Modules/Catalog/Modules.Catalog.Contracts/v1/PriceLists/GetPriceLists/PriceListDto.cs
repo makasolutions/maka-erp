@@ -8,6 +8,8 @@ public sealed record PriceListDto(
     DateTime  ValidFrom,
     DateTime? ValidTo,
     bool      IsActive,
+    bool      IsDefault,
+    decimal?  AdjustmentPercent,
     int       ItemCount,
     DateTime  CreatedAtUtc,
     DateTime? UpdatedAtUtc);

@@ -8,6 +8,8 @@ public sealed record PriceListDetailDto(
     DateTime  ValidFrom,
     DateTime? ValidTo,
     bool      IsActive,
+    bool      IsDefault,
+    decimal?  AdjustmentPercent,
     DateTime  CreatedAtUtc,
     DateTime? UpdatedAtUtc,
     IReadOnlyList<PriceListItemDto> Items);
@@ -18,6 +20,7 @@ public sealed record PriceListItemDto(
     string?   VariationSku,
     decimal   Price,
     decimal?  MinQuantity,
+    bool      IsManualOverride,
     decimal?  SalePrice,
     DateTime? SalePriceFrom,
     DateTime? SalePriceTo,

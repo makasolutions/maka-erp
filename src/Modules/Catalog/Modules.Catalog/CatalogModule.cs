@@ -64,6 +64,7 @@ using FSH.Modules.Catalog.Features.v1.Categories.RestoreCategory;
 using FSH.Modules.Catalog.Features.v1.Categories.UpdateCategory;
 using FSH.Modules.Catalog.Features.v1.PriceLists.AddPriceListItem;
 using FSH.Modules.Catalog.Features.v1.PriceLists.CreatePriceList;
+using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceList;
 using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceListById;
 using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceLists;
 using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceListItem;
@@ -230,6 +231,7 @@ public sealed class CatalogModule : IModule
         priceLists.MapGetPriceListsEndpoint();
         priceLists.MapGetPriceListByIdEndpoint();
         priceLists.MapCreatePriceListEndpoint();
+        priceLists.MapUpdatePriceListEndpoint();
         priceLists.MapAddPriceListItemEndpoint();
         priceLists.MapUpdatePriceListItemEndpoint();
 

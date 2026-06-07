@@ -5,9 +5,6 @@ namespace FSH.Modules.Catalog.Features.v1.PriceLists.CreatePriceList;
 
 public sealed class CreatePriceListCommandValidator : AbstractValidator<CreatePriceListCommand>
 {
-    internal static readonly string[] ValidSegments =
-        ["retail", "wholesale", "vip", "b2b", "dropshipping"];
-
     public CreatePriceListCommandValidator()
     {
         RuleFor(x => x.Name)
@@ -18,9 +15,23 @@ public sealed class CreatePriceListCommandValidator : AbstractValidator<CreatePr
             .MaximumLength(512)
             .When(x => x.Description is not null);
 
+        // Free-form segment (Retail, Mayorista, MercadoLibre…) — lowercased in the domain.
         RuleFor(x => x.CustomerSegment)
             .NotEmpty()
-            .Must(s => ValidSegments.Contains(s.Trim().ToLowerInvariant()))
-            .WithMessage($"CustomerSegment debe ser uno de: {string.Join(", ", ValidSegments)}");
+            .MaximumLength(32);
+
+        RuleFor(x => x.AdjustmentPercent)
+            .InclusiveBetween(-100m, 1000m)
+            .When(x => x.AdjustmentPercent.HasValue);
+
+        // The default list never carries a %.
+        RuleFor(x => x.AdjustmentPercent)
+            .Null()
+            .When(x => x.IsDefault)
+            .WithMessage("La lista por defecto no lleva porcentaje.");
+
+        RuleFor(x => x.ValidTo)
+            .GreaterThan(x => x.ValidFrom!.Value)
+            .When(x => x.ValidTo.HasValue && x.ValidFrom.HasValue);
     }
 }

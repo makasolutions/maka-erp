@@ -40,6 +40,7 @@ public sealed class GetPriceListByIdQueryHandler(CatalogDbContext db)
                 skus.TryGetValue(i.VariationId, out var sku) ? sku : null,
                 i.Price,
                 i.MinQuantity,
+                i.IsManualOverride,
                 i.SalePrice,
                 i.SalePriceFrom,
                 i.SalePriceTo,
@@ -55,6 +56,8 @@ public sealed class GetPriceListByIdQueryHandler(CatalogDbContext db)
             priceList.ValidFrom,
             priceList.ValidTo,
             priceList.IsActive,
+            priceList.IsDefault,
+            priceList.AdjustmentPercent,
             priceList.CreatedAtUtc,
             priceList.UpdatedAtUtc,
             items);
