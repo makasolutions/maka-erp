@@ -7,10 +7,10 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
-  addBundleItem, addProductCode, createBrand, createCategory, createProduct, getBundleItems,
-  getCategoryTree, getDefaultVariation, getProductById, getProductCodes, getShippingClasses,
-  getTaxRates, getVariations, removeBundleItem, removeProductCode, searchBrands, searchProducts,
-  setProductCategories, updateProduct,
+  addBundleItem, addPriceListItem, addProductCode, createBrand, createCategory, createProduct, getBundleItems,
+  getCategoryTree, getDefaultVariation, getPriceListById, getPriceLists, getProductById, getProductCodes,
+  getShippingClasses, getTaxRates, getVariations, removeBundleItem, removeProductCode, searchBrands,
+  searchProducts, setProductCategories, updatePriceListItem, updateProduct,
   type BrandDto, type CategoryDto, type ProductType, type VariationDto,
 } from "@/api/catalog";
 import { PRODUCT_CODE_TYPES, validateProductCode, type ProductCodeType } from "@/lib/product-codes";
@@ -25,7 +25,7 @@ import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list"
 import { MakaGridClient, MakaRichTextEditor } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
-import { describe, slugify } from "@/lib/list-helpers";
+import { derivePrice, describe, formatMoney, slugify } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -264,15 +264,22 @@ export function ProductFormPage() {
           </div>
         )}
         {currentStep === "specs" && (
-          <SpecsStep
-            technicalSpecs={technicalSpecs} setTechnicalSpecs={setTechnicalSpecs}
-            specs={specs} setSpecs={setSpecs} specsValid={specsValid}
-            taxRateId={taxRateId} setTaxRateId={setTaxRateId}
-            shippingClassId={shippingClassId} setShippingClassId={setShippingClassId}
-            weight={weight} setWeight={setWeight} weightUnit={weightUnit} setWeightUnit={setWeightUnit}
-            dimL={dimL} setDimL={setDimL} dimW={dimW} setDimW={setDimW} dimH={dimH} setDimH={setDimH}
-            dimUnit={dimUnit} setDimUnit={setDimUnit}
-          />
+          <div className="space-y-8">
+            <SpecsStep
+              technicalSpecs={technicalSpecs} setTechnicalSpecs={setTechnicalSpecs}
+              specs={specs} setSpecs={setSpecs} specsValid={specsValid}
+              taxRateId={taxRateId} setTaxRateId={setTaxRateId}
+              shippingClassId={shippingClassId} setShippingClassId={setShippingClassId}
+              weight={weight} setWeight={setWeight} weightUnit={weightUnit} setWeightUnit={setWeightUnit}
+              dimL={dimL} setDimL={setDimL} dimW={dimW} setDimW={setDimW} dimH={dimH} setDimH={setDimH}
+              dimUnit={dimUnit} setDimUnit={setDimUnit}
+            />
+            {productId && type !== "Variable" && (
+              <div className="border-t border-[var(--color-border)] pt-6">
+                <PriceListsInputs productId={productId} canEdit={canEdit} />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -418,6 +425,11 @@ function GeneralStep({
           <DefaultVariationCodes productId={productId} canEdit={canEdit} />
         </div>
       )}
+      {productId && type !== "Variable" && (
+        <div className="border-t border-[var(--color-border)] pt-6">
+          <PriceListsInputs productId={productId} canEdit={canEdit} />
+        </div>
+      )}
       {productId && type === "Variable" && (
         <p className="border-t border-[var(--color-border)] pt-6 text-[12.5px] text-[var(--color-muted-foreground)]">
           {t("wizard.variableOnly")}
@@ -434,6 +446,137 @@ function flatten(nodes: CategoryDto[], depth = 0, acc: FlatCat[] = []): FlatCat[
     if (n.children?.length) flatten(n.children, depth + 1, acc);
   }
   return acc;
+}
+
+// ── Price per list for the default variation (Fase 3) ──
+// The default list drives the others: editing the base price recomputes the
+// derived lists (suggested, rounded, editable). Each derived input the user
+// edits becomes a manual override.
+function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+
+  const defVarQuery = useQuery({
+    queryKey: ["catalog", "default-variation", productId],
+    queryFn: () => getDefaultVariation(productId),
+  });
+  const variationId = defVarQuery.data?.id;
+
+  const listsQuery = useQuery({
+    queryKey: ["catalog", "price-lists", "active"],
+    queryFn: () => getPriceLists({ pageSize: 200, isActive: true, sort: "name" }),
+  });
+  const lists = useMemo(() => {
+    const items = listsQuery.data?.items ?? [];
+    return [...items].sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || a.name.localeCompare(b.name));
+  }, [listsQuery.data]);
+  const defaultList = lists.find((l) => l.isDefault);
+  const listIdsKey = lists.map((l) => l.id).join(",");
+
+  // Current item price + itemId per list for this variation.
+  const pricesQuery = useQuery({
+    queryKey: ["catalog", "product-list-prices", productId, variationId, listIdsKey],
+    enabled: !!variationId && lists.length > 0,
+    queryFn: async () => {
+      const details = await Promise.all(lists.map((l) => getPriceListById(l.id)));
+      const out: Record<string, { price: number | null; itemId: string | null; override: boolean }> = {};
+      details.forEach((d, i) => {
+        const item = d.items.find((it) => it.variationId === variationId);
+        out[lists[i].id] = { price: item?.price ?? null, itemId: item?.id ?? null, override: item?.isManualOverride ?? false };
+      });
+      return out;
+    },
+  });
+
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (pricesQuery.data) {
+      const v: Record<string, string> = {};
+      const tt: Record<string, boolean> = {};
+      for (const [id, info] of Object.entries(pricesQuery.data)) {
+        v[id] = info.price != null ? String(info.price) : "";
+        tt[id] = info.override;
+      }
+      setValues(v);
+      setTouched(tt);
+    }
+  }, [pricesQuery.data]);
+
+  const setBase = (raw: string) => {
+    setValues((prev) => {
+      const next = { ...prev };
+      if (defaultList) next[defaultList.id] = raw;
+      const base = Number(raw);
+      if (defaultList && raw && !Number.isNaN(base)) {
+        for (const l of lists) {
+          if (l.isDefault || l.adjustmentPercent == null) continue;
+          if (touched[l.id]) continue; // respect manual override
+          next[l.id] = String(derivePrice(base, l.adjustmentPercent));
+        }
+      }
+      return next;
+    });
+  };
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      if (!variationId) return;
+      const info = pricesQuery.data ?? {};
+      for (const l of lists) {
+        const raw = values[l.id];
+        if (raw == null || raw === "") continue;
+        const price = Number(raw);
+        if (Number.isNaN(price)) continue;
+        const cur = info[l.id];
+        if (cur?.itemId) {
+          if (cur.price !== price) await updatePriceListItem(l.id, cur.itemId, { price });
+        } else {
+          await addPriceListItem(l.id, { variationId, price });
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success(tc("feedback.updated"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "product-list-prices", productId] });
+      queryClient.invalidateQueries({ queryKey: ["catalog", "price-lists"] });
+    },
+    onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
+  });
+
+  if (!variationId || lists.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("priceLists.productPricesTitle")}</h3>
+        {!defaultList && <span className="text-[12px] text-[var(--color-warning)]">{t("priceLists.noDefault")}</span>}
+      </div>
+      <p className="text-[12px] text-[var(--color-muted-foreground)]">{t("priceLists.productPricesHint")}</p>
+      <FormGrid>
+        {lists.map((l) => (
+          <Field key={l.id} id={`plp-${l.id}`} span={4}
+            label={`${l.name}${l.isDefault ? " ★" : l.adjustmentPercent != null ? ` (${l.adjustmentPercent > 0 ? "+" : ""}${l.adjustmentPercent}%)` : ""}`}>
+            <Input id={`plp-${l.id}`} type="number" min={0} step="1000" disabled={!canEdit}
+              value={values[l.id] ?? ""}
+              onChange={(e) => {
+                if (l.isDefault) { setBase(e.target.value); }
+                else { setValues((p) => ({ ...p, [l.id]: e.target.value })); setTouched((p) => ({ ...p, [l.id]: true })); }
+              }} />
+            {values[l.id] && <p className="mt-0.5 text-[11px] text-[var(--color-muted-foreground)]">{formatMoney(Number(values[l.id]))}</p>}
+          </Field>
+        ))}
+      </FormGrid>
+      {canEdit && (
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" onClick={() => saveM.mutate()} disabled={saveM.isPending}>
+            {saveM.isPending ? tc("feedback.saving") : t("priceLists.savePrices")}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Codes manager for the default variation (SKU + EAN/UPC/GTIN/ISBN…) ──

@@ -77,6 +77,24 @@ export function slugify(value: string) {
  * Pass `{ code: false }` to suppress the trailing ISO code even when a currency
  * is given (single-currency screens where the code is redundant).
  */
+
+/**
+ * Suggested-price rounding for derived price lists (mirror of backend
+ * CatalogPricing.RoundSuggested): round to the nearest $10.000 then subtract
+ * $1.000. Never negative. The result is a suggestion the user can edit.
+ */
+export function roundSuggested(value: number): number {
+  if (value <= 0) return 0;
+  const rounded = Math.round(value / 10000) * 10000;
+  const result = rounded - 1000;
+  return result < 0 ? 0 : result;
+}
+
+/** Derived price = base × (1 + pct/100), rounded. */
+export function derivePrice(base: number, pct: number): number {
+  return roundSuggested(base * (1 + pct / 100));
+}
+
 export function formatMoney(
   amount: number,
   currency?: string | null,

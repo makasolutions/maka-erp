@@ -641,7 +641,11 @@
       "validity": "Validity",
       "active": "Active",
       "description": "Description",
-      "validFrom": "Valid from"
+      "validFrom": "Valid from",
+      "validTo": "Valid until",
+      "isDefault": "Default list",
+      "adjustmentPercent": "Adjust %",
+      "defaultOrPercent": "Default / %"
     },
     "actions": {
       "create": "New list"
@@ -668,7 +672,15 @@
     "list": "List",
     "editPrice": "Edit price",
     "changeReason": "Change reason",
-    "changeReasonHint": "Recorded in the price history."
+    "changeReasonHint": "Recorded in the price history.",
+    "validToHint": "Optional.",
+    "isDefaultHint": "The main one with base prices (unique).",
+    "adjustmentHint": "Over the default list: + markup, − discount.",
+    "productPricesTitle": "Prices per list",
+    "productPricesHint": "Change the default list price and the others are computed (suggested, editable).",
+    "savePrices": "Save prices",
+    "noDefault": "No default list configured.",
+    "productPricesEmpty": "No active price lists."
   },
   "marketplace": {
     "Google": "Google",

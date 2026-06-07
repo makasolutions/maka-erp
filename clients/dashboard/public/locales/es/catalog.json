@@ -641,7 +641,11 @@
       "validity": "Vigencia",
       "active": "Activa",
       "description": "Descripción",
-      "validFrom": "Vigente desde"
+      "validFrom": "Vigente desde",
+      "validTo": "Vigente hasta",
+      "isDefault": "Lista por defecto",
+      "adjustmentPercent": "Ajuste %",
+      "defaultOrPercent": "Defecto / %"
     },
     "actions": {
       "create": "Nueva lista"
@@ -668,7 +672,15 @@
     "list": "Lista",
     "editPrice": "Editar precio",
     "changeReason": "Motivo del cambio",
-    "changeReasonHint": "Queda en el historial de precios."
+    "changeReasonHint": "Queda en el historial de precios.",
+    "validToHint": "Opcional.",
+    "isDefaultHint": "La principal con los precios base (única).",
+    "adjustmentHint": "Sobre la lista por defecto: + incremento, − descuento.",
+    "productPricesTitle": "Precios por lista",
+    "productPricesHint": "Cambia el precio de la lista por defecto y los demás se calculan (sugeridos, editables).",
+    "savePrices": "Guardar precios",
+    "noDefault": "No hay lista por defecto configurada.",
+    "productPricesEmpty": "No hay listas de precios activas."
   },
   "marketplace": {
     "Google": "Google",

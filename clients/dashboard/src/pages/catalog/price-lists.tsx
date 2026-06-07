@@ -66,6 +66,14 @@ function ValidityCell(row: PriceListRow) {
 function ActiveCell(row: PriceListRow) {
   return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.isActive ? "✓" : "—"}</EntityStatusBadge>;
 }
+function DefaultCell(row: PriceListRow) {
+  if (row.isDefault) return <EntityStatusBadge tone="success">★</EntityStatusBadge>;
+  if (row.adjustmentPercent != null) {
+    const p = row.adjustmentPercent;
+    return <span className={`text-[12.5px] font-medium tabular-nums ${p >= 0 ? "text-[var(--color-warning)]" : "text-[var(--color-success)]"}`}>{p > 0 ? "+" : ""}{p}%</span>;
+  }
+  return <span className="text-[12px] text-[var(--color-muted-foreground)]">—</span>;
+}
 
 // ───────────────────────────────────────────────────────────────────────
 //  Page
@@ -109,6 +117,8 @@ export function PriceListsPage() {
     { field: "name", headerText: t("priceLists.fields.name"), template: NameCell as any, minWidth: 220 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "customerSegment", headerText: t("priceLists.fields.segment"), template: SegmentCell as any, width: 130, textAlign: "Center" },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { field: "isDefault", headerText: t("priceLists.fields.defaultOrPercent"), template: DefaultCell as any, width: 120, textAlign: "Center", allowSorting: false },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "itemCount", headerText: t("priceLists.fields.items"), template: ItemsCell as any, width: 90, textAlign: "Center" },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,10 +206,13 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
   const [name, setName] = useState("");
   const [segment, setSegment] = useState<string | null>("Retail");
   const [validFrom, setValidFrom] = useState("");
+  const [validTo, setValidTo] = useState("");
   const [description, setDescription] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+  const [adjustmentPercent, setAdjustmentPercent] = useState("");
 
   useEffect(() => {
-    if (isOpen) { setName(""); setSegment("Retail"); setValidFrom(""); setDescription(""); }
+    if (isOpen) { setName(""); setSegment("Retail"); setValidFrom(""); setValidTo(""); setDescription(""); setIsDefault(false); setAdjustmentPercent(""); }
   }, [isOpen]);
 
   const createM = useMutation({
@@ -207,7 +220,10 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
       name: name.trim(),
       customerSegment: (segment ?? "Retail").trim(),
       validFrom: validFrom ? new Date(validFrom).toISOString() : null,
+      validTo: validTo ? new Date(validTo).toISOString() : null,
       description: description.trim() || null,
+      isDefault,
+      adjustmentPercent: isDefault || !adjustmentPercent ? null : Number(adjustmentPercent),
     }),
     onSuccess: () => {
       toast.success(tc("feedback.created"));
@@ -242,7 +258,24 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
               <Field id="pl-from" span={6} label={t("priceLists.fields.validFrom")} hint={t("priceLists.validFromHint")}>
                 <Input id="pl-from" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
               </Field>
-              <Field id="pl-desc" span={12} label={t("priceLists.fields.description")}>
+              <Field id="pl-to" span={6} label={t("priceLists.fields.validTo")} hint={t("priceLists.validToHint")}>
+                <Input id="pl-to" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+              </Field>
+              <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)}
+                    className="size-4 accent-[var(--color-primary)]" />
+                  {t("priceLists.fields.isDefault")}
+                  <span className="text-[12px] font-normal text-[var(--color-muted-foreground)]">— {t("priceLists.isDefaultHint")}</span>
+                </label>
+              </div>
+              {!isDefault && (
+                <Field id="pl-pct" span={6} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
+                  <Input id="pl-pct" type="number" step="0.01" value={adjustmentPercent}
+                    onChange={(e) => setAdjustmentPercent(e.target.value)} placeholder="-3 / 15" />
+                </Field>
+              )}
+              <Field id="pl-desc" span={isDefault ? 12 : 6} label={t("priceLists.fields.description")}>
                 <Input id="pl-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>

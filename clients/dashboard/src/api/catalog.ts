@@ -1101,6 +1101,8 @@ export type PriceListDto = {
   validFrom: string;
   validTo?: string | null;
   isActive: boolean;
+  isDefault: boolean;
+  adjustmentPercent?: number | null;
   itemCount: number;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
@@ -1112,6 +1114,7 @@ export type PriceListItemDto = {
   variationSku?: string | null;
   price: number;
   minQuantity?: number | null;
+  isManualOverride: boolean;
   salePrice?: number | null;
   salePriceFrom?: string | null;
   salePriceTo?: string | null;
@@ -1161,13 +1164,35 @@ export type CreatePriceListInput = {
   name: string;
   customerSegment: string;
   validFrom?: string | null;
+  validTo?: string | null;
   description?: string | null;
+  isDefault?: boolean;
+  adjustmentPercent?: number | null;
 };
 
 export function createPriceList(input: CreatePriceListInput): Promise<string> {
   return apiFetch<string>("/api/v1/catalog/price-lists", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export type UpdatePriceListInput = {
+  priceListId: string;
+  name: string;
+  description?: string | null;
+  validFrom: string;
+  validTo?: string | null;
+  isActive: boolean;
+  isDefault: boolean;
+  adjustmentPercent?: number | null;
+};
+
+export function updatePriceList(input: UpdatePriceListInput): Promise<string> {
+  const { priceListId, ...body } = input;
+  return apiFetch<string>(`/api/v1/catalog/price-lists/${encodeURIComponent(priceListId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ id: priceListId, ...body }),
   });
 }
 
