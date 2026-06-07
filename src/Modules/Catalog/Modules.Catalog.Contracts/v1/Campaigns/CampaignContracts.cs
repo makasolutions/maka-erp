@@ -18,3 +18,11 @@ public sealed record SetCampaignItemsCommand(
 
 /// <summary>Cancel a campaign: delete its scheduled jobs and mark it cancelled.</summary>
 public sealed record CancelCampaignCommand(Guid CampaignId) : ICommand<Guid>;
+
+/// <summary>Edit a campaign's name/validity. Reschedules the Hangfire start/end jobs.</summary>
+public sealed record UpdateCampaignCommand(
+    Guid      Id,
+    string    Name,
+    DateTime  ValidFrom,
+    DateTime  ValidTo,
+    string?   Description = null) : ICommand<Guid>;

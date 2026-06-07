@@ -66,6 +66,7 @@ using FSH.Modules.Catalog.Features.v1.PriceLists.AddPriceListItem;
 using FSH.Modules.Catalog.Features.v1.PriceLists.CreatePriceList;
 using FSH.Modules.Catalog.Features.v1.PriceLists.UpdatePriceList;
 using FSH.Modules.Catalog.Features.v1.Campaigns.CreateCampaign;
+using FSH.Modules.Catalog.Features.v1.Campaigns.UpdateCampaign;
 using FSH.Modules.Catalog.Features.v1.Campaigns.SetCampaignItems;
 using FSH.Modules.Catalog.Features.v1.Campaigns.CancelCampaign;
 using FSH.Modules.Catalog.Features.v1.PriceLists.GetPriceListById;
@@ -245,6 +246,7 @@ public sealed class CatalogModule : IModule
             .WithApiVersionSet(apiVersionSet);
 
         campaigns.MapCreateCampaignEndpoint();
+        campaigns.MapUpdateCampaignEndpoint();
         campaigns.MapSetCampaignItemsEndpoint();
         campaigns.MapCancelCampaignEndpoint();
 
