@@ -468,7 +468,8 @@
       "sortOrder": "Orden",
       "values": "Valores",
       "valueCount": "N.º de valores",
-      "color": "Color"
+      "color": "Color",
+      "categories": "Categorías"
     },
     "type": {
       "Text": "Texto",
@@ -507,7 +508,9 @@
       "name": "Valor",
       "addValue": "Agregar valor",
       "removeConfirm": "¿Eliminar este valor?"
-    }
+    },
+    "categoriesHint": "El producto de estas categorías precargará este atributo (override libre).",
+    "noCategories": "No hay categorías. Crea categorías primero."
   },
   "detail": {
     "tabs": {
@@ -524,7 +527,10 @@
       "applied": "Atributos aplicados",
       "applyFailed": "No se pudieron aplicar los atributos",
       "noAttributes": "No hay atributos. Créalos primero en Catálogo → Atributos.",
-      "selectValues": "Selecciona al menos un valor"
+      "selectValues": "Selecciona al menos un valor",
+      "showAll": "Ver todos",
+      "introCategory": "Atributos sugeridos para la categoría del producto. Activa «Ver todos» para añadir cualquier otro.",
+      "noneForCategory": "La categoría no tiene atributos asociados. Activa «Ver todos» o asígnalos en Atributos."
     },
     "tags": {
       "title": "Etiquetas",

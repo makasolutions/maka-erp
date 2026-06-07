@@ -778,6 +778,7 @@ export type AttributeDto = {
   sortOrder: number;
   valueCount: number;
   wooCommerceId: number | null;
+  categoryIds: string[];
 };
 
 export type AttributeDetailDto = Omit<AttributeDto, "valueCount"> & {
@@ -792,6 +793,7 @@ export type SearchAttributesParams = {
   sort?: string;
   search?: string;
   isUsedForVariations?: boolean;
+  categoryId?: string;
 };
 
 export type CreateAttributeInput = {
@@ -801,6 +803,7 @@ export type CreateAttributeInput = {
   isVisibleOnProduct?: boolean;
   isUsedForVariations?: boolean;
   sortOrder?: number;
+  categoryIds?: string[];
 };
 
 export type UpdateAttributeInput = {
@@ -810,6 +813,7 @@ export type UpdateAttributeInput = {
   isVisibleOnProduct: boolean;
   isUsedForVariations: boolean;
   sortOrder: number;
+  categoryIds?: string[];
 };
 
 export type AttributeValueInput = {
@@ -829,6 +833,7 @@ export function searchAttributes(
   if (params.search) qs.set("search", params.search);
   if (params.isUsedForVariations !== undefined)
     qs.set("isUsedForVariations", String(params.isUsedForVariations));
+  if (params.categoryId) qs.set("categoryId", params.categoryId);
   const q = qs.toString();
   return apiFetch<PagedResponse<AttributeDto>>(
     `/api/v1/catalog/attributes${q ? `?${q}` : ""}`,

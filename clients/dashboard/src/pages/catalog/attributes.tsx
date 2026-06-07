@@ -13,12 +13,14 @@ import {
   createAttribute,
   deleteAttribute,
   getAttributeById,
+  getCategoryTree,
   removeAttributeValue,
   searchAttributes,
   updateAttribute,
   ATTRIBUTE_TYPES,
   type AttributeDto,
   type CatalogAttributeType,
+  type CategoryDto,
   type CreateAttributeInput,
   type UpdateAttributeInput,
 } from "@/api/catalog";
@@ -60,10 +62,19 @@ type EditorState =
   | { mode: "edit"; attribute: AttributeDto }
   | { mode: "delete"; attribute: AttributeDto };
 
-type AttributeRow = AttributeDto & { typeLabel: string; variationsLabel: string };
+type AttributeRow = AttributeDto & { typeLabel: string; variationsLabel: string; categoryLabel: string };
 
 function triToBool(v: string | null): boolean | undefined {
   return v === null ? undefined : v === "true";
+}
+
+type FlatCategory = { id: string; label: string };
+function flattenCategories(nodes: CategoryDto[], depth = 0, acc: FlatCategory[] = []): FlatCategory[] {
+  for (const n of nodes) {
+    acc.push({ id: n.id, label: `${"— ".repeat(depth)}${n.name}` });
+    if (n.children?.length) flattenCategories(n.children, depth + 1, acc);
+  }
+  return acc;
 }
 
 // ── Cell templates ──────────────────────────────────────────────────────
@@ -84,6 +95,14 @@ function AttrVariationsCell(row: AttributeRow) {
     <EntityStatusBadge tone={row.isUsedForVariations ? "success" : "default"}>
       {row.variationsLabel}
     </EntityStatusBadge>
+  );
+}
+function AttrCategoriesCell(row: AttributeRow) {
+  if (!row.categoryLabel) return <span className="text-[12px] text-[var(--color-muted-foreground)]">—</span>;
+  return (
+    <span className="truncate text-[12px] text-[var(--color-foreground)]" title={row.categoryLabel}>
+      {row.categoryLabel}
+    </span>
   );
 }
 function AttrValueCountCell(row: AttributeRow) {
@@ -130,6 +149,17 @@ export function AttributesPage() {
     placeholderData: keepPreviousData,
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog", "categories", "tree"],
+    queryFn: () => getCategoryTree(),
+    placeholderData: keepPreviousData,
+  });
+  const categoryNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of flattenCategories(categoriesQuery.data ?? [])) map.set(c.id, c.label.replace(/—\s/g, ""));
+    return map;
+  }, [categoriesQuery.data]);
+
   const allItems = query.data?.items ?? [];
 
   const typeLabel = (type: CatalogAttributeType) => t(`attributes.type.${type}`);
@@ -147,9 +177,10 @@ export function AttributesPage() {
         ...a,
         typeLabel: typeLabel(a.type),
         variationsLabel: a.isUsedForVariations ? tc("status.yes") : tc("status.no"),
+        categoryLabel: (a.categoryIds ?? []).map((id) => categoryNames.get(id)).filter(Boolean).join(", "),
       }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allItems, nameFilter, variationsFilter, tc, t]);
+  }, [allItems, nameFilter, variationsFilter, tc, t, categoryNames]);
 
   const kpiTotal = query.data?.totalCount ?? allItems.length;
   const kpiForVariations = allItems.filter((a) => a.isUsedForVariations).length;
@@ -160,6 +191,8 @@ export function AttributesPage() {
       { field: "name", headerText: t("attributes.fields.name"), template: AttrNameCell as any, minWidth: 220 },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "type", headerText: t("attributes.fields.type"), template: AttrTypeCell as any, width: 120, allowSorting: false, textAlign: "Center" },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { field: "categoryLabel", headerText: t("attributes.fields.categories"), template: AttrCategoriesCell as any, minWidth: 180, allowSorting: false },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: "isUsedForVariations", headerText: t("attributes.fields.usedForVariations"), template: AttrVariationsCell as any, width: 150, allowSorting: false, textAlign: "Center" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -272,6 +305,7 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
       isUsedForVariations: attribute?.isUsedForVariations ?? true,
       isVisibleOnProduct: attribute?.isVisibleOnProduct ?? true,
       sortOrder: attribute?.sortOrder ?? 0,
+      categoryIds: attribute?.categoryIds ?? [],
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [attribute?.id],
@@ -282,6 +316,7 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
   const [isUsedForVariations, setIsUsedForVariations] = useState(initial.isUsedForVariations);
   const [isVisibleOnProduct, setIsVisibleOnProduct] = useState(initial.isVisibleOnProduct);
   const [sortOrder, setSortOrder] = useState(initial.sortOrder);
+  const [categoryIds, setCategoryIds] = useState<string[]>(initial.categoryIds);
 
   useEffect(() => {
     if (isOpen) {
@@ -290,8 +325,19 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
       setIsUsedForVariations(initial.isUsedForVariations);
       setIsVisibleOnProduct(initial.isVisibleOnProduct);
       setSortOrder(initial.sortOrder);
+      setCategoryIds(initial.categoryIds);
     }
   }, [isOpen, initial]);
+
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog", "categories", "tree"],
+    queryFn: () => getCategoryTree(),
+    enabled: isOpen,
+    placeholderData: keepPreviousData,
+  });
+  const flatCategories = useMemo(() => flattenCategories(categoriesQuery.data ?? []), [categoriesQuery.data]);
+  const toggleCategory = (id: string, on: boolean) =>
+    setCategoryIds((prev) => (on ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
 
   const slugPreview = useMemo(() => slugify(name) || "—", [name]);
 
@@ -330,6 +376,7 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
         isUsedForVariations,
         isVisibleOnProduct,
         sortOrder,
+        categoryIds,
       });
     } else {
       createMutation.mutate({
@@ -338,6 +385,7 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
         isUsedForVariations,
         isVisibleOnProduct,
         sortOrder,
+        categoryIds,
       });
     }
   };
@@ -395,6 +443,28 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
                   value={sortOrder}
                   onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
                 />
+              </Field>
+
+              <Field id="attr-categories" span={12} label={t("attributes.fields.categories")} hint={t("attributes.categoriesHint")}>
+                {flatCategories.length === 0 ? (
+                  <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("attributes.noCategories")}</p>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto rounded-md border border-[var(--color-border)] bg-[var(--color-background)] p-2">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+                      {flatCategories.map((c) => (
+                        <label key={c.id} className="flex items-center gap-2 text-[12.5px] text-[var(--color-foreground)]">
+                          <input
+                            type="checkbox"
+                            checked={categoryIds.includes(c.id)}
+                            onChange={(e) => toggleCategory(c.id, e.target.checked)}
+                            className="size-3.5 accent-[var(--color-primary)]"
+                          />
+                          <span className="truncate" title={c.label}>{c.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Field>
 
               <div className="col-span-1 flex flex-col gap-3 sm:col-span-12">

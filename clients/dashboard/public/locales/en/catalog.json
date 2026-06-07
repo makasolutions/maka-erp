@@ -468,7 +468,8 @@
       "sortOrder": "Order",
       "values": "Values",
       "valueCount": "# of values",
-      "color": "Color"
+      "color": "Color",
+      "categories": "Categories"
     },
     "type": {
       "Text": "Text",
@@ -507,7 +508,9 @@
       "name": "Value",
       "addValue": "Add value",
       "removeConfirm": "Remove this value?"
-    }
+    },
+    "categoriesHint": "Products in these categories will preload this attribute (free override).",
+    "noCategories": "No categories yet. Create categories first."
   },
   "detail": {
     "tabs": {
@@ -524,7 +527,10 @@
       "applied": "Attributes applied",
       "applyFailed": "Could not apply attributes",
       "noAttributes": "No attributes yet. Create them first in Catalog → Attributes.",
-      "selectValues": "Select at least one value"
+      "selectValues": "Select at least one value",
+      "showAll": "Show all",
+      "introCategory": "Attributes suggested for the product category. Toggle “Show all” to add any other.",
+      "noneForCategory": "This category has no attributes yet. Toggle “Show all” or assign them in Attributes."
     },
     "tags": {
       "title": "Tags",

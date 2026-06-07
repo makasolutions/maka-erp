@@ -251,9 +251,9 @@ export function ProductFormPage() {
           />
         )}
         {currentStep === "attributes" && productId && (
-          type === "Variable" ? <VariationsStep productId={productId} canEdit={canEdit} />
+          type === "Variable" ? <VariationsStep productId={productId} canEdit={canEdit} categoryId={categoryId} />
           : type === "Bundle" ? <BundleStep productId={productId} canEdit={canEdit} />
-          : <AttributesOnlyStep productId={productId} canEdit={canEdit} />
+          : <AttributesOnlyStep productId={productId} canEdit={canEdit} categoryId={categoryId} />
         )}
         {currentStep === "media" && productId && (
           <div className="space-y-8">
@@ -558,7 +558,7 @@ function DescriptionStep({
 //  Step 3 — Attributes + variations (Variable only)
 // ───────────────────────────────────────────────────────────────────────────
 
-function VariationsStep({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+function VariationsStep({ productId, canEdit, categoryId }: { productId: string; canEdit: boolean; categoryId?: string | null }) {
   const { t } = useTranslation("catalog");
   const { t: tc } = useTranslation("common");
   const [editor, setEditor] = useState<VarEditor>({ mode: "closed" });
@@ -587,7 +587,7 @@ function VariationsStep({ productId, canEdit }: { productId: string; canEdit: bo
 
   return (
     <div className="space-y-8">
-      <ProductAttributesTab productId={productId} canEdit={canEdit} />
+      <ProductAttributesTab productId={productId} canEdit={canEdit} categoryId={categoryId} />
 
       <div className="border-t border-[var(--color-border)] pt-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -626,12 +626,12 @@ function VariationsStep({ productId, canEdit }: { productId: string; canEdit: bo
 //  Step 3 (Simple / Service) — attributes only (no variations)
 // ───────────────────────────────────────────────────────────────────────────
 
-function AttributesOnlyStep({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+function AttributesOnlyStep({ productId, canEdit, categoryId }: { productId: string; canEdit: boolean; categoryId?: string | null }) {
   const { t } = useTranslation("catalog");
   return (
     <div className="space-y-4">
       <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("wizard.typeHint.simpleAttr")}</p>
-      <ProductAttributesTab productId={productId} canEdit={canEdit} />
+      <ProductAttributesTab productId={productId} canEdit={canEdit} categoryId={categoryId} />
     </div>
   );
 }

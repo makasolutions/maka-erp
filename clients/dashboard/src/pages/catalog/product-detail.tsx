@@ -317,13 +317,18 @@ export function GenerateVariationsButton({ productId, disabled }: { productId: s
 //  Attributes tab — assign attributes + values, then generate
 // ───────────────────────────────────────────────────────────────────────────
 
-export function ProductAttributesTab({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+export function ProductAttributesTab({ productId, canEdit, categoryId }: { productId: string; canEdit: boolean; categoryId?: string | null }) {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
 
+  // When the product has a category, only its attributes show (template);
+  // "Ver todos" lets the user pick any attribute as a free override.
+  const [showAll, setShowAll] = useState(false);
+  const effectiveCategoryId = !showAll && categoryId ? categoryId : undefined;
+
   const attrsQuery = useQuery({
-    queryKey: ["catalog", "attributes", "list"],
-    queryFn: () => searchAttributes({ pageSize: 200, sort: "name" }),
+    queryKey: ["catalog", "attributes", "list", effectiveCategoryId ?? "all"],
+    queryFn: () => searchAttributes({ pageSize: 200, sort: "name", categoryId: effectiveCategoryId }),
   });
 
   // Selection state: attributeId -> { valueIds, forVariations }
@@ -358,22 +363,38 @@ export function ProductAttributesTab({ productId, canEdit }: { productId: string
     onError: (err) => toast.error(t("detail.attributes.applyFailed"), { description: describe(err) }),
   });
 
-  if (attrsQuery.isLoading) return <p className="text-[13px] text-[var(--color-muted-foreground)]">…</p>;
-  if (attributes.length === 0)
-    return <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("detail.attributes.noAttributes")}</p>;
-
   const canApply =
     Object.keys(selection).length > 0 &&
     Object.values(selection).every((s) => !s.forVariations || s.valueIds.size > 0);
 
+  const filteredByCategory = !!effectiveCategoryId;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <SlidersHorizontal className="size-4 text-[var(--color-muted-foreground)]" />
-        <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("detail.attributes.title")}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="size-4 text-[var(--color-muted-foreground)]" />
+          <h2 className="text-sm font-semibold text-[var(--color-foreground)]">{t("detail.attributes.title")}</h2>
+        </div>
+        {categoryId && (
+          <label className="flex items-center gap-2 text-[12.5px] text-[var(--color-foreground)]">
+            <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)}
+              className="size-3.5 accent-[var(--color-primary)]" />
+            {t("detail.attributes.showAll")}
+          </label>
+        )}
       </div>
-      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("detail.attributes.intro")}</p>
+      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">
+        {filteredByCategory ? t("detail.attributes.introCategory") : t("detail.attributes.intro")}
+      </p>
 
+      {attrsQuery.isLoading ? (
+        <p className="text-[13px] text-[var(--color-muted-foreground)]">…</p>
+      ) : attributes.length === 0 ? (
+        <p className="text-[13px] text-[var(--color-muted-foreground)]">
+          {filteredByCategory ? t("detail.attributes.noneForCategory") : t("detail.attributes.noAttributes")}
+        </p>
+      ) : (
       <div className="space-y-3">
         {attributes.map((attr) => (
           <AttributeAssignmentRow
@@ -402,8 +423,9 @@ export function ProductAttributesTab({ productId, canEdit }: { productId: string
           />
         ))}
       </div>
+      )}
 
-      {canEdit && (
+      {canEdit && attributes.length > 0 && (
         <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
           <Button onClick={() => applyMutation.mutate()} disabled={!canApply || applyMutation.isPending}>
             <Sparkles className="size-4" />
