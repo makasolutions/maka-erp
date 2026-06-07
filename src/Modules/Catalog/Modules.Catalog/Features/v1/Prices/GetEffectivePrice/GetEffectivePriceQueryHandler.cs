@@ -29,14 +29,20 @@ public sealed class GetEffectivePriceQueryHandler(CatalogDbContext db)
                && list.ListKind == PriceListKind.Campaign
                && list.CampaignStatus == CampaignStatus.Running
             orderby list.ValidFrom descending
-            select new { item.Price, list.Name, list.Id })
+            select new { item.Price, list.Name, list.Id, list.ValidFrom, list.ValidTo })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         if (campaign is not null)
+        {
+            // The struck-through original is the segment list price (if any).
+            var original = await ResolveAsync(query.VariationId, segment, now, cancellationToken).ConfigureAwait(false);
+            decimal listPrice = original?.Item.Price ?? campaign.Price;
             return new EffectivePriceDto(
-                query.VariationId, campaign.Price, campaign.Price, false,
-                "campaign", campaign.Name, campaign.Id, IsCampaign: true);
+                query.VariationId, campaign.Price, listPrice, false,
+                "campaign", campaign.Name, campaign.Id, IsCampaign: true,
+                CampaignFrom: campaign.ValidFrom, CampaignTo: campaign.ValidTo);
+        }
 
         var match = await ResolveAsync(query.VariationId, segment, now, cancellationToken).ConfigureAwait(false);
 

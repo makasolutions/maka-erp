@@ -8,4 +8,6 @@ public sealed record EffectivePriceDto(
     string  CustomerSegment,
     string  PriceListName,
     Guid    PriceListId,
-    bool    IsCampaign = false);
+    bool    IsCampaign = false,
+    DateTime? CampaignFrom = null,
+    DateTime? CampaignTo = null);

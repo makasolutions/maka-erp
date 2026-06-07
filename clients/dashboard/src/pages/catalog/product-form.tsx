@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Boxes, Check, FileText, Hash, ImageIcon, Layers, Plus, SlidersHorizontal, Trash2,
+  ArrowLeft, Boxes, Check, FileText, Hash, ImageIcon, Layers, Megaphone, Plus, SlidersHorizontal, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
   addBundleItem, addPriceListItem, addProductCode, changeProductType, createBrand, createCategory, createProduct, getBundleItems,
-  getCategoryTree, getDefaultVariation, getPriceListById, getPriceLists, getProductById, getProductCodes,
+  getCategoryTree, getDefaultVariation, getEffectivePrice, getPriceListById, getPriceLists, getProductById, getProductCodes,
   getShippingClasses, getTaxRates, getVariations, removeBundleItem, removeProductCode, searchBrands,
   searchProducts, setProductCategories, updatePriceListItem, updateProduct,
   type BrandDto, type CategoryDto, type ProductType, type VariationDto,
@@ -25,7 +25,7 @@ import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list"
 import { MakaCurrencyInput, MakaGridClient, MakaRichTextEditor } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
-import { deriveBaseFromDefault, describe, slugify } from "@/lib/list-helpers";
+import { deriveBaseFromDefault, describe, formatMoney, slugify, toTaxIncluded } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -505,6 +505,29 @@ function PriceWithTax({ id, value, onChange, disabled }: {
   );
 }
 
+// ── Campaign banner: shown when the product's default variation is in a running campaign ──
+function CampaignBanner({ variationId }: { variationId: string }) {
+  const { t } = useTranslation("catalog");
+  const q = useQuery({
+    queryKey: ["catalog", "effective-price", variationId, "Retail"],
+    queryFn: () => getEffectivePrice(variationId, "Retail"),
+    enabled: !!variationId,
+    retry: false,
+  });
+  const p = q.data;
+  if (!p?.isCampaign) return null;
+  const fmtD = (s?: string | null) => s ? new Date(s).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" }) : "—";
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-warning)] bg-[oklch(from_var(--color-warning)_l_c_h_/_0.08)] px-3 py-2 text-[12.5px]">
+      <Megaphone className="size-4 text-[var(--color-warning)]" />
+      <span className="font-semibold text-[var(--color-foreground)]">{t("campaigns.inCampaign")}: {p.priceListName}</span>
+      <span className="text-[var(--color-muted-foreground)]">{fmtD(p.campaignFrom)} → {fmtD(p.campaignTo)}</span>
+      <span className="font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(toTaxIncluded(p.effectivePrice))}</span>
+      <span className="text-[10.5px] uppercase text-[var(--color-muted-foreground)]">{t("priceLists.withTaxIncluded")}</span>
+    </div>
+  );
+}
+
 // ── Price per list for the default variation (Fase 3) ──
 // The default list drives the others: editing the base price recomputes the
 // derived lists (suggested, rounded, editable). Each derived input the user
@@ -613,6 +636,7 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
 
   return (
     <div className="space-y-3">
+      <CampaignBanner variationId={variationId} />
       {!hideTitle && (
         <>
           <div className="flex items-center gap-2">

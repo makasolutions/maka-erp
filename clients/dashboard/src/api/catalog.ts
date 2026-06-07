@@ -1163,6 +1163,8 @@ export type EffectivePriceDto = {
   priceListName: string;
   priceListId: string;
   isCampaign: boolean;
+  campaignFrom?: string | null;
+  campaignTo?: string | null;
 };
 
 export type GetPriceListsParams = {

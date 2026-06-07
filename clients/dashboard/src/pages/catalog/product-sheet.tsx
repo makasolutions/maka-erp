@@ -9,7 +9,13 @@ import {
 } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
 import { Combobox, EntityStatusBadge } from "@/components/list";
-import { formatMoney } from "@/lib/list-helpers";
+import { formatMoney, toTaxIncluded } from "@/lib/list-helpers";
+
+function fmtDate(s?: string | null): string {
+  if (!s) return "—";
+  try { return new Date(s).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" }); }
+  catch { return "—"; }
+}
 import { ShareMenu } from "@/components/catalog/share-menu";
 import { tokenStore } from "@/auth/token-store";
 import { cn } from "@/lib/cn";
@@ -243,19 +249,23 @@ function EffectivePriceSection({ variationId }: { variationId: string }) {
       {priceQ.isError || !p ? (
         <span className="text-[13px] text-[var(--color-muted-foreground)]">—</span>
       ) : (
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="font-display text-[22px] font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(p.effectivePrice)}</span>
-          {p.isCampaign && (
-            <EntityStatusBadge tone="warning">{t("campaigns.inCampaign")}</EntityStatusBadge>
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="font-display text-[22px] font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(toTaxIncluded(p.effectivePrice))}</span>
+            {(p.isCampaign || p.isSalePrice) && p.listPrice !== p.effectivePrice && (
+              <span className="text-[14px] text-[var(--color-muted-foreground)] line-through tabular-nums">{formatMoney(toTaxIncluded(p.listPrice))}</span>
+            )}
+            {p.isCampaign && <EntityStatusBadge tone="warning">{t("campaigns.inCampaign")}</EntityStatusBadge>}
+            {p.isSalePrice && !p.isCampaign && <EntityStatusBadge tone="success">{t("priceLists.onSale")}</EntityStatusBadge>}
+          </div>
+          <div className="text-[10.5px] uppercase tracking-wide text-[var(--color-muted-foreground)]">{t("priceLists.withTaxIncluded")}</div>
+          {p.isCampaign && p.campaignFrom && (
+            <div className="text-[12px] text-[var(--color-muted-foreground)]">
+              {p.priceListName} · {fmtDate(p.campaignFrom)} → {fmtDate(p.campaignTo)}
+            </div>
           )}
-          {p.isSalePrice && !p.isCampaign && (
-            <>
-              <span className="text-[13px] text-[var(--color-muted-foreground)] line-through tabular-nums">{formatMoney(p.listPrice)}</span>
-              <EntityStatusBadge tone="success">{t("priceLists.onSale")}</EntityStatusBadge>
-            </>
-          )}
-          {p.priceListName && (
-            <span className="text-[12px] text-[var(--color-muted-foreground)]">· {p.priceListName}</span>
+          {!p.isCampaign && p.priceListName && (
+            <div className="text-[12px] text-[var(--color-muted-foreground)]">· {p.priceListName}</div>
           )}
         </div>
       )}
