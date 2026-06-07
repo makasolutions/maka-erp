@@ -14,6 +14,7 @@ import {
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormGrid,
 } from "@/components/list";
@@ -288,8 +289,8 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                   </label>
                 </div>
               )}
-              <Field id="pl-desc" span={isDefault ? 12 : 6} label={t("priceLists.fields.description")}>
-                <Input id="pl-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+              <Field id="pl-desc" span={12} label={t("priceLists.fields.description")}>
+                <Textarea id="pl-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
@@ -414,8 +415,8 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                   </label>
                 </div>
               )}
-              <Field id="ep-desc" span={isDefault ? 12 : 6} label={t("priceLists.fields.description")}>
-                <Input id="ep-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+              <Field id="ep-desc" span={12} label={t("priceLists.fields.description")}>
+                <Textarea id="ep-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
@@ -544,6 +545,7 @@ function PriceListDetailDialog({ state, onClose, canEdit }: { state: EditorState
                   <h3 className="text-[13px] font-semibold text-[var(--color-foreground)]">{t("priceLists.addItem")}</h3>
                 </div>
                 <FormGrid>
+                  {/* Row 1: product · variation · min qty */}
                   <Field id="pi-prod" span={4} label={t("priceLists.product")}>
                     <Combobox id="pi-prod" label={t("priceLists.product")} value={pickProductId} onChange={setPickProductId}
                       options={productOptions} searchable clearable placeholder={t("priceLists.selectProduct")} />
@@ -552,13 +554,14 @@ function PriceListDetailDialog({ state, onClose, canEdit }: { state: EditorState
                     <Combobox id="pi-var" label={t("priceLists.variation")} value={pickVariationId} onChange={setPickVariationId}
                       options={variationOptions} searchable />
                   </Field>
-                  <Field id="pi-price" span={4} label={t("priceLists.price")} required>
-                    <MakaPriceWithTax id="pi-price" value={price} onChange={setPrice} />
-                  </Field>
                   <Field id="pi-min" span={4} label={t("priceLists.minQty")} hint={t("priceLists.minQtyHint")}>
                     <Input id="pi-min" type="number" min={0} step="1" value={minQty} onChange={(e) => setMinQty(e.target.value)} />
                   </Field>
-                  <Field id="pi-sale" span={4} label={t("priceLists.salePrice")} hint={t("priceLists.salePriceHint")}>
+                  {/* Row 2: price · sale price */}
+                  <Field id="pi-price" span={6} label={t("priceLists.price")} required>
+                    <MakaPriceWithTax id="pi-price" value={price} onChange={setPrice} />
+                  </Field>
+                  <Field id="pi-sale" span={6} label={t("priceLists.salePrice")} hint={t("priceLists.salePriceHint")}>
                     <MakaPriceWithTax id="pi-sale" value={salePrice} onChange={setSalePrice} />
                   </Field>
                 </FormGrid>

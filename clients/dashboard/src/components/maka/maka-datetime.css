@@ -1,0 +1,157 @@
+/*
+ * maka-datetime.css — Syncfusion DateTimePicker (MakaDateTimeRangePicker) ↔ Maka tokens.
+ *
+ * Themes the input chrome AND the two portal popups (date calendar + time list),
+ * which are appended to <body>, so they use `html body` / `.dark` prefixes.
+ * Mirrors maka-daterangepicker.css. Inputs carry the `maka-datetime` cssClass.
+ */
+
+/* ── Input shell (light + dark share the token-driven rules) ───────────────── */
+.e-input-group.maka-datetime,
+.e-input-group.maka-datetime.e-control-wrapper {
+  background-color: var(--color-background) !important;
+  border-color: var(--color-border) !important;
+  border-radius: 0.5rem !important;
+  color: var(--color-foreground) !important;
+}
+.e-input-group.maka-datetime input.e-input {
+  background-color: transparent !important;
+  color: var(--color-foreground) !important;
+  font-family: inherit !important;
+}
+.e-input-group.maka-datetime input.e-input::placeholder {
+  color: var(--color-muted-foreground) !important;
+}
+.e-input-group.maka-datetime .e-input-group-icon {
+  color: var(--color-muted-foreground) !important;
+  background: transparent !important;
+}
+.e-input-group.maka-datetime.e-input-focus,
+.e-input-group.maka-datetime:focus-within {
+  border-color: var(--color-ring) !important;
+  box-shadow: 0 0 0 2px oklch(from var(--color-ring) l c h / 0.25) !important;
+}
+.dark .e-input-group.maka-datetime input.e-input {
+  color: var(--color-foreground) !important;
+  -webkit-text-fill-color: var(--color-foreground) !important;
+}
+
+/* ── Popups (portal on <body>): date calendar + time list ──────────────────── */
+html body .e-datetimepicker.e-popup,
+html body .e-datepicker.e-popup,
+html body .e-timepicker.e-popup,
+html body .e-datetimepicker.e-popup .e-calendar,
+html body .e-datepicker.e-popup .e-calendar {
+  background-color: var(--color-popover) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-foreground) !important;
+  border-radius: 0.75rem !important;
+}
+html body .e-datepicker.e-popup *,
+html body .e-datetimepicker.e-popup *,
+html body .e-timepicker.e-popup * {
+  font-family: inherit !important;
+}
+html body .e-datepicker.e-popup .e-icons,
+html body .e-timepicker.e-popup .e-icons,
+html body .e-datepicker.e-popup [class*="e-icon"] {
+  font-family: "e-icons" !important;
+}
+/* Calendar header (month/year nav) */
+html body .e-datepicker .e-calendar .e-header,
+html body .e-datepicker .e-calendar .e-header .e-title,
+html body .e-datetimepicker .e-calendar .e-header,
+html body .e-datetimepicker .e-calendar .e-header .e-title {
+  background-color: var(--color-popover) !important;
+  color: var(--color-foreground) !important;
+}
+html body .e-calendar .e-header .e-title:hover { color: var(--color-primary) !important; }
+/* Week-day row + day cells */
+html body .e-datepicker .e-calendar th,
+html body .e-datetimepicker .e-calendar th { color: var(--color-muted-foreground) !important; }
+html body .e-datepicker .e-calendar .e-cell .e-day,
+html body .e-datetimepicker .e-calendar .e-cell .e-day { color: var(--color-foreground) !important; }
+html body .e-calendar .e-cell:hover .e-day,
+html body .e-calendar .e-cell.e-focused-date .e-day {
+  background-color: var(--color-accent) !important;
+  color: var(--color-foreground) !important;
+}
+html body .e-calendar .e-cell.e-today .e-day {
+  border: 1px solid var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+html body .e-calendar .e-cell.e-selected .e-day,
+html body .e-calendar .e-cell.e-selected:hover .e-day {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+}
+/* Time list */
+html body .e-timepicker.e-popup .e-list-parent,
+html body .e-datetimepicker.e-popup .e-list-parent {
+  background-color: var(--color-popover) !important;
+}
+html body .e-timepicker.e-popup .e-list-item,
+html body .e-datetimepicker.e-popup .e-list-item { color: var(--color-foreground) !important; }
+html body .e-timepicker.e-popup .e-list-item.e-active,
+html body .e-timepicker.e-popup .e-list-item.e-hover,
+html body .e-timepicker.e-popup .e-list-item:hover {
+  background-color: var(--color-primary-soft, oklch(from var(--color-primary) l c h / 0.16)) !important;
+  color: var(--color-foreground) !important;
+}
+/* Footer buttons (Today / OK) */
+html body .e-datepicker .e-footer-container .e-btn,
+html body .e-datetimepicker .e-footer-container .e-btn,
+html body .e-timepicker .e-footer-container .e-btn {
+  background-color: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* ── Dark mode (.dark on <html>) ───────────────────────────────────────────── */
+.dark .e-datetimepicker.e-popup,
+.dark .e-datepicker.e-popup,
+.dark .e-timepicker.e-popup,
+.dark .e-datetimepicker.e-popup .e-calendar,
+.dark .e-datepicker.e-popup .e-calendar {
+  background-color: var(--color-popover) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-foreground) !important;
+}
+.dark .e-datepicker .e-calendar .e-header,
+.dark .e-datepicker .e-calendar .e-header .e-title,
+.dark .e-datetimepicker .e-calendar .e-header,
+.dark .e-datetimepicker .e-calendar .e-header .e-title {
+  background-color: var(--color-popover) !important;
+  color: var(--color-foreground) !important;
+}
+.dark .e-calendar th,
+.dark .e-calendar .e-header .e-icons,
+.dark .e-calendar .e-header .e-date-icon-prev,
+.dark .e-calendar .e-header .e-date-icon-next { color: var(--color-muted-foreground) !important; }
+.dark .e-calendar .e-cell .e-day { color: var(--color-foreground) !important; }
+.dark .e-calendar .e-cell:hover .e-day,
+.dark .e-calendar .e-cell.e-focused-date .e-day {
+  background-color: oklch(from var(--color-accent) l c h / 0.7) !important;
+  color: var(--color-foreground) !important;
+}
+.dark .e-calendar .e-cell.e-selected .e-day {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+}
+.dark .e-timepicker.e-popup .e-list-parent,
+.dark .e-datetimepicker.e-popup .e-list-parent { background-color: var(--color-popover) !important; }
+.dark .e-timepicker.e-popup .e-list-item,
+.dark .e-datetimepicker.e-popup .e-list-item { color: var(--color-foreground) !important; }
+.dark .e-timepicker.e-popup .e-list-item.e-active,
+.dark .e-timepicker.e-popup .e-list-item.e-hover,
+.dark .e-timepicker.e-popup .e-list-item:hover {
+  background-color: oklch(from var(--color-primary) l c h / 0.22) !important;
+  color: var(--color-foreground) !important;
+}
+.dark .e-datepicker .e-footer-container .e-btn,
+.dark .e-datetimepicker .e-footer-container .e-btn,
+.dark .e-timepicker .e-footer-container .e-btn {
+  background-color: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  border-color: var(--color-border) !important;
+}

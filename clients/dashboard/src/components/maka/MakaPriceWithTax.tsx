@@ -40,9 +40,9 @@ export function MakaPriceWithTax({ id, value, onChange, disabled }: MakaPriceWit
         </div>
       </div>
       <div className="mt-0.5 flex gap-1 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
-        <span className="flex-1">{t("priceLists.base")}</span>
+        <span className="flex-1 text-right">{t("priceLists.base")}</span>
         <span className="w-10 shrink-0 text-center">{t("priceLists.vatLabel")}</span>
-        <span className="flex-1">{t("priceLists.withTax")}</span>
+        <span className="flex-1 text-right">{t("priceLists.withTax")}</span>
       </div>
     </div>
   );

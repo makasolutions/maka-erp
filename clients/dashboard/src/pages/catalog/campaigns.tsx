@@ -14,6 +14,7 @@ import {
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormGrid } from "@/components/list";
 import { MakaDateTimeRangePicker, MakaGridClient, MakaPriceWithTax, type MakaDateTimeRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
@@ -185,7 +186,7 @@ function EditCampaignDialog({ state, onClose }: { state: EditorState; onClose: (
                 <MakaDateTimeRangePicker value={range} onChange={setRange} startLabel={t("campaigns.from")} endLabel={t("campaigns.to")} />
               </Field>
               <Field id="ce-desc" span={12} label={t("campaigns.fields.description")}>
-                <Input id="ce-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+                <Textarea id="ce-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
@@ -258,7 +259,7 @@ function CreateCampaignDialog({ open, onClose, onCreated }: {
                 <MakaDateTimeRangePicker value={range} onChange={setRange} startLabel={t("campaigns.from")} endLabel={t("campaigns.to")} />
               </Field>
               <Field id="cp-desc" span={12} label={t("campaigns.fields.description")}>
-                <Input id="cp-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+                <Textarea id="cp-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>

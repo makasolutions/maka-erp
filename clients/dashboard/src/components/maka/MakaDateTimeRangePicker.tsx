@@ -8,6 +8,7 @@
 import { useEffect } from "react";
 import { DateTimePickerComponent } from "@syncfusion/ej2-react-calendars";
 import { loadCldr, L10n } from "@syncfusion/ej2-base";
+import "./maka-datetime.css";
 
 import gregorian from "cldr-data/main/es-CO/ca-gregorian.json";
 import timeZoneNames from "cldr-data/main/es-CO/timeZoneNames.json";
