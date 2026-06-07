@@ -12,6 +12,8 @@
  */
 
 export { MakaGrid, MakaGridClient, MakaGridServer, makaCurrencyColumn, formatCOP } from "./MakaGrid";
+export { MakaCurrencyInput } from "./MakaCurrencyInput";
+export type { MakaCurrencyInputProps } from "./MakaCurrencyInput";
 export type {
   MakaGridProps,
   MakaGridClientProps,

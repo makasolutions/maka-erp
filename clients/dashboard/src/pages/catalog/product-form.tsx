@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list";
-import { MakaGridClient, MakaRichTextEditor } from "@/components/maka";
+import { MakaCurrencyInput, MakaGridClient, MakaRichTextEditor } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
 import { deriveBaseFromDefault, describe, slugify } from "@/lib/list-helpers";
@@ -457,41 +457,23 @@ function PriceWithTax({ id, value, onChange, disabled }: {
   id: string; value: string; onChange: (base: string) => void; disabled?: boolean;
 }) {
   const { t } = useTranslation("catalog");
-  const [baseStr, setBaseStr] = useState(value);
-  const [ivaStr, setIvaStr] = useState(value ? String(Math.round(Number(value) * (1 + IVA_RATE))) : "");
-
-  // Re-sync when the base changes externally (e.g. the default list drives a derived one).
-  useEffect(() => {
-    setBaseStr(value);
-    setIvaStr(value ? String(Math.round(Number(value) * (1 + IVA_RATE))) : "");
-  }, [value]);
-
-  const onBase = (s: string) => {
-    setBaseStr(s);
-    const n = Number(s);
-    setIvaStr(s && !Number.isNaN(n) ? String(Math.round(n * (1 + IVA_RATE))) : "");
-    onChange(s);
-  };
-  const onIva = (s: string) => {
-    setIvaStr(s);
-    const n = Number(s);
-    const base = s && !Number.isNaN(n) ? String(Math.round(n / (1 + IVA_RATE))) : "";
-    setBaseStr(base);
-    onChange(base);
-  };
+  const baseNum = value === "" ? null : Number(value);
+  const ivaNum = baseNum == null ? null : Math.round(baseNum * (1 + IVA_RATE));
 
   return (
     <div>
       <div className="flex items-stretch gap-1">
-        <Input id={id} type="number" min={0} step="1000" disabled={disabled}
-          className="min-w-0 flex-1 text-right" value={baseStr} onChange={(e) => onBase(e.target.value)}
-          aria-label={t("priceLists.base")} placeholder={t("priceLists.base")} />
+        <div className="min-w-0 flex-1">
+          <MakaCurrencyInput id={id} value={baseNum} disabled={disabled}
+            onChange={(n) => onChange(n == null ? "" : String(n))} ariaLabel={t("priceLists.base")} />
+        </div>
         <span aria-hidden className="grid w-10 shrink-0 place-items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] text-[11px] font-semibold text-[var(--color-muted-foreground)]">
           19%
         </span>
-        <Input type="number" min={0} step="1000" disabled={disabled}
-          className="min-w-0 flex-1 text-right" value={ivaStr} onChange={(e) => onIva(e.target.value)}
-          aria-label={t("priceLists.withTax")} placeholder={t("priceLists.withTax")} />
+        <div className="min-w-0 flex-1">
+          <MakaCurrencyInput value={ivaNum} disabled={disabled}
+            onChange={(n) => onChange(n == null ? "" : String(Math.round(n / (1 + IVA_RATE))))} ariaLabel={t("priceLists.withTax")} />
+        </div>
       </div>
       <div className="mt-0.5 flex gap-1 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
         <span className="flex-1">{t("priceLists.base")}</span>
