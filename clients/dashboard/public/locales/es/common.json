@@ -785,5 +785,9 @@
     "search": "Buscar",
     "kpisTab": "Indicadores",
     "panelToggle": "Filtros & KPI's"
+  },
+  "priceRange": {
+    "min": "Mín",
+    "max": "Máx"
   }
 }

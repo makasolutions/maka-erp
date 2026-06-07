@@ -62,6 +62,9 @@ import {
   MakaGridFilters,
   MakaFilterField,
   MakaFilterInput,
+  MakaPriceRangeFilter,
+  makaCurrencyColumn,
+  type MakaPriceRange,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
@@ -136,9 +139,26 @@ function ProdStatusCell(row: ProductRow) {
   const tone = row.status === "Active" ? "success" : row.status === "Draft" ? "default" : "warning";
   return <EntityStatusBadge tone={tone}>{row.statusLabel}</EntityStatusBadge>;
 }
-function ProdSkuCell(row: ProductRow) {
-  if (!row.defaultSku) return <span className="text-[var(--color-muted-foreground)]">—</span>;
-  return <code className="font-mono text-[11.5px] text-[var(--color-muted-foreground)]">{row.defaultSku}</code>;
+function ProdCodesCell(row: ProductRow) {
+  // Default-variation SKU plus any extra product codes (EAN/UPC/…), as a list.
+  const extras = (row.codes ?? []).filter((c) => c.codeType !== "SKU");
+  if (!row.defaultSku && extras.length === 0) return <span className="text-[var(--color-muted-foreground)]">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {row.defaultSku && (
+        <span className="inline-flex items-center gap-1 rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-[10.5px]">
+          <span className="font-semibold text-[var(--color-muted-foreground)]">SKU</span>
+          <code className="font-mono text-[var(--color-foreground)]">{row.defaultSku}</code>
+        </span>
+      )}
+      {extras.map((c) => (
+        <span key={`${c.codeType}-${c.code}`} className="inline-flex items-center gap-1 rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-[10.5px]">
+          <span className="font-semibold text-[var(--color-muted-foreground)]">{c.codeType}</span>
+          <code className="font-mono text-[var(--color-foreground)]">{c.code}</code>
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
@@ -174,6 +194,9 @@ export function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [codeFilter, setCodeFilter] = useState("");
+  const [debouncedCode, setDebouncedCode] = useState("");
+  const [priceRange, setPriceRange] = useState<MakaPriceRange>({ min: null, max: null });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [sort, setSort] = useState<{ by: string; dir: "asc" | "desc" }>({ by: "name", dir: "asc" });
@@ -185,16 +208,26 @@ export function ProductsPage() {
     return () => clearTimeout(timer);
   }, [nameFilter]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedCode(codeFilter.trim()); setPage(1); }, 250);
+    return () => clearTimeout(timer);
+  }, [codeFilter]);
+
+  useEffect(() => { setPage(1); }, [priceRange]);
+
   const queryParams = useMemo(() => ({
     search: debouncedName || undefined,
     brandId: brandFilter ?? undefined,
     categoryId: categoryFilter ?? undefined,
     type: (typeFilter as ProductType | null) ?? undefined,
     status: (statusFilter as ProductStatus | null) ?? undefined,
+    code: debouncedCode || undefined,
+    minPrice: priceRange.min ?? undefined,
+    maxPrice: priceRange.max ?? undefined,
     pageNumber: page,
     pageSize,
     sort: sort.dir === "desc" ? `-${sort.by}` : sort.by,
-  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, page, pageSize, sort]);
+  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, debouncedCode, priceRange, page, pageSize, sort]);
 
   const query = useQuery({
     queryKey: ["catalog", "products", "list", queryParams],
@@ -267,11 +300,12 @@ export function ProductsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "primaryCategoryName", headerText: t("products.fields.category"), template: ProdCategoryCell as any, width: 150, allowSorting: false },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+    { field: "type", headerText: t("products.fields.type"), template: ProdTypeCell as any, width: 110, textAlign: "Center" },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "status", headerText: t("products.fields.status"), template: ProdStatusCell as any, width: 110, allowSorting: false, textAlign: "Center" },
+    { field: "status", headerText: t("products.fields.status"), template: ProdStatusCell as any, width: 110, textAlign: "Center" },
+    makaCurrencyColumn("defaultPrice", t("products.fields.defaultPrice"), { width: 140 }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { field: "defaultSku", headerText: t("products.fields.defaultSku"), template: ProdSkuCell as any, width: 160 },
+    { field: "codes", headerText: t("products.fields.codes"), template: ProdCodesCell as any, minWidth: 200, allowSorting: false },
     { field: "createdAtUtc", headerText: t("products.fields.created"), width: 140, type: "date" },
   ], [t]);
 
@@ -296,7 +330,8 @@ export function ProductsPage() {
 
   const resetFilters = () => {
     setNameFilter(""); setDebouncedName(""); setBrandFilter(null); setCategoryFilter(null);
-    setTypeFilter(null); setStatusFilter(null); setPage(1);
+    setTypeFilter(null); setStatusFilter(null); setCodeFilter(""); setDebouncedCode("");
+    setPriceRange({ min: null, max: null }); setPage(1);
   };
 
   return (
@@ -382,6 +417,18 @@ export function ProductsPage() {
                 ariaLabel={t("products.singular")}
                 className="min-w-48"
               />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.codeFilter")}>
+              <MakaFilterInput
+                value={codeFilter}
+                onChange={setCodeFilter}
+                placeholder={t("products.filters.codePlaceholder")}
+                ariaLabel={t("products.fields.codeFilter")}
+                className="min-w-44"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.fields.defaultPrice")}>
+              <MakaPriceRangeFilter value={priceRange} onChange={setPriceRange} />
             </MakaFilterField>
             <MakaFilterField label={t("products.fields.brand")}>
               <Combobox

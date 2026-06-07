@@ -41,7 +41,10 @@
       "active": "Active",
       "visible": "Visible",
       "taxRate": "Tax rate",
-      "shippingClass": "Shipping class"
+      "shippingClass": "Shipping class",
+      "codes": "Codes",
+      "defaultPrice": "Price",
+      "codeFilter": "Code"
     },
     "categoriesHint": "Select one or more categories. Mark one as primary.",
     "noCategories": "No categories yet. Create categories first.",
@@ -75,7 +78,8 @@
       "visibleYes": "Yes",
       "visibleNo": "No",
       "skuPlaceholder": "Search by SKU…",
-      "namePlaceholder": "Search by name…"
+      "namePlaceholder": "Search by name…",
+      "codePlaceholder": "Search by code…"
     },
     "empty": {
       "title": "No products yet",

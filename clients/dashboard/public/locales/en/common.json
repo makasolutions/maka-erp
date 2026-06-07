@@ -784,5 +784,9 @@
     "search": "Search",
     "kpisTab": "KPIs",
     "panelToggle": "Filters & KPIs"
+  },
+  "priceRange": {
+    "min": "Min",
+    "max": "Max"
   }
 }

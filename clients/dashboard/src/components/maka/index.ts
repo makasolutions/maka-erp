@@ -14,6 +14,8 @@
 export { MakaGrid, MakaGridClient, MakaGridServer, makaCurrencyColumn, formatCOP } from "./MakaGrid";
 export { MakaCurrencyInput } from "./MakaCurrencyInput";
 export type { MakaCurrencyInputProps } from "./MakaCurrencyInput";
+export { MakaPriceRangeFilter } from "./MakaPriceRangeFilter";
+export type { MakaPriceRange, MakaPriceRangeFilterProps } from "./MakaPriceRangeFilter";
 export type {
   MakaGridProps,
   MakaGridClientProps,

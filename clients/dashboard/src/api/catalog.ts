@@ -300,6 +300,8 @@ export type ProductDto = {
   wooCommerceId?: number | null;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
+  defaultPrice?: number | null;
+  codes: ProductCodeBriefDto[];
 
   /** @deprecated v1 fields — kept for backward compat */
   description?: string | null;
@@ -316,12 +318,16 @@ export type ProductDto = {
 
 export type ProductType   = "Simple" | "Variable" | "Bundle" | "Service";
 export type ProductStatus = "Draft" | "Active" | "Archived";
+export type ProductCodeBriefDto = { codeType: string; code: string };
 
 export type SearchProductsParams = {
   search?: string;
   brandId?: string | null;
   type?: ProductType | null;
   status?: ProductStatus | null;
+  code?: string;
+  minPrice?: number | null;
+  maxPrice?: number | null;
   pageNumber?: number;
   pageSize?: number;
   sort?: string;
@@ -393,6 +399,9 @@ export function searchProducts(
   if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.type) query.set("type", params.type);
   if (params.status) query.set("status", params.status);
+  if (params.code) query.set("code", params.code);
+  if (params.minPrice != null) query.set("minPrice", String(params.minPrice));
+  if (params.maxPrice != null) query.set("maxPrice", String(params.maxPrice));
   query.set("pageNumber", String(params.pageNumber ?? 1));
   query.set("pageSize", String(params.pageSize ?? 20));
   if (params.sort) query.set("sort", params.sort);
