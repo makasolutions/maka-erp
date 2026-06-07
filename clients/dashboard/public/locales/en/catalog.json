@@ -83,7 +83,15 @@
       "skuPlaceholder": "Search by SKU…",
       "namePlaceholder": "Search by name…",
       "codePlaceholder": "Search by code…",
-      "tagPlaceholder": "Search by tag…"
+      "tagPlaceholder": "Search by tag…",
+      "attribute": "Attribute",
+      "attributeAll": "All attributes",
+      "attributeValue": "Attribute value",
+      "attributeValuePlaceholder": "e.g. Red, XL…",
+      "specKey": "Specification",
+      "specKeyPlaceholder": "e.g. Mount, Resolution…",
+      "specValue": "Specification value",
+      "specValuePlaceholder": "e.g. Sony E, 4K…"
     },
     "empty": {
       "title": "No products yet",

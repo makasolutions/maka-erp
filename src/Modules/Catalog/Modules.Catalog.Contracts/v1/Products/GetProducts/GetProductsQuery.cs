@@ -18,4 +18,9 @@ public sealed record GetProductsQuery : IPagedQuery, IQuery<PagedResponse<Produc
     public string?       Tag        { get; set; }   // matches a product tag name
     public decimal?      MinPrice   { get; set; }   // on the default-list price
     public decimal?      MaxPrice   { get; set; }
+    // Advanced filters
+    public Guid?         AttributeId    { get; set; }   // product has this attribute…
+    public string?       AttributeValue { get; set; }   // …with a selected value matching (ILike)
+    public string?       SpecKey        { get; set; }   // structured Specs JSONB key
+    public string?       SpecValue      { get; set; }   // …whose value matches (ILike)
 }

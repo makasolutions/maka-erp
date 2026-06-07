@@ -83,7 +83,15 @@
       "skuPlaceholder": "Buscar por SKU…",
       "namePlaceholder": "Buscar por nombre…",
       "codePlaceholder": "Buscar por código…",
-      "tagPlaceholder": "Buscar por etiqueta…"
+      "tagPlaceholder": "Buscar por etiqueta…",
+      "attribute": "Atributo",
+      "attributeAll": "Todos los atributos",
+      "attributeValue": "Valor de atributo",
+      "attributeValuePlaceholder": "Ej. Rojo, XL…",
+      "specKey": "Especificación",
+      "specKeyPlaceholder": "Ej. Montura, Resolución…",
+      "specValue": "Valor de especificación",
+      "specValuePlaceholder": "Ej. Sony E, 4K…"
     },
     "empty": {
       "title": "Sin productos aún",

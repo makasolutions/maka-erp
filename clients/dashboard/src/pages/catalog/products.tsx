@@ -24,6 +24,7 @@ import {
   listTrashedProducts,
   publishProduct,
   restoreProduct,
+  searchAttributes,
   searchBrands,
   searchProducts,
   setProductCategories,
@@ -216,6 +217,14 @@ export function ProductsPage() {
   const [debouncedCode, setDebouncedCode] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [debouncedTag, setDebouncedTag] = useState("");
+  // Advanced filters (attribute + structured Specs JSON)
+  const [attrFilter, setAttrFilter] = useState<string | null>(null);
+  const [attrValueFilter, setAttrValueFilter] = useState("");
+  const [debouncedAttrValue, setDebouncedAttrValue] = useState("");
+  const [specKeyFilter, setSpecKeyFilter] = useState("");
+  const [specValueFilter, setSpecValueFilter] = useState("");
+  const [debouncedSpecKey, setDebouncedSpecKey] = useState("");
+  const [debouncedSpecValue, setDebouncedSpecValue] = useState("");
   const [priceRange, setPriceRange] = useState<MakaPriceRange>({ min: null, max: null });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -238,7 +247,26 @@ export function ProductsPage() {
     return () => clearTimeout(timer);
   }, [tagFilter]);
 
-  useEffect(() => { setPage(1); }, [priceRange]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedAttrValue(attrValueFilter.trim());
+      setDebouncedSpecKey(specKeyFilter.trim());
+      setDebouncedSpecValue(specValueFilter.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [attrValueFilter, specKeyFilter, specValueFilter]);
+
+  useEffect(() => { setPage(1); }, [priceRange, attrFilter]);
+
+  const attrsQuery = useQuery({
+    queryKey: ["catalog", "attributes", "filter-options"],
+    queryFn: () => searchAttributes({ pageSize: 200, sort: "name" }),
+  });
+  const attrOptions = useMemo(
+    () => (attrsQuery.data?.items ?? []).map((a) => ({ value: a.id, label: a.name })),
+    [attrsQuery.data],
+  );
 
   const queryParams = useMemo(() => ({
     search: debouncedName || undefined,
@@ -250,10 +278,14 @@ export function ProductsPage() {
     tag: debouncedTag || undefined,
     minPrice: priceRange.min ?? undefined,
     maxPrice: priceRange.max ?? undefined,
+    attributeId: attrFilter ?? undefined,
+    attributeValue: debouncedAttrValue || undefined,
+    specKey: debouncedSpecKey || undefined,
+    specValue: debouncedSpecValue || undefined,
     pageNumber: page,
     pageSize,
     sort: sort.dir === "desc" ? `-${sort.by}` : sort.by,
-  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, debouncedCode, debouncedTag, priceRange, page, pageSize, sort]);
+  }), [debouncedName, brandFilter, categoryFilter, typeFilter, statusFilter, debouncedCode, debouncedTag, priceRange, attrFilter, debouncedAttrValue, debouncedSpecKey, debouncedSpecValue, page, pageSize, sort]);
 
   const query = useQuery({
     queryKey: ["catalog", "products", "list", queryParams],
@@ -370,6 +402,8 @@ export function ProductsPage() {
     setNameFilter(""); setDebouncedName(""); setBrandFilter(null); setCategoryFilter(null);
     setTypeFilter(null); setStatusFilter(null); setCodeFilter(""); setDebouncedCode("");
     setTagFilter(""); setDebouncedTag("");
+    setAttrFilter(null); setAttrValueFilter(""); setDebouncedAttrValue("");
+    setSpecKeyFilter(""); setDebouncedSpecKey(""); setSpecValueFilter(""); setDebouncedSpecValue("");
     setPriceRange({ min: null, max: null }); setPage(1);
   };
 
@@ -524,6 +558,46 @@ export function ProductsPage() {
                   { value: null, label: tc("status.all") },
                   ...statusOptions.map(o => ({ value: o.value, label: o.label })),
                 ]}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.filters.attribute")}>
+              <Combobox
+                id="attribute-filter"
+                label={t("products.filters.attribute")}
+                placeholder={t("products.filters.attributeAll")}
+                value={attrFilter}
+                onChange={v => { setAttrFilter(v); setPage(1); }}
+                options={attrOptions}
+                searchable
+                clearable
+                emptyOptionLabel={t("products.filters.attributeAll")}
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.filters.attributeValue")}>
+              <MakaFilterInput
+                value={attrValueFilter}
+                onChange={setAttrValueFilter}
+                placeholder={t("products.filters.attributeValuePlaceholder")}
+                ariaLabel={t("products.filters.attributeValue")}
+                className="min-w-36"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.filters.specKey")}>
+              <MakaFilterInput
+                value={specKeyFilter}
+                onChange={setSpecKeyFilter}
+                placeholder={t("products.filters.specKeyPlaceholder")}
+                ariaLabel={t("products.filters.specKey")}
+                className="min-w-36"
+              />
+            </MakaFilterField>
+            <MakaFilterField label={t("products.filters.specValue")}>
+              <MakaFilterInput
+                value={specValueFilter}
+                onChange={setSpecValueFilter}
+                placeholder={t("products.filters.specValuePlaceholder")}
+                ariaLabel={t("products.filters.specValue")}
+                className="min-w-36"
               />
             </MakaFilterField>
           </>

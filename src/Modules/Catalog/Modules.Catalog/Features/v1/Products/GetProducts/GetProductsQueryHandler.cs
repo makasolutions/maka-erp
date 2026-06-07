@@ -55,6 +55,34 @@ public sealed class GetProductsQueryHandler(CatalogDbContext db)
             products = products.Where(p => p.Tags.Any(tg => EF.Functions.ILike(tg.Name, tagPat)));
         }
 
+        // Advanced filter — by product attribute (and optional selected value).
+        if (query.AttributeId.HasValue)
+        {
+            Guid attrId = query.AttributeId.Value;
+            string? valPat = string.IsNullOrWhiteSpace(query.AttributeValue) ? null : $"%{query.AttributeValue.Trim()}%";
+            products = products.Where(p => db.Set<ProductAttribute>().Any(pa =>
+                pa.ProductId == p.Id && pa.AttributeId == attrId &&
+                (valPat == null || db.Set<ProductAttributeValue>().Any(pav =>
+                    pav.ProductAttributeId == pa.Id &&
+                    db.Set<CatalogAttributeValue>().Any(av => av.Id == pav.AttributeValueId && EF.Functions.ILike(av.Value, valPat))))));
+        }
+
+        // Advanced filter — by a structured Specs key and value. The Specs column is
+        // jsonb regardless of the value converter, so a raw json text extraction is
+        // used. Tenant isolation is preserved because the global query filter still
+        // applies to the FromSql-composed query.
+        if (!string.IsNullOrWhiteSpace(query.SpecKey))
+        {
+            string specPat = $"%{query.SpecValue?.Trim() ?? string.Empty}%";
+            string keyArg = query.SpecKey.Trim();
+            var specIds = await db.Products
+                .FromSqlInterpolated($@"SELECT * FROM catalog.""Products"" WHERE ""Specs"" ->> {keyArg} ILIKE {specPat}")
+                .Select(p => p.Id)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            products = products.Where(p => specIds.Contains(p.Id));
+        }
+
         // Price range on the default-list price of the default variation.
         if (query.MinPrice.HasValue)
             products = products.Where(p => p.Variations

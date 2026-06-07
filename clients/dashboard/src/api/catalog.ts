@@ -331,6 +331,10 @@ export type SearchProductsParams = {
   tag?: string;
   minPrice?: number | null;
   maxPrice?: number | null;
+  attributeId?: string | null;
+  attributeValue?: string;
+  specKey?: string;
+  specValue?: string;
   pageNumber?: number;
   pageSize?: number;
   sort?: string;
@@ -417,6 +421,10 @@ export function searchProducts(
   if (params.status) query.set("status", params.status);
   if (params.code) query.set("code", params.code);
   if (params.tag) query.set("tag", params.tag);
+  if (params.attributeId) query.set("attributeId", params.attributeId);
+  if (params.attributeValue) query.set("attributeValue", params.attributeValue);
+  if (params.specKey) query.set("specKey", params.specKey);
+  if (params.specValue) query.set("specValue", params.specValue);
   if (params.minPrice != null) query.set("minPrice", String(params.minPrice));
   if (params.maxPrice != null) query.set("maxPrice", String(params.maxPrice));
   query.set("pageNumber", String(params.pageNumber ?? 1));
