@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Trash2, XCircle } from "lucide-react";
+import { Megaphone, Package, Plus, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   cancelCampaign, createCampaign, getCampaigns, getDefaultVariation, getPriceListById,
-  searchProducts, setCampaignItems,
+  searchProducts, setCampaignItems, updateCampaign,
   type CampaignStatus, type PriceListDto,
 } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const CAMP_KEY = ["catalog", "campaigns"] as const;
 type EditorState =
   | { mode: "closed" }
   | { mode: "create" }
+  | { mode: "edit"; campaign: PriceListDto }
   | { mode: "items"; campaign: PriceListDto }
   | { mode: "cancel"; campaign: PriceListDto };
 
@@ -102,8 +103,9 @@ export function CampaignsPage() {
         entityName={t("campaigns.singular")}
         onRowClick={(row) => setEditor({ mode: "items", campaign: row })}
         permissions={{ edit: P.catalog.priceLists.manage, delete: P.catalog.priceLists.manage }}
-        onEdit={(row) => setEditor({ mode: "items", campaign: row })}
+        onEdit={(row) => setEditor({ mode: "edit", campaign: row })}
         onDelete={(row) => can(P.catalog.priceLists.manage) && setEditor({ mode: "cancel", campaign: row })}
+        extraActions={[{ key: "items", label: t("campaigns.actions.products"), icon: Package, perm: P.catalog.priceLists.manage, onClick: (row) => setEditor({ mode: "items", campaign: row }) }]}
       />
 
       <CreateCampaignDialog
@@ -116,8 +118,85 @@ export function CampaignsPage() {
         onClose={() => setEditor({ mode: "closed" })}
         canEdit={can(P.catalog.priceLists.manage)}
       />
+      <EditCampaignDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <CancelCampaignDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
     </div>
+  );
+}
+
+// ── Edit (name + validity) — reschedules jobs ──
+function EditCampaignDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+  const isOpen = state.mode === "edit";
+  const campaign = state.mode === "edit" ? state.campaign : undefined;
+
+  const [name, setName] = useState("");
+  const [range, setRange] = useState<MakaDateRange | null>(null);
+  const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    if (isOpen && campaign) {
+      setName(campaign.name);
+      setDescription(campaign.description ?? "");
+      setRange(campaign.validTo
+        ? { start: new Date(campaign.validFrom), end: new Date(campaign.validTo) }
+        : null);
+    }
+  }, [isOpen, campaign]);
+
+  const saveM = useMutation({
+    mutationFn: () => updateCampaign({
+      campaignId: campaign!.id,
+      name: name.trim(),
+      validFrom: range!.start.toISOString(),
+      validTo: range!.end.toISOString(),
+      description: description.trim() || null,
+    }),
+    onSuccess: () => {
+      toast.success(tc("feedback.updated"));
+      queryClient.invalidateQueries({ queryKey: CAMP_KEY });
+      onClose();
+    },
+    onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
+  });
+
+  const canSubmit = !!name.trim() && !!range;
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) saveM.mutate(); };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent size="form">
+        <form onSubmit={onSubmit}>
+          <DialogHeader>
+            <DialogTitle>{t("campaigns.actions.edit")}</DialogTitle>
+            <DialogDescription>{t("campaigns.editDesc")}</DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <FormGrid>
+              <Field id="ce-name" span={12} label={t("campaigns.fields.name")} required>
+                <Input id="ce-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={128} autoFocus />
+              </Field>
+              <Field id="ce-range" span={12} label={t("campaigns.fields.window")} required hint={t("campaigns.windowHint")}>
+                <MakaDateRangePicker value={range} onChange={setRange} />
+              </Field>
+              <Field id="ce-desc" span={12} label={t("campaigns.fields.description")}>
+                <Input id="ce-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+              </Field>
+            </FormGrid>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={saveM.isPending}>{tc("actions.cancel")}</Button>
+            </DialogClose>
+            <Button type="submit" disabled={saveM.isPending || !canSubmit}>
+              {saveM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

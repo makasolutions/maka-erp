@@ -5,7 +5,7 @@ import { DollarSign, Eye, Pencil, Plus, Tag } from "lucide-react";
 import { toast } from "sonner";
 import {
   addPriceListItem, createPriceList, getPriceListById, getPriceLists, getVariations,
-  searchProducts, updatePriceListItem,
+  searchProducts, updatePriceList, updatePriceListItem,
   type PriceListDto, type PriceListItemDto,
 } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const LIST_KEY = ["catalog", "price-lists"] as const;
 type EditorState =
   | { mode: "closed" }
   | { mode: "create" }
+  | { mode: "edit"; list: PriceListDto }
   | { mode: "detail"; list: PriceListDto };
 
 type PriceListRow = PriceListDto & { segmentLabel: string; validityLabel: string };
@@ -183,11 +184,13 @@ export function PriceListsPage() {
         entityName={t("priceLists.singular")}
         onRowClick={(row) => setEditor({ mode: "detail", list: row })}
         onClearFilters={resetFilters}
-        permissions={{ edit: P.catalog.priceLists.view }}
-        onEdit={(row) => setEditor({ mode: "detail", list: row })}
+        permissions={{ edit: P.catalog.priceLists.manage }}
+        onEdit={(row) => setEditor({ mode: "edit", list: row })}
+        extraActions={[{ key: "items", label: t("priceLists.manageItems"), icon: Tag, perm: P.catalog.priceLists.view, onClick: (row) => setEditor({ mode: "detail", list: row }) }]}
       />
 
       <CreatePriceListDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <EditPriceListDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <PriceListDetailDialog state={editor} onClose={() => setEditor({ mode: "closed" })} canEdit={can(P.catalog.priceLists.manage)} />
     </div>
   );
@@ -286,6 +289,121 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
             </DialogClose>
             <Button type="submit" disabled={createM.isPending || !canSubmit}>
               {createM.isPending ? tc("feedback.saving") : t("priceLists.actions.create")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+//  Edit dialog — list settings (name/validity/active/default/%)
+// ───────────────────────────────────────────────────────────────────────
+
+function toDateInput(s?: string | null): string {
+  if (!s) return "";
+  try { return new Date(s).toISOString().slice(0, 10); } catch { return ""; }
+}
+
+function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+  const isOpen = state.mode === "edit";
+  const list = state.mode === "edit" ? state.list : undefined;
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [validFrom, setValidFrom] = useState("");
+  const [validTo, setValidTo] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [isDefault, setIsDefault] = useState(false);
+  const [adjustmentPercent, setAdjustmentPercent] = useState("");
+
+  useEffect(() => {
+    if (isOpen && list) {
+      setName(list.name);
+      setDescription(list.description ?? "");
+      setValidFrom(toDateInput(list.validFrom));
+      setValidTo(toDateInput(list.validTo));
+      setIsActive(list.isActive);
+      setIsDefault(list.isDefault);
+      setAdjustmentPercent(list.adjustmentPercent != null ? String(list.adjustmentPercent) : "");
+    }
+  }, [isOpen, list]);
+
+  const saveM = useMutation({
+    mutationFn: () => updatePriceList({
+      priceListId: list!.id,
+      name: name.trim(),
+      description: description.trim() || null,
+      validFrom: validFrom ? new Date(validFrom).toISOString() : list!.validFrom,
+      validTo: validTo ? new Date(validTo).toISOString() : null,
+      isActive,
+      isDefault,
+      adjustmentPercent: isDefault || !adjustmentPercent ? null : Number(adjustmentPercent),
+    }),
+    onSuccess: () => {
+      toast.success(tc("feedback.updated"));
+      queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      onClose();
+    },
+    onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
+  });
+
+  const canSubmit = !!name.trim();
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) saveM.mutate(); };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent size="form">
+        <form onSubmit={onSubmit}>
+          <DialogHeader>
+            <DialogTitle>{t("priceLists.actions.edit")}</DialogTitle>
+            <DialogDescription>{list?.customerSegment}</DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <FormGrid>
+              <Field id="ep-name" span={8} label={t("priceLists.fields.name")} required>
+                <Input id="ep-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} autoFocus />
+              </Field>
+              <div className="col-span-1 flex items-end gap-6 sm:col-span-4">
+                <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
+                  {t("priceLists.fields.active")}
+                </label>
+              </div>
+              <Field id="ep-from" span={6} label={t("priceLists.fields.validFrom")}>
+                <Input id="ep-from" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+              </Field>
+              <Field id="ep-to" span={6} label={t("priceLists.fields.validTo")} hint={t("priceLists.validToHint")}>
+                <Input id="ep-to" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+              </Field>
+              <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
+                  {t("priceLists.fields.isDefault")}
+                  <span className="text-[12px] font-normal text-[var(--color-muted-foreground)]">— {t("priceLists.isDefaultHint")}</span>
+                </label>
+              </div>
+              {!isDefault && (
+                <Field id="ep-pct" span={6} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
+                  <Input id="ep-pct" type="number" step="0.01" value={adjustmentPercent}
+                    onChange={(e) => setAdjustmentPercent(e.target.value)} placeholder="-3 / 15" />
+                </Field>
+              )}
+              <Field id="ep-desc" span={isDefault ? 12 : 6} label={t("priceLists.fields.description")}>
+                <Input id="ep-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+              </Field>
+            </FormGrid>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={saveM.isPending}>{tc("actions.cancel")}</Button>
+            </DialogClose>
+            <Button type="submit" disabled={saveM.isPending || !canSubmit}>
+              {saveM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

@@ -648,7 +648,8 @@
       "defaultOrPercent": "Defecto / %"
     },
     "actions": {
-      "create": "Nueva lista"
+      "create": "Nueva lista",
+      "edit": "Editar lista"
     },
     "filters": {
       "namePlaceholder": "Buscar lista…"
@@ -680,7 +681,10 @@
     "productPricesHint": "Cambia el precio de la lista por defecto y los demás se calculan (sugeridos, editables).",
     "savePrices": "Guardar precios",
     "noDefault": "No hay lista por defecto configurada.",
-    "productPricesEmpty": "No hay listas de precios activas."
+    "productPricesEmpty": "No hay listas de precios activas.",
+    "base": "Base",
+    "withTax": "IVA incl.",
+    "manageItems": "Gestionar ítems"
   },
   "marketplace": {
     "Google": "Google",
@@ -733,13 +737,16 @@
     "actions": {
       "create": "Nueva campaña",
       "next": "Siguiente",
-      "cancel": "Cancelar campaña"
+      "cancel": "Cancelar campaña",
+      "edit": "Editar campaña",
+      "products": "Productos"
     },
     "status": {
       "Scheduled": "Programada",
       "Running": "Activa",
       "Ended": "Terminada",
       "Cancelled": "Cancelada"
-    }
+    },
+    "editDesc": "Edita el nombre y la vigencia. Las tareas se reprograman a las nuevas fechas."
   }
 }

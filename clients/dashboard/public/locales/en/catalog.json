@@ -648,7 +648,8 @@
       "defaultOrPercent": "Default / %"
     },
     "actions": {
-      "create": "New list"
+      "create": "New list",
+      "edit": "Edit list"
     },
     "filters": {
       "namePlaceholder": "Search list…"
@@ -680,7 +681,10 @@
     "productPricesHint": "Change the default list price and the others are computed (suggested, editable).",
     "savePrices": "Save prices",
     "noDefault": "No default list configured.",
-    "productPricesEmpty": "No active price lists."
+    "productPricesEmpty": "No active price lists.",
+    "base": "Base",
+    "withTax": "VAT incl.",
+    "manageItems": "Manage items"
   },
   "marketplace": {
     "Google": "Google",
@@ -733,13 +737,16 @@
     "actions": {
       "create": "New campaign",
       "next": "Next",
-      "cancel": "Cancel campaign"
+      "cancel": "Cancel campaign",
+      "edit": "Edit campaign",
+      "products": "Products"
     },
     "status": {
       "Scheduled": "Scheduled",
       "Running": "Running",
       "Ended": "Ended",
       "Cancelled": "Cancelled"
-    }
+    },
+    "editDesc": "Edit name and validity. Jobs are rescheduled to the new dates."
   }
 }

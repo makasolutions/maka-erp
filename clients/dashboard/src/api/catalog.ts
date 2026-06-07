@@ -1321,6 +1321,22 @@ export function createCampaign(input: CreateCampaignInput): Promise<string> {
   });
 }
 
+export type UpdateCampaignInput = {
+  campaignId: string;
+  name: string;
+  validFrom: string;
+  validTo: string;
+  description?: string | null;
+};
+
+export function updateCampaign(input: UpdateCampaignInput): Promise<string> {
+  const { campaignId, ...body } = input;
+  return apiFetch<string>(`/api/v1/catalog/campaigns/${encodeURIComponent(campaignId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ id: campaignId, ...body }),
+  });
+}
+
 export type CampaignItemInput = { variationId: string; price: number };
 
 export function setCampaignItems(campaignId: string, items: CampaignItemInput[]): Promise<number> {

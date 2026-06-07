@@ -448,6 +448,53 @@ function flatten(nodes: CategoryDto[], depth = 0, acc: FlatCat[] = []): FlatCat[
   return acc;
 }
 
+// ── Money control with VAT: base ↔ IVA-included (19%) ──
+// Three inputs sharing one field width: [base] [19%] [IVA incl.]. Editing the
+// base computes the VAT-included value; editing the VAT-included computes the
+// base. The stored value is always the base (price sin IVA).
+const IVA_RATE = 0.19;
+function PriceWithTax({ id, value, onChange, disabled }: {
+  id: string; value: string; onChange: (base: string) => void; disabled?: boolean;
+}) {
+  const { t } = useTranslation("catalog");
+  const [baseStr, setBaseStr] = useState(value);
+  const [ivaStr, setIvaStr] = useState(value ? String(Math.round(Number(value) * (1 + IVA_RATE))) : "");
+
+  // Re-sync when the base changes externally (e.g. the default list drives a derived one).
+  useEffect(() => {
+    setBaseStr(value);
+    setIvaStr(value ? String(Math.round(Number(value) * (1 + IVA_RATE))) : "");
+  }, [value]);
+
+  const onBase = (s: string) => {
+    setBaseStr(s);
+    const n = Number(s);
+    setIvaStr(s && !Number.isNaN(n) ? String(Math.round(n * (1 + IVA_RATE))) : "");
+    onChange(s);
+  };
+  const onIva = (s: string) => {
+    setIvaStr(s);
+    const n = Number(s);
+    const base = s && !Number.isNaN(n) ? String(Math.round(n / (1 + IVA_RATE))) : "";
+    setBaseStr(base);
+    onChange(base);
+  };
+
+  return (
+    <div className="flex items-stretch gap-1">
+      <Input id={id} type="number" min={0} step="1000" disabled={disabled}
+        className="min-w-0 flex-1" value={baseStr} onChange={(e) => onBase(e.target.value)}
+        aria-label={t("priceLists.base")} placeholder={t("priceLists.base")} />
+      <span aria-hidden className="grid w-10 shrink-0 place-items-center rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] text-[11px] font-semibold text-[var(--color-muted-foreground)]">
+        19%
+      </span>
+      <Input type="number" min={0} step="1000" disabled={disabled}
+        className="min-w-0 flex-1" value={ivaStr} onChange={(e) => onIva(e.target.value)}
+        aria-label={t("priceLists.withTax")} placeholder={t("priceLists.withTax")} />
+    </div>
+  );
+}
+
 // ── Price per list for the default variation (Fase 3) ──
 // The default list drives the others: editing the base price recomputes the
 // derived lists (suggested, rounded, editable). Each derived input the user
@@ -558,11 +605,10 @@ function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: 
         {lists.map((l) => (
           <Field key={l.id} id={`plp-${l.id}`} span={4}
             label={`${l.name}${l.isDefault ? " ★" : l.adjustmentPercent != null ? ` (${l.adjustmentPercent > 0 ? "+" : ""}${l.adjustmentPercent}%)` : ""}`}>
-            <Input id={`plp-${l.id}`} type="number" min={0} step="1000" disabled={!canEdit}
-              value={values[l.id] ?? ""}
-              onChange={(e) => {
-                if (l.isDefault) { setBase(e.target.value); }
-                else { setValues((p) => ({ ...p, [l.id]: e.target.value })); setTouched((p) => ({ ...p, [l.id]: true })); }
+            <PriceWithTax id={`plp-${l.id}`} value={values[l.id] ?? ""} disabled={!canEdit}
+              onChange={(base) => {
+                if (l.isDefault) { setBase(base); }
+                else { setValues((p) => ({ ...p, [l.id]: base })); setTouched((p) => ({ ...p, [l.id]: true })); }
               }} />
             {values[l.id] && <p className="mt-0.5 text-[11px] text-[var(--color-muted-foreground)]">{formatMoney(Number(values[l.id]))}</p>}
           </Field>
