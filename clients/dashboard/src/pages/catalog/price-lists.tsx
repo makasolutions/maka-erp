@@ -92,7 +92,7 @@ export function PriceListsPage() {
 
   const query = useQuery({
     queryKey: [...LIST_KEY, "list"],
-    queryFn: () => getPriceLists({ pageSize: 200, sort: "name" }),
+    queryFn: () => getPriceLists({ pageSize: 200, sort: "name", kind: "Segment" }),
     placeholderData: keepPreviousData,
   });
 

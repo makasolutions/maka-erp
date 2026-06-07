@@ -1093,6 +1093,9 @@ export async function removeBundleItem(productId: string, itemId: string): Promi
 
 // ─── Price lists (RF-CAT-4) ─────────────────────────────────────────────
 
+export type PriceListKind = "Segment" | "Campaign";
+export type CampaignStatus = "Scheduled" | "Running" | "Ended" | "Cancelled";
+
 export type PriceListDto = {
   id: string;
   name: string;
@@ -1103,6 +1106,8 @@ export type PriceListDto = {
   isActive: boolean;
   isDefault: boolean;
   adjustmentPercent?: number | null;
+  listKind: PriceListKind;
+  campaignStatus?: CampaignStatus | null;
   itemCount: number;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
@@ -1134,12 +1139,14 @@ export type EffectivePriceDto = {
   customerSegment: string;
   priceListName: string;
   priceListId: string;
+  isCampaign: boolean;
 };
 
 export type GetPriceListsParams = {
   search?: string;
   customerSegment?: string;
   isActive?: boolean;
+  kind?: PriceListKind;
   pageNumber?: number;
   pageSize?: number;
   sort?: string;
@@ -1150,6 +1157,7 @@ export function getPriceLists(params: GetPriceListsParams = {}): Promise<PagedRe
   if (params.search) q.set("search", params.search);
   if (params.customerSegment) q.set("customerSegment", params.customerSegment);
   if (params.isActive != null) q.set("isActive", String(params.isActive));
+  if (params.kind) q.set("kind", params.kind);
   q.set("pageNumber", String(params.pageNumber ?? 1));
   q.set("pageSize", String(params.pageSize ?? 50));
   if (params.sort) q.set("sort", params.sort);
@@ -1295,4 +1303,40 @@ export function getCategoryCoverageReport(
   return apiFetch<CategoryCoverageReportDto>(
     `/api/v1/catalog/categories/${encodeURIComponent(categoryId)}/coverage${q}`,
   );
+}
+
+// ─── Campaigns / offers (Phase 4) ────────────────────────────────────────
+
+export type CreateCampaignInput = {
+  name: string;
+  validFrom: string;
+  validTo: string;
+  description?: string | null;
+};
+
+export function createCampaign(input: CreateCampaignInput): Promise<string> {
+  return apiFetch<string>("/api/v1/catalog/campaigns", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export type CampaignItemInput = { variationId: string; price: number };
+
+export function setCampaignItems(campaignId: string, items: CampaignItemInput[]): Promise<number> {
+  return apiFetch<number>(`/api/v1/catalog/campaigns/${encodeURIComponent(campaignId)}/items`, {
+    method: "PUT",
+    body: JSON.stringify({ campaignId, items }),
+  });
+}
+
+export function cancelCampaign(campaignId: string): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/campaigns/${encodeURIComponent(campaignId)}/cancel`, {
+    method: "POST",
+  });
+}
+
+/** Campaigns reuse the price-lists list endpoint with kind=Campaign. */
+export function getCampaigns(): Promise<PagedResponse<PriceListDto>> {
+  return getPriceLists({ kind: "Campaign", pageSize: 200, sort: "-validFrom" });
 }

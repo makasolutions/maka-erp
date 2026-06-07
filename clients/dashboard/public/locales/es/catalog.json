@@ -706,5 +706,40 @@
     "requirementsDesc": "Marca los atributos que {{marketplace}} exige para esta categoría.",
     "showAll": "Ver todos",
     "save": "Guardar requisitos"
+  },
+  "campaigns": {
+    "title": "Ofertas y campañas",
+    "singular": "campaña",
+    "description": "Promociones Sell-IN / Sell-Out con vigencia; prevalecen sobre la lista de precios.",
+    "namePlaceholder": "Sell-IN Junio",
+    "createDesc": "Crea una campaña con vigencia. Al guardar elegirás los productos.",
+    "itemsDesc": "Productos a los que aplica la campaña y su precio durante la vigencia.",
+    "inCampaign": "En campaña",
+    "cancelled": "Campaña cancelada",
+    "noProducts": "Sin productos. Agrega los que aplican.",
+    "product": "Producto",
+    "selectProduct": "Buscar producto…",
+    "price": "Precio",
+    "saveProducts": "Guardar productos",
+    "cancelDesc": "Se cancelará «{{name}}» y se eliminarán sus tareas programadas.",
+    "fields": {
+      "name": "Nombre",
+      "status": "Estado",
+      "window": "Vigencia",
+      "products": "Productos",
+      "description": "Descripción"
+    },
+    "windowHint": "Desde / hasta (los jobs se programan en estas fechas).",
+    "actions": {
+      "create": "Nueva campaña",
+      "next": "Siguiente",
+      "cancel": "Cancelar campaña"
+    },
+    "status": {
+      "Scheduled": "Programada",
+      "Running": "Activa",
+      "Ended": "Terminada",
+      "Cancelled": "Cancelada"
+    }
   }
 }

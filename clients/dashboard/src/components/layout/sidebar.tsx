@@ -31,6 +31,7 @@ const NAV_ITEM_KEYS: Record<string, string> = {
   "/catalog/attributes": "nav.attributes",
   "/catalog/attribute-coverage": "nav.attributeCoverage",
   "/catalog/price-lists": "nav.priceLists",
+  "/catalog/campaigns": "nav.campaigns",
   "/tickets": "nav.tickets",
   "/identity/users": "nav.users",
   "/identity/roles": "nav.roles",

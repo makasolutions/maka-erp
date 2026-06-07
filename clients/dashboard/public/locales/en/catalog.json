@@ -706,5 +706,40 @@
     "requirementsDesc": "Check the attributes {{marketplace}} requires for this category.",
     "showAll": "Show all",
     "save": "Save requirements"
+  },
+  "campaigns": {
+    "title": "Offers & campaigns",
+    "singular": "campaign",
+    "description": "Sell-IN / Sell-Out promos with a validity window; they prevail over the price list.",
+    "namePlaceholder": "June Sell-IN",
+    "createDesc": "Create a campaign with a window. On save you will pick the products.",
+    "itemsDesc": "Products the campaign applies to and their price during the window.",
+    "inCampaign": "On campaign",
+    "cancelled": "Campaign cancelled",
+    "noProducts": "No products yet. Add the ones it applies to.",
+    "product": "Product",
+    "selectProduct": "Search product…",
+    "price": "Price",
+    "saveProducts": "Save products",
+    "cancelDesc": "“{{name}}” will be cancelled and its scheduled jobs deleted.",
+    "fields": {
+      "name": "Name",
+      "status": "Status",
+      "window": "Validity",
+      "products": "Products",
+      "description": "Description"
+    },
+    "windowHint": "From / to (jobs are scheduled at these dates).",
+    "actions": {
+      "create": "New campaign",
+      "next": "Next",
+      "cancel": "Cancel campaign"
+    },
+    "status": {
+      "Scheduled": "Scheduled",
+      "Running": "Running",
+      "Ended": "Ended",
+      "Cancelled": "Cancelled"
+    }
   }
 }

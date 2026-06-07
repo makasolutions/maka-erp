@@ -229,7 +229,10 @@ function EffectivePriceSection({ variationId }: { variationId: string }) {
       ) : (
         <div className="flex flex-wrap items-baseline gap-2">
           <span className="font-display text-[22px] font-semibold tabular-nums text-[var(--color-foreground)]">{formatMoney(p.effectivePrice)}</span>
-          {p.isSalePrice && (
+          {p.isCampaign && (
+            <EntityStatusBadge tone="warning">{t("campaigns.inCampaign")}</EntityStatusBadge>
+          )}
+          {p.isSalePrice && !p.isCampaign && (
             <>
               <span className="text-[13px] text-[var(--color-muted-foreground)] line-through tabular-nums">{formatMoney(p.listPrice)}</span>
               <EntityStatusBadge tone="success">{t("priceLists.onSale")}</EntityStatusBadge>

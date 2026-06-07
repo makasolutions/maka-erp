@@ -2,6 +2,7 @@ import {
   Activity,
   ClipboardCheck,
   DollarSign,
+  Megaphone,
   FolderOpen,
   FolderTree,
   HeartPulse,
@@ -83,6 +84,7 @@ export const sections: NavSection[] = [
       { to: "/catalog/attributes", label: "Attributes", icon: SlidersHorizontal, permission: P.catalog.attributes.view },
       { to: "/catalog/attribute-coverage", label: "Coverage", icon: ClipboardCheck, permission: P.catalog.attributes.view },
       { to: "/catalog/price-lists", label: "Price lists", icon: DollarSign, permission: P.catalog.priceLists.view },
+      { to: "/catalog/campaigns", label: "Offers & campaigns", icon: Megaphone, permission: P.catalog.priceLists.view },
     ],
   },
   {

@@ -51,6 +51,7 @@ const CategoriesPage = lazyNamed(() => import("@/pages/catalog/categories"), "Ca
 const ProductsPage = lazyNamed(() => import("@/pages/catalog/products"), "ProductsPage");
 const AttributesPage = lazyNamed(() => import("@/pages/catalog/attributes"), "AttributesPage");
 const PriceListsPage = lazyNamed(() => import("@/pages/catalog/price-lists"), "PriceListsPage");
+const CampaignsPage = lazyNamed(() => import("@/pages/catalog/campaigns"), "CampaignsPage");
 const AttributeCoveragePage = lazyNamed(() => import("@/pages/catalog/attribute-coverage"), "AttributeCoveragePage");
 const ProductFormPage = lazyNamed(() => import("@/pages/catalog/product-form"), "ProductFormPage");
 const ProductSheetPage = lazyNamed(() => import("@/pages/catalog/product-sheet"), "ProductSheetPage");
@@ -286,6 +287,7 @@ export const router = createBrowserRouter([
             element: <PermissionRoute permission={P.catalog.priceLists.view} />,
             children: [
               { path: "catalog/price-lists", element: withSuspense(<PriceListsPage />) },
+              { path: "catalog/campaigns", element: withSuspense(<CampaignsPage />) },
             ],
           },
           {

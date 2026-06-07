@@ -126,7 +126,8 @@
     "expandSidebar": "Expandir barra lateral",
     "attributes": "Atributos",
     "priceLists": "Listas de precios",
-    "attributeCoverage": "Cobertura de atributos"
+    "attributeCoverage": "Cobertura de atributos",
+    "campaigns": "Ofertas y campañas"
   },
   "auth": {
     "welcomeBack": "Bienvenido",

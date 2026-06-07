@@ -126,7 +126,8 @@
     "expandSidebar": "Expand sidebar",
     "attributes": "Attributes",
     "priceLists": "Price lists",
-    "attributeCoverage": "Attribute coverage"
+    "attributeCoverage": "Attribute coverage",
+    "campaigns": "Offers & campaigns"
   },
   "auth": {
     "welcomeBack": "Welcome",

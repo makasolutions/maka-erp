@@ -465,7 +465,7 @@ function PriceListsInputs({ productId, canEdit }: { productId: string; canEdit: 
 
   const listsQuery = useQuery({
     queryKey: ["catalog", "price-lists", "active"],
-    queryFn: () => getPriceLists({ pageSize: 200, isActive: true, sort: "name" }),
+    queryFn: () => getPriceLists({ pageSize: 200, isActive: true, sort: "name", kind: "Segment" }),
   });
   const lists = useMemo(() => {
     const items = listsQuery.data?.items ?? [];
