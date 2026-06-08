@@ -113,7 +113,7 @@ export function Combobox({
         ) : (
           <FieldTrigger
             id={id}
-            placeholder={placeholder ?? `${t("actions.allOf")} ${label.toLowerCase()}`}
+            placeholder={placeholder ?? `${t("actions.selectOne")} ${label.toLowerCase()}…`}
             selected={selected}
             hasValue={hasValue}
             clearable={clearable}

@@ -37,6 +37,7 @@
     "reset": "Reset",
     "open": "Open",
     "allOf": "All",
+    "selectOne": "Select",
     "duplicate": "Duplicate",
     "deactivate": "Deactivate",
     "activate": "Activate",
