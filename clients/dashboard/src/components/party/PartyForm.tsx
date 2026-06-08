@@ -253,28 +253,26 @@ export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormP
       {/* Tab 4 — Financiera */}
       {tab === "finance" && (
         <FormGrid>
-          <div className="col-span-1 sm:col-span-12">
+          <div className="col-span-1 flex flex-wrap items-center gap-8 sm:col-span-12">
             <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
               <Switch checked={v.hasCredit} disabled={disabled} onCheckedChange={(c) => set({ hasCredit: c })} />{t("parties.finance.hasCredit")}
             </label>
-          </div>
-          <Field id="p-climit" span={4} label={t("parties.finance.creditLimit")} hint={t("parties.finance.creditLimitHint")}>
-            <MakaCurrencyInput id="p-climit" value={v.creditLimit} disabled={disabled || !v.hasCredit}
-              onChange={(n) => set({ creditLimit: n })} />
-          </Field>
-          <Field id="p-cdays" span={4} label={t("parties.finance.creditDays")}>
-            <BasicRecordSelect id="p-cdays" tableCode="CreditDays" label={t("parties.finance.creditDays")}
-              value={v.creditDaysCode} onChange={(c) => set({ creditDaysCode: c })} disabled={disabled || !v.hasCredit} />
-          </Field>
-          <div className="col-span-1 flex items-end sm:col-span-4">
-            <label className="flex items-center gap-2 pb-2 text-[13px] font-medium text-[var(--color-foreground)]">
+            <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
               <Switch checked={v.creditBlocked} disabled={disabled} onCheckedChange={(c) => set({ creditBlocked: c })} />{t("parties.finance.blocked")}
             </label>
           </div>
-          <Field id="p-debe" span={4} label={t("parties.finance.debe")} hint={t("parties.finance.computedHint")}>
+          <Field id="p-climit" span={6} label={t("parties.finance.creditLimit")} hint={t("parties.finance.creditLimitHint")}>
+            <MakaCurrencyInput id="p-climit" value={v.creditLimit} disabled={disabled || !v.hasCredit}
+              onChange={(n) => set({ creditLimit: n })} />
+          </Field>
+          <Field id="p-cdays" span={6} label={t("parties.finance.creditDays")}>
+            <BasicRecordSelect id="p-cdays" tableCode="CreditDays" label={t("parties.finance.creditDays")}
+              value={v.creditDaysCode} onChange={(c) => set({ creditDaysCode: c })} disabled={disabled || !v.hasCredit} />
+          </Field>
+          <Field id="p-debe" span={6} label={t("parties.finance.debe")} hint={t("parties.finance.computedHint")}>
             <Input id="p-debe" value={formatMoney(debe)} disabled readOnly className="tabular-nums" />
           </Field>
-          <Field id="p-cupo" span={4} label={t("parties.finance.available")} hint={t("parties.finance.computedHint")}>
+          <Field id="p-cupo" span={6} label={t("parties.finance.available")} hint={t("parties.finance.computedHint")}>
             <Input id="p-cupo" value={formatMoney(cupo)} disabled readOnly className="tabular-nums" />
           </Field>
         </FormGrid>

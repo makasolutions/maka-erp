@@ -108,12 +108,12 @@ export function Combobox({
             onClear={() => onChange(null)}
             disabled={disabled}
             className={className}
-            allLabel={t("status.all")}
+            allLabel={`${t("actions.allOf")} ${label.toLowerCase()}`}
           />
         ) : (
           <FieldTrigger
             id={id}
-            placeholder={placeholder ?? `${t("actions.open")} ${label.toLowerCase()}…`}
+            placeholder={placeholder ?? `${t("actions.allOf")} ${label.toLowerCase()}`}
             selected={selected}
             hasValue={hasValue}
             clearable={clearable}
