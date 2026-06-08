@@ -53,9 +53,21 @@ export function emptyPartyForm(): PartyFormValue {
     legalName: "", firstName: "", lastName: "", tradeName: "", customer: true, supplier: false, email: "", website: "",
     taxRegimeCode: null, fiscalResponsibilities: null, actividadEconomicaCiiuCode: null,
     status: "Active", stage: "Lead", leadScore: 0, sourceCode: null,
-    hasCredit: false, creditLimit: null, creditDaysCode: null, creditBlocked: false,
-    notes: "", addresses: [], contacts: [], channels: [],
+    hasCredit: false, creditLimit: null, creditDaysCode: "30", creditBlocked: false,
+    notes: "", addresses: [emptyAddress()], contacts: [emptyContact()], channels: [],
   };
+}
+
+export function emptyAddress(isPrimary = true): PartyAddress {
+  return { country: "Colombia", isPrimary, department: null, city: null, line: "", labelCode: null };
+}
+export function emptyContact(): PartyContact {
+  return { reference: "", isCommercial: false };
+}
+/** A contact with no identifying data at all — dropped before submit. */
+export function isContactBlank(c: PartyContact): boolean {
+  return ![c.reference, c.firstName, c.lastName, c.email, c.cell, c.identificationNumber]
+    .some((x) => (x ?? "").trim().length > 0);
 }
 
 function rolesHas(roles: PartyRoles, r: string) { return roles.includes(r); }
@@ -88,7 +100,7 @@ export function partyFormToInput(v: PartyFormValue): PartyWriteInput {
     birthDate: null, genderCode: null, maritalStatusCode: null,
     hasCredit: v.hasCredit, creditLimit: v.creditLimit, creditDaysCode: v.creditDaysCode, creditBlocked: v.creditBlocked,
     creditCurrency: null, notes: v.notes.trim() || null, branchId: null,
-    addresses: v.addresses, contacts: v.contacts, channels: v.channels, team: [],
+    addresses: v.addresses, contacts: v.contacts.filter((c) => !isContactBlank(c)), channels: v.channels, team: [],
   };
 }
 
@@ -134,6 +146,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormP
         ))}
       </div>
 
+      <div className="min-h-[480px]">
       {/* Tab 1 — Identificación + Direcciones + Canales */}
       {tab === "id" && (
         <div className="space-y-6">
@@ -284,6 +297,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormP
           </Field>
         </FormGrid>
       )}
+      </div>
     </div>
   );
 }

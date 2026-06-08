@@ -65,19 +65,17 @@ export function ContactEditor({ value, onChange, disabled }: ContactEditorProps)
               <BasicRecordSelect id={`ct-civ-${i}`} tableCode="MaritalStatus" label={t("parties.contact.maritalStatus")}
                 value={c.maritalStatusCode ?? null} onChange={(v) => update(i, { maritalStatusCode: v })} disabled={disabled} />
             </div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <div className="mt-2 grid items-center gap-2 sm:grid-cols-3">
               <Input value={c.email ?? ""} disabled={disabled} placeholder={`${t("parties.contact.email")} *`}
                 aria-invalid={!(c.email ?? "").trim()} onChange={(e) => update(i, { email: e.target.value })} />
               <Input value={c.cell ?? ""} disabled={disabled} placeholder={`${t("parties.contact.cell")} *`}
                 aria-invalid={!(c.cell ?? "").trim()} onChange={(e) => update(i, { cell: e.target.value })} />
-            </div>
-            <div className="mt-2 flex items-center justify-between">
               <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
                 <Switch checked={c.isCommercial} disabled={disabled} onCheckedChange={(v) => update(i, { isCommercial: v })} />
                 {t("parties.contact.isCommercial")}
               </label>
-              {missingChannel && <span className="text-[11.5px] text-[var(--color-destructive)]">{t("parties.contact.channelRequired")}</span>}
             </div>
+            {missingChannel && <p className="mt-1.5 text-[11.5px] text-[var(--color-destructive)]">{t("parties.contact.channelRequired")}</p>}
           </div>
         );
       })}

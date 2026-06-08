@@ -127,7 +127,11 @@
     "attributes": "Atributos",
     "priceLists": "Listas de precios",
     "attributeCoverage": "Cobertura de atributos",
-    "campaigns": "Ofertas y campañas"
+    "campaigns": "Ofertas y campañas",
+    "commercial": "Comercial",
+    "thirdParties": "Terceros",
+    "employees": "Empleados",
+    "basicTables": "Tablas básicas"
   },
   "auth": {
     "welcomeBack": "Bienvenido",
@@ -275,6 +279,12 @@
       "rolesHint": "Permisos y asignación de roles",
       "groups": "Grupos",
       "groupsHint": "Grupos org y membresía",
+      "thirdParties": "Terceros",
+      "thirdPartiesHint": "Clientes y proveedores",
+      "employees": "Empleados",
+      "employeesHint": "Información laboral y nómina",
+      "basicTables": "Tablas básicas",
+      "basicTablesHint": "Listas de configuración",
       "products": "Productos",
       "productsHint": "Inventario del catálogo",
       "brands": "Marcas",

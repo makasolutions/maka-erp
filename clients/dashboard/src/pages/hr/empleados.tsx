@@ -17,6 +17,7 @@ import { AddressEditor } from "@/components/party/AddressEditor";
 import { ChannelEditor } from "@/components/party/ChannelEditor";
 import { ContactEditor } from "@/components/party/ContactEditor";
 import { EmployeeInfoEditor } from "@/components/hr/EmployeeInfoEditor";
+import { emptyAddress, emptyContact, isContactBlank } from "@/components/party/PartyForm";
 import { nitVerificationDigit } from "@/lib/nit";
 import { describe, formatMoney } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
@@ -53,7 +54,7 @@ type IdentityForm = {
 function emptyIdentity(): IdentityForm {
   return {
     identificationTypeCode: "CC", identificationNumber: "", verificationDigit: null,
-    firstName: "", lastName: "", email: "", addresses: [], contacts: [], channels: [],
+    firstName: "", lastName: "", email: "", addresses: [emptyAddress()], contacts: [emptyContact()], channels: [],
   };
 }
 
@@ -68,7 +69,8 @@ function identityToPartyInput(v: IdentityForm): PartyWriteInput {
     status: "Active", stage: "Customer", leadScore: 0, sourceCode: null, marketingType: null,
     birthDate: null, genderCode: null, maritalStatusCode: null,
     hasCredit: false, creditLimit: null, creditDaysCode: null, creditBlocked: false, creditCurrency: null,
-    notes: null, branchId: null, addresses: v.addresses, contacts: v.contacts, channels: v.channels, team: [],
+    notes: null, branchId: null, addresses: v.addresses,
+    contacts: v.contacts.filter((c) => !isContactBlank(c)), channels: v.channels, team: [],
   };
 }
 
@@ -201,7 +203,8 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
 
   const idOk = !!identity.identificationTypeCode && !!identity.identificationNumber.trim()
     && !!identity.firstName.trim() && !!identity.lastName.trim() && identity.addresses.length >= 1;
-  const canSubmit = idOk;
+  const contactsOk = identity.contacts.every((c) => isContactBlank(c) || (!!(c.email ?? "").trim() && !!(c.cell ?? "").trim()));
+  const canSubmit = idOk && contactsOk;
   const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };
 
   const setId = (patch: Partial<IdentityForm>) => setIdentity((v) => ({ ...v, ...patch }));
@@ -234,6 +237,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
                 ))}
               </div>
 
+              <div className="min-h-[480px]">
               {tab === "id" && (
                 <div className="space-y-6">
                   <FormGrid>
@@ -287,6 +291,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
               {tab === "employee" && (
                 <EmployeeInfoEditor value={emp} onChange={setEmp} />
               )}
+              </div>
             </div>
           </DialogBody>
           <DialogFooter>

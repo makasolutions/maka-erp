@@ -21,6 +21,7 @@
   color: var(--color-foreground) !important;
   font-family: inherit !important;
   text-align: right; /* money is always right-aligned */
+  padding-right: 0.625rem !important; /* keep amount off the right edge */
 }
 .e-input-group.maka-currency input.e-input::placeholder {
   color: var(--color-muted-foreground) !important;

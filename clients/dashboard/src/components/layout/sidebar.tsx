@@ -36,7 +36,10 @@ const NAV_ITEM_KEYS: Record<string, string> = {
   "/identity/users": "nav.users",
   "/identity/roles": "nav.roles",
   "/identity/groups": "nav.groups",
+  "/crm/terceros": "nav.thirdParties",
+  "/hr/empleados": "nav.employees",
   "/system/health": "nav.health",
+  "/system/basic-tables": "nav.basicTables",
   "/system/audits": "nav.auditTrail",
   "/system/sessions": "nav.sessions",
   "/system/trash": "nav.trash",
@@ -45,6 +48,7 @@ const NAV_ITEM_KEYS: Record<string, string> = {
 // Section id → i18n key mapping for section captions
 const NAV_SECTION_KEYS: Record<string, string> = {
   operations: "nav.operations",
+  commercial: "nav.commercial",
   catalog: "nav.catalog",
   helpdesk: "nav.helpdesk",
   identity: "nav.identity",

@@ -16,7 +16,7 @@ import { EntityPageHeader, EntityStatusBadge, EntityFilterPill } from "@/compone
 import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import {
-  PartyForm, emptyPartyForm, partyFormFromDetail, partyFormToInput, type PartyFormValue,
+  PartyForm, emptyPartyForm, isContactBlank, partyFormFromDetail, partyFormToInput, type PartyFormValue,
 } from "@/components/party/PartyForm";
 import { describe } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
@@ -198,7 +198,8 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   const nameOk = form.kind === "Juridica" ? !!form.legalName.trim() : (!!form.firstName.trim() && !!form.lastName.trim());
   const addressesOk = form.addresses.length >= 1;
-  const canSubmit = !!form.identificationTypeCode && !!form.identificationNumber.trim() && nameOk && addressesOk;
+  const contactsOk = form.contacts.every((c) => isContactBlank(c) || (!!(c.email ?? "").trim() && !!(c.cell ?? "").trim()));
+  const canSubmit = !!form.identificationTypeCode && !!form.identificationNumber.trim() && nameOk && addressesOk && contactsOk;
   const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };
 
   return (
