@@ -291,6 +291,25 @@ try
             await tenantDb.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
             await Console.Out.WriteLineAsync("[tenant-catalog] seeded root tenant").ConfigureAwait(false);
         }
+
+        // Platform "global" tenant — shared marketplace catalog. Provisioned next
+        // to root so Step 2 migrates + seeds it like any other tenant.
+        var globalSeeded = await tenantDb.TenantInfo
+            .FindAsync([MultitenancyConstants.Global.Id], CancellationToken.None)
+            .ConfigureAwait(false);
+        if (globalSeeded is null && cli.Command != "list-pending")
+        {
+            var globalTenant = new AppTenantInfo(
+                MultitenancyConstants.Global.Id,
+                MultitenancyConstants.Global.Name,
+                connectionString: string.Empty,
+                MultitenancyConstants.Global.EmailAddress,
+                issuer: MultitenancyConstants.Global.Issuer);
+            globalTenant.SetValidity(TimeProvider.System.GetUtcNow().UtcDateTime.AddYears(100));
+            await tenantDb.TenantInfo.AddAsync(globalTenant, CancellationToken.None).ConfigureAwait(false);
+            await tenantDb.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("[tenant-catalog] seeded global tenant").ConfigureAwait(false);
+        }
     }
 
     // ── Step 2 — per-tenant migrations + (optional) seeds ────────────────
