@@ -328,6 +328,11 @@
   "catalogSettings": {
     "section": "Catalog",
     "hint": "Taxes and shipping classes",
+    "industries": {
+      "title": "Tenant industries",
+      "hint": "Select the sectors you trade in. They filter the visible global categories (Google taxonomy).",
+      "empty": "No industries available."
+    },
     "taxRates": "Tax rates",
     "taxRatesHint": "VAT rates used on products.",
     "shippingClasses": "Shipping classes",

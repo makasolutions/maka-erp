@@ -328,6 +328,11 @@
   "catalogSettings": {
     "section": "Catálogo",
     "hint": "Impuestos y clases de envío",
+    "industries": {
+      "title": "Industrias del tenant",
+      "hint": "Selecciona los sectores que comercializas. Filtran las categorías globales visibles (taxonomía Google).",
+      "empty": "No hay industrias disponibles."
+    },
     "taxRates": "Impuestos",
     "taxRatesHint": "Tarifas de IVA usadas en los productos.",
     "shippingClasses": "Clases de envío",
