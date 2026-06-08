@@ -18,6 +18,16 @@
  */
 
 export const P = {
+  // ── Lookups (Tablas Básicas) ───────────────────────────────────────────────
+  lookups: {
+    tables: {
+      view:   "Permissions.Lookups.Tables.View",
+      create: "Permissions.Lookups.Tables.Create",
+      update: "Permissions.Lookups.Tables.Update",
+      delete: "Permissions.Lookups.Tables.Delete",
+    },
+    global: { manage: "Permissions.Lookups.Global.Manage" },
+  },
   // ── Catalog ──────────────────────────────────────────────────────────────
   catalog: {
     brands: {

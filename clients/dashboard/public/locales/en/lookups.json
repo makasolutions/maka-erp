@@ -1,0 +1,42 @@
+{
+  "title": "Basic tables",
+  "singular": "table",
+  "description": "Admin-managed lookup lists (identification types, banks, payment methods, sales channels…).",
+  "global": "Global",
+  "tenant": "Per tenant",
+  "fields": {
+    "name": "Name",
+    "code": "Identifier",
+    "scope": "Scope",
+    "records": "Records",
+    "description": "Description",
+    "sortOrder": "Order",
+    "isManageable": "Manageable",
+    "visibleInMenu": "Visible in menu",
+    "isGlobal": "Global",
+    "recordCode": "Code",
+    "recordValue": "Value",
+    "order": "Order",
+    "active": "Active"
+  },
+  "actions": {
+    "create": "New table",
+    "edit": "Edit table",
+    "delete": "Delete table",
+    "records": "Records"
+  },
+  "filters": {
+    "namePlaceholder": "Search by name or code…"
+  },
+  "createDesc": "Define a lookup list. Its values are managed under Records.",
+  "codeHint": "Stable key (e.g. IdentificationType). Cannot be changed later.",
+  "codeImmutable": "The identifier is fixed after creation.",
+  "globalRootOnly": "Only the operator can create global tables.",
+  "deleteConfirm": "Delete the basic table \"{{name}}\"? This cannot be undone.",
+  "recordsDesc": "Manage the values of this list.",
+  "globalReadOnly": "Read-only (global table)",
+  "noRecords": "No records yet. Add one below.",
+  "addRecord": "Add record",
+  "saveRecords": "Save records",
+  "dupeCodes": "There are duplicate record codes."
+}

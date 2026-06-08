@@ -1,6 +1,7 @@
 import {
   Activity,
   ClipboardCheck,
+  Database,
   DollarSign,
   Megaphone,
   FolderOpen,
@@ -112,6 +113,7 @@ export const sections: NavSection[] = [
     items: [
       // Health: operational dashboard — no specific permission required
       { to: "/system/health",   label: "Health",       icon: HeartPulse },
+      { to: "/system/basic-tables", label: "Basic tables", icon: Database, permission: P.lookups.tables.view },
       { to: "/system/audits",   label: "Audit trail",  icon: ScrollText, permission: P.auditTrails.view },
       // Sessions list requires ViewAll (ordinary users only see their own via Settings > Security)
       { to: "/system/sessions", label: "Sessions",     icon: Wifi,       permission: P.identity.sessions.viewAll },

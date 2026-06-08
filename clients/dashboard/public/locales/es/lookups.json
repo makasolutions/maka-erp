@@ -1,0 +1,42 @@
+{
+  "title": "Tablas básicas",
+  "singular": "tabla",
+  "description": "Listas paramétricas administrables (tipos de identificación, bancos, métodos de pago, canales de venta…).",
+  "global": "Global",
+  "tenant": "Por tenant",
+  "fields": {
+    "name": "Nombre",
+    "code": "Identificador",
+    "scope": "Alcance",
+    "records": "Registros",
+    "description": "Descripción",
+    "sortOrder": "Orden",
+    "isManageable": "Administrable",
+    "visibleInMenu": "Visible en menú",
+    "isGlobal": "Global",
+    "recordCode": "Código",
+    "recordValue": "Valor",
+    "order": "Orden",
+    "active": "Activo"
+  },
+  "actions": {
+    "create": "Nueva tabla",
+    "edit": "Editar tabla",
+    "delete": "Eliminar tabla",
+    "records": "Registros"
+  },
+  "filters": {
+    "namePlaceholder": "Buscar por nombre o código…"
+  },
+  "createDesc": "Define una lista paramétrica. Sus valores se administran en Registros.",
+  "codeHint": "Clave estable (ej. IdentificationType). No se puede cambiar luego.",
+  "codeImmutable": "El identificador es fijo tras crear.",
+  "globalRootOnly": "Solo el operador puede crear tablas globales.",
+  "deleteConfirm": "¿Eliminar la tabla básica \"{{name}}\"? Esta acción no se puede deshacer.",
+  "recordsDesc": "Administra los valores de esta lista.",
+  "globalReadOnly": "Solo lectura (tabla global)",
+  "noRecords": "Sin registros aún. Agrega uno abajo.",
+  "addRecord": "Agregar registro",
+  "saveRecords": "Guardar registros",
+  "dupeCodes": "Hay códigos de registro duplicados."
+}
