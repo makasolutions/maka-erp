@@ -211,7 +211,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
             <DialogDescription>{t("parties.formDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <PartyForm value={form} onChange={setForm} isCreate={isCreate} />
+            <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} />
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>

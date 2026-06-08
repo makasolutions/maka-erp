@@ -44,7 +44,12 @@
     "filters": { "searchPlaceholder": "Search by name or id…" },
     "picker": { "placeholder": "Search party…" },
     "tabs": {
-      "identity": "Identification", "contacts": "Contacts", "crm": "CRM", "finance": "Financial", "tax": "Tax"
+      "identity": "Identification", "contacts": "Contacts", "crm": "CRM", "finance": "Financial", "tax": "Tax", "prices": "Price lists"
+    },
+    "priceLists": {
+      "hint": "Price lists that apply to this party (customer or supplier).",
+      "list": "Price list", "choose": "Choose list…", "add": "Assign", "empty": "No lists assigned.",
+      "kind": { "Segment": "Segment", "Campaign": "Campaign", "Base": "Base" }
     },
     "fields": {
       "party": "Party",

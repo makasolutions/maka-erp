@@ -58,7 +58,12 @@
     "filters": { "searchPlaceholder": "Buscar por nombre o identificación…" },
     "picker": { "placeholder": "Buscar tercero…" },
     "tabs": {
-      "identity": "Identificación", "contacts": "Contactos", "crm": "CRM", "finance": "Financiera", "tax": "Tributaria"
+      "identity": "Identificación", "contacts": "Contactos", "crm": "CRM", "finance": "Financiera", "tax": "Tributaria", "prices": "Listas de precios"
+    },
+    "priceLists": {
+      "hint": "Listas de precios que aplican a este tercero (cliente o proveedor).",
+      "list": "Lista de precios", "choose": "Elegir lista…", "add": "Asignar", "empty": "Sin listas asignadas.",
+      "kind": { "Segment": "Segmento", "Campaign": "Campaña", "Base": "Base" }
     },
     "fields": {
       "party": "Tercero",

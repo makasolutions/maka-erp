@@ -10,6 +10,7 @@ import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
 import { AddressEditor } from "./AddressEditor";
 import { ChannelEditor } from "./ChannelEditor";
 import { ContactEditor } from "./ContactEditor";
+import { PartyPriceListsTab } from "./PartyPriceListsTab";
 import { nitVerificationDigit } from "@/lib/nit";
 import { formatMoney } from "@/lib/list-helpers";
 import { toast } from "sonner";
@@ -105,16 +106,18 @@ export function partyFormToInput(v: PartyFormValue): PartyWriteInput {
   };
 }
 
-type TabId = "id" | "contacts" | "crm" | "finance" | "tax";
+type TabId = "id" | "contacts" | "crm" | "finance" | "tax" | "prices";
 
 export interface PartyFormProps {
   value: PartyFormValue;
   onChange: (next: PartyFormValue) => void;
   isCreate: boolean;
   disabled?: boolean;
+  /** When editing an existing party, enables the price-lists tab. */
+  partyId?: string;
 }
 
-export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormProps) {
+export function PartyForm({ value: v, onChange, isCreate, disabled, partyId }: PartyFormProps) {
   const { t } = useTranslation("crm");
   const [tab, setTab] = useState<TabId>("id");
   const [verifying, setVerifying] = useState(false);
@@ -150,6 +153,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormP
     { id: "crm", label: t("parties.tabs.crm") },
     { id: "finance", label: t("parties.tabs.finance") },
     { id: "tax", label: t("parties.tabs.tax") },
+    ...(partyId ? [{ id: "prices" as TabId, label: t("parties.tabs.prices") }] : []),
   ];
 
   return (
@@ -323,6 +327,11 @@ export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormP
               value={v.actividadEconomicaCiiuCode} onChange={(c) => set({ actividadEconomicaCiiuCode: c })} disabled={disabled} />
           </Field>
         </FormGrid>
+      )}
+
+      {/* Tab 6 — Listas de precios (solo edición) */}
+      {tab === "prices" && partyId && (
+        <PartyPriceListsTab partyId={partyId} disabled={disabled} />
       )}
       </div>
     </div>
