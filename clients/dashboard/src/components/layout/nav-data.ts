@@ -7,6 +7,7 @@ import {
   Megaphone,
   FolderOpen,
   FolderTree,
+  Handshake,
   HeartPulse,
   LayoutDashboard,
   LayoutGrid,
@@ -83,6 +84,7 @@ export const sections: NavSection[] = [
     items: [
       { to: "/crm/terceros", label: "Third parties", icon: Building2, permission: P.parties.view },
       { to: "/hr/empleados", label: "Employees", icon: IdCard, permission: P.hr.employees.view },
+      { to: "/crm/convenios", label: "Agreements", icon: Handshake, permission: P.catalog.agreements.view },
     ],
   },
   {

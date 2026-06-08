@@ -48,6 +48,56 @@
     "title": "Sin registros",
     "body": "Los contactos y oportunidades aparecerán aquí."
   },
+  "convenios": {
+    "title": "Convenios",
+    "singular": "convenio",
+    "description": "Acuerdos comerciales con proveedores: tarifa, responsables, políticas y reglas.",
+    "formDesc": "Define el proveedor, la tarifa acordada, responsables, políticas y reglas del convenio.",
+    "terminatedNote": "Este convenio está terminado y es inmutable.",
+    "deleteConfirm": "¿Eliminar el convenio \"{{name}}\"? Solo se permite en borrador.",
+    "actions": { "create": "Nuevo convenio", "edit": "Editar convenio", "delete": "Eliminar convenio" },
+    "filters": { "searchPlaceholder": "Buscar por nombre…" },
+    "fields": {
+      "name": "Nombre", "supplier": "Proveedor", "type": "Tipo", "status": "Estado",
+      "priceList": "Tarifa acordada", "priceListHint": "Lista de precios de la que sale el costo del distribuidor.",
+      "suggestedPriceList": "Tarifa sugerida", "rules": "Reglas",
+      "dispatch": "Despacho", "waybill": "Guía", "settlement": "Liquidación",
+      "validFrom": "Vigente desde", "validTo": "Vigente hasta", "validToHint": "Vacío = sin fin.",
+      "failedDelivery": "Política de entregas fallidas", "returns": "Política de devoluciones",
+      "warranty": "Política de garantías", "notes": "Observaciones"
+    },
+    "type": {
+      "ProveedorUnico": "Proveedor único", "ProveedorModelo": "Proveedor modelo",
+      "DistribuidorAprobado": "Distribuidor aprobado", "ModeloPendiente": "Modelo pendiente"
+    },
+    "status": { "Borrador": "Borrador", "Vigente": "Vigente", "Suspendido": "Suspendido", "Terminado": "Terminado" },
+    "responsible": { "Proveedor": "Proveedor", "Distribuidor": "Distribuidor", "Plataforma": "Plataforma" },
+    "statusActions": { "activate": "Activar", "suspend": "Suspender", "terminate": "Terminar" },
+    "ruleType": {
+      "CompraMinimaMes": "Compra mínima mensual", "CompraMinimaAnio": "Compra mínima anual",
+      "AntiguedadMinimaMeses": "Antigüedad mínima (meses)", "VendeAEmpresa": "Es persona jurídica",
+      "VendeANatural": "Es persona natural", "DocumentoExigido": "Documento exigido",
+      "CalificacionMinima": "Calificación mínima", "SlaEntregaDias": "SLA de entrega (días)",
+      "CumplimientoMinimo": "Cumplimiento mínimo (%)"
+    },
+    "rules": {
+      "title": "Reglas del convenio", "empty": "Sin reglas. Agrega las condiciones que el distribuidor debe cumplir.",
+      "add": "Agregar regla", "type": "Tipo de regla", "value": "Valor", "mandatory": "Obligatoria",
+      "noValue": "Sin valor", "docPlaceholder": "Código de documento (ej. NIT)"
+    },
+    "evaluation": {
+      "title": "Evaluar distribuidor", "distributor": "Distribuidor", "eligible": "Cumple el convenio",
+      "notEligible": "No cumple el convenio", "noRules": "El convenio no tiene reglas."
+    },
+    "result": { "Cumple": "Cumple", "NoCumple": "No cumple", "Pendiente": "Pendiente" },
+    "validation": {
+      "nameRequired": "El nombre del convenio es obligatorio.",
+      "supplierRequired": "El proveedor es obligatorio.",
+      "dateRange": "La fecha final no puede ser anterior a la inicial.",
+      "ruleNumeric": "Una regla numérica requiere un valor válido (≥ 0).",
+      "ruleDoc": "Indica el documento exigido."
+    }
+  },
   "parties": {
     "title": "Terceros",
     "singular": "tercero",

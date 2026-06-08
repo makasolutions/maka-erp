@@ -80,6 +80,10 @@ export const P = {
       manage:      "Permissions.Catalog.PriceLists.Manage",
       approveBulk: "Permissions.Catalog.PriceLists.ApproveBulk",
     },
+    agreements: {
+      view:   "Permissions.Catalog.Agreements.View",
+      manage: "Permissions.Catalog.Agreements.Manage",
+    },
   },
 
   // ── Identity ─────────────────────────────────────────────────────────────
