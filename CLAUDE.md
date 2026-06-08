@@ -1063,5 +1063,56 @@ menos 2 tenants distintos para confirmar aislamiento de datos:
 
 ---
 
+## 17. ESTÁNDAR DE VALIDACIÓN DE FORMULARIOS — OBLIGATORIO
+
+> Toda entrada de datos del usuario DEBE validarse **por tipo de dato**, no campo por campo
+> de forma ad-hoc. Cada campo se "tipa" y hereda las validaciones mínimas: **requerido ·
+> tipo · longitud mínima · longitud máxima · regex/formato · reglas de negocio**.
+
+**Arquitectura (doble defensa, una fuente de verdad):**
+- **Backend = fuente de verdad.** FluentValidation. Helpers reutilizables en
+  `src/Modules/Parties/.../Domain/FormValidationRules.cs` (`IsValidPersonName`, `IsValidUrl`,
+  `IsValidPhone`, `IsValidColombianAddress`, `IsValidLatitude/Longitude`, `BirthDateError`,
+  `IsValidChannelValue`). Mensajes SIEMPRE en español.
+- **Frontend = espejo 1:1** en `clients/dashboard/src/lib/validation/forms.ts` (mismas regex y
+  rangos). `validateParty` / `validateIdentity` devuelven `{ campo → mensaje }` vía `t('common:validation.*')`.
+- **UI:** el `Field` (`components/list/field.tsx`) acepta `error?` → tinta el borde del control y
+  muestra el mensaje. La página corre el validador **al hacer submit** (`showErrors`), pinta
+  errores inline + `FormErrorSummary` + puntos rojos en las pestañas. El botón Guardar NO se
+  deshabilita: el submit muestra los errores. **Nunca** dejar pasar texto directo sin `t()`.
+
+**Reglas mínimas por tipo de dato (tabla canónica):**
+
+| Tipo | Req. | Min | Max | Formato / regla |
+|---|---|---|---|---|
+| NombrePersona (nombres/apellidos) | sí si Natural | 2 | **50** | letras Unicode + ` . ' -`; sin dígitos; sin repetir ≥8 |
+| RazónSocial | sí si Jurídica | 3 | **150** | imprimibles |
+| Email | según campo | — | 254 | `^[^\s@]+@[^\s@]+\.[^\s@]+$` |
+| Url / Website | no | — | 2048 | `http(s)://` válido; antepone `https://` si falta esquema |
+| Teléfono/Celular | según campo | — | — | **CO `^3\d{9}$`** o **E.164 `^\+\d{7,15}$`** (internacional) |
+| NIT | sí | 5 | 15 | dígitos; DV calculado (DIAN), **no editable** |
+| Cédula (CC/TI/NUIP) | sí | 4 | 11 | dígitos (máscara solo-dígitos al teclear) |
+| Latitud | no | — | — | **−90 … 90** (bloqueo duro) |
+| Longitud | no | — | — | **−180 … 180** (bloqueo duro); lat/lng van juntas |
+| Dirección (DIAN) | **sí** | — | — | `<vía> <n> # <n>-<n>`. Ej. `CL 100 # 13-21` |
+| Fecha nacimiento | no | — | — | ≤ hoy y ≥ hoy−120 años |
+| Rango de fechas | — | — | — | `fin ≥ inicio` (fin nula = vigente) |
+| Valor de canal | sí | — | 256 | formato según tipo (Email→@, Web→url, Tel→phone) |
+
+**Nomenclatura DIAN (vías aceptadas, abreviatura canónica):**
+`CL` Calle · `KR` Carrera · `AV` Avenida · `AC` Av. Calle · `AK` Av. Carrera · `DG` Diagonal ·
+`TV` Transversal · `CQ` Circular · `CV` Circunvalar · `AU` Autopista · `KM` Kilómetro · `MZ`
+Manzana · `VRD` Vereda. (Validación pragmática por regex; constructor estructurado = futuro.)
+
+**Máscaras:** documentos numéricos (NIT/CC/TI/NUIP) filtran a solo-dígitos al teclear;
+lat/lng usan `type=number` con `min/max`. Email y web → `Input` + regex (no máscara fija, porque
+son de longitud variable). Para nuevos campos de formato fijo, preferir filtro de entrada antes
+que un componente Syncfusion que rompa los tokens de tema.
+
+> 🚫 PROHIBIDO agregar un campo de formulario sin asignarle su tipo de validación de esta tabla
+> (front + back). Si un tipo no existe aún, extender `FormValidationRules.cs` y `forms.ts` a la par.
+
+---
+
 *Fuente de verdad del proyecto. Si hay conflicto con cualquier otra instrucción, este archivo tiene prioridad.*
 *Versión: 3.2 | Proyecto: Maka Omni-Commerce Ecosystem | Junio 2026*

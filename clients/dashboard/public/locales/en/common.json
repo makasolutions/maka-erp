@@ -609,7 +609,23 @@
   },
   "validation": {
     "summaryTitle_one": "Fix the following error:",
-    "summaryTitle_other": "Fix the following {{count}} errors:"
+    "summaryTitle_other": "Fix the following {{count}} errors:",
+    "required": "This field is required.",
+    "nameMax": "Cannot exceed 50 characters.",
+    "nameChars": "Contains invalid characters.",
+    "legalNameMax": "Legal name cannot exceed 150 characters.",
+    "emailInvalid": "The email address is not valid.",
+    "urlInvalid": "The website is not a valid URL.",
+    "phoneInvalid": "Invalid phone (10 digits starting with 3, or international +57…).",
+    "addressAtLeastOne": "At least one address is required.",
+    "addressFormat": "The address does not match the nomenclature. E.g.: CL 100 # 13-21.",
+    "cityRequired": "Select the city.",
+    "latRange": "Latitude must be between -90 and 90.",
+    "lngRange": "Longitude must be between -180 and 180.",
+    "geoPair": "Latitude and longitude must be entered together.",
+    "dateInvalid": "Invalid date.",
+    "birthFuture": "Birth date cannot be in the future.",
+    "birthInvalid": "Birth date is not valid."
   },
   "errors": {
     "unexpected": "An unexpected error occurred. Please try again.",

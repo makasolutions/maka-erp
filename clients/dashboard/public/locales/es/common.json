@@ -680,7 +680,23 @@
   },
   "validation": {
     "summaryTitle_one": "Corrige el siguiente error:",
-    "summaryTitle_other": "Corrige los siguientes {{count}} errores:"
+    "summaryTitle_other": "Corrige los siguientes {{count}} errores:",
+    "required": "Este campo es obligatorio.",
+    "nameMax": "No puede superar 50 caracteres.",
+    "nameChars": "Contiene caracteres no válidos.",
+    "legalNameMax": "La razón social no puede superar 150 caracteres.",
+    "emailInvalid": "El correo electrónico no es válido.",
+    "urlInvalid": "La página web no es una URL válida.",
+    "phoneInvalid": "Teléfono inválido (10 dígitos iniciando en 3, o internacional +57…).",
+    "addressAtLeastOne": "Se requiere al menos una dirección.",
+    "addressFormat": "La dirección no cumple la nomenclatura. Ej.: CL 100 # 13-21.",
+    "cityRequired": "Selecciona la ciudad.",
+    "latRange": "La latitud debe estar entre -90 y 90.",
+    "lngRange": "La longitud debe estar entre -180 y 180.",
+    "geoPair": "Latitud y longitud deben ingresarse juntas.",
+    "dateInvalid": "Fecha no válida.",
+    "birthFuture": "La fecha de nacimiento no puede ser futura.",
+    "birthInvalid": "La fecha de nacimiento no es válida."
   },
   "errors": {
     "unexpected": "Ocurrió un error inesperado. Por favor intenta de nuevo.",

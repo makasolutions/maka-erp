@@ -18,6 +18,7 @@ import { ChannelEditor } from "@/components/party/ChannelEditor";
 import { ContactEditor } from "@/components/party/ContactEditor";
 import { EmployeeInfoEditor } from "@/components/hr/EmployeeInfoEditor";
 import { emptyAddress, emptyContact, isContactBlank } from "@/components/party/PartyForm";
+import { validateIdentity } from "@/lib/validation/forms";
 import { nitVerificationDigit } from "@/lib/nit";
 import { describe, fieldErrors, formatMoney } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
@@ -156,6 +157,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   const partyQ = useQuery({
     queryKey: ["parties", "detail", editRow?.partyId],
@@ -171,7 +173,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   useEffect(() => {
     if (!isOpen) return;
     setTab("id");
-    setErrors(null); setErrorMsg(null);
+    setErrors(null); setErrorMsg(null); setShowErrors(false);
     if (isCreate) { setIdentity(emptyIdentity()); setEmp(emptyEmployeeData()); setEmployeeId(null); return; }
     if (partyQ.data) {
       const d = partyQ.data;
@@ -210,15 +212,24 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
     },
   });
 
-  const idOk = !!identity.identificationTypeCode && !!identity.identificationNumber.trim()
-    && !!identity.firstName.trim() && !!identity.lastName.trim()
-    && identity.addresses.length >= 1 && identity.addresses.every((a) => !!(a.city ?? "").trim());
-  const contactsOk = identity.contacts.every((c) => isContactBlank(c) || (!!(c.email ?? "").trim() && !!(c.cell ?? "").trim()));
-  const canSubmit = idOk && contactsOk;
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };
+  const ce = showErrors ? validateIdentity(identity, tc) : {};
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const ve = validateIdentity(identity, tc);
+    if (Object.keys(ve).length > 0) {
+      setShowErrors(true);
+      setErrors(Object.fromEntries(Object.entries(ve).map(([k, m]) => [k, [m]])));
+      setErrorMsg(null);
+      setTab("id");
+      return;
+    }
+    setShowErrors(false);
+    save.mutate();
+  };
 
   const setId = (patch: Partial<IdentityForm>) => setIdentity((v) => ({ ...v, ...patch }));
   const isNit = (identity.identificationTypeCode ?? "") === "NIT";
+  const numericDoc = ["NIT", "NIT_EXT", "CC", "TI", "NUIP"].includes((identity.identificationTypeCode ?? "").toUpperCase());
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "id", label: tp("parties.tabs.identity") },
@@ -252,13 +263,14 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
               {tab === "id" && (
                 <div className="space-y-6">
                   <FormGrid>
-                    <Field id="emp-idtype" span={3} label={tp("parties.fields.idType")} required>
+                    <Field id="emp-idtype" span={3} label={tp("parties.fields.idType")} required error={ce.identificationTypeCode}>
                       <BasicRecordSelect id="emp-idtype" tableCode="IdentificationType" label={tp("parties.fields.idType")}
                         value={identity.identificationTypeCode} onChange={(c) => setId({ identificationTypeCode: c })} disabled={!isCreate} />
                     </Field>
-                    <Field id="emp-idnum" span={4} label={tp("parties.fields.idNumber")} required>
+                    <Field id="emp-idnum" span={4} label={tp("parties.fields.idNumber")} required error={ce.identificationNumber}>
                       <Input id="emp-idnum" value={identity.identificationNumber} disabled={!isCreate} className="font-mono"
-                        onChange={(e) => setId({ identificationNumber: e.target.value })} />
+                        inputMode={numericDoc ? "numeric" : "text"} maxLength={20}
+                        onChange={(e) => setId({ identificationNumber: numericDoc ? e.target.value.replace(/\D/g, "") : e.target.value })} />
                     </Field>
                     <Field id="emp-dv" span={2} label={tp("parties.fields.dv")}>
                       <div className="flex gap-1">
@@ -274,19 +286,19 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
                       <Combobox id="emp-kind" label={tp("parties.fields.kind")} value="Natural" disabled
                         options={[{ value: "Natural", label: tp("parties.kind.Natural") }]} onChange={() => {}} />
                     </Field>
-                    <Field id="emp-first" span={6} label={tp("parties.fields.firstName")} required>
-                      <Input id="emp-first" value={identity.firstName} onChange={(e) => setId({ firstName: e.target.value })} />
+                    <Field id="emp-first" span={6} label={tp("parties.fields.firstName")} required error={ce.firstName}>
+                      <Input id="emp-first" value={identity.firstName} maxLength={50} onChange={(e) => setId({ firstName: e.target.value })} />
                     </Field>
-                    <Field id="emp-last" span={6} label={tp("parties.fields.lastName")} required>
-                      <Input id="emp-last" value={identity.lastName} onChange={(e) => setId({ lastName: e.target.value })} />
+                    <Field id="emp-last" span={6} label={tp("parties.fields.lastName")} required error={ce.lastName}>
+                      <Input id="emp-last" value={identity.lastName} maxLength={50} onChange={(e) => setId({ lastName: e.target.value })} />
                     </Field>
-                    <Field id="emp-email" span={6} label={tp("parties.fields.email")}>
+                    <Field id="emp-email" span={6} label={tp("parties.fields.email")} error={ce.email}>
                       <Input id="emp-email" type="email" value={identity.email} onChange={(e) => setId({ email: e.target.value })} />
                     </Field>
                   </FormGrid>
                   <div className="border-t border-[var(--color-border)] pt-4">
                     <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{tp("parties.address.title")}<span className="ml-1 text-[var(--color-destructive)]">*</span></h3>
-                    <AddressEditor value={identity.addresses} onChange={(a) => setId({ addresses: a })} />
+                    <AddressEditor value={identity.addresses} onChange={(a) => setId({ addresses: a })} errors={ce} />
                   </div>
                   <div className="border-t border-[var(--color-border)] pt-4">
                     <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{tp("parties.channel.title")}</h3>
@@ -307,7 +319,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={save.isPending || !canSubmit}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
+            <Button type="submit" disabled={save.isPending}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

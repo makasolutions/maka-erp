@@ -58,6 +58,7 @@ export function Field({
   required,
   span,
   className,
+  error,
   children,
 }: {
   id: string;
@@ -66,11 +67,22 @@ export function Field({
   required?: boolean;
   span?: FormSpan;
   className?: string;
+  /** When set, the control is flagged invalid and the message replaces the hint. */
+  error?: string | null;
   children: React.ReactNode;
 }) {
   const { t } = useTranslation("common");
   return (
-    <div className={cn("space-y-1.5", span && ["col-span-1", SPAN_CLASS[span]], className)}>
+    <div
+      className={cn(
+        "space-y-1.5",
+        span && ["col-span-1", SPAN_CLASS[span]],
+        // Tint any descendant input/control border when invalid.
+        error &&
+          "[&_input]:!border-[var(--color-destructive)] [&_textarea]:!border-[var(--color-destructive)] [&_[role=combobox]]:!border-[var(--color-destructive)] [&_button[role=combobox]]:!border-[var(--color-destructive)]",
+        className,
+      )}
+    >
       <Label
         htmlFor={id}
         className="flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
@@ -84,11 +96,15 @@ export function Field({
         )}
       </Label>
       {children}
-      {hint && (
+      {error ? (
+        <p className="text-[11.5px] font-medium leading-relaxed text-[var(--color-destructive)]">
+          {error}
+        </p>
+      ) : hint ? (
         <p className="text-[11.5px] leading-relaxed text-[var(--color-muted-foreground)]/85">
           {hint}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

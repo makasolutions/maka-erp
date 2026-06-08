@@ -16,8 +16,9 @@ import { EntityPageHeader, EntityStatusBadge, EntityFilterPill, FormErrorSummary
 import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import {
-  PartyForm, emptyPartyForm, isContactBlank, partyFormFromDetail, partyFormToInput, type PartyFormValue,
+  PartyForm, emptyPartyForm, partyFormFromDetail, partyFormToInput, type PartyFormValue,
 } from "@/components/party/PartyForm";
+import { validateParty } from "@/lib/validation/forms";
 import { describe, fieldErrors } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
@@ -171,6 +172,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
   const [form, setForm] = useState<PartyFormValue>(emptyPartyForm());
   const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   const detailQ = useQuery({
     queryKey: ["crm", "parties", "detail", editId],
@@ -180,7 +182,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   useEffect(() => {
     if (!isOpen) return;
-    setErrors(null); setErrorMsg(null);
+    setErrors(null); setErrorMsg(null); setShowErrors(false);
     if (isCreate) setForm(emptyPartyForm());
     else if (detailQ.data) setForm(partyFormFromDetail(detailQ.data));
   }, [isOpen, isCreate, detailQ.data]);
@@ -205,11 +207,18 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
     },
   });
 
-  const nameOk = form.kind === "Juridica" ? !!form.legalName.trim() : (!!form.firstName.trim() && !!form.lastName.trim());
-  const addressesOk = form.addresses.length >= 1 && form.addresses.every((a) => !!(a.city ?? "").trim());
-  const contactsOk = form.contacts.every((c) => isContactBlank(c) || (!!(c.email ?? "").trim() && !!(c.cell ?? "").trim()));
-  const canSubmit = !!form.identificationTypeCode && !!form.identificationNumber.trim() && nameOk && addressesOk && contactsOk;
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const ve = validateParty(form, tc);
+    if (Object.keys(ve).length > 0) {
+      setShowErrors(true);
+      setErrors(Object.fromEntries(Object.entries(ve).map(([k, m]) => [k, [m]])));
+      setErrorMsg(null);
+      return;
+    }
+    setShowErrors(false);
+    save.mutate();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -221,11 +230,11 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
           </DialogHeader>
           <DialogBody>
             <FormErrorSummary errors={errors} message={errorMsg} />
-            <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} errors={errors} />
+            <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} errors={errors} showErrors={showErrors} />
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={save.isPending || !canSubmit}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
+            <Button type="submit" disabled={save.isPending}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

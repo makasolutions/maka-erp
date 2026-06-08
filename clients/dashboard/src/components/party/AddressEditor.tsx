@@ -12,11 +12,14 @@ export interface AddressEditorProps {
   value: PartyAddress[];
   onChange: (next: PartyAddress[]) => void;
   disabled?: boolean;
+  /** Client validation map keyed `addresses.{i}.{field}`. */
+  errors?: Record<string, string>;
 }
 
-export function AddressEditor({ value, onChange, disabled }: AddressEditorProps) {
+export function AddressEditor({ value, onChange, disabled, errors }: AddressEditorProps) {
   const { t } = useTranslation("crm");
   const { allCities, deptOfCity } = useColombiaGeo();
+  const err = (i: number, field: string): string | undefined => errors?.[`addresses.${i}.${field}`];
 
   const update = (i: number, patch: Partial<PartyAddress>) =>
     onChange(value.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
@@ -45,7 +48,7 @@ export function AddressEditor({ value, onChange, disabled }: AddressEditorProps)
               <BasicRecordSelect id={`addr-label-${i}`} tableCode="AddressLabel" label={t("parties.address.label")}
                 value={a.labelCode ?? null} onChange={(v) => update(i, { labelCode: v })} disabled={disabled} />
             </Field>
-            <Field id={`addr-city-${i}`} span={4} label={t("parties.address.city")} required>
+            <Field id={`addr-city-${i}`} span={4} label={t("parties.address.city")} required error={err(i, "city")}>
               <Combobox id={`addr-city-${i}`} label={t("parties.address.city")} value={a.city ?? null}
                 onChange={(v) => setCity(i, v)} options={allCities.map((c) => ({ value: c, label: c }))}
                 searchable clearable placeholder={t("parties.address.city")} disabled={disabled} />
@@ -54,8 +57,9 @@ export function AddressEditor({ value, onChange, disabled }: AddressEditorProps)
               <Input id={`addr-dept-${i}`} value={a.department ?? ""} disabled aria-label={t("parties.address.department")} />
             </Field>
             {/* Row 2: Dirección · Barrio · Referencia */}
-            <Field id={`addr-line-${i}`} span={4} label={t("parties.address.line")}>
-              <Input id={`addr-line-${i}`} value={a.line ?? ""} disabled={disabled}
+            <Field id={`addr-line-${i}`} span={4} label={t("parties.address.line")} required
+              error={err(i, "line")} hint={err(i, "line") ? undefined : t("parties.address.lineHint")}>
+              <Input id={`addr-line-${i}`} value={a.line ?? ""} disabled={disabled} placeholder="CL 100 # 13-21"
                 onChange={(e) => update(i, { line: e.target.value })} />
             </Field>
             <Field id={`addr-barrio-${i}`} span={4} label={t("parties.address.barrio")}>
@@ -67,12 +71,12 @@ export function AddressEditor({ value, onChange, disabled }: AddressEditorProps)
                 onChange={(e) => update(i, { reference: e.target.value })} />
             </Field>
             {/* Row 3: Latitud · Longitud · Predeterminada */}
-            <Field id={`addr-lat-${i}`} span={4} label={t("parties.address.lat")}>
-              <Input id={`addr-lat-${i}`} type="number" step="0.0000001" value={a.latitude ?? ""} disabled={disabled}
+            <Field id={`addr-lat-${i}`} span={4} label={t("parties.address.lat")} error={err(i, "latitude") ?? err(i, "geo")}>
+              <Input id={`addr-lat-${i}`} type="number" step="0.0000001" min={-90} max={90} value={a.latitude ?? ""} disabled={disabled}
                 onChange={(e) => update(i, { latitude: e.target.value === "" ? null : Number(e.target.value) })} />
             </Field>
-            <Field id={`addr-lng-${i}`} span={4} label={t("parties.address.lng")}>
-              <Input id={`addr-lng-${i}`} type="number" step="0.0000001" value={a.longitude ?? ""} disabled={disabled}
+            <Field id={`addr-lng-${i}`} span={4} label={t("parties.address.lng")} error={err(i, "longitude")}>
+              <Input id={`addr-lng-${i}`} type="number" step="0.0000001" min={-180} max={180} value={a.longitude ?? ""} disabled={disabled}
                 onChange={(e) => update(i, { longitude: e.target.value === "" ? null : Number(e.target.value) })} />
             </Field>
             <Field id={`addr-primary-${i}`} span={4} label={t("parties.address.primary")}>

@@ -13,6 +13,7 @@ import { ContactEditor } from "./ContactEditor";
 import { PartyPriceListsTab } from "./PartyPriceListsTab";
 import { SupplierCatalogTab } from "./SupplierCatalogTab";
 import { nitVerificationDigit } from "@/lib/nit";
+import { validateParty } from "@/lib/validation/forms";
 import { formatMoney } from "@/lib/list-helpers";
 import { toast } from "sonner";
 import {
@@ -119,6 +120,8 @@ export interface PartyFormProps {
   partyId?: string;
   /** Field-error map from a 400 (keys = backend property names) to flag tabs. */
   errors?: Record<string, string[]> | null;
+  /** When true, run client-side validation and show inline field errors. */
+  showErrors?: boolean;
 }
 
 /** Maps a backend validation key (e.g. "Contacts[0].Email") to the tab that owns it. */
@@ -131,8 +134,10 @@ function tabForErrorKey(key: string): TabId {
   return "id"; // identidad, direcciones, canales, nombres…
 }
 
-export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, errors }: PartyFormProps) {
+export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, errors, showErrors }: PartyFormProps) {
   const { t } = useTranslation("crm");
+  const { t: tc } = useTranslation("common");
+  const ce = showErrors ? validateParty(v, tc) : {};
   const [tab, setTab] = useState<TabId>("id");
   const [verifying, setVerifying] = useState(false);
   const set = (patch: Partial<PartyFormValue>) => onChange({ ...v, ...patch });
@@ -158,6 +163,8 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
   const statusOpts: PartyStatus[] = ["Active", "Inactive", "Prospect"];
   const stageOpts: LifecycleStage[] = ["Lead", "Mql", "Sql", "Opportunity", "Customer", "Inactive"];
   const isNit = (v.identificationTypeCode ?? "") === "NIT";
+  // Documentos numéricos → máscara de solo dígitos al teclear.
+  const numericDoc = ["NIT", "NIT_EXT", "CC", "TI", "NUIP"].includes((v.identificationTypeCode ?? "").toUpperCase());
   const debe = 0; // placeholder hasta CxC/CxP
   const cupo = (v.creditLimit ?? 0) - debe;
 
@@ -173,6 +180,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
 
   const erroredTabs = new Set<TabId>();
   for (const key of Object.keys(errors ?? {})) erroredTabs.add(tabForErrorKey(key));
+  for (const key of Object.keys(ce)) erroredTabs.add(tabForErrorKey(key));
 
   return (
     <div className="space-y-4">
@@ -208,13 +216,14 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
                 options={[{ value: "Juridica", label: t("parties.kind.Juridica") }, { value: "Natural", label: t("parties.kind.Natural") }]}
                 disabled={disabled || !isCreate} />
             </Field>
-            <Field id="p-idtype" span={3} label={t("parties.fields.idType")} required>
+            <Field id="p-idtype" span={3} label={t("parties.fields.idType")} required error={ce.identificationTypeCode}>
               <BasicRecordSelect id="p-idtype" tableCode="IdentificationType" label={t("parties.fields.idType")}
                 value={v.identificationTypeCode} onChange={(c) => set({ identificationTypeCode: c })} disabled={disabled || !isCreate} />
             </Field>
-            <Field id="p-idnum" span={4} label={t("parties.fields.idNumber")} required>
+            <Field id="p-idnum" span={4} label={t("parties.fields.idNumber")} required error={ce.identificationNumber}>
               <Input id="p-idnum" value={v.identificationNumber} disabled={disabled || !isCreate} className="font-mono"
-                onChange={(e) => set({ identificationNumber: e.target.value })} />
+                inputMode={numericDoc ? "numeric" : "text"} maxLength={20}
+                onChange={(e) => set({ identificationNumber: numericDoc ? e.target.value.replace(/\D/g, "") : e.target.value })} />
             </Field>
             <Field id="p-dv" span={2} label={t("parties.fields.dv")}>
               <div className="flex gap-1">
@@ -228,8 +237,8 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
             </Field>
             {v.kind === "Juridica" ? (
               <>
-                <Field id="p-legal" span={8} label={t("parties.fields.legalName")} required>
-                  <Input id="p-legal" value={v.legalName} disabled={disabled} onChange={(e) => set({ legalName: e.target.value })} />
+                <Field id="p-legal" span={8} label={t("parties.fields.legalName")} required error={ce.legalName}>
+                  <Input id="p-legal" value={v.legalName} maxLength={150} disabled={disabled} onChange={(e) => set({ legalName: e.target.value })} />
                 </Field>
                 <Field id="p-trade" span={4} label={t("parties.fields.tradeName")}>
                   <Input id="p-trade" value={v.tradeName} disabled={disabled} onChange={(e) => set({ tradeName: e.target.value })} />
@@ -237,19 +246,19 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
               </>
             ) : (
               <>
-                <Field id="p-first" span={6} label={t("parties.fields.firstName")} required>
-                  <Input id="p-first" value={v.firstName} disabled={disabled} onChange={(e) => set({ firstName: e.target.value })} />
+                <Field id="p-first" span={6} label={t("parties.fields.firstName")} required error={ce.firstName}>
+                  <Input id="p-first" value={v.firstName} maxLength={50} disabled={disabled} onChange={(e) => set({ firstName: e.target.value })} />
                 </Field>
-                <Field id="p-last" span={6} label={t("parties.fields.lastName")} required>
-                  <Input id="p-last" value={v.lastName} disabled={disabled} onChange={(e) => set({ lastName: e.target.value })} />
+                <Field id="p-last" span={6} label={t("parties.fields.lastName")} required error={ce.lastName}>
+                  <Input id="p-last" value={v.lastName} maxLength={50} disabled={disabled} onChange={(e) => set({ lastName: e.target.value })} />
                 </Field>
               </>
             )}
-            <Field id="p-email" span={6} label={t("parties.fields.email")}>
+            <Field id="p-email" span={6} label={t("parties.fields.email")} error={ce.email}>
               <Input id="p-email" type="email" value={v.email} disabled={disabled} onChange={(e) => set({ email: e.target.value })} />
             </Field>
-            <Field id="p-web" span={6} label={t("parties.fields.website")}>
-              <Input id="p-web" value={v.website} disabled={disabled} onChange={(e) => set({ website: e.target.value })} />
+            <Field id="p-web" span={6} label={t("parties.fields.website")} error={ce.website}>
+              <Input id="p-web" inputMode="url" placeholder="https://" value={v.website} disabled={disabled} onChange={(e) => set({ website: e.target.value })} />
             </Field>
             {!disabled && (
               <div className="col-span-1 sm:col-span-12">
@@ -264,7 +273,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
 
           <div className="border-t border-[var(--color-border)] pt-4">
             <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{t("parties.address.title")}<span className="ml-1 text-[var(--color-destructive)]">*</span></h3>
-            <AddressEditor value={v.addresses} onChange={(a) => set({ addresses: a })} disabled={disabled} />
+            <AddressEditor value={v.addresses} onChange={(a) => set({ addresses: a })} disabled={disabled} errors={ce} />
           </div>
           <div className="border-t border-[var(--color-border)] pt-4">
             <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{t("parties.channel.title")}</h3>
