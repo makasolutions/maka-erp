@@ -40,7 +40,38 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db)
         party.ReplaceChannels(PartyMapping.ToChannels(command.Channels));
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
 
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        // En un grafo ya rastreado, EF trata los hijos NUEVOS (con GUID generado en
+        // cliente) como filas existentes → genera UPDATE (PartyId 0→real) que afecta
+        // 0 filas (DbUpdateConcurrencyException). Tras Clear()+Add las colecciones
+        // solo contienen los nuevos: forzarlos a Added y desactivar AutoDetectChanges
+        // durante el SaveChanges para que el DetectChanges final no revierta el estado.
+        db.ChangeTracker.DetectChanges();
+        MarkChildrenAdded(party.Addresses);
+        MarkChildrenAdded(party.Contacts);
+        MarkChildrenAdded(party.Channels);
+        MarkChildrenAdded(party.Team);
+
+        db.ChangeTracker.AutoDetectChangesEnabled = false;
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            db.ChangeTracker.AutoDetectChangesEnabled = true;
+        }
         return party.Id;
+    }
+
+    private void MarkChildrenAdded<T>(IEnumerable<T> children) where T : class
+    {
+        foreach (var child in children)
+        {
+            var entry = db.Entry(child);
+            if (entry.State is EntityState.Modified or EntityState.Unchanged)
+            {
+                entry.State = EntityState.Added;
+            }
+        }
     }
 }
