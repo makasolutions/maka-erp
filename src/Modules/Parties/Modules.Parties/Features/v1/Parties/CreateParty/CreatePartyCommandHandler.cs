@@ -44,7 +44,18 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db)
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
 
         db.Parties.Add(party);
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException ex) when (
+            (ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) ?? false) &&
+            (ex.InnerException?.Message.Contains("IdentificationNumber", StringComparison.Ordinal) ?? false))
+        {
+            // Carrera contra el índice único (TenantId, tipo, número): degradar a 409 limpio.
+            throw new CustomException("Ya existe un tercero con esa identificación.",
+                Enumerable.Empty<string>(), HttpStatusCode.Conflict);
+        }
         return party.Id;
     }
 }
