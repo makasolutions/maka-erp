@@ -25,6 +25,9 @@ export const DEMO_PASSWORD = "Password123!";
 // dev seed password used by the Acme/Globex demo accounts.
 export const ROOT_PASSWORD = "123Pa$$word!";
 
+// Maka Solutions — main tenant used for marketplace/dropshipping testing.
+export const MAKA_PASSWORD = "Maka2026!";
+
 const acme = (
   email: string,
   firstName: string,
@@ -70,6 +73,23 @@ export const DEMO_ACCOUNT_GROUPS: Array<{
   blurb: string;
   accounts: DemoAccount[];
 }> = [
+  {
+    tenant: "maka-solutions",
+    tenantLabel: "Maka Solutions SAS",
+    blurb: "marketplace · tenant principal de pruebas",
+    accounts: [
+      {
+        email: "admin@makasolutions.com",
+        password: MAKA_PASSWORD,
+        tenant: "maka-solutions",
+        tenantLabel: "Maka Solutions SAS",
+        firstName: "Maka",
+        lastName: "Admin",
+        tier: "tenant-admin",
+        persona: "Administrador del tenant — terceros, catálogo, proveedores",
+      },
+    ],
+  },
   {
     tenant: "root",
     tenantLabel: "Root",
