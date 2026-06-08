@@ -52,6 +52,14 @@ public static class CatalogPermissions
         public const string Manage = $"Permissions.{Resource}.Manage";
     }
 
+    /// <summary>Convenios comerciales con proveedores (Fase E).</summary>
+    public static class Agreements
+    {
+        public const string Resource = "Catalog.Agreements";
+        public const string View   = $"Permissions.{Resource}.View";
+        public const string Manage = $"Permissions.{Resource}.Manage";
+    }
+
     /// <summary>Catalog configuration: tax rates (§2.3) and shipping classes (§2.4).</summary>
     public static class Settings
     {
@@ -89,6 +97,9 @@ public static class CatalogPermissions
 
         new("View Attributes",   ActionConstants.View, Attributes.Resource, IsBasic: true),
         new("Manage Attributes", "Manage",             Attributes.Resource),
+
+        new("View Agreements",   ActionConstants.View, Agreements.Resource, IsBasic: true),
+        new("Manage Agreements", "Manage",             Agreements.Resource),
 
         new("View Catalog Settings",   ActionConstants.View, Settings.Resource, IsBasic: true),
         new("Manage Catalog Settings", "Manage",             Settings.Resource),

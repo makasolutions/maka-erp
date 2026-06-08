@@ -22,7 +22,7 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
                 x.ActividadEconomicaCiiuCode, x.Roles, x.Status, x.Stage,
                 x.LeadScore, x.SourceCode, x.AssignedUserId, x.MarketingType, x.BirthDate, x.GenderCode, x.MaritalStatusCode,
                 x.HasCredit, x.CreditLimit, x.CreditDaysCode, x.CreditBlocked, x.CreditCurrency, x.Notes, x.BranchId,
-                x.IsGlobalSupplier,
+                x.IsGlobalSupplier, x.CreatedAtUtc,
                 x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Barrio, a.Reference,
                     a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode)).ToList(),
                 x.Contacts.Select(c => new PartyContactDto(c.Id, c.Reference, c.ContactTypeCode, c.AreaCode,

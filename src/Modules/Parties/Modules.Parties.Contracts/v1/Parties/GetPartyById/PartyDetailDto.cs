@@ -35,6 +35,7 @@ public sealed record PartyDetailDto(
     string?     Notes,
     Guid?       BranchId,
     bool        IsGlobalSupplier,
+    DateTime    CreatedAtUtc,
     IReadOnlyList<PartyAddressDto>    Addresses,
     IReadOnlyList<PartyContactDto>    Contacts,
     IReadOnlyList<PartyChannelDto>    Channels,

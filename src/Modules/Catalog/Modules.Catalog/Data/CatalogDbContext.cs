@@ -40,6 +40,8 @@ public sealed class CatalogDbContext : BaseDbContext
     public DbSet<IndustryCategory> IndustryCategories => Set<IndustryCategory>();
     public DbSet<TenantIndustry>   TenantIndustries => Set<TenantIndustry>();
     public DbSet<PartyPriceList>   PartyPriceLists  => Set<PartyPriceList>();
+    public DbSet<Agreement>        Agreements       => Set<Agreement>();
+    public DbSet<AgreementRule>    AgreementRules   => Set<AgreementRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

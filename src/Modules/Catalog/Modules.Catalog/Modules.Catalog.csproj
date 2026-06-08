@@ -23,6 +23,8 @@
 		<ProjectReference Include="..\Modules.Catalog.Contracts\Modules.Catalog.Contracts.csproj" />
 		<!-- Files.Contracts: product/brand/category images register IFileAccessPolicy. -->
 		<ProjectReference Include="..\..\Files\Modules.Files.Contracts\Modules.Files.Contracts.csproj" />
+		<!-- Parties.Contracts: agreement rule evaluation reads the distributor Party via GetPartyByIdQuery. -->
+		<ProjectReference Include="..\..\Parties\Modules.Parties.Contracts\Modules.Parties.Contracts.csproj" />
 	</ItemGroup>
 
 </Project>
