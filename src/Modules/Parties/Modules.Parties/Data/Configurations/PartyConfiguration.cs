@@ -38,9 +38,8 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.Property(x => x.Stage).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.Roles).HasConversion<int>();
 
-        // Único por (tipo, número) sobre filas vivas; per-tenant vía shadow TenantId.
-        builder.HasIndex(x => new { x.IdentificationTypeCode, x.IdentificationNumber })
-            .IsUnique().HasFilter("\"IsDeleted\" = FALSE");
+        // El índice ÚNICO por (TenantId, tipo, número) se define en PartiesDbContext
+        // tras base.OnModelCreating, porque el shadow TenantId aún no existe aquí.
         builder.HasIndex(x => x.LegalName);
         builder.HasIndex(x => x.Roles);
         builder.HasIndex(x => x.AssignedUserId);

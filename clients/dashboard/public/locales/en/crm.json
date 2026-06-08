@@ -76,6 +76,15 @@
       "notes": "Notes",
       "city": "City"
     },
+    "verify": {
+      "button": "Verify",
+      "verifying": "Verifying…",
+      "hint": "Validates the document and, for NIT, tries to fetch the legal name.",
+      "ok": "Valid document.",
+      "found": "Legal name: {{name}}",
+      "invalid": "Invalid document.",
+      "failed": "Could not verify the document."
+    },
     "kind": { "Juridica": "Company", "Natural": "Individual" },
     "role": { "customer": "Customer", "supplier": "Supplier" },
     "status": { "Active": "Active", "Inactive": "Inactive", "Prospect": "Prospect" },

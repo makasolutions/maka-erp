@@ -175,3 +175,21 @@ export async function updateParty(id: string, input: PartyWriteInput): Promise<v
 export async function deleteParty(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/parties/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
+
+export type VerifyIdentificationResult = {
+  valid: boolean;
+  error?: string | null;
+  verificationDigit?: number | null;
+  legalName?: string | null;
+  registryStatus?: string | null;
+  source: string;
+};
+
+export function verifyIdentification(
+  identificationTypeCode: string, number: string, verificationDigit?: number | null,
+): Promise<VerifyIdentificationResult> {
+  return apiFetch<VerifyIdentificationResult>("/api/v1/parties/verify-identification", {
+    method: "POST",
+    body: JSON.stringify({ identificationTypeCode, number, verificationDigit: verificationDigit ?? null }),
+  });
+}

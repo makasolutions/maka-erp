@@ -1,5 +1,6 @@
 using FluentValidation;
 using FSH.Modules.Parties.Contracts.v1.Parties.CreateParty;
+using FSH.Modules.Parties.Domain;
 
 namespace FSH.Modules.Parties.Features.v1.Parties.CreateParty;
 
@@ -9,6 +10,10 @@ public sealed class CreatePartyCommandValidator : AbstractValidator<CreatePartyC
     {
         RuleFor(x => x.IdentificationTypeCode).NotEmpty().MaximumLength(64);
         RuleFor(x => x.IdentificationNumber).NotEmpty().MaximumLength(64);
+        RuleFor(x => x)
+            .Must(x => IdentificationValidator.Validate(x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit) is null)
+            .WithMessage(x => IdentificationValidator.Validate(x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit))
+            .WithName(nameof(CreatePartyCommand.IdentificationNumber));
         RuleFor(x => x.LegalName).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Email).MaximumLength(256).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
         RuleFor(x => x.CreditCurrency).Length(3).When(x => !string.IsNullOrWhiteSpace(x.CreditCurrency));

@@ -12,8 +12,9 @@ import { ChannelEditor } from "./ChannelEditor";
 import { ContactEditor } from "./ContactEditor";
 import { nitVerificationDigit } from "@/lib/nit";
 import { formatMoney } from "@/lib/list-helpers";
+import { toast } from "sonner";
 import {
-  rolesToApi, type LifecycleStage, type PartyAddress, type PartyChannel, type PartyContact,
+  rolesToApi, verifyIdentification, type LifecycleStage, type PartyAddress, type PartyChannel, type PartyContact,
   type PartyDetailDto, type PartyKind, type PartyRoles, type PartyStatus, type PartyWriteInput,
 } from "@/api/parties";
 
@@ -116,7 +117,26 @@ export interface PartyFormProps {
 export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormProps) {
   const { t } = useTranslation("crm");
   const [tab, setTab] = useState<TabId>("id");
+  const [verifying, setVerifying] = useState(false);
   const set = (patch: Partial<PartyFormValue>) => onChange({ ...v, ...patch });
+
+  const onVerify = async () => {
+    if (!v.identificationTypeCode || !v.identificationNumber.trim()) return;
+    setVerifying(true);
+    try {
+      const r = await verifyIdentification(v.identificationTypeCode, v.identificationNumber.trim(), v.verificationDigit);
+      if (!r.valid) { toast.error(r.error ?? t("parties.verify.invalid")); return; }
+      const patch: Partial<PartyFormValue> = {};
+      if (r.verificationDigit != null) patch.verificationDigit = r.verificationDigit;
+      if (r.legalName && v.kind === "Juridica") patch.legalName = r.legalName;
+      if (Object.keys(patch).length) set(patch);
+      toast.success(r.legalName ? t("parties.verify.found", { name: r.legalName }) : t("parties.verify.ok"));
+    } catch {
+      toast.error(t("parties.verify.failed"));
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const statusOpts: PartyStatus[] = ["Active", "Inactive", "Prospect"];
   const stageOpts: LifecycleStage[] = ["Lead", "Mql", "Sql", "Opportunity", "Customer", "Inactive"];
@@ -207,6 +227,15 @@ export function PartyForm({ value: v, onChange, isCreate, disabled }: PartyFormP
             <Field id="p-web" span={6} label={t("parties.fields.website")}>
               <Input id="p-web" value={v.website} disabled={disabled} onChange={(e) => set({ website: e.target.value })} />
             </Field>
+            {!disabled && (
+              <div className="col-span-1 sm:col-span-12">
+                <Button type="button" variant="outline" size="sm" disabled={verifying || !v.identificationTypeCode || !v.identificationNumber.trim()}
+                  onClick={onVerify}>
+                  {verifying ? t("parties.verify.verifying") : t("parties.verify.button")}
+                </Button>
+                <span className="ml-2 text-[11.5px] text-[var(--color-muted-foreground)]">{t("parties.verify.hint")}</span>
+              </div>
+            )}
           </FormGrid>
 
           <div className="border-t border-[var(--color-border)] pt-4">

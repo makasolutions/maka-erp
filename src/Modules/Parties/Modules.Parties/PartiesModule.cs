@@ -11,9 +11,12 @@ using FSH.Modules.Parties.Features.v1.Parties.GetPartyById;
 using FSH.Modules.Parties.Features.v1.Parties.RestoreParty;
 using FSH.Modules.Parties.Features.v1.Parties.SetPartyRoles;
 using FSH.Modules.Parties.Features.v1.Parties.UpdateParty;
+using FSH.Modules.Parties.Contracts.v1.Verification;
+using FSH.Modules.Parties.Features.v1.Verification;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +34,24 @@ public sealed class PartiesModule : IModule
         PermissionConstants.Register(PartiesPermissions.All);
         builder.Services.AddHeroDbContext<PartiesDbContext>();
         builder.Services.AddScoped<IDbInitializer, PartiesDbInitializer>();
+
+        // Identity verification (NIT/cédula): local validation + swappable lookup provider.
+        builder.Services.Configure<IdentityVerificationOptions>(
+            builder.Configuration.GetSection("IdentityVerification"));
+        var verifyOptions = builder.Configuration.GetSection("IdentityVerification").Get<IdentityVerificationOptions>()
+            ?? new IdentityVerificationOptions();
+        if (string.Equals(verifyOptions.Provider, "Rues", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.Services.AddHttpClient<IIdentityVerificationProvider, RuesIdentityVerificationProvider>(client =>
+            {
+                client.BaseAddress = new Uri(verifyOptions.RuesBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Clamp(verifyOptions.TimeoutSeconds, 2, 30));
+            });
+        }
+        else
+        {
+            builder.Services.AddSingleton<IIdentityVerificationProvider, NullIdentityVerificationProvider>();
+        }
 
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<PartiesDbContext>(name: "db:parties", failureStatus: HealthStatus.Unhealthy);
@@ -60,5 +81,6 @@ public sealed class PartiesModule : IModule
         group.MapSetPartyRolesEndpoint();
         group.MapDeletePartyEndpoint();
         group.MapRestorePartyEndpoint();
+        group.MapVerifyIdentificationEndpoint();
     }
 }

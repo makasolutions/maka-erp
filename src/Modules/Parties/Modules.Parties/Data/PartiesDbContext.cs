@@ -31,5 +31,12 @@ public sealed class PartiesDbContext : BaseDbContext
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PartiesDbContext).Assembly);
         base.OnModelCreating(modelBuilder); // LAST — tenant + soft-delete filters
+
+        // Unique identification per tenant (shadow TenantId only exists after base):
+        // a same NIT/cédula can live in different tenants, but not duplicate within one.
+        modelBuilder.Entity<Party>()
+            .HasIndex("TenantId", nameof(Party.IdentificationTypeCode), nameof(Party.IdentificationNumber))
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

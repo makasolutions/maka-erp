@@ -90,6 +90,15 @@
       "notes": "Observación",
       "city": "Ciudad"
     },
+    "verify": {
+      "button": "Verificar",
+      "verifying": "Verificando…",
+      "hint": "Valida el documento y, si es NIT, intenta traer la razón social.",
+      "ok": "Documento válido.",
+      "found": "Razón social: {{name}}",
+      "invalid": "Documento inválido.",
+      "failed": "No se pudo verificar el documento."
+    },
     "kind": { "Juridica": "Persona jurídica", "Natural": "Persona natural" },
     "role": { "customer": "Cliente", "supplier": "Proveedor" },
     "status": { "Active": "Activo", "Inactive": "Inactivo", "Prospect": "Prospecto" },
