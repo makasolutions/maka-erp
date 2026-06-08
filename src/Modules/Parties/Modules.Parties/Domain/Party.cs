@@ -16,14 +16,17 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public int?    VerificationDigit      { get; private set; }
     public PartyKind Kind                 { get; private set; }
 
-    public string  LegalName  { get; private set; } = default!;
+    public string  LegalName  { get; private set; } = default!;  // razón social (jurídica) o "Nombres Apellidos" (natural)
+    public string? FirstName  { get; private set; }               // persona natural
+    public string? LastName   { get; private set; }               // persona natural
     public string? TradeName  { get; private set; }
     public string? Email      { get; private set; }
     public string? Website    { get; private set; }
 
     // Fiscal DIAN (mínimo; se refina en Billing)
-    public string? TaxRegimeCode          { get; private set; }
-    public string? FiscalResponsibilities { get; private set; }
+    public string? TaxRegimeCode             { get; private set; }
+    public string? FiscalResponsibilities    { get; private set; }
+    public string? ActividadEconomicaCiiuCode { get; private set; }
 
     public PartyRole   Roles  { get; private set; }
     public PartyStatus Status { get; private set; }
@@ -40,8 +43,11 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public string?   GenderCode       { get; private set; }
     public string?   MaritalStatusCode { get; private set; }
 
-    // B2B
+    // Financiera (B2B). Debe/CupoDisponible se calculan con CxC/CxP a futuro.
+    public bool     HasCredit      { get; private set; }
     public decimal? CreditLimit    { get; private set; }
+    public string?  CreditDaysCode { get; private set; }
+    public bool     CreditBlocked  { get; private set; }
     public string?  CreditCurrency { get; private set; }
 
     public string? Notes    { get; private set; }
@@ -56,6 +62,7 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
 
     public bool IsCustomer => Roles.HasFlag(PartyRole.Customer);
     public bool IsSupplier => Roles.HasFlag(PartyRole.Supplier);
+    public bool IsEmployee => Roles.HasFlag(PartyRole.Employee);
 
     public ICollection<PartyAddress>    Addresses { get; private set; } = new List<PartyAddress>();
     public ICollection<PartyContact>    Contacts  { get; private set; } = new List<PartyContact>();
@@ -72,7 +79,9 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
         PartyStatus status = PartyStatus.Active, LifecycleStage stage = LifecycleStage.Lead,
         int leadScore = 0, string? sourceCode = null, Guid? assignedUserId = null, string? marketingType = null,
         DateOnly? birthDate = null, string? genderCode = null, string? maritalStatusCode = null,
-        decimal? creditLimit = null, string? creditCurrency = null, string? notes = null, Guid? branchId = null)
+        decimal? creditLimit = null, string? creditCurrency = null, string? notes = null, Guid? branchId = null,
+        string? firstName = null, string? lastName = null, string? actividadEconomicaCiiuCode = null,
+        bool hasCredit = false, string? creditDaysCode = null, bool creditBlocked = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identificationTypeCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(identificationNumber);
@@ -80,6 +89,12 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
 
         return new Party
         {
+            FirstName = firstName?.Trim(),
+            LastName = lastName?.Trim(),
+            ActividadEconomicaCiiuCode = actividadEconomicaCiiuCode?.Trim(),
+            HasCredit = hasCredit,
+            CreditDaysCode = creditDaysCode?.Trim(),
+            CreditBlocked = creditBlocked,
             Id = Guid.CreateVersion7(),
             IdentificationTypeCode = identificationTypeCode.Trim(),
             IdentificationNumber = identificationNumber.Trim(),
@@ -114,11 +129,19 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
         string? taxRegimeCode, string? fiscalResponsibilities, PartyStatus status, LifecycleStage stage,
         int leadScore, string? sourceCode, Guid? assignedUserId, string? marketingType,
         DateOnly? birthDate, string? genderCode, string? maritalStatusCode,
-        decimal? creditLimit, string? creditCurrency, string? notes, Guid? branchId, int? verificationDigit)
+        decimal? creditLimit, string? creditCurrency, string? notes, Guid? branchId, int? verificationDigit,
+        string? firstName, string? lastName, string? actividadEconomicaCiiuCode,
+        bool hasCredit, string? creditDaysCode, bool creditBlocked)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(legalName);
         Kind = kind;
         LegalName = legalName.Trim();
+        FirstName = firstName?.Trim();
+        LastName = lastName?.Trim();
+        ActividadEconomicaCiiuCode = actividadEconomicaCiiuCode?.Trim();
+        HasCredit = hasCredit;
+        CreditDaysCode = creditDaysCode?.Trim();
+        CreditBlocked = creditBlocked;
         Roles = roles;
         TradeName = tradeName?.Trim();
         Email = email?.Trim();
@@ -159,7 +182,7 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
             // garantizar una dirección primaria
             var first = list[0];
             list[0] = PartyAddress.Create(first.Country, first.Department, first.City, first.Line,
-                first.Reference, first.Latitude, first.Longitude, isPrimary: true, first.Label);
+                first.Barrio, first.Reference, first.Latitude, first.Longitude, isPrimary: true, first.LabelCode);
         }
         foreach (var a in list) Addresses.Add(a);
     }

@@ -15,6 +15,10 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.Property(x => x.IdentificationTypeCode).IsRequired().HasMaxLength(64);
         builder.Property(x => x.IdentificationNumber).IsRequired().HasMaxLength(64);
         builder.Property(x => x.LegalName).IsRequired().HasMaxLength(200);
+        builder.Property(x => x.FirstName).HasMaxLength(120);
+        builder.Property(x => x.LastName).HasMaxLength(120);
+        builder.Property(x => x.ActividadEconomicaCiiuCode).HasMaxLength(64);
+        builder.Property(x => x.CreditDaysCode).HasMaxLength(64);
         builder.Property(x => x.TradeName).HasMaxLength(200);
         builder.Property(x => x.Email).HasMaxLength(256);
         builder.Property(x => x.Website).HasMaxLength(256);

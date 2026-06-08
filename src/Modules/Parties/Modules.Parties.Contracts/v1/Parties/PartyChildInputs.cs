@@ -7,15 +7,26 @@ public sealed record PartyAddressInput(
     string? Department,
     string? City,
     string? Line,
+    string? Barrio,
     string? Reference,
     decimal? Latitude,
     decimal? Longitude,
     bool    IsPrimary,
-    string? Label);
+    string? LabelCode);
 
 public sealed record PartyContactInput(
     string  Reference,
-    string? FullName,
+    string? ContactTypeCode,
+    string? AreaCode,
+    string? IdentificationTypeCode,
+    string? IdentificationNumber,
+    string? FirstName,
+    string? LastName,
+    string? PositionCode,
+    string? ProfessionCode,
+    DateOnly? BirthDate,
+    string? GenderCode,
+    string? MaritalStatusCode,
     string? Email,
     string? Phone,
     string? Cell,

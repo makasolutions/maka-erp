@@ -25,12 +25,17 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db)
         if (exists)
             throw new CustomException("Ya existe un tercero con esa identificación.", Enumerable.Empty<string>(), HttpStatusCode.Conflict);
 
+        var roles = PartyMapping.NormalizeRoles(command.Roles);
+        string legalName = PartyMapping.ResolveLegalName(command.Kind, command.LegalName, command.FirstName, command.LastName);
+
         var party = Party.Create(
-            typeCode, number, command.VerificationDigit, command.Kind, command.LegalName, command.Roles,
+            typeCode, number, command.VerificationDigit, command.Kind, legalName, roles,
             command.TradeName, command.Email, command.Website, command.TaxRegimeCode, command.FiscalResponsibilities,
             command.Status, command.Stage, command.LeadScore, command.SourceCode, command.AssignedUserId, command.MarketingType,
             command.BirthDate, command.GenderCode, command.MaritalStatusCode, command.CreditLimit, command.CreditCurrency,
-            command.Notes, command.BranchId);
+            command.Notes, command.BranchId,
+            command.FirstName, command.LastName, command.ActividadEconomicaCiiuCode,
+            command.HasCredit, command.CreditDaysCode, command.CreditBlocked);
 
         party.ReplaceAddresses(PartyMapping.ToAddresses(command.Addresses));
         party.ReplaceContacts(PartyMapping.ToContacts(command.Contacts));

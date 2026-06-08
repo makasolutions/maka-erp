@@ -18,12 +18,15 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
             .Where(x => x.Id == query.Id && !x.IsDeleted)
             .Select(x => new PartyDetailDto(
                 x.Id, x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit, x.Kind, x.LegalName,
-                x.TradeName, x.Email, x.Website, x.TaxRegimeCode, x.FiscalResponsibilities, x.Roles, x.Status, x.Stage,
+                x.FirstName, x.LastName, x.TradeName, x.Email, x.Website, x.TaxRegimeCode, x.FiscalResponsibilities,
+                x.ActividadEconomicaCiiuCode, x.Roles, x.Status, x.Stage,
                 x.LeadScore, x.SourceCode, x.AssignedUserId, x.MarketingType, x.BirthDate, x.GenderCode, x.MaritalStatusCode,
-                x.CreditLimit, x.CreditCurrency, x.Notes, x.BranchId,
-                x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Reference,
-                    a.Latitude, a.Longitude, a.IsPrimary, a.Label)).ToList(),
-                x.Contacts.Select(c => new PartyContactDto(c.Id, c.Reference, c.FullName, c.Email, c.Phone, c.Cell,
+                x.HasCredit, x.CreditLimit, x.CreditDaysCode, x.CreditBlocked, x.CreditCurrency, x.Notes, x.BranchId,
+                x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Barrio, a.Reference,
+                    a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode)).ToList(),
+                x.Contacts.Select(c => new PartyContactDto(c.Id, c.Reference, c.ContactTypeCode, c.AreaCode,
+                    c.IdentificationTypeCode, c.IdentificationNumber, c.FirstName, c.LastName, c.PositionCode,
+                    c.ProfessionCode, c.BirthDate, c.GenderCode, c.MaritalStatusCode, c.Email, c.Phone, c.Cell,
                     c.IsCommercial, c.Notes)).ToList(),
                 x.Channels.Select(c => new PartyChannelDto(c.Id, c.ChannelTypeCode, c.Value, c.Reference, c.IsPrimary)).ToList(),
                 x.Team.Select(m => new PartyTeamMemberDto(m.Id, m.UserId, m.Role)).ToList()))

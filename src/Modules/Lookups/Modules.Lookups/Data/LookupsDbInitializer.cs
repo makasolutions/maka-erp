@@ -48,6 +48,44 @@ public sealed class LookupsDbInitializer(
             [("WEB", "Sitio web"), ("WHATSAPP", "WhatsApp"), ("INSTAGRAM", "Instagram"),
              ("FACEBOOK", "Facebook"), ("REFERIDO", "Referido"), ("MOSTRADOR", "Mostrador"),
              ("CSV", "Importación CSV"), ("OTRO", "Otro")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("AddressLabel", "Etiqueta de dirección", 70,
+            [("CASA", "Casa"), ("OFICINA", "Oficina"), ("EMPRESA", "Empresa"), ("SUCURSAL", "Sucursal"),
+             ("BODEGA", "Bodega"), ("OTRO", "Otro")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("ContactType", "Tipo de contacto", 80,
+            [("PRINCIPAL", "Principal"), ("SECUNDARIO", "Secundario"), ("EMERGENCIA", "Emergencia")],
+            cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("ContactArea", "Área del contacto", 90,
+            [("COMERCIAL", "Comercial"), ("FACTURACION", "Facturación"), ("SOPORTE", "Soporte"),
+             ("COMPRAS", "Compras"), ("GERENCIA", "Gerencia"), ("LOGISTICA", "Logística"),
+             ("TESORERIA", "Tesorería")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("Position", "Cargo", 100,
+            [("GERENTE", "Gerente"), ("DIRECTOR", "Director"), ("JEFE", "Jefe"), ("COORDINADOR", "Coordinador"),
+             ("ANALISTA", "Analista"), ("ASESOR", "Asesor comercial"), ("AUXILIAR", "Auxiliar"),
+             ("ASISTENTE", "Asistente"), ("OTRO", "Otro")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("Profession", "Profesión", 110,
+            [("ADMINISTRADOR", "Administrador de empresas"), ("CONTADOR", "Contador"), ("INGENIERO", "Ingeniero"),
+             ("ABOGADO", "Abogado"), ("DISENADOR", "Diseñador"), ("COMUNICADOR", "Comunicador"),
+             ("TECNICO", "Técnico"), ("OTRO", "Otro")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("CreditDays", "Días de crédito", 120,
+            [("1", "1 día"), ("7", "7 días"), ("15", "15 días"), ("30", "30 días"),
+             ("45", "45 días"), ("60", "60 días")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("Ciiu", "Actividad económica (CIIU)", 130,
+            [("4651", "4651 - Comercio de computadores y equipos periféricos"),
+             ("4652", "4652 - Comercio de equipos de comunicación"),
+             ("4742", "4742 - Comercio de equipos de sonido y video"),
+             ("4759", "4759 - Comercio de otros artículos de uso doméstico"),
+             ("7420", "7420 - Actividades de fotografía"),
+             ("9001", "9001 - Creación musical y audiovisual"),
+             ("6201", "6201 - Desarrollo de sistemas informáticos"),
+             ("4690", "4690 - Comercio al por mayor no especializado")],
+            cancellationToken).ConfigureAwait(false);
     }
 
     private async Task SeedTableAsync(

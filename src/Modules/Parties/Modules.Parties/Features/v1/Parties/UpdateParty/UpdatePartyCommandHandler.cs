@@ -21,11 +21,16 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db)
             .ConfigureAwait(false)
             ?? throw new CustomException("Tercero no encontrado.", Enumerable.Empty<string>(), HttpStatusCode.NotFound);
 
-        party.Update(command.Kind, command.LegalName, command.Roles, command.TradeName, command.Email, command.Website,
+        var roles = PartyMapping.NormalizeRoles(command.Roles);
+        string legalName = PartyMapping.ResolveLegalName(command.Kind, command.LegalName, command.FirstName, command.LastName);
+
+        party.Update(command.Kind, legalName, roles, command.TradeName, command.Email, command.Website,
             command.TaxRegimeCode, command.FiscalResponsibilities, command.Status, command.Stage, command.LeadScore,
             command.SourceCode, command.AssignedUserId, command.MarketingType, command.BirthDate, command.GenderCode,
             command.MaritalStatusCode, command.CreditLimit, command.CreditCurrency, command.Notes, command.BranchId,
-            command.VerificationDigit);
+            command.VerificationDigit,
+            command.FirstName, command.LastName, command.ActividadEconomicaCiiuCode,
+            command.HasCredit, command.CreditDaysCode, command.CreditBlocked);
 
         party.ReplaceAddresses(PartyMapping.ToAddresses(command.Addresses));
         party.ReplaceContacts(PartyMapping.ToContacts(command.Contacts));

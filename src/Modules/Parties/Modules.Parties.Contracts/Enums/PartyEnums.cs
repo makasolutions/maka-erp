@@ -10,6 +10,7 @@ public enum PartyRole
     None     = 0,
     Customer = 1,
     Supplier = 2,
+    Employee = 4,
 }
 
 /// <summary>Naturaleza del tercero.</summary>

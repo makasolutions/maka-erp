@@ -9,11 +9,14 @@ public sealed record PartyDetailDto(
     int?        VerificationDigit,
     PartyKind   Kind,
     string      LegalName,
+    string?     FirstName,
+    string?     LastName,
     string?     TradeName,
     string?     Email,
     string?     Website,
     string?     TaxRegimeCode,
     string?     FiscalResponsibilities,
+    string?     ActividadEconomicaCiiuCode,
     PartyRole   Roles,
     PartyStatus Status,
     LifecycleStage Stage,
@@ -24,7 +27,10 @@ public sealed record PartyDetailDto(
     DateOnly?   BirthDate,
     string?     GenderCode,
     string?     MaritalStatusCode,
+    bool        HasCredit,
     decimal?    CreditLimit,
+    string?     CreditDaysCode,
+    bool        CreditBlocked,
     string?     CreditCurrency,
     string?     Notes,
     Guid?       BranchId,
@@ -34,10 +40,12 @@ public sealed record PartyDetailDto(
     IReadOnlyList<PartyTeamMemberDto> Team);
 
 public sealed record PartyAddressDto(Guid Id, string Country, string? Department, string? City, string? Line,
-    string? Reference, decimal? Latitude, decimal? Longitude, bool IsPrimary, string? Label);
+    string? Barrio, string? Reference, decimal? Latitude, decimal? Longitude, bool IsPrimary, string? LabelCode);
 
-public sealed record PartyContactDto(Guid Id, string Reference, string? FullName, string? Email, string? Phone,
-    string? Cell, bool IsCommercial, string? Notes);
+public sealed record PartyContactDto(Guid Id, string Reference, string? ContactTypeCode, string? AreaCode,
+    string? IdentificationTypeCode, string? IdentificationNumber, string? FirstName, string? LastName,
+    string? PositionCode, string? ProfessionCode, DateOnly? BirthDate, string? GenderCode, string? MaritalStatusCode,
+    string? Email, string? Phone, string? Cell, bool IsCommercial, string? Notes);
 
 public sealed record PartyChannelDto(Guid Id, string ChannelTypeCode, string Value, string? Reference, bool IsPrimary);
 
