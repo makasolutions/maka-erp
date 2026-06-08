@@ -35,6 +35,9 @@ public sealed class CatalogDbContext : BaseDbContext
     public DbSet<TenantProduct>    TenantProducts   => Set<TenantProduct>();
     public DbSet<SupplierBrand>    SupplierBrands   => Set<SupplierBrand>();
     public DbSet<SupplierProduct>  SupplierProducts => Set<SupplierProduct>();
+    public DbSet<Industry>         Industries       => Set<Industry>();
+    public DbSet<IndustryCategory> IndustryCategories => Set<IndustryCategory>();
+    public DbSet<TenantIndustry>   TenantIndustries => Set<TenantIndustry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -21,6 +21,9 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(x => x.ImageUrl).HasMaxLength(512);
         builder.Property(x => x.IsActive).IsRequired();
         builder.Property(x => x.DeletedBy).HasMaxLength(64);
+        builder.Property(x => x.FullPath).HasMaxLength(1024);
+        builder.HasIndex(x => x.GoogleCategoryId);
+        builder.HasIndex(x => x.RootGoogleCategoryId);
 
         // Self-referencing tree via ParentId. Children navigation only (no Parent nav).
         builder.HasMany(x => x.Children)

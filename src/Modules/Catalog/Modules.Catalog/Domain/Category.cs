@@ -20,6 +20,12 @@ public sealed class Category : AggregateRoot<Guid>, ISoftDeletable
 
     public int?    WooCommerceId { get; private set; }
 
+    // Taxonomía Google (google_product_category). Las categorías sembradas en el
+    // tenant `global` traen su id y ruta completa; las privadas las dejan en null.
+    public int?    GoogleCategoryId     { get; private set; }
+    public int?    RootGoogleCategoryId { get; private set; }  // id Google del ancestro raíz (para filtro por industria)
+    public string? FullPath             { get; private set; }  // "A > B > C"
+
     public DateTime  CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
 
@@ -82,6 +88,29 @@ public sealed class Category : AggregateRoot<Guid>, ISoftDeletable
         SortOrder    = sortOrder;
         IsActive     = isActive;
         UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>Crea una categoría a partir de un nodo de la taxonomía Google (tenant global).</summary>
+    public static Category FromGoogleTaxonomy(
+        int googleCategoryId, int rootGoogleCategoryId, string name, string slug, string fullPath, Guid? parentId, int sortOrder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentException.ThrowIfNullOrWhiteSpace(slug);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fullPath);
+        return new Category
+        {
+            Id                   = Guid.CreateVersion7(),
+            GoogleCategoryId     = googleCategoryId,
+            RootGoogleCategoryId = rootGoogleCategoryId,
+            Name                 = name.Trim(),
+            Slug                 = slug.ToLowerInvariant().Trim(),
+            FullPath             = fullPath.Trim(),
+            ParentId             = parentId,
+            SortOrder            = sortOrder,
+            OwnerId              = null,
+            IsActive             = true,
+            CreatedAtUtc         = DateTime.UtcNow,
+        };
     }
 
     public void Restore()

@@ -1,4 +1,6 @@
+using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Persistence;
+using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Catalog.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -7,6 +9,7 @@ namespace FSH.Modules.Catalog.Data;
 
 public sealed class CatalogDbInitializer(
     CatalogDbContext dbContext,
+    IMultiTenantContextAccessor<AppTenantInfo> tenantAccessor,
     ILogger<CatalogDbInitializer> logger) : IDbInitializer
 {
     public async Task MigrateAsync(CancellationToken cancellationToken)
@@ -26,6 +29,13 @@ public sealed class CatalogDbInitializer(
     {
         await SeedTaxRatesAsync(cancellationToken).ConfigureAwait(false);
         await SeedShippingClassesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Marketplace catalog (Google taxonomy + brands + industries) only in `global`.
+        var tenantId = tenantAccessor.MultiTenantContext?.TenantInfo?.Id;
+        if (string.Equals(tenantId, MultitenancyConstants.Global.Id, StringComparison.Ordinal))
+        {
+            await new GlobalCatalogSeeder(dbContext, logger).SeedAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task SeedTaxRatesAsync(CancellationToken cancellationToken)

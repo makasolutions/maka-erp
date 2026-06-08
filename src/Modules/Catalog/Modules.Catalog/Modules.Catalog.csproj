@@ -7,8 +7,15 @@
 		<!-- CA1308: slugs/segments are canonical lowercase (URL-friendly per spec §7).
 		     CA1711: CatalogAttribute / ProductAttribute are domain entity names from
 		     the spec (§2.5, §2.12) — they are product attributes, not .NET attributes. -->
-		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1711</NoWarn>
+		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1711;CA1873;CA1860</NoWarn>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="Data\Seeds\google-taxonomy.es-ES.txt" />
+		<EmbeddedResource Include="Data\Seeds\google-taxonomy.es-ES.txt" WithCulture="false">
+			<LogicalName>google-taxonomy.es-ES.txt</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\BuildingBlocks\Persistence\Persistence.csproj" />
