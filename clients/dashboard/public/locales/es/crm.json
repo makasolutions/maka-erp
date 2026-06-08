@@ -47,5 +47,58 @@
   "empty": {
     "title": "Sin registros",
     "body": "Los contactos y oportunidades aparecerán aquí."
+  },
+  "parties": {
+    "title": "Terceros",
+    "singular": "tercero",
+    "description": "Clientes y proveedores en un solo registro, con datos fiscales DIAN.",
+    "formDesc": "Datos del tercero, direcciones, canales y personas de contacto.",
+    "deleteConfirm": "¿Eliminar el tercero \"{{name}}\"? Esta acción se puede revertir desde la papelera.",
+    "actions": { "create": "Nuevo tercero", "edit": "Editar tercero", "delete": "Eliminar tercero" },
+    "filters": { "searchPlaceholder": "Buscar por nombre o identificación…" },
+    "picker": { "placeholder": "Buscar tercero…" },
+    "fields": {
+      "party": "Tercero",
+      "idType": "Tipo de identificación",
+      "idNumber": "Número",
+      "dv": "DV",
+      "dvHint": "Dígito de verificación del NIT.",
+      "dvCompute": "Calcular DV",
+      "kind": "Naturaleza",
+      "legalName": "Razón social / Nombre",
+      "tradeName": "Nombre comercial",
+      "email": "Correo",
+      "website": "Página web",
+      "roles": "Roles",
+      "taxRegime": "Régimen tributario",
+      "fiscalResp": "Responsabilidades fiscales",
+      "status": "Estado",
+      "stage": "Etapa",
+      "source": "Origen",
+      "leadScore": "Puntuación",
+      "birthDate": "Fecha de nacimiento",
+      "gender": "Género",
+      "maritalStatus": "Estado civil",
+      "creditLimit": "Límite de crédito",
+      "notes": "Observación",
+      "city": "Ciudad"
+    },
+    "kind": { "Juridica": "Persona jurídica", "Natural": "Persona natural" },
+    "role": { "customer": "Cliente", "supplier": "Proveedor" },
+    "status": { "Active": "Activo", "Inactive": "Inactivo", "Prospect": "Prospecto" },
+    "stage": { "Lead": "Lead", "Mql": "MQL", "Sql": "SQL", "Opportunity": "Oportunidad", "Customer": "Cliente", "Inactive": "Inactivo" },
+    "address": {
+      "title": "Direcciones", "singular": "Dirección", "empty": "Sin direcciones.", "add": "Agregar dirección",
+      "makePrimary": "Marcar como principal", "department": "Departamento", "city": "Ciudad", "label": "Etiqueta",
+      "line": "Dirección", "reference": "Referencia", "lat": "Latitud", "lng": "Longitud"
+    },
+    "channel": {
+      "title": "Canales de contacto", "empty": "Sin canales.", "add": "Agregar canal", "type": "Tipo",
+      "value": "Valor", "reference": "Referencia", "makePrimary": "Marcar como principal"
+    },
+    "contact": {
+      "title": "Personas de contacto", "singular": "Contacto", "empty": "Sin personas de contacto.", "add": "Agregar contacto",
+      "reference": "Cargo / referencia", "fullName": "Nombre completo", "email": "Correo", "cell": "Celular", "isCommercial": "Contacto comercial"
+    }
   }
 }

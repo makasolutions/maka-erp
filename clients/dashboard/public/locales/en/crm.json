@@ -33,5 +33,58 @@
       "title": "No contacts yet",
       "body": "Add contacts to build your CRM."
     }
+  },
+  "parties": {
+    "title": "Third parties",
+    "singular": "party",
+    "description": "Customers and suppliers in a single record, with DIAN fiscal data.",
+    "formDesc": "Party details, addresses, channels and contact people.",
+    "deleteConfirm": "Delete the party \"{{name}}\"? This can be reverted from the trash.",
+    "actions": { "create": "New party", "edit": "Edit party", "delete": "Delete party" },
+    "filters": { "searchPlaceholder": "Search by name or id…" },
+    "picker": { "placeholder": "Search party…" },
+    "fields": {
+      "party": "Party",
+      "idType": "Identification type",
+      "idNumber": "Number",
+      "dv": "VD",
+      "dvHint": "NIT verification digit.",
+      "dvCompute": "Compute VD",
+      "kind": "Kind",
+      "legalName": "Legal name / Name",
+      "tradeName": "Trade name",
+      "email": "Email",
+      "website": "Website",
+      "roles": "Roles",
+      "taxRegime": "Tax regime",
+      "fiscalResp": "Fiscal responsibilities",
+      "status": "Status",
+      "stage": "Stage",
+      "source": "Source",
+      "leadScore": "Score",
+      "birthDate": "Birth date",
+      "gender": "Gender",
+      "maritalStatus": "Marital status",
+      "creditLimit": "Credit limit",
+      "notes": "Notes",
+      "city": "City"
+    },
+    "kind": { "Juridica": "Company", "Natural": "Individual" },
+    "role": { "customer": "Customer", "supplier": "Supplier" },
+    "status": { "Active": "Active", "Inactive": "Inactive", "Prospect": "Prospect" },
+    "stage": { "Lead": "Lead", "Mql": "MQL", "Sql": "SQL", "Opportunity": "Opportunity", "Customer": "Customer", "Inactive": "Inactive" },
+    "address": {
+      "title": "Addresses", "singular": "Address", "empty": "No addresses.", "add": "Add address",
+      "makePrimary": "Set as primary", "department": "Department", "city": "City", "label": "Label",
+      "line": "Address", "reference": "Reference", "lat": "Latitude", "lng": "Longitude"
+    },
+    "channel": {
+      "title": "Contact channels", "empty": "No channels.", "add": "Add channel", "type": "Type",
+      "value": "Value", "reference": "Reference", "makePrimary": "Set as primary"
+    },
+    "contact": {
+      "title": "Contact people", "singular": "Contact", "empty": "No contact people.", "add": "Add contact",
+      "reference": "Role / reference", "fullName": "Full name", "email": "Email", "cell": "Mobile", "isCommercial": "Commercial contact"
+    }
   }
 }

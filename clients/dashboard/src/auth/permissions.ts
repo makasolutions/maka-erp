@@ -28,6 +28,14 @@ export const P = {
     },
     global: { manage: "Permissions.Lookups.Global.Manage" },
   },
+  // ── Parties (Terceros) ──────────────────────────────────────────────────────
+  parties: {
+    view:    "Permissions.Parties.Parties.View",
+    create:  "Permissions.Parties.Parties.Create",
+    update:  "Permissions.Parties.Parties.Update",
+    delete:  "Permissions.Parties.Parties.Delete",
+    restore: "Permissions.Parties.Parties.Restore",
+  },
   // ── Catalog ──────────────────────────────────────────────────────────────
   catalog: {
     brands: {

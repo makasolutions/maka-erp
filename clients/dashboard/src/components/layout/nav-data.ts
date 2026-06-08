@@ -1,5 +1,6 @@
 import {
   Activity,
+  Building2,
   ClipboardCheck,
   Database,
   DollarSign,
@@ -72,6 +73,14 @@ export const sections: NavSection[] = [
       // Live activity: operational stream — no specific permission required
       { to: "/activity", label: "Live activity", icon: Activity },
       { to: "/invoices", label: "Invoices", icon: Receipt, permission: P.billing.view },
+    ],
+  },
+  {
+    id: "commercial",
+    caption: "Commercial",
+    icon: Building2,
+    items: [
+      { to: "/crm/terceros", label: "Third parties", icon: Building2, permission: P.parties.view },
     ],
   },
   {

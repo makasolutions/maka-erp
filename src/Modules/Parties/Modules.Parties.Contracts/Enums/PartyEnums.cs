@@ -1,7 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace FSH.Modules.Parties.Contracts.Enums;
 
 /// <summary>Roles que puede tener un tercero (cliente y/o proveedor). Flags.</summary>
 [Flags]
+[JsonConverter(typeof(JsonStringEnumConverter<PartyRole>))]
 public enum PartyRole
 {
     None     = 0,
@@ -10,12 +13,14 @@ public enum PartyRole
 }
 
 /// <summary>Naturaleza del tercero.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<PartyKind>))]
 public enum PartyKind
 {
     Natural = 0,
     Juridica = 1,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter<PartyStatus>))]
 public enum PartyStatus
 {
     Active = 0,
@@ -24,6 +29,7 @@ public enum PartyStatus
 }
 
 /// <summary>Etapa del ciclo comercial (CRM).</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<LifecycleStage>))]
 public enum LifecycleStage
 {
     Lead = 0,
@@ -34,6 +40,7 @@ public enum LifecycleStage
     Inactive = 5,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter<PartyTeamRole>))]
 public enum PartyTeamRole
 {
     Owner = 0,
