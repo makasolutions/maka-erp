@@ -11,6 +11,7 @@ import { AddressEditor } from "./AddressEditor";
 import { ChannelEditor } from "./ChannelEditor";
 import { ContactEditor } from "./ContactEditor";
 import { PartyPriceListsTab } from "./PartyPriceListsTab";
+import { SupplierCatalogTab } from "./SupplierCatalogTab";
 import { nitVerificationDigit } from "@/lib/nit";
 import { formatMoney } from "@/lib/list-helpers";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ export type PartyFormValue = {
   creditLimit: number | null;
   creditDaysCode: string | null;
   creditBlocked: boolean;
+  isGlobalSupplier: boolean;
   notes: string;
   addresses: PartyAddress[];
   contacts: PartyContact[];
@@ -55,7 +57,7 @@ export function emptyPartyForm(): PartyFormValue {
     legalName: "", firstName: "", lastName: "", tradeName: "", customer: true, supplier: false, email: "", website: "",
     taxRegimeCode: null, fiscalResponsibilities: null, actividadEconomicaCiiuCode: null,
     status: "Active", stage: "Lead", leadScore: 0, sourceCode: null,
-    hasCredit: false, creditLimit: null, creditDaysCode: "30", creditBlocked: false,
+    hasCredit: false, creditLimit: null, creditDaysCode: "30", creditBlocked: false, isGlobalSupplier: false,
     notes: "", addresses: [emptyAddress()], contacts: [emptyContact()], channels: [],
   };
 }
@@ -84,7 +86,7 @@ export function partyFormFromDetail(d: PartyDetailDto): PartyFormValue {
     fiscalResponsibilities: d.fiscalResponsibilities ?? null, actividadEconomicaCiiuCode: d.actividadEconomicaCiiuCode ?? null,
     status: d.status, stage: d.stage, leadScore: d.leadScore, sourceCode: d.sourceCode ?? null,
     hasCredit: d.hasCredit, creditLimit: d.creditLimit ?? null, creditDaysCode: d.creditDaysCode ?? null,
-    creditBlocked: d.creditBlocked, notes: d.notes ?? "",
+    creditBlocked: d.creditBlocked, isGlobalSupplier: d.isGlobalSupplier, notes: d.notes ?? "",
     addresses: d.addresses, contacts: d.contacts, channels: d.channels,
   };
 }
@@ -106,7 +108,7 @@ export function partyFormToInput(v: PartyFormValue): PartyWriteInput {
   };
 }
 
-type TabId = "id" | "contacts" | "crm" | "finance" | "tax" | "prices";
+type TabId = "id" | "contacts" | "crm" | "finance" | "tax" | "prices" | "supplier";
 
 export interface PartyFormProps {
   value: PartyFormValue;
@@ -154,6 +156,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId }: P
     { id: "finance", label: t("parties.tabs.finance") },
     { id: "tax", label: t("parties.tabs.tax") },
     ...(partyId ? [{ id: "prices" as TabId, label: t("parties.tabs.prices") }] : []),
+    ...(partyId && v.supplier ? [{ id: "supplier" as TabId, label: t("parties.tabs.supplier") }] : []),
   ];
 
   return (
@@ -332,6 +335,12 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId }: P
       {/* Tab 6 — Listas de precios (solo edición) */}
       {tab === "prices" && partyId && (
         <PartyPriceListsTab partyId={partyId} disabled={disabled} />
+      )}
+
+      {/* Tab 7 — Catálogo del proveedor (solo edición + rol proveedor) */}
+      {tab === "supplier" && partyId && (
+        <SupplierCatalogTab partyId={partyId} isGlobalSupplier={v.isGlobalSupplier}
+          onGlobalChange={(g) => set({ isGlobalSupplier: g })} disabled={disabled} />
       )}
       </div>
     </div>

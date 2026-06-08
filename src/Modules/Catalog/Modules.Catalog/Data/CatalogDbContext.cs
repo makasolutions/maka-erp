@@ -34,6 +34,7 @@ public sealed class CatalogDbContext : BaseDbContext
     public DbSet<PriceBulkProposal> PriceBulkProposals => Set<PriceBulkProposal>();
     public DbSet<TenantProduct>    TenantProducts   => Set<TenantProduct>();
     public DbSet<SupplierBrand>    SupplierBrands   => Set<SupplierBrand>();
+    public DbSet<SupplierCategory> SupplierCategories => Set<SupplierCategory>();
     public DbSet<SupplierProduct>  SupplierProducts => Set<SupplierProduct>();
     public DbSet<Industry>         Industries       => Set<Industry>();
     public DbSet<IndustryCategory> IndustryCategories => Set<IndustryCategory>();

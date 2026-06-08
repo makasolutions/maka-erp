@@ -31,6 +31,9 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public PartyRole   Roles  { get; private set; }
     public PartyStatus Status { get; private set; }
 
+    /// <summary>Proveedor publicado al marketplace global (visible a todos los tenants).</summary>
+    public bool IsGlobalSupplier { get; private set; }
+
     // CRM
     public LifecycleStage Stage         { get; private set; }
     public int            LeadScore     { get; private set; }
@@ -166,6 +169,12 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     }
 
     public void SetRoles(PartyRole roles) { Roles = roles; UpdatedAtUtc = DateTime.UtcNow; }
+
+    public void SetGlobalSupplier(bool isGlobalSupplier)
+    {
+        IsGlobalSupplier = isGlobalSupplier;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 
     public void Restore()
     {

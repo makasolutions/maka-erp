@@ -8,6 +8,7 @@ using FSH.Modules.Catalog.Data;
 using FSH.Modules.Files.Contracts;
 using FSH.Modules.Catalog.Features.v1.GlobalCatalog;
 using FSH.Modules.Catalog.Features.v1.PartyPriceLists;
+using FSH.Modules.Catalog.Features.v1.Suppliers;
 using FSH.Modules.Catalog.Features.v1.Attributes.AddAttributeValue;
 using FSH.Modules.Catalog.Features.v1.Attributes.CreateAttribute;
 using FSH.Modules.Catalog.Features.v1.Attributes.DeleteAttribute;
@@ -175,6 +176,12 @@ public sealed class CatalogModule : IModule
             .WithTags("Catalog - Party price lists")
             .WithApiVersionSet(apiVersionSet);
         partyPriceLists.MapPartyPriceListEndpoints();
+
+        var suppliers = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/suppliers")
+            .WithTags("Catalog - Suppliers")
+            .WithApiVersionSet(apiVersionSet);
+        suppliers.MapSupplierMappingEndpoints();
 
         var products = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/products")

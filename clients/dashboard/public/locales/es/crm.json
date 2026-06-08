@@ -58,7 +58,13 @@
     "filters": { "searchPlaceholder": "Buscar por nombre o identificación…" },
     "picker": { "placeholder": "Buscar tercero…" },
     "tabs": {
-      "identity": "Identificación", "contacts": "Contactos", "crm": "CRM", "finance": "Financiera", "tax": "Tributaria", "prices": "Listas de precios"
+      "identity": "Identificación", "contacts": "Contactos", "crm": "CRM", "finance": "Financiera", "tax": "Tributaria", "prices": "Listas de precios", "supplier": "Catálogo proveedor"
+    },
+    "supplier": {
+      "global": "Proveedor global",
+      "globalHint": "Publica este proveedor al marketplace global (visible a todos los tenants).",
+      "brands": "Marcas que comercializa", "brandsEmpty": "Sin marcas seleccionadas.", "chooseBrand": "Agregar marca…",
+      "categories": "Categorías que comercializa", "categoriesEmpty": "Sin categorías seleccionadas.", "chooseCategory": "Agregar categoría…"
     },
     "priceLists": {
       "hint": "Listas de precios que aplican a este tercero (cliente o proveedor).",

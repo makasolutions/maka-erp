@@ -44,7 +44,13 @@
     "filters": { "searchPlaceholder": "Search by name or id…" },
     "picker": { "placeholder": "Search party…" },
     "tabs": {
-      "identity": "Identification", "contacts": "Contacts", "crm": "CRM", "finance": "Financial", "tax": "Tax", "prices": "Price lists"
+      "identity": "Identification", "contacts": "Contacts", "crm": "CRM", "finance": "Financial", "tax": "Tax", "prices": "Price lists", "supplier": "Supplier catalog"
+    },
+    "supplier": {
+      "global": "Global supplier",
+      "globalHint": "Publish this supplier to the global marketplace (visible to all tenants).",
+      "brands": "Brands traded", "brandsEmpty": "No brands selected.", "chooseBrand": "Add brand…",
+      "categories": "Categories traded", "categoriesEmpty": "No categories selected.", "chooseCategory": "Add category…"
     },
     "priceLists": {
       "hint": "Price lists that apply to this party (customer or supplier).",

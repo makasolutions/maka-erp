@@ -34,6 +34,7 @@ public sealed record PartyDetailDto(
     string?     CreditCurrency,
     string?     Notes,
     Guid?       BranchId,
+    bool        IsGlobalSupplier,
     IReadOnlyList<PartyAddressDto>    Addresses,
     IReadOnlyList<PartyContactDto>    Contacts,
     IReadOnlyList<PartyChannelDto>    Channels,

@@ -18,6 +18,19 @@ public sealed class SupplierBrandConfiguration : IEntityTypeConfiguration<Suppli
     }
 }
 
+public sealed class SupplierCategoryConfiguration : IEntityTypeConfiguration<SupplierCategory>
+{
+    public void Configure(EntityTypeBuilder<SupplierCategory> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        builder.ToTable("SupplierCategories");
+        builder.HasKey(x => x.Id);
+        builder.HasIndex(x => x.SupplierId);
+        builder.HasIndex(x => new { x.SupplierId, x.CategoryId }).IsUnique();
+        builder.Ignore(x => x.DomainEvents);
+    }
+}
+
 public sealed class SupplierProductConfiguration : IEntityTypeConfiguration<SupplierProduct>
 {
     public void Configure(EntityTypeBuilder<SupplierProduct> builder)

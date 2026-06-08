@@ -87,6 +87,7 @@ export type PartyDetailDto = {
   creditCurrency?: string | null;
   notes?: string | null;
   branchId?: string | null;
+  isGlobalSupplier: boolean;
   addresses: PartyAddress[];
   contacts: PartyContact[];
   channels: PartyChannel[];
@@ -191,5 +192,11 @@ export function verifyIdentification(
   return apiFetch<VerifyIdentificationResult>("/api/v1/parties/verify-identification", {
     method: "POST",
     body: JSON.stringify({ identificationTypeCode, number, verificationDigit: verificationDigit ?? null }),
+  });
+}
+
+export async function setGlobalSupplier(id: string, isGlobalSupplier: boolean): Promise<void> {
+  await apiFetch<void>(`/api/v1/parties/${encodeURIComponent(id)}/global-supplier`, {
+    method: "PUT", body: JSON.stringify({ id, isGlobalSupplier }),
   });
 }

@@ -31,6 +31,28 @@ public sealed class SupplierBrand : BaseEntity<Guid>
 }
 
 /// <summary>
+/// SupplierCategory — categoría de la taxonomía global que un proveedor
+/// comercializa. <c>CategoryId</c> referencia una categoría del tenant `global`.
+/// </summary>
+public sealed class SupplierCategory : BaseEntity<Guid>
+{
+    public Guid SupplierId { get; private set; }
+    public Guid CategoryId { get; private set; }
+
+    public DateTime CreatedAtUtc { get; private set; }
+
+    private SupplierCategory() { }
+
+    public static SupplierCategory Create(Guid supplierId, Guid categoryId) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        SupplierId = supplierId,
+        CategoryId = categoryId,
+        CreatedAtUtc = DateTime.UtcNow,
+    };
+}
+
+/// <summary>
 /// SupplierProduct — spec §2.16. El código del proveedor vive en
 /// ProductCode (CodeType="SupplierCode", SupplierId=X).
 /// </summary>

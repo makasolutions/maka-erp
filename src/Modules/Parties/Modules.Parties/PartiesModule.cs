@@ -10,6 +10,7 @@ using FSH.Modules.Parties.Features.v1.Parties.GetParties;
 using FSH.Modules.Parties.Features.v1.Parties.GetPartyById;
 using FSH.Modules.Parties.Features.v1.Parties.RestoreParty;
 using FSH.Modules.Parties.Features.v1.Parties.SetPartyRoles;
+using FSH.Modules.Parties.Features.v1.Parties.SetGlobalSupplier;
 using FSH.Modules.Parties.Features.v1.Parties.UpdateParty;
 using FSH.Modules.Parties.Contracts.v1.Verification;
 using FSH.Modules.Parties.Features.v1.Verification;
@@ -82,5 +83,6 @@ public sealed class PartiesModule : IModule
         group.MapDeletePartyEndpoint();
         group.MapRestorePartyEndpoint();
         group.MapVerifyIdentificationEndpoint();
+        group.MapSetGlobalSupplierEndpoint();
     }
 }
