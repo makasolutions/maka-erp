@@ -27,6 +27,11 @@ internal static class AgreementMappings
 
     public static IEnumerable<AgreementRule> ToEntities(this IReadOnlyList<AgreementRuleInput>? rules, Guid agreementId) =>
         (rules ?? []).Select(r => AgreementRule.Create(agreementId, r.RuleType, r.NumericValue, r.BoolValue, r.TextValue, r.IsMandatory));
+
+    // PostgreSQL timestamptz columns require UTC; date-only inputs arrive as Kind=Unspecified.
+    public static DateTime AsUtc(this DateTime v) =>
+        v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc);
+    public static DateTime? AsUtc(this DateTime? v) => v.HasValue ? v.Value.AsUtc() : null;
 }
 
 // ───────────────────────── Validators ─────────────────────────
@@ -106,7 +111,7 @@ public sealed class CreateAgreementCommandHandler(CatalogDbContext db)
             command.Name, command.SupplierId, command.AgreementType, command.PriceListId, command.SuggestedPriceListId,
             command.DispatchResponsible, command.WaybillResponsible, command.SettlementResponsible,
             command.FailedDeliveryPolicy, command.ReturnsPolicy, command.WarrantyPolicy,
-            command.ValidFrom, command.ValidTo, command.Notes);
+            command.ValidFrom.AsUtc(), command.ValidTo.AsUtc(), command.Notes);
         entity.ReplaceRules(command.Rules.ToEntities(entity.Id));
 
         db.Agreements.Add(entity);
@@ -147,7 +152,7 @@ public sealed class UpdateAgreementCommandHandler(CatalogDbContext db)
             command.Name, command.AgreementType, command.PriceListId, command.SuggestedPriceListId,
             command.DispatchResponsible, command.WaybillResponsible, command.SettlementResponsible,
             command.FailedDeliveryPolicy, command.ReturnsPolicy, command.WarrantyPolicy,
-            command.ValidFrom, command.ValidTo, command.Notes);
+            command.ValidFrom.AsUtc(), command.ValidTo.AsUtc(), command.Notes);
 
         // Rules replaced at the db level to dodge EF's new-child mis-tracking on a tracked graph.
         var old = await db.AgreementRules.Where(r => r.AgreementId == entity.Id).ToListAsync(cancellationToken).ConfigureAwait(false);
