@@ -1,0 +1,62 @@
+using FSH.Framework.Persistence;
+using FSH.Framework.Shared.Persistence;
+using FSH.Modules.Parties.Contracts.v1.Parties;
+using FSH.Modules.Parties.Contracts.v1.Parties.GetParties;
+using FSH.Modules.Parties.Data;
+using Mediator;
+using Microsoft.EntityFrameworkCore;
+
+namespace FSH.Modules.Parties.Features.v1.Parties.GetParties;
+
+public sealed class GetPartiesQueryHandler(PartiesDbContext db)
+    : IQueryHandler<GetPartiesQuery, PagedResponse<PartyDto>>
+{
+    public async ValueTask<PagedResponse<PartyDto>> Handle(GetPartiesQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var parties = db.Parties.AsNoTracking().Where(p => !p.IsDeleted);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string pat = $"%{query.Search.Trim()}%";
+            parties = parties.Where(p =>
+                EF.Functions.ILike(p.LegalName, pat) ||
+                EF.Functions.ILike(p.IdentificationNumber, pat) ||
+                (p.TradeName != null && EF.Functions.ILike(p.TradeName, pat)));
+        }
+
+        if (query.Role.HasValue && query.Role.Value != Contracts.Enums.PartyRole.None)
+        {
+            int bit = (int)query.Role.Value;
+            parties = parties.Where(p => ((int)p.Roles & bit) == bit);
+        }
+        if (query.Status.HasValue) parties = parties.Where(p => p.Status == query.Status.Value);
+        if (query.Stage.HasValue) parties = parties.Where(p => p.Stage == query.Stage.Value);
+        if (query.AssignedUserId.HasValue) parties = parties.Where(p => p.AssignedUserId == query.AssignedUserId.Value);
+        if (!string.IsNullOrWhiteSpace(query.City))
+        {
+            string cpat = $"%{query.City.Trim()}%";
+            parties = parties.Where(p => p.Addresses.Any(a => a.City != null && EF.Functions.ILike(a.City, cpat)));
+        }
+
+        parties = (query.Sort?.ToLowerInvariant()) switch
+        {
+            "legalname" or "name" => parties.OrderBy(p => p.LegalName),
+            "-legalname" or "-name" => parties.OrderByDescending(p => p.LegalName),
+            "createdat" or "createdatutc" => parties.OrderBy(p => p.CreatedAtUtc),
+            "-createdat" or "-createdatutc" => parties.OrderByDescending(p => p.CreatedAtUtc),
+            _ => parties.OrderBy(p => p.LegalName),
+        };
+
+        return await parties
+            .Select(p => new PartyDto(
+                p.Id, p.IdentificationTypeCode, p.IdentificationNumber, p.VerificationDigit, p.Kind, p.LegalName,
+                p.TradeName, p.Roles, p.Status, p.Stage, p.Email,
+                p.Addresses.Where(a => a.IsPrimary).Select(a => a.City).FirstOrDefault()
+                    ?? p.Addresses.Select(a => a.City).FirstOrDefault(),
+                p.AssignedUserId, p.CreatedAtUtc))
+            .ToPagedResponseAsync(query, cancellationToken)
+            .ConfigureAwait(false);
+    }
+}

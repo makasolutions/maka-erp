@@ -1,0 +1,35 @@
+using System.Net;
+using FSH.Framework.Core.Exceptions;
+using FSH.Modules.Parties.Contracts.v1.Parties.GetPartyById;
+using FSH.Modules.Parties.Data;
+using Mediator;
+using Microsoft.EntityFrameworkCore;
+
+namespace FSH.Modules.Parties.Features.v1.Parties.GetPartyById;
+
+public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
+    : IQueryHandler<GetPartyByIdQuery, PartyDetailDto>
+{
+    public async ValueTask<PartyDetailDto> Handle(GetPartyByIdQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var p = await db.Parties.AsNoTracking()
+            .Where(x => x.Id == query.Id && !x.IsDeleted)
+            .Select(x => new PartyDetailDto(
+                x.Id, x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit, x.Kind, x.LegalName,
+                x.TradeName, x.Email, x.Website, x.TaxRegimeCode, x.FiscalResponsibilities, x.Roles, x.Status, x.Stage,
+                x.LeadScore, x.SourceCode, x.AssignedUserId, x.MarketingType, x.BirthDate, x.GenderCode, x.MaritalStatusCode,
+                x.CreditLimit, x.CreditCurrency, x.Notes, x.BranchId,
+                x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Reference,
+                    a.Latitude, a.Longitude, a.IsPrimary, a.Label)).ToList(),
+                x.Contacts.Select(c => new PartyContactDto(c.Id, c.Reference, c.FullName, c.Email, c.Phone, c.Cell,
+                    c.IsCommercial, c.Notes)).ToList(),
+                x.Channels.Select(c => new PartyChannelDto(c.Id, c.ChannelTypeCode, c.Value, c.Reference, c.IsPrimary)).ToList(),
+                x.Team.Select(m => new PartyTeamMemberDto(m.Id, m.UserId, m.Role)).ToList()))
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return p ?? throw new CustomException("Tercero no encontrado.", Enumerable.Empty<string>(), HttpStatusCode.NotFound);
+    }
+}
