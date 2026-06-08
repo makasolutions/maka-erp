@@ -126,7 +126,7 @@
     },
     "address": {
       "title": "Direcciones", "singular": "Dirección", "empty": "Sin direcciones.", "add": "Agregar dirección",
-      "makePrimary": "Marcar como principal", "primary": "Predeterminada", "department": "Departamento", "city": "Ciudad", "label": "Etiqueta",
+      "makePrimary": "Marcar como principal", "primary": "Predeterminada", "department": "Departamento", "departmentHint": "Se autocompleta al elegir la ciudad.", "city": "Ciudad", "label": "Etiqueta",
       "line": "Dirección", "barrio": "Barrio", "reference": "Referencia", "lat": "Latitud", "lng": "Longitud"
     },
     "channel": {

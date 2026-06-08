@@ -112,7 +112,7 @@
     },
     "address": {
       "title": "Addresses", "singular": "Address", "empty": "No addresses.", "add": "Add address",
-      "makePrimary": "Set as primary", "primary": "Default", "department": "Department", "city": "City", "label": "Label",
+      "makePrimary": "Set as primary", "primary": "Default", "department": "Department", "departmentHint": "Auto-filled when you pick the city.", "city": "City", "label": "Label",
       "line": "Address", "barrio": "Neighborhood", "reference": "Reference", "lat": "Latitude", "lng": "Longitude"
     },
     "channel": {

@@ -211,7 +211,8 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   });
 
   const idOk = !!identity.identificationTypeCode && !!identity.identificationNumber.trim()
-    && !!identity.firstName.trim() && !!identity.lastName.trim() && identity.addresses.length >= 1;
+    && !!identity.firstName.trim() && !!identity.lastName.trim()
+    && identity.addresses.length >= 1 && identity.addresses.every((a) => !!(a.city ?? "").trim());
   const contactsOk = identity.contacts.every((c) => isContactBlank(c) || (!!(c.email ?? "").trim() && !!(c.cell ?? "").trim()));
   const canSubmit = idOk && contactsOk;
   const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };

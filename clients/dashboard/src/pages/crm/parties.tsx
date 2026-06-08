@@ -206,7 +206,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
   });
 
   const nameOk = form.kind === "Juridica" ? !!form.legalName.trim() : (!!form.firstName.trim() && !!form.lastName.trim());
-  const addressesOk = form.addresses.length >= 1;
+  const addressesOk = form.addresses.length >= 1 && form.addresses.every((a) => !!(a.city ?? "").trim());
   const contactsOk = form.contacts.every((c) => isContactBlank(c) || (!!(c.email ?? "").trim() && !!(c.cell ?? "").trim()));
   const canSubmit = !!form.identificationTypeCode && !!form.identificationNumber.trim() && nameOk && addressesOk && contactsOk;
   const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };

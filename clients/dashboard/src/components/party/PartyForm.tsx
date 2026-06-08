@@ -205,7 +205,8 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
             </div>
             <Field id="p-kind" span={3} label={t("parties.fields.kind")} required>
               <Combobox id="p-kind" label={t("parties.fields.kind")} value={v.kind} onChange={(k) => k && set({ kind: k as PartyKind })}
-                options={[{ value: "Juridica", label: t("parties.kind.Juridica") }, { value: "Natural", label: t("parties.kind.Natural") }]} disabled={disabled} />
+                options={[{ value: "Juridica", label: t("parties.kind.Juridica") }, { value: "Natural", label: t("parties.kind.Natural") }]}
+                disabled={disabled || !isCreate} />
             </Field>
             <Field id="p-idtype" span={3} label={t("parties.fields.idType")} required>
               <BasicRecordSelect id="p-idtype" tableCode="IdentificationType" label={t("parties.fields.idType")}
@@ -217,9 +218,9 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
             </Field>
             <Field id="p-dv" span={2} label={t("parties.fields.dv")}>
               <div className="flex gap-1">
-                <Input id="p-dv" type="number" className="font-mono" value={v.verificationDigit ?? ""} disabled={disabled}
+                <Input id="p-dv" type="number" className="font-mono" value={v.verificationDigit ?? ""} disabled={disabled || !isCreate}
                   onChange={(e) => set({ verificationDigit: e.target.value === "" ? null : Number(e.target.value) })} />
-                {isNit && !disabled && (
+                {isNit && !disabled && isCreate && (
                   <Button type="button" variant="outline" size="sm" title={t("parties.fields.dvCompute")}
                     onClick={() => set({ verificationDigit: nitVerificationDigit(v.identificationNumber) })}>DV</Button>
                 )}
