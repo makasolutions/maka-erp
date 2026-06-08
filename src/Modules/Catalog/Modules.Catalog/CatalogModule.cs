@@ -7,6 +7,7 @@ using FSH.Modules.Catalog.Contracts.Authorization;
 using FSH.Modules.Catalog.Data;
 using FSH.Modules.Files.Contracts;
 using FSH.Modules.Catalog.Features.v1.Agreements;
+using FSH.Modules.Catalog.Features.v1.SupplierEvaluation;
 using FSH.Modules.Catalog.Features.v1.GlobalCatalog;
 using FSH.Modules.Catalog.Features.v1.PartyPriceLists;
 using FSH.Modules.Catalog.Features.v1.Suppliers;
@@ -189,6 +190,18 @@ public sealed class CatalogModule : IModule
             .WithTags("Catalog - Agreements")
             .WithApiVersionSet(apiVersionSet);
         agreements.MapAgreementEndpoints();
+
+        var scorecardKpis = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/scorecard-kpis")
+            .WithTags("Catalog - Supplier evaluation")
+            .WithApiVersionSet(apiVersionSet);
+        scorecardKpis.MapScorecardKpiEndpoints();
+
+        var supplierScorecards = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/supplier-scorecards")
+            .WithTags("Catalog - Supplier evaluation")
+            .WithApiVersionSet(apiVersionSet);
+        supplierScorecards.MapSupplierScorecardEndpoints();
 
         var products = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/products")

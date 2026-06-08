@@ -310,16 +310,31 @@ public sealed class EvaluateAgreementQueryHandler(CatalogDbContext db, IMediator
             throw new CustomException("Distribuidor no encontrado.", Enumerable.Empty<string>(), HttpStatusCode.NotFound);
         }
 
-        var results = a.Rules.Select(r => Evaluate(r, party)).ToList();
+        // Fase F: el último scorecard del distribuidor alimenta la regla CalificacionMinima.
+        var latest = await db.SupplierScorecards.AsNoTracking()
+            .Where(s => s.SupplierId == query.DistributorPartyId)
+            .OrderByDescending(s => s.PeriodStart)
+            .Select(s => new { s.WeightedScore, s.PeriodLabel })
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
+        var results = a.Rules.Select(r => Evaluate(r, party, latest?.WeightedScore, latest?.PeriodLabel)).ToList();
         bool eligible = results.All(r => !(r.IsMandatory && r.Result == RuleEvaluationResult.NoCumple));
 
         return new AgreementEvaluationDto(a.Id, party.Id, party.LegalName, eligible, results);
     }
 
-    private static RuleEvaluationDto Evaluate(AgreementRule rule, PartyDetailDto p)
+    private static RuleEvaluationDto Evaluate(AgreementRule rule, PartyDetailDto p, decimal? latestScore, string? scorePeriod)
     {
         switch (rule.RuleType)
         {
+            case AgreementRuleType.CalificacionMinima:
+            {
+                if (latestScore is not { } score)
+                    return Result(rule, RuleEvaluationResult.Pendiente, "Pendiente: el distribuidor no tiene scorecard aún.");
+                decimal required = rule.NumericValue ?? 0;
+                return Result(rule, score >= required ? RuleEvaluationResult.Cumple : RuleEvaluationResult.NoCumple,
+                    $"Calificación {score:0.0}/5 ({scorePeriod}); requiere {required:0.0}.");
+            }
             case AgreementRuleType.AntiguedadMinimaMeses:
             {
                 int months = (int)((DateTime.UtcNow - p.CreatedAtUtc).TotalDays / 30.0);

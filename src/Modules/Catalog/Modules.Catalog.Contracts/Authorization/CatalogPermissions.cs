@@ -60,6 +60,14 @@ public static class CatalogPermissions
         public const string Manage = $"Permissions.{Resource}.Manage";
     }
 
+    /// <summary>Evaluación de proveedores / scorecards (Fase F).</summary>
+    public static class Scorecards
+    {
+        public const string Resource = "Catalog.Scorecards";
+        public const string View   = $"Permissions.{Resource}.View";
+        public const string Manage = $"Permissions.{Resource}.Manage";
+    }
+
     /// <summary>Catalog configuration: tax rates (§2.3) and shipping classes (§2.4).</summary>
     public static class Settings
     {
@@ -100,6 +108,9 @@ public static class CatalogPermissions
 
         new("View Agreements",   ActionConstants.View, Agreements.Resource, IsBasic: true),
         new("Manage Agreements", "Manage",             Agreements.Resource),
+
+        new("View Scorecards",   ActionConstants.View, Scorecards.Resource, IsBasic: true),
+        new("Manage Scorecards", "Manage",             Scorecards.Resource),
 
         new("View Catalog Settings",   ActionConstants.View, Settings.Resource, IsBasic: true),
         new("Manage Catalog Settings", "Manage",             Settings.Resource),

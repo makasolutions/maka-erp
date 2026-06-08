@@ -42,6 +42,9 @@ public sealed class CatalogDbContext : BaseDbContext
     public DbSet<PartyPriceList>   PartyPriceLists  => Set<PartyPriceList>();
     public DbSet<Agreement>        Agreements       => Set<Agreement>();
     public DbSet<AgreementRule>    AgreementRules   => Set<AgreementRule>();
+    public DbSet<ScorecardKpi>     ScorecardKpis    => Set<ScorecardKpi>();
+    public DbSet<SupplierScorecard> SupplierScorecards => Set<SupplierScorecard>();
+    public DbSet<ScorecardCriterion> ScorecardCriteria => Set<ScorecardCriterion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
