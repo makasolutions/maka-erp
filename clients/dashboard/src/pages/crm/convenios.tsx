@@ -9,7 +9,6 @@ import {
   type AgreementDto, type AgreementRuleInput, type AgreementRuleType, type AgreementStatus,
   type AgreementType, type AgreementResponsible, type AgreementWriteInput, type RuleEvaluationResult,
 } from "@/api/agreements";
-import { searchParties } from "@/api/parties";
 import { getPriceLists } from "@/api/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,28 +68,17 @@ export function ConveniosPage() {
     queryFn: () => getAgreements({ pageSize: 200, sort: "name" }),
     placeholderData: keepPreviousData,
   });
-  const suppliersQ = useQuery({
-    queryKey: ["crm", "parties", "picker", "Supplier"],
-    queryFn: () => searchParties({ pageSize: 300, sort: "legalName", role: "Supplier" }),
-    staleTime: 60_000,
-  });
-  const supplierName = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const p of suppliersQ.data?.items ?? []) m.set(p.id, p.legalName);
-    return m;
-  }, [suppliersQ.data]);
-
   const rows: AgreementRow[] = useMemo(() => {
     const name = nameFilter.trim().toLowerCase();
     return (listQ.data?.items ?? [])
       .filter((a) => (!name || a.name.toLowerCase().includes(name)) && (!statusFilter || a.status === statusFilter))
       .map((a) => ({
         ...a,
-        supplierLabel: a.supplierName ?? supplierName.get(a.supplierId) ?? "—",
+        supplierLabel: a.supplierName ?? "—",
         typeLabel: t(`convenios.type.${a.agreementType}`),
         statusLabel: t(`convenios.status.${a.status}`),
       }));
-  }, [listQ.data, nameFilter, statusFilter, supplierName, t]);
+  }, [listQ.data, nameFilter, statusFilter, t]);
 
   const columns: ColumnModel[] = useMemo(() => [
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -314,8 +302,11 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
                   options={TYPES.map((x) => ({ value: x, label: t(`convenios.type.${x}`) }))} />
               </Field>
               <Field id="ag-supplier" span={6} label={t("convenios.fields.supplier")} required>
-                <PartyPicker id="ag-supplier" role="Supplier" value={form.supplierId}
-                  onChange={(v) => set({ supplierId: v })} disabled={readOnly || !isCreate} />
+                {isCreate ? (
+                  <PartyPicker id="ag-supplier" role="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
+                ) : (
+                  <Input id="ag-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
+                )}
               </Field>
               <Field id="ag-pl" span={3} label={t("convenios.fields.priceList")} hint={t("convenios.fields.priceListHint")}>
                 <Combobox id="ag-pl" label={t("convenios.fields.priceList")} value={form.priceListId}

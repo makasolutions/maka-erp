@@ -200,7 +200,7 @@ public sealed class DeleteAgreementCommandHandler(CatalogDbContext db)
 }
 
 // ───────────────────────── List ─────────────────────────
-public sealed class GetAgreementsQueryHandler(CatalogDbContext db)
+public sealed class GetAgreementsQueryHandler(CatalogDbContext db, IMediator mediator)
     : IQueryHandler<GetAgreementsQuery, PagedResponse<AgreementDto>>
 {
     public async ValueTask<PagedResponse<AgreementDto>> Handle(GetAgreementsQuery query, CancellationToken cancellationToken)
@@ -223,15 +223,28 @@ public sealed class GetAgreementsQueryHandler(CatalogDbContext db)
             _       => q.OrderByDescending(a => a.CreatedAtUtc),
         };
 
-        // SupplierName is resolved client-side from the parties cache (avoids cross-module N+1).
-        return await (from a in q
-                      join pl in db.PriceLists.AsNoTracking() on a.PriceListId equals pl.Id into plj
-                      from pl in plj.DefaultIfEmpty()
-                      select new AgreementDto(
-                          a.Id, a.Name, a.SupplierId, null, a.AgreementType, a.Status,
-                          a.PriceListId, pl != null ? pl.Name : null,
-                          a.ValidFrom, a.ValidTo, a.Rules.Count))
+        var paged = await (from a in q
+                           join pl in db.PriceLists.AsNoTracking() on a.PriceListId equals pl.Id into plj
+                           from pl in plj.DefaultIfEmpty()
+                           select new AgreementDto(
+                               a.Id, a.Name, a.SupplierId, null, a.AgreementType, a.Status,
+                               a.PriceListId, pl != null ? pl.Name : null,
+                               a.ValidFrom, a.ValidTo, a.Rules.Count))
             .ToPagedResponseAsync(query, cancellationToken).ConfigureAwait(false);
+
+        // Resolve supplier names for the distinct suppliers in this page (bounded, not per-row).
+        var names = new Dictionary<Guid, string?>();
+        foreach (var id in paged.Items.Select(i => i.SupplierId).Distinct())
+            names[id] = await GetAgreementByIdQueryHandler.TryGetPartyNameAsync(mediator, id, cancellationToken).ConfigureAwait(false);
+
+        return new PagedResponse<AgreementDto>
+        {
+            Items = paged.Items.Select(i => i with { SupplierName = names.GetValueOrDefault(i.SupplierId) }).ToList(),
+            PageNumber = paged.PageNumber,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount,
+            TotalPages = paged.TotalPages,
+        };
     }
 }
 
