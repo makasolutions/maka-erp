@@ -6,6 +6,7 @@ using FSH.Modules.Catalog.Authorization;
 using FSH.Modules.Catalog.Contracts.Authorization;
 using FSH.Modules.Catalog.Data;
 using FSH.Modules.Files.Contracts;
+using FSH.Modules.Catalog.Features.v1.GlobalCatalog;
 using FSH.Modules.Catalog.Features.v1.Attributes.AddAttributeValue;
 using FSH.Modules.Catalog.Features.v1.Attributes.CreateAttribute;
 using FSH.Modules.Catalog.Features.v1.Attributes.DeleteAttribute;
@@ -112,6 +113,7 @@ public sealed class CatalogModule : IModule
 
         builder.Services.AddHeroDbContext<CatalogDbContext>();
         builder.Services.AddScoped<IDbInitializer, CatalogDbInitializer>();
+        builder.Services.AddScoped<Data.IGlobalCatalogReader, Data.GlobalCatalogReader>();
         builder.Services.AddScoped<Services.CampaignJob>();
 
         // File access policies for Catalog owner types (product/brand/category images).
@@ -160,6 +162,12 @@ public sealed class CatalogModule : IModule
 
         categories.MapListTrashedCategoriesEndpoint();
         categories.MapGetCategoriesEndpoint();
+
+        var global = endpoints
+            .MapGroup("api/v{version:apiVersion}/catalog/global")
+            .WithTags("Catalog - Global")
+            .WithApiVersionSet(apiVersionSet);
+        global.MapGlobalCatalogEndpoints();
 
         var products = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/products")
