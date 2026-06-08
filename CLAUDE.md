@@ -814,6 +814,39 @@ con la API reiniciada.
 
 ---
 
+## 9c. REGLA — Debugging de errores/500 vía módulo de Auditoría (NO try/catch temporal)
+
+El **GlobalExceptionHandler** oculta el detalle en la respuesta (solo título genérico) y la
+consola del API solo loguea el resumen. **PERO** el módulo de **Auditoría captura toda
+excepción real** (`AuditHttpMiddleware`): tipo, mensaje, **stack completo**, ruta, `TraceId`,
+`CorrelationId`, tenant y usuario (`EventType=4`, `Severity=Error`).
+
+> 🚫 PROHIBIDO instrumentar el código con `try/catch` temporales, logs ad-hoc o cambiar el
+> `GlobalExceptionHandler` para diagnosticar un 500. Eso ensucia el código de producción y hay
+> que revertirlo. **La auditoría ya es la fuente de verdad de las excepciones.**
+
+**Flujo obligatorio para diagnosticar un error/500:**
+1. Tomar el `traceId` de la respuesta del error (también visible en el toast del front).
+2. Leer la excepción completa por cualquiera de estas vías:
+   - **BD (lo más rápido):**
+     ```
+     docker exec maka_postgres psql -U maka_user -d maka_erp_dev -c \
+       "SELECT jsonb_pretty(\"PayloadJson\") FROM audit.\"AuditRecords\" \
+        WHERE \"TraceId\"='<traceId>' AND \"EventType\"=4;"
+     ```
+   - **API:** `GET /api/v1/audits/by-trace/{traceId}` → tomar el `id` del evento Excepción →
+     `GET /api/v1/audits/{id}` (detalle con `payloadJson`: `exceptionType`, `message`, `stackTop`).
+   - **UI:** Sistema → Registro de auditoría → filtro **Excepción** (o **Buscar** por traceId) →
+     clic en la fila → drawer con el stack completo.
+3. Corregir la **causa raíz** y re-probar. Sin instrumentación temporal.
+
+Severidad: cancelaciones → Information, no-autorizado → Warning, **todo lo demás → Error**
+(`MinExceptionSeverity=Error`, así que las excepciones reales siempre se auditan). La auditoría de
+excepción se encola con `TryWrite` no bloqueante (independiente de la cancelación del request),
+por lo que se registra aunque el cliente se desconecte.
+
+---
+
 ## 11. WORKFLOW DE DESARROLLO
 
 ```
