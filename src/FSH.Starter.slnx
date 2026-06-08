@@ -24,6 +24,10 @@
     <Project Path="Modules/Catalog/Modules.Catalog.Contracts/Modules.Catalog.Contracts.csproj" />
     <Project Path="Modules/Catalog/Modules.Catalog/Modules.Catalog.csproj" />
   </Folder>
+  <Folder Name="/Modules/Lookups/">
+    <Project Path="Modules/Lookups/Modules.Lookups.Contracts/Modules.Lookups.Contracts.csproj" />
+    <Project Path="Modules/Lookups/Modules.Lookups/Modules.Lookups.csproj" />
+  </Folder>
   <Folder Name="/Modules/Chat/">
     <Project Path="Modules/Chat/Modules.Chat.Contracts/Modules.Chat.Contracts.csproj" />
     <Project Path="Modules/Chat/Modules.Chat/Modules.Chat.csproj" />

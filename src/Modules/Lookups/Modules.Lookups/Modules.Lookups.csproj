@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>FSH.Modules.Lookups</RootNamespace>
+		<AssemblyName>FSH.Modules.Lookups</AssemblyName>
+		<PackageId>FullStackHero.Modules.Lookups</PackageId>
+		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1873</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\BuildingBlocks\Persistence\Persistence.csproj" />
+		<ProjectReference Include="..\..\..\BuildingBlocks\Web\Web.csproj" />
+		<ProjectReference Include="..\Modules.Lookups.Contracts\Modules.Lookups.Contracts.csproj" />
+	</ItemGroup>
+
+</Project>
