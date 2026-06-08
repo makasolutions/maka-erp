@@ -1,0 +1,48 @@
+{
+  "title": "Employees",
+  "singular": "employee",
+  "description": "Labor and payroll information of personnel.",
+  "formDesc": "Employee data: identification, contacts and labor information.",
+  "deleteConfirm": "Delete this employee record? This action can be reverted from the trash.",
+  "actions": { "create": "New employee", "edit": "Edit employee", "delete": "Delete employee" },
+  "filters": { "search": "Search by position or branch…" },
+  "employee": {
+    "tab": "Labor information",
+    "sections": {
+      "basic": "Basic data",
+      "position": "Position",
+      "contract": "Labor contract",
+      "salary": "Salary"
+    },
+    "fields": {
+      "mainCurrency": "Currency",
+      "isVendedor": "Is salesperson",
+      "isCobrador": "Is collector",
+      "branch": "Branch",
+      "costCenter": "Cost center",
+      "seniorityDate": "Seniority date",
+      "notes": "Notes",
+      "payrollEnabled": "Enable payroll",
+      "healthProvider": "Health (EPS)",
+      "pensionFund": "Pension (AFP)",
+      "severanceFund": "Severance fund",
+      "ccf": "Family compensation fund (CCF)",
+      "arlProvider": "ARL",
+      "paymentMethod": "Payment method",
+      "laborDepartment": "Labor department",
+      "position": "Position",
+      "positionStartDate": "Position start date",
+      "contractType": "Contract type",
+      "contractDuration": "Duration",
+      "contractStartDate": "Contract start date",
+      "arlRiskLevel": "Risk level",
+      "highPensionRisk": "High pension risk",
+      "restDays": "Rest days",
+      "appliesLaw1607": "Law 1607",
+      "salaryType": "Salary type",
+      "baseSalary": "Base salary",
+      "salaryStartDate": "Salary start date",
+      "legalTransportAllowance": "Transport allowance"
+    }
+  }
+}

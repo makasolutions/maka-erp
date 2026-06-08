@@ -20,6 +20,7 @@ import {
   Tags,
   Ticket,
   Trash2,
+  IdCard,
   Users,
   UsersRound,
   Wifi,
@@ -81,6 +82,7 @@ export const sections: NavSection[] = [
     icon: Building2,
     items: [
       { to: "/crm/terceros", label: "Third parties", icon: Building2, permission: P.parties.view },
+      { to: "/hr/empleados", label: "Employees", icon: IdCard, permission: P.hr.employees.view },
     ],
   },
   {

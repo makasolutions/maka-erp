@@ -1,0 +1,48 @@
+{
+  "title": "Empleados",
+  "singular": "empleado",
+  "description": "Información laboral y de nómina del personal.",
+  "formDesc": "Datos del empleado: identificación, contactos e información laboral.",
+  "deleteConfirm": "¿Eliminar la información de empleado? Esta acción se puede revertir desde la papelera.",
+  "actions": { "create": "Nuevo empleado", "edit": "Editar empleado", "delete": "Eliminar empleado" },
+  "filters": { "search": "Buscar por cargo o sucursal…" },
+  "employee": {
+    "tab": "Información laboral",
+    "sections": {
+      "basic": "Datos básicos",
+      "position": "Cargo",
+      "contract": "Contrato laboral",
+      "salary": "Salario"
+    },
+    "fields": {
+      "mainCurrency": "Moneda",
+      "isVendedor": "Es vendedor",
+      "isCobrador": "Es cobrador",
+      "branch": "Sucursal",
+      "costCenter": "Centro de costos",
+      "seniorityDate": "Fecha de antigüedad",
+      "notes": "Observación",
+      "payrollEnabled": "Activar nómina",
+      "healthProvider": "Salud (EPS)",
+      "pensionFund": "Pensión (AFP)",
+      "severanceFund": "Cesantías",
+      "ccf": "Caja de compensación (CCF)",
+      "arlProvider": "ARL",
+      "paymentMethod": "Medio de pago",
+      "laborDepartment": "Departamento laboral",
+      "position": "Cargo",
+      "positionStartDate": "Fecha del cargo",
+      "contractType": "Tipo de contrato",
+      "contractDuration": "Duración",
+      "contractStartDate": "Fecha del contrato",
+      "arlRiskLevel": "Nivel de riesgo",
+      "highPensionRisk": "Alto riesgo pensión",
+      "restDays": "Días de descanso",
+      "appliesLaw1607": "Ley 1607",
+      "salaryType": "Tipo de salario",
+      "baseSalary": "Salario base",
+      "salaryStartDate": "Fecha del salario",
+      "legalTransportAllowance": "Auxilio de transporte"
+    }
+  }
+}

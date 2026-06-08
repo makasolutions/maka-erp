@@ -36,6 +36,15 @@ export const P = {
     delete:  "Permissions.Parties.Parties.Delete",
     restore: "Permissions.Parties.Parties.Restore",
   },
+  // ── HR (Empleados) ──────────────────────────────────────────────────────────
+  hr: {
+    employees: {
+      view:   "Permissions.Hr.Employees.View",
+      create: "Permissions.Hr.Employees.Create",
+      update: "Permissions.Hr.Employees.Update",
+      delete: "Permissions.Hr.Employees.Delete",
+    },
+  },
   // ── Catalog ──────────────────────────────────────────────────────────────
   catalog: {
     brands: {

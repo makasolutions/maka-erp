@@ -84,6 +84,7 @@ const LocalizationSettings = lazyNamed(
 const HealthPage = lazyNamed(() => import("@/pages/health"), "HealthPage");
 const BasicTablesPage = lazyNamed(() => import("@/pages/system/basic-tables"), "BasicTablesPage");
 const PartiesPage = lazyNamed(() => import("@/pages/crm/parties"), "PartiesPage");
+const EmpleadosPage = lazyNamed(() => import("@/pages/hr/empleados"), "EmpleadosPage");
 const AuditsPage = lazyNamed(() => import("@/pages/audits"), "AuditsPage");
 const TicketsPage = lazyNamed(() => import("@/pages/tickets/tickets"), "TicketsPage");
 const TicketDetailPage = lazyNamed(
@@ -197,6 +198,10 @@ export const router = createBrowserRouter([
           {
             element: <PermissionRoute permission={P.parties.view} />,
             children: [{ path: "crm/terceros", element: withSuspense(<PartiesPage />) }],
+          },
+          {
+            element: <PermissionRoute permission={P.hr.employees.view} />,
+            children: [{ path: "hr/empleados", element: withSuspense(<EmpleadosPage />) }],
           },
           {
             element: <PermissionRoute permission={P.lookups.tables.view} />,
