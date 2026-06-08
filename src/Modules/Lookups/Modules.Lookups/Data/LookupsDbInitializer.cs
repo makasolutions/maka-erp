@@ -91,6 +91,60 @@ public sealed class LookupsDbInitializer(
              ("6201", "6201 - Desarrollo de sistemas informáticos"),
              ("4690", "4690 - Comercio al por mayor no especializado")],
             cancellationToken).ConfigureAwait(false);
+
+        // ----- HR / Nómina -----
+        await SeedTableAsync("LaborDepartment", "Departamento laboral", 200,
+            [("ADMIN", "Administración"), ("VENTAS", "Ventas"), ("BODEGA", "Bodega y logística"),
+             ("CONTABILIDAD", "Contabilidad"), ("TECNOLOGIA", "Tecnología"), ("CREATIVO", "Creativo / Studios"),
+             ("SOPORTE", "Soporte")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("EmployeeContractType", "Tipo de contrato", 210,
+            [("INDEFINIDO", "Término indefinido"), ("FIJO", "Término fijo"), ("OBRA_LABOR", "Obra o labor"),
+             ("APRENDIZAJE", "Aprendizaje"), ("PRESTACION", "Prestación de servicios")],
+            cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("ContractDuration", "Duración del contrato", 220,
+            [("1M", "1 mes"), ("3M", "3 meses"), ("6M", "6 meses"), ("1A", "1 año"), ("INDEF", "Indefinido")],
+            cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("ArlRiskLevel", "Nivel de riesgo ARL", 230,
+            [("I", "Riesgo I"), ("II", "Riesgo II"), ("III", "Riesgo III"), ("IV", "Riesgo IV"), ("V", "Riesgo V")],
+            cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("SalaryType", "Tipo de salario", 240,
+            [("ORDINARIO", "Ordinario"), ("INTEGRAL", "Integral")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("PayrollPaymentMethod", "Medio de pago de nómina", 250,
+            [("TRANSFERENCIA", "Transferencia bancaria"), ("EFECTIVO", "Efectivo"), ("CHEQUE", "Cheque")],
+            cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("HealthProvider", "EPS", 260,
+            [("SURA", "EPS Sura"), ("SANITAS", "EPS Sanitas"), ("NUEVA_EPS", "Nueva EPS"),
+             ("SALUD_TOTAL", "Salud Total"), ("COMPENSAR", "Compensar"), ("FAMISANAR", "Famisanar")],
+            cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("PensionFund", "Fondo de pensiones (AFP)", 270,
+            [("PORVENIR", "Porvenir"), ("PROTECCION", "Protección"), ("COLFONDOS", "Colfondos"),
+             ("COLPENSIONES", "Colpensiones"), ("SKANDIA", "Skandia")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("SeveranceFund", "Fondo de cesantías", 280,
+            [("PORVENIR", "Porvenir"), ("PROTECCION", "Protección"), ("COLFONDOS", "Colfondos"),
+             ("FNA", "Fondo Nacional del Ahorro")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("Ccf", "Caja de compensación (CCF)", 290,
+            [("COMPENSAR", "Compensar"), ("COLSUBSIDIO", "Colsubsidio"), ("CAFAM", "Cafam"),
+             ("COMFAMA", "Comfama"), ("COMFENALCO", "Comfenalco")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("ArlProvider", "Administradora de riesgos (ARL)", 300,
+            [("SURA", "ARL Sura"), ("POSITIVA", "Positiva"), ("COLMENA", "Colmena Seguros"),
+             ("BOLIVAR", "Seguros Bolívar"), ("AXA", "AXA Colpatria")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("CostCenter", "Centro de costos", 310,
+            [("ADMIN", "Administrativo"), ("COMERCIAL", "Comercial"), ("LOGISTICA", "Logística"),
+             ("STUDIOS", "Maka Studios"), ("IMPORTACIONES", "Importaciones")], cancellationToken).ConfigureAwait(false);
+
+        await SeedTableAsync("Branch", "Sucursal", 320,
+            [("BOGOTA", "Bogotá"), ("MEDELLIN", "Medellín")], cancellationToken).ConfigureAwait(false);
     }
 
     private async Task SeedTableAsync(
