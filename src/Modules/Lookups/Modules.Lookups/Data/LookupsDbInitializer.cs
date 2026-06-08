@@ -76,6 +76,11 @@ public sealed class LookupsDbInitializer(
             [("1", "1 día"), ("7", "7 días"), ("15", "15 días"), ("30", "30 días"),
              ("45", "45 días"), ("60", "60 días")], cancellationToken).ConfigureAwait(false);
 
+        await SeedTableAsync("FiscalResponsibility", "Responsabilidad fiscal (DIAN)", 125,
+            [("O-13", "O-13 Gran contribuyente"), ("O-15", "O-15 Autorretenedor"),
+             ("O-23", "O-23 Agente de retención IVA"), ("O-47", "O-47 Régimen simple de tributación"),
+             ("R-99-PN", "R-99-PN No responsable")], cancellationToken).ConfigureAwait(false);
+
         await SeedTableAsync("Ciiu", "Actividad económica (CIIU)", 130,
             [("4651", "4651 - Comercio de computadores y equipos periféricos"),
              ("4652", "4652 - Comercio de equipos de comunicación"),

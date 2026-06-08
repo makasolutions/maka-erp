@@ -19,5 +19,15 @@ export function useColombiaGeo() {
   const citiesOf = (department: string | null | undefined) =>
     department && data?.[department] ? data[department] : [];
 
-  return { departments, citiesOf };
+  /** All cities flattened (for the city-first selector). */
+  const allCities = data ? Object.values(data).flat() : [];
+
+  /** Reverse lookup: which department a city belongs to (city-first cascade). */
+  const deptOfCity = (city: string | null | undefined): string | null => {
+    if (!city || !data) return null;
+    for (const [dept, cities] of Object.entries(data)) if (cities.includes(city)) return dept;
+    return null;
+  };
+
+  return { departments, citiesOf, allCities, deptOfCity };
 }

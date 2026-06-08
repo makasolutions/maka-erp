@@ -57,21 +57,28 @@
     "actions": { "create": "Nuevo tercero", "edit": "Editar tercero", "delete": "Eliminar tercero" },
     "filters": { "searchPlaceholder": "Buscar por nombre o identificación…" },
     "picker": { "placeholder": "Buscar tercero…" },
+    "tabs": {
+      "identity": "Identificación", "contacts": "Contactos", "crm": "CRM", "finance": "Financiera", "tax": "Tributaria"
+    },
     "fields": {
       "party": "Tercero",
+      "type": "Tipo de tercero",
       "idType": "Tipo de identificación",
       "idNumber": "Número",
       "dv": "DV",
       "dvHint": "Dígito de verificación del NIT.",
       "dvCompute": "Calcular DV",
       "kind": "Naturaleza",
-      "legalName": "Razón social / Nombre",
+      "legalName": "Razón social",
+      "firstName": "Nombres",
+      "lastName": "Apellidos",
       "tradeName": "Nombre comercial",
       "email": "Correo",
       "website": "Página web",
       "roles": "Roles",
       "taxRegime": "Régimen tributario",
       "fiscalResp": "Responsabilidades fiscales",
+      "ciiu": "Actividad económica (CIIU)",
       "status": "Estado",
       "stage": "Etapa",
       "source": "Origen",
@@ -87,10 +94,20 @@
     "role": { "customer": "Cliente", "supplier": "Proveedor" },
     "status": { "Active": "Activo", "Inactive": "Inactivo", "Prospect": "Prospecto" },
     "stage": { "Lead": "Lead", "Mql": "MQL", "Sql": "SQL", "Opportunity": "Oportunidad", "Customer": "Cliente", "Inactive": "Inactivo" },
+    "finance": {
+      "hasCredit": "Tiene crédito",
+      "creditLimit": "Límite de crédito",
+      "creditLimitHint": "Máximo $100.000.000.",
+      "creditDays": "Días límite de crédito",
+      "blocked": "Bloqueo de crédito",
+      "debe": "Debe",
+      "available": "Cupo disponible",
+      "computedHint": "Calculado automáticamente."
+    },
     "address": {
       "title": "Direcciones", "singular": "Dirección", "empty": "Sin direcciones.", "add": "Agregar dirección",
-      "makePrimary": "Marcar como principal", "department": "Departamento", "city": "Ciudad", "label": "Etiqueta",
-      "line": "Dirección", "reference": "Referencia", "lat": "Latitud", "lng": "Longitud"
+      "makePrimary": "Marcar como principal", "primary": "Predeterminada", "department": "Departamento", "city": "Ciudad", "label": "Etiqueta",
+      "line": "Dirección", "barrio": "Barrio", "reference": "Referencia", "lat": "Latitud", "lng": "Longitud"
     },
     "channel": {
       "title": "Canales de contacto", "empty": "Sin canales.", "add": "Agregar canal", "type": "Tipo",
@@ -98,7 +115,11 @@
     },
     "contact": {
       "title": "Personas de contacto", "singular": "Contacto", "empty": "Sin personas de contacto.", "add": "Agregar contacto",
-      "reference": "Cargo / referencia", "fullName": "Nombre completo", "email": "Correo", "cell": "Celular", "isCommercial": "Contacto comercial"
+      "reference": "Cargo / referencia", "fullName": "Nombre completo", "email": "Correo", "cell": "Celular", "isCommercial": "Contacto comercial",
+      "type": "Tipo de contacto", "area": "Área", "idType": "Tipo identificación", "idNumber": "Número identificación",
+      "position": "Cargo", "profession": "Profesión", "firstName": "Nombres", "lastName": "Apellidos",
+      "birthDate": "Fecha de nacimiento", "gender": "Género", "maritalStatus": "Estado civil",
+      "channelRequired": "Correo y celular son obligatorios."
     }
   }
 }

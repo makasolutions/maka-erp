@@ -196,7 +196,9 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
     onError: (e) => toast.error(tc("feedback.saveFailed"), { description: describe(e) }),
   });
 
-  const canSubmit = !!form.identificationTypeCode && !!form.identificationNumber.trim() && !!form.legalName.trim();
+  const nameOk = form.kind === "Juridica" ? !!form.legalName.trim() : (!!form.firstName.trim() && !!form.lastName.trim());
+  const addressesOk = form.addresses.length >= 1;
+  const canSubmit = !!form.identificationTypeCode && !!form.identificationNumber.trim() && nameOk && addressesOk;
   const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) save.mutate(); };
 
   return (

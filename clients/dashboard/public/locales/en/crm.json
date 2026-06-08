@@ -43,21 +43,28 @@
     "actions": { "create": "New party", "edit": "Edit party", "delete": "Delete party" },
     "filters": { "searchPlaceholder": "Search by name or id…" },
     "picker": { "placeholder": "Search party…" },
+    "tabs": {
+      "identity": "Identification", "contacts": "Contacts", "crm": "CRM", "finance": "Financial", "tax": "Tax"
+    },
     "fields": {
       "party": "Party",
+      "type": "Party type",
       "idType": "Identification type",
       "idNumber": "Number",
       "dv": "VD",
       "dvHint": "NIT verification digit.",
       "dvCompute": "Compute VD",
       "kind": "Kind",
-      "legalName": "Legal name / Name",
+      "legalName": "Legal name",
+      "firstName": "First name",
+      "lastName": "Last name",
       "tradeName": "Trade name",
       "email": "Email",
       "website": "Website",
       "roles": "Roles",
       "taxRegime": "Tax regime",
       "fiscalResp": "Fiscal responsibilities",
+      "ciiu": "Economic activity (CIIU)",
       "status": "Status",
       "stage": "Stage",
       "source": "Source",
@@ -73,10 +80,20 @@
     "role": { "customer": "Customer", "supplier": "Supplier" },
     "status": { "Active": "Active", "Inactive": "Inactive", "Prospect": "Prospect" },
     "stage": { "Lead": "Lead", "Mql": "MQL", "Sql": "SQL", "Opportunity": "Opportunity", "Customer": "Customer", "Inactive": "Inactive" },
+    "finance": {
+      "hasCredit": "Has credit",
+      "creditLimit": "Credit limit",
+      "creditLimitHint": "Maximum $100,000,000.",
+      "creditDays": "Credit term (days)",
+      "blocked": "Credit blocked",
+      "debe": "Owed",
+      "available": "Available credit",
+      "computedHint": "Computed automatically."
+    },
     "address": {
       "title": "Addresses", "singular": "Address", "empty": "No addresses.", "add": "Add address",
-      "makePrimary": "Set as primary", "department": "Department", "city": "City", "label": "Label",
-      "line": "Address", "reference": "Reference", "lat": "Latitude", "lng": "Longitude"
+      "makePrimary": "Set as primary", "primary": "Default", "department": "Department", "city": "City", "label": "Label",
+      "line": "Address", "barrio": "Neighborhood", "reference": "Reference", "lat": "Latitude", "lng": "Longitude"
     },
     "channel": {
       "title": "Contact channels", "empty": "No channels.", "add": "Add channel", "type": "Type",
@@ -84,7 +101,11 @@
     },
     "contact": {
       "title": "Contact people", "singular": "Contact", "empty": "No contact people.", "add": "Add contact",
-      "reference": "Role / reference", "fullName": "Full name", "email": "Email", "cell": "Mobile", "isCommercial": "Commercial contact"
+      "reference": "Role / reference", "fullName": "Full name", "email": "Email", "cell": "Mobile", "isCommercial": "Commercial contact",
+      "type": "Contact type", "area": "Area", "idType": "ID type", "idNumber": "ID number",
+      "position": "Position", "profession": "Profession", "firstName": "First name", "lastName": "Last name",
+      "birthDate": "Birth date", "gender": "Gender", "maritalStatus": "Marital status",
+      "channelRequired": "Email and mobile are required."
     }
   }
 }

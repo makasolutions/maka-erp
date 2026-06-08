@@ -40,11 +40,15 @@ export type PartyBriefDto = {
 
 export type PartyAddress = {
   id?: string; country: string; department?: string | null; city?: string | null; line?: string | null;
-  reference?: string | null; latitude?: number | null; longitude?: number | null; isPrimary: boolean; label?: string | null;
+  barrio?: string | null; reference?: string | null; latitude?: number | null; longitude?: number | null;
+  isPrimary: boolean; labelCode?: string | null;
 };
 export type PartyContact = {
-  id?: string; reference: string; fullName?: string | null; email?: string | null; phone?: string | null;
-  cell?: string | null; isCommercial: boolean; notes?: string | null;
+  id?: string; reference: string; contactTypeCode?: string | null; areaCode?: string | null;
+  identificationTypeCode?: string | null; identificationNumber?: string | null;
+  firstName?: string | null; lastName?: string | null; positionCode?: string | null; professionCode?: string | null;
+  birthDate?: string | null; genderCode?: string | null; maritalStatusCode?: string | null;
+  email?: string | null; phone?: string | null; cell?: string | null; isCommercial: boolean; notes?: string | null;
 };
 export type PartyChannel = {
   id?: string; channelTypeCode: string; value: string; reference?: string | null; isPrimary: boolean;
@@ -58,11 +62,14 @@ export type PartyDetailDto = {
   verificationDigit?: number | null;
   kind: PartyKind;
   legalName: string;
+  firstName?: string | null;
+  lastName?: string | null;
   tradeName?: string | null;
   email?: string | null;
   website?: string | null;
   taxRegimeCode?: string | null;
   fiscalResponsibilities?: string | null;
+  actividadEconomicaCiiuCode?: string | null;
   roles: PartyRoles;
   status: PartyStatus;
   stage: LifecycleStage;
@@ -73,7 +80,10 @@ export type PartyDetailDto = {
   birthDate?: string | null;
   genderCode?: string | null;
   maritalStatusCode?: string | null;
+  hasCredit: boolean;
   creditLimit?: number | null;
+  creditDaysCode?: string | null;
+  creditBlocked: boolean;
   creditCurrency?: string | null;
   notes?: string | null;
   branchId?: string | null;
@@ -118,12 +128,15 @@ export type PartyWriteInput = {
   verificationDigit?: number | null;
   kind: PartyKind;
   legalName: string;
+  firstName?: string | null;
+  lastName?: string | null;
   roles: PartyRoles;
   tradeName?: string | null;
   email?: string | null;
   website?: string | null;
   taxRegimeCode?: string | null;
   fiscalResponsibilities?: string | null;
+  actividadEconomicaCiiuCode?: string | null;
   status: PartyStatus;
   stage: LifecycleStage;
   leadScore: number;
@@ -133,7 +146,10 @@ export type PartyWriteInput = {
   birthDate?: string | null;
   genderCode?: string | null;
   maritalStatusCode?: string | null;
+  hasCredit: boolean;
   creditLimit?: number | null;
+  creditDaysCode?: string | null;
+  creditBlocked: boolean;
   creditCurrency?: string | null;
   notes?: string | null;
   branchId?: string | null;
