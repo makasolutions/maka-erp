@@ -1,4 +1,5 @@
 using FluentValidation;
+using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Contracts.v1.Parties.CreateParty;
 using FSH.Modules.Parties.Domain;
 
@@ -14,25 +15,39 @@ public sealed class CreatePartyCommandValidator : AbstractValidator<CreatePartyC
             .Must(x => IdentificationValidator.Validate(x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit) is null)
             .WithMessage(x => IdentificationValidator.Validate(x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit))
             .WithName(nameof(CreatePartyCommand.IdentificationNumber));
-        RuleFor(x => x.LegalName).NotEmpty().WithMessage("La razón social o nombre es obligatorio.").MaximumLength(200);
+
+        RuleFor(x => x.LegalName).NotEmpty().WithMessage("La razón social o nombre es obligatorio.")
+            .MaximumLength(FormValidationRules.LegalNameMaxLength).WithMessage("La razón social no puede superar 150 caracteres.");
+
+        RuleFor(x => x.FirstName).NotEmpty().WithMessage("Los nombres son obligatorios para persona natural.")
+            .When(x => x.Kind == PartyKind.Natural);
+        RuleFor(x => x.FirstName).MaximumLength(FormValidationRules.NameMaxLength).WithMessage("Los nombres no pueden superar 50 caracteres.")
+            .Must(FormValidationRules.IsValidPersonName).WithMessage("Los nombres contienen caracteres no válidos.")
+            .When(x => !string.IsNullOrWhiteSpace(x.FirstName));
+        RuleFor(x => x.LastName).NotEmpty().WithMessage("Los apellidos son obligatorios para persona natural.")
+            .When(x => x.Kind == PartyKind.Natural);
+        RuleFor(x => x.LastName).MaximumLength(FormValidationRules.NameMaxLength).WithMessage("Los apellidos no pueden superar 50 caracteres.")
+            .Must(FormValidationRules.IsValidPersonName).WithMessage("Los apellidos contienen caracteres no válidos.")
+            .When(x => !string.IsNullOrWhiteSpace(x.LastName));
+
         RuleFor(x => x.Email).EmailAddress().WithMessage("El correo electrónico no es válido.").MaximumLength(256)
             .When(x => !string.IsNullOrWhiteSpace(x.Email));
+        RuleFor(x => x.Website).Must(FormValidationRules.IsValidUrl).WithMessage("La página web no es una URL válida.")
+            .MaximumLength(FormValidationRules.UrlMaxLength)
+            .When(x => !string.IsNullOrWhiteSpace(x.Website));
+
+        RuleFor(x => x).Must(x => FormValidationRules.BirthDateError(x.BirthDate) is null)
+            .WithMessage(x => FormValidationRules.BirthDateError(x.BirthDate))
+            .WithName(nameof(CreatePartyCommand.BirthDate))
+            .When(x => x.BirthDate.HasValue);
+
         RuleFor(x => x.CreditCurrency).Length(3).WithMessage("La moneda debe tener 3 caracteres (código ISO).")
             .When(x => !string.IsNullOrWhiteSpace(x.CreditCurrency));
         RuleFor(x => x.CreditLimit).InclusiveBetween(0, 100_000_000).When(x => x.CreditLimit.HasValue)
             .WithMessage("El límite de crédito no puede superar $100.000.000.");
-        RuleForEach(x => x.Contacts).ChildRules(c =>
-        {
-            c.RuleFor(i => i.Email).NotEmpty().WithMessage("Cada persona de contacto requiere un correo.")
-                .EmailAddress().WithMessage("El correo de una persona de contacto no es válido.")
-                .MaximumLength(256);
-            c.RuleFor(i => i.Cell).NotEmpty().WithMessage("Cada persona de contacto requiere un celular.")
-                .MaximumLength(64);
-        });
-        RuleForEach(x => x.Channels).ChildRules(c =>
-        {
-            c.RuleFor(i => i.ChannelTypeCode).NotEmpty().WithMessage("Cada canal de contacto requiere un tipo.").MaximumLength(64);
-            c.RuleFor(i => i.Value).NotEmpty().WithMessage("Cada canal de contacto requiere un valor.").MaximumLength(256);
-        });
+
+        RuleForEach(x => x.Addresses).SetValidator(new PartyAddressInputValidator());
+        RuleForEach(x => x.Contacts).SetValidator(new PartyContactInputValidator());
+        RuleForEach(x => x.Channels).SetValidator(new PartyChannelInputValidator());
     }
 }
