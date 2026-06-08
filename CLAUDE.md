@@ -1064,9 +1064,24 @@ menos 2 tenants distintos para confirmar aislamiento de datos:
     en el front); proveedor de solo-lectura al editar (el `PartyPicker` deshabilitado no
     pinta su label). El costo/PV sugerido/ganancia en la tarjeta de producto se difiere a Fase G.
 
+- **Fase F** ✅ — **Evaluación de proveedores** (scorecard ponderado), también en **Catalog**.
+  - Entidades `ScorecardKpi` (catálogo de KPIs con **peso editable** por tenant),
+    `SupplierScorecard` (+ `ScorecardCriterion` snapshot de KPI) — **inmutable en `Cerrado`**.
+    `Recompute()`: `WeightedScore = Σ(score·peso)/Σ(peso)` (1–5) → `Grade` A≥4.5·B≥3.5·C≥2.5·D≥1.5·F.
+  - Enums `ScorecardStatus/Grade` (`JsonStringEnumConverter`). Migración `Catalog_SupplierEvaluation`.
+    Permiso `Catalog.Scorecards`. KPIs por defecto vía `POST .../scorecard-kpis/seed-defaults`
+    (Calidad 35·Entrega 25·Precio 20·Servicio 10·Cumplimiento 10).
+  - Endpoints `api/v1/catalog/{scorecard-kpis,supplier-scorecards}` (+ `/ranking`, `/trend/{id}`,
+    `/{id}/close`). Reportes: ranking (último score por proveedor) y tendencia por período.
+  - **Enganche E↔F**: la regla `CalificacionMinima` del convenio ahora lee el **último scorecard
+    del distribuidor** (`Cumple/NoCumple` con el score) en vez de `Pendiente`.
+  - Front: `pages/crm/evaluacion-proveedores.tsx` (pestañas Scorecards/Reportes/KPIs; editor con
+    score+letra en vivo; `MakaChart` ranking/tendencia), menú **Comercial → Evaluación de
+    proveedores**, i18n ES/EN.
+  - Gotcha: el namespace de features se llamó **`SupplierEvaluation`** (no `Scorecards`) porque
+    NetArchTest detecta el substring `core` dentro de "S**core**cards" en la regla de pureza `.Core.`.
+
 ### Pendiente (siguientes fases)
-- **Fase F** — Evaluación de proveedores (scorecard ponderado: Calidad/Entrega/Precio/Servicio/
-  Cumplimiento; reportes). Alimentará las reglas `Pendiente` del motor de convenios.
 - **Fase G** — Bodega/inventario global (stock público compartido) + tarjeta de producto
   dropshipping (Costo desde la lista atada al convenio · PV sugerido · Ganancia).
 
