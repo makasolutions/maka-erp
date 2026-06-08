@@ -1045,13 +1045,30 @@ menos 2 tenants distintos para confirmar aislamiento de datos:
     pestaña "Catálogo proveedor" (marcas + categorías globales filtradas por industria).
   - D-3: **`Party.IsGlobalSupplier`** + endpoint `PUT /parties/{id}/global-supplier` + toggle
     "Proveedor global" en la pestaña del proveedor.
+- **Fase E** ✅ — **Convenios** (decisión: extensión de **Catalog**, no módulo `Suppliers`).
+  - Entidades `Agreement` + `AgreementRule` (tenant-aisladas; **inmutables en `Terminado`**);
+    tarifa acordada/sugerida = FK a `PriceList`; responsables (despacho/guía/liquidación);
+    políticas (entregas fallidas/devoluciones/garantías); reglas configurables.
+  - Enums con `JsonStringEnumConverter`: `AgreementType/Status/Responsible/RuleType` +
+    `RuleEvaluationResult`. Migración `Catalog_Agreements`. Permiso `Catalog.Agreements`.
+  - Endpoints `api/v1/catalog/agreements` (list/detail/create/update/`/status`/delete/`/evaluate`).
+  - **Motor de evaluación** (`/evaluate?distributorId=`): lee el Party del distribuidor vía
+    `Parties.Contracts` + `IMediator` (`GetPartyByIdQuery`; se agregó `CreatedAtUtc` al DTO).
+    Resuelve `AntiguedadMinimaMeses`, `VendeAEmpresa/Natural` (Kind), `DocumentoExigido`; las
+    métricas de ventas/calificación/SLA/cumplimiento → **`Pendiente`** hasta Fase F.
+    `Eligible` = ninguna regla **obligatoria** en `NoCumple` (las `Pendiente` no bloquean).
+  - Front: `pages/crm/convenios.tsx` (MakaGrid + editor con reglas repetibles + panel de
+    evaluación + transiciones de estado), menú **Comercial → Convenios**, i18n ES/EN.
+  - Gotchas resueltos: fechas `timestamptz` → `AsUtc()` (Kind=Unspecified rompe Npgsql);
+    nombre del proveedor resuelto **en el backend** para la lista (evita fragilidad de timing
+    en el front); proveedor de solo-lectura al editar (el `PartyPicker` deshabilitado no
+    pinta su label). El costo/PV sugerido/ganancia en la tarjeta de producto se difiere a Fase G.
 
 ### Pendiente (siguientes fases)
-- **Fase E** — Convenios (motor de reglas; el costo del distribuidor sale de la lista atada al
-  convenio). Módulo `Suppliers` o extensión de Catalog (por decidir al iniciar).
 - **Fase F** — Evaluación de proveedores (scorecard ponderado: Calidad/Entrega/Precio/Servicio/
-  Cumplimiento; reportes).
-- **Fase G** — Bodega/inventario global (stock público compartido).
+  Cumplimiento; reportes). Alimentará las reglas `Pendiente` del motor de convenios.
+- **Fase G** — Bodega/inventario global (stock público compartido) + tarjeta de producto
+  dropshipping (Costo desde la lista atada al convenio · PV sugerido · Ganancia).
 
 ### Convenciones nuevas confirmadas
 - Datos de marketplace → tenant `global`; lectura cruzada solo vía `IGlobalCatalogReader`.
