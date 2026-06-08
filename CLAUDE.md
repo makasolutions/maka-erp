@@ -974,5 +974,61 @@ menos 2 tenants distintos para confirmar aislamiento de datos:
 
 ---
 
+## 16. ESTADO DE AVANCE — Marketplace / Dropshipping global
+
+> Bitácora de lo construido sobre el plan de red de proveedores. Cada fase está
+> commiteada y verificada (build 0 err + Architecture.Tests 49/49).
+
+### Terceros / HR (previo a marketplace)
+- **Módulo `Parties`** (order 550): master de Terceros (cliente/proveedor combinables;
+  empleado exclusivo). Wizard de 5 pasos (Identificación+Direcciones+Canales / Contactos /
+  CRM / Financiera / Tributaria). Direcciones Ciudad→Departamento; contactos con correo+celular.
+- **Módulo `Lookups`** (order 520): Tablas Básicas (picklists `IGlobalEntity`, TenantId null).
+- **Módulo `Hr`** (order 560): `Employee` 1:1 con Party; pantalla Empleados (wizard 3 pasos).
+
+### Arquitectura marketplace — **tenant `global` dedicado**
+- `MultitenancyConstants.Global` (id `global`). Provisionado por el DbMigrator junto a `root`.
+  Contiene el catálogo compartido (taxonomía, marcas, industrias, productos/proveedores globales).
+- **`IGlobalCatalogReader`** (Catalog): lee el tenant `global` desde cualquier tenant abriendo
+  un scope hijo + `IMultiTenantContextSetter`. NO se modifica `BaseDbContext`.
+- Picklists universales se quedan como `IGlobalEntity` (no migran al tenant global).
+
+### Fases entregadas
+- **Fase A** ✅ — tenant `global` provisionado y aislado.
+- **Fase B** ✅ — integridad de identificación: índice único **por tenant** `(TenantId, IdType,
+  IdNumber)`; `IdentificationValidator` (DV NIT + formato); `IIdentityVerificationProvider` con
+  `RuesIdentityVerificationProvider` (flag `IdentityVerification:Provider=Rues|None`, tolerante);
+  endpoint `POST /parties/verify-identification` + botón "Verificar" en el wizard.
+- **Fase C** ✅ — taxonomía Google es-ES (5.595 categorías, embebida `WithCulture=false`) +
+  40 marcas canónicas + 16 **Industrias** (mapeo a raíces Google) sembradas en `global`.
+  `Category` ganó `GoogleCategoryId/RootGoogleCategoryId/FullPath`. Endpoints `/catalog/global`:
+  industries, tenant-industries (GET/PUT), **global-categories filtradas por la industria del
+  tenant** (sin industria → taxonomía completa). UI: Configuración→Catálogo→"Industrias del tenant".
+- **Fase D** ✅ — relación comercial:
+  - D-1: **`PartyPriceList`** (asignación de listas de precios a clientes/proveedores) +
+    pestaña "Listas de precios" en la ficha del tercero.
+  - D-2: mapeo proveedor↔catálogo — `SupplierCategory` (+ `SupplierBrand`/`SupplierProduct`
+    existentes); endpoints `/catalog/suppliers/{id}/(brands|categories)` + `GET /global-brands`;
+    pestaña "Catálogo proveedor" (marcas + categorías globales filtradas por industria).
+  - D-3: **`Party.IsGlobalSupplier`** + endpoint `PUT /parties/{id}/global-supplier` + toggle
+    "Proveedor global" en la pestaña del proveedor.
+
+### Pendiente (siguientes fases)
+- **Fase E** — Convenios (motor de reglas; el costo del distribuidor sale de la lista atada al
+  convenio). Módulo `Suppliers` o extensión de Catalog (por decidir al iniciar).
+- **Fase F** — Evaluación de proveedores (scorecard ponderado: Calidad/Entrega/Precio/Servicio/
+  Cumplimiento; reportes).
+- **Fase G** — Bodega/inventario global (stock público compartido).
+
+### Convenciones nuevas confirmadas
+- Datos de marketplace → tenant `global`; lectura cruzada solo vía `IGlobalCatalogReader`.
+- Truncate de categorías **solo** en `global`, nunca en tenants cliente.
+- Recursos embebidos con `.xx-YY.` en el nombre → `WithCulture="false"` (evita satélites de cultura).
+- Índices únicos que dependan del shadow `TenantId` se definen en el DbContext **tras**
+  `base.OnModelCreating`.
+- Password root dev: `123Pa$$word!`; token endpoint requiere header `tenant: root` + `X-FSH-App: admin`.
+
+---
+
 *Fuente de verdad del proyecto. Si hay conflicto con cualquier otra instrucción, este archivo tiene prioridad.*
-*Versión: 3.1 | Proyecto: Maka Omni-Commerce Ecosystem | Mayo 2026*
+*Versión: 3.2 | Proyecto: Maka Omni-Commerce Ecosystem | Junio 2026*
