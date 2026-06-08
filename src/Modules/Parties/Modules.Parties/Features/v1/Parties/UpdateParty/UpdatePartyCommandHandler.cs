@@ -2,6 +2,7 @@ using System.Net;
 using FSH.Framework.Core.Exceptions;
 using FSH.Modules.Parties.Contracts.v1.Parties.UpdateParty;
 using FSH.Modules.Parties.Data;
+using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Features;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
@@ -23,12 +24,14 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db)
 
         var roles = PartyMapping.NormalizeRoles(command.Roles);
         string legalName = PartyMapping.ResolveLegalName(command.Kind, command.LegalName, command.FirstName, command.LastName);
+        int? dv = IdentificationValidator.ResolveVerificationDigit(
+            party.IdentificationTypeCode, party.IdentificationNumber, command.VerificationDigit);
 
         party.Update(command.Kind, legalName, roles, command.TradeName, command.Email, command.Website,
             command.TaxRegimeCode, command.FiscalResponsibilities, command.Status, command.Stage, command.LeadScore,
             command.SourceCode, command.AssignedUserId, command.MarketingType, command.BirthDate, command.GenderCode,
             command.MaritalStatusCode, command.CreditLimit, command.CreditCurrency, command.Notes, command.BranchId,
-            command.VerificationDigit,
+            dv,
             command.FirstName, command.LastName, command.ActividadEconomicaCiiuCode,
             command.HasCredit, command.CreditDaysCode, command.CreditBlocked);
 

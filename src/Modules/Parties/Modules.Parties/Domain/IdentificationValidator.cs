@@ -48,12 +48,8 @@ public static class IdentificationValidator
                 var digits = new string(raw.Where(char.IsDigit).ToArray());
                 if (digits.Length is < 5 or > 15)
                     return "El NIT debe tener entre 5 y 15 dígitos.";
-                if (verificationDigit.HasValue)
-                {
-                    int? dv = NitVerificationDigit(digits);
-                    if (dv.HasValue && dv.Value != verificationDigit.Value)
-                        return $"El dígito de verificación del NIT no es válido (esperado {dv.Value}).";
-                }
+                // El DV no se valida aquí: es determinístico y se calcula/corrige
+                // automáticamente al crear/actualizar (ver ResolveVerificationDigit).
                 return null;
             }
             case "CC":
@@ -81,6 +77,18 @@ public static class IdentificationValidator
             default:
                 return null; // tipos no reconocidos: sin validación estricta
         }
+    }
+
+    /// <summary>
+    /// Devuelve el DV correcto a almacenar: para NIT lo calcula (determinístico,
+    /// ignorando el provisto); para otros tipos respeta el provisto.
+    /// </summary>
+    public static int? ResolveVerificationDigit(string? identificationTypeCode, string? number, int? provided)
+    {
+        string type = (identificationTypeCode ?? string.Empty).Trim().ToUpperInvariant();
+        if (type is "NIT" or "NIT_EXT")
+            return NitVerificationDigit(number) ?? provided;
+        return provided;
     }
 
     /// <summary>Normaliza un número (quita separadores) para comparación/almacenamiento.</summary>

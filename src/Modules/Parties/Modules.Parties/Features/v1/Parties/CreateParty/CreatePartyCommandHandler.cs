@@ -27,9 +27,10 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db)
 
         var roles = PartyMapping.NormalizeRoles(command.Roles);
         string legalName = PartyMapping.ResolveLegalName(command.Kind, command.LegalName, command.FirstName, command.LastName);
+        int? dv = IdentificationValidator.ResolveVerificationDigit(typeCode, number, command.VerificationDigit);
 
         var party = Party.Create(
-            typeCode, number, command.VerificationDigit, command.Kind, legalName, roles,
+            typeCode, number, dv, command.Kind, legalName, roles,
             command.TradeName, command.Email, command.Website, command.TaxRegimeCode, command.FiscalResponsibilities,
             command.Status, command.Stage, command.LeadScore, command.SourceCode, command.AssignedUserId, command.MarketingType,
             command.BirthDate, command.GenderCode, command.MaritalStatusCode, command.CreditLimit, command.CreditCurrency,
