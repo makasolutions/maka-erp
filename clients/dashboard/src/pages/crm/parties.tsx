@@ -12,13 +12,13 @@ import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { EntityPageHeader, EntityStatusBadge, EntityFilterPill } from "@/components/list";
+import { EntityPageHeader, EntityStatusBadge, EntityFilterPill, FormErrorSummary } from "@/components/list";
 import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import {
   PartyForm, emptyPartyForm, isContactBlank, partyFormFromDetail, partyFormToInput, type PartyFormValue,
 } from "@/components/party/PartyForm";
-import { describe } from "@/lib/list-helpers";
+import { describe, fieldErrors } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -169,6 +169,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
   const isOpen = isCreate || state.mode === "edit";
 
   const [form, setForm] = useState<PartyFormValue>(emptyPartyForm());
+  const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
 
   const detailQ = useQuery({
     queryKey: ["crm", "parties", "detail", editId],
@@ -178,6 +179,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   useEffect(() => {
     if (!isOpen) return;
+    setErrors(null);
     if (isCreate) setForm(emptyPartyForm());
     else if (detailQ.data) setForm(partyFormFromDetail(detailQ.data));
   }, [isOpen, isCreate, detailQ.data]);
@@ -188,12 +190,16 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
       if (isCreate) await createParty(input);
       else await updateParty(editId!, input);
     },
+    onMutate: () => setErrors(null),
     onSuccess: () => {
       toast.success(isCreate ? tc("feedback.created") : tc("feedback.updated"));
       queryClient.invalidateQueries({ queryKey: KEY });
       onClose();
     },
-    onError: (e) => toast.error(tc("feedback.saveFailed"), { description: describe(e) }),
+    onError: (e) => {
+      setErrors(fieldErrors(e));
+      toast.error(tc("feedback.saveFailed"), { description: describe(e) });
+    },
   });
 
   const nameOk = form.kind === "Juridica" ? !!form.legalName.trim() : (!!form.firstName.trim() && !!form.lastName.trim());
@@ -211,7 +217,8 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
             <DialogDescription>{t("parties.formDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} />
+            <FormErrorSummary errors={errors} />
+            <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} errors={errors} />
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>

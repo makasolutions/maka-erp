@@ -677,6 +677,10 @@
   "errorBand": {
     "failure": "Error ·"
   },
+  "validation": {
+    "summaryTitle_one": "Corrige el siguiente error:",
+    "summaryTitle_other": "Corrige los siguientes {{count}} errores:"
+  },
   "mobileNav": {
     "openMenu": "Abrir menú de navegación",
     "primaryNav": "Navegación principal"

@@ -9,7 +9,7 @@ import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { EntityPageHeader, EntityStatusBadge, Field, FormGrid, Combobox } from "@/components/list";
+import { EntityPageHeader, EntityStatusBadge, Field, FormGrid, Combobox, FormErrorSummary } from "@/components/list";
 import { MakaGridClient } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
@@ -19,7 +19,7 @@ import { ContactEditor } from "@/components/party/ContactEditor";
 import { EmployeeInfoEditor } from "@/components/hr/EmployeeInfoEditor";
 import { emptyAddress, emptyContact, isContactBlank } from "@/components/party/PartyForm";
 import { nitVerificationDigit } from "@/lib/nit";
-import { describe, formatMoney } from "@/lib/list-helpers";
+import { describe, fieldErrors, formatMoney } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 import {
@@ -154,6 +154,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   const [identity, setIdentity] = useState<IdentityForm>(emptyIdentity());
   const [emp, setEmp] = useState<EmployeeData>(emptyEmployeeData());
   const [employeeId, setEmployeeId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
 
   const partyQ = useQuery({
     queryKey: ["parties", "detail", editRow?.partyId],
@@ -169,6 +170,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   useEffect(() => {
     if (!isOpen) return;
     setTab("id");
+    setErrors(null);
     if (isCreate) { setIdentity(emptyIdentity()); setEmp(emptyEmployeeData()); setEmployeeId(null); return; }
     if (partyQ.data) {
       const d = partyQ.data;
@@ -193,12 +195,16 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
         else await createEmployee(editRow!.partyId, emp);
       }
     },
+    onMutate: () => setErrors(null),
     onSuccess: () => {
       toast.success(isCreate ? tc("feedback.created") : tc("feedback.updated"));
       queryClient.invalidateQueries({ queryKey: KEY });
       onClose();
     },
-    onError: (e) => toast.error(tc("feedback.saveFailed"), { description: describe(e) }),
+    onError: (e) => {
+      setErrors(fieldErrors(e));
+      toast.error(tc("feedback.saveFailed"), { description: describe(e) });
+    },
   });
 
   const idOk = !!identity.identificationTypeCode && !!identity.identificationNumber.trim()
@@ -225,6 +231,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
             <DialogDescription>{t("formDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody>
+            <FormErrorSummary errors={errors} />
             <div className="space-y-4">
               <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)]">
                 {tabs.map((tb) => (

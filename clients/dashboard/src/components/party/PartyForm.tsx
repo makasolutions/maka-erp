@@ -117,9 +117,21 @@ export interface PartyFormProps {
   disabled?: boolean;
   /** When editing an existing party, enables the price-lists tab. */
   partyId?: string;
+  /** Field-error map from a 400 (keys = backend property names) to flag tabs. */
+  errors?: Record<string, string[]> | null;
 }
 
-export function PartyForm({ value: v, onChange, isCreate, disabled, partyId }: PartyFormProps) {
+/** Maps a backend validation key (e.g. "Contacts[0].Email") to the tab that owns it. */
+function tabForErrorKey(key: string): TabId {
+  const k = key.toLowerCase();
+  if (k.startsWith("contact")) return "contacts";
+  if (k.startsWith("creditlimit") || k.startsWith("creditdays") || k.includes("credit")) return "finance";
+  if (k.startsWith("taxregime") || k.startsWith("fiscal") || k.includes("ciiu") || k.includes("actividad")) return "tax";
+  if (k.startsWith("leadscore") || k.startsWith("source") || k.startsWith("stage") || k.startsWith("status")) return "crm";
+  return "id"; // identidad, direcciones, canales, nombres…
+}
+
+export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, errors }: PartyFormProps) {
   const { t } = useTranslation("crm");
   const [tab, setTab] = useState<TabId>("id");
   const [verifying, setVerifying] = useState(false);
@@ -159,16 +171,20 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId }: P
     ...(partyId && v.supplier ? [{ id: "supplier" as TabId, label: t("parties.tabs.supplier") }] : []),
   ];
 
+  const erroredTabs = new Set<TabId>();
+  for (const key of Object.keys(errors ?? {})) erroredTabs.add(tabForErrorKey(key));
+
   return (
     <div className="space-y-4">
       {/* Tab bar */}
       <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)]">
         {tabs.map((tb) => (
           <button key={tb.id} type="button" onClick={() => setTab(tb.id)}
-            className={`-mb-px rounded-t-lg border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
+            className={`-mb-px flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors ${
               tab === tb.id ? "border-[var(--color-primary)] text-[var(--color-foreground)]"
                 : "border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"}`}>
             {tb.label}
+            {erroredTabs.has(tb.id) && <span className="size-1.5 rounded-full bg-[var(--color-destructive)]" aria-hidden />}
           </button>
         ))}
       </div>

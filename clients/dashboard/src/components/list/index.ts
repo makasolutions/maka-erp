@@ -1,6 +1,7 @@
 export { PageHero } from "./page-hero";
 export { Field, FormGrid, type FormSpan } from "./field";
 export { ErrorBand } from "./error-band";
+export { FormErrorSummary } from "./form-error-summary";
 export { Combobox, type ComboboxOption } from "./combobox";
 export {
   ToneIconTile,

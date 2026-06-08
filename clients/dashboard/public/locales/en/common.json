@@ -606,6 +606,10 @@
   "errorBand": {
     "failure": "Failure ·"
   },
+  "validation": {
+    "summaryTitle_one": "Fix the following error:",
+    "summaryTitle_other": "Fix the following {{count}} errors:"
+  },
   "mobileNav": {
     "openMenu": "Open navigation menu",
     "primaryNav": "Primary navigation"

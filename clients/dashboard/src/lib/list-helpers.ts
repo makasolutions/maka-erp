@@ -136,8 +136,35 @@ export function formatMoney(
 // Prefers the Dev-only `reason` extension on ProblemDetails so JwtBearer
 // rejection causes (expired token, signing key drift, etc) are visible
 // in toast descriptions during development.
+/**
+ * Field-level validation errors from a 400 ProblemDetails (`errors` dictionary),
+ * keyed by the backend property name (e.g. "LegalName", "Contacts[0].Email").
+ * Empty object when the error isn't a validation error.
+ */
+export function fieldErrors(err: unknown): Record<string, string[]> {
+  if (err instanceof ApiRequestError && err.problem?.errors) {
+    return err.problem.errors;
+  }
+  return {};
+}
+
+/** Flat, de-duplicated list of all validation messages from a 400 error. */
+export function validationMessages(err: unknown): string[] {
+  const map = fieldErrors(err);
+  const seen = new Set<string>();
+  for (const list of Object.values(map)) {
+    for (const m of list) if (m?.trim()) seen.add(m.trim());
+  }
+  return [...seen];
+}
+
 export function describe(err: unknown): string {
   if (err instanceof ApiRequestError) {
+    // Prefer the specific per-field messages over the generic English
+    // "One or more validation errors occurred." title (global behaviour).
+    const messages = validationMessages(err);
+    if (messages.length > 0) return messages.join(" · ");
+
     const reason =
       err.problem?.reason ??
       err.problem?.detail ??
