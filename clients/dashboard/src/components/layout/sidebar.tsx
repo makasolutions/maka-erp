@@ -39,6 +39,7 @@ const NAV_ITEM_KEYS: Record<string, string> = {
   "/crm/terceros": "nav.thirdParties",
   "/hr/empleados": "nav.employees",
   "/crm/convenios": "nav.agreements",
+  "/crm/evaluacion-proveedores": "nav.supplierEvaluation",
   "/system/health": "nav.health",
   "/system/basic-tables": "nav.basicTables",
   "/system/audits": "nav.auditTrail",

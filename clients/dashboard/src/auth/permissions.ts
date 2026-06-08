@@ -84,6 +84,10 @@ export const P = {
       view:   "Permissions.Catalog.Agreements.View",
       manage: "Permissions.Catalog.Agreements.Manage",
     },
+    scorecards: {
+      view:   "Permissions.Catalog.Scorecards.View",
+      manage: "Permissions.Catalog.Scorecards.Manage",
+    },
   },
 
   // ── Identity ─────────────────────────────────────────────────────────────

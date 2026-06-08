@@ -86,6 +86,7 @@ const BasicTablesPage = lazyNamed(() => import("@/pages/system/basic-tables"), "
 const PartiesPage = lazyNamed(() => import("@/pages/crm/parties"), "PartiesPage");
 const EmpleadosPage = lazyNamed(() => import("@/pages/hr/empleados"), "EmpleadosPage");
 const ConveniosPage = lazyNamed(() => import("@/pages/crm/convenios"), "ConveniosPage");
+const EvaluacionProveedoresPage = lazyNamed(() => import("@/pages/crm/evaluacion-proveedores"), "EvaluacionProveedoresPage");
 const AuditsPage = lazyNamed(() => import("@/pages/audits"), "AuditsPage");
 const TicketsPage = lazyNamed(() => import("@/pages/tickets/tickets"), "TicketsPage");
 const TicketDetailPage = lazyNamed(
@@ -207,6 +208,10 @@ export const router = createBrowserRouter([
           {
             element: <PermissionRoute permission={P.catalog.agreements.view} />,
             children: [{ path: "crm/convenios", element: withSuspense(<ConveniosPage />) }],
+          },
+          {
+            element: <PermissionRoute permission={P.catalog.scorecards.view} />,
+            children: [{ path: "crm/evaluacion-proveedores", element: withSuspense(<EvaluacionProveedoresPage />) }],
           },
           {
             element: <PermissionRoute permission={P.lookups.tables.view} />,

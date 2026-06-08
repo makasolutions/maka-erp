@@ -34,6 +34,35 @@
       "body": "Add contacts to build your CRM."
     }
   },
+  "scorecards": {
+    "title": "Supplier evaluation",
+    "singular": "scorecard",
+    "description": "Weighted supplier rating per period: KPIs, score and reports.",
+    "formDesc": "Rate each KPI (1–5); the weighted score and letter are computed automatically.",
+    "closedNote": "This scorecard is closed and immutable.",
+    "scoreHint": "Weighted average by each KPI's weight (1–5).",
+    "deleteConfirm": "Delete the scorecard for \"{{name}}\"? Only allowed while in draft.",
+    "tabs": { "scorecards": "Scorecards", "reports": "Reports", "kpis": "KPIs" },
+    "actions": { "create": "New scorecard", "edit": "Edit scorecard", "delete": "Delete scorecard", "close": "Close" },
+    "fields": {
+      "supplier": "Supplier", "period": "Period", "periodHint": "E.g.: 2026-Q2", "periodStart": "Period start",
+      "score": "Score", "grade": "Grade", "status": "Status", "notes": "Notes"
+    },
+    "status": { "Borrador": "Draft", "Cerrado": "Closed" },
+    "criteria": { "title": "Criteria (KPIs)", "empty": "No KPIs. Seed the catalog in the KPIs tab.", "score": "Score", "comment": "Comment" },
+    "reports": {
+      "ranking": "Supplier ranking (latest score)", "trend": "Trend by period",
+      "empty": "No scorecards to show yet.", "pickSupplier": "Pick a supplier to see its trend.",
+      "noTrend": "This supplier has no scorecards."
+    },
+    "kpis": {
+      "singular": "KPI", "name": "Name", "code": "Code", "weight": "Weight", "sortOrder": "Order",
+      "create": "New KPI", "edit": "Edit KPI", "formDesc": "Define the KPI and its weight (%) in the weighted score.",
+      "seed": "Seed default KPIs", "seeded": "Seeded {{count}} KPIs.",
+      "totalWeight": "Total weight of active KPIs: {{total}}% (ideal 100%)."
+    },
+    "validation": { "supplierRequired": "The supplier is required.", "periodRequired": "The period is required." }
+  },
   "convenios": {
     "title": "Agreements",
     "singular": "agreement",

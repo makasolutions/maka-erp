@@ -48,6 +48,35 @@
     "title": "Sin registros",
     "body": "Los contactos y oportunidades aparecerán aquí."
   },
+  "scorecards": {
+    "title": "Evaluación de proveedores",
+    "singular": "scorecard",
+    "description": "Calificación ponderada de proveedores por período: KPIs, score y reportes.",
+    "formDesc": "Evalúa cada KPI (1–5); el score ponderado y la letra se calculan automáticamente.",
+    "closedNote": "Este scorecard está cerrado y es inmutable.",
+    "scoreHint": "Promedio ponderado por el peso de cada KPI (1–5).",
+    "deleteConfirm": "¿Eliminar el scorecard de \"{{name}}\"? Solo se permite en borrador.",
+    "tabs": { "scorecards": "Scorecards", "reports": "Reportes", "kpis": "KPIs" },
+    "actions": { "create": "Nuevo scorecard", "edit": "Editar scorecard", "delete": "Eliminar scorecard", "close": "Cerrar" },
+    "fields": {
+      "supplier": "Proveedor", "period": "Período", "periodHint": "Ej.: 2026-Q2", "periodStart": "Inicio del período",
+      "score": "Score", "grade": "Letra", "status": "Estado", "notes": "Observaciones"
+    },
+    "status": { "Borrador": "Borrador", "Cerrado": "Cerrado" },
+    "criteria": { "title": "Criterios (KPIs)", "empty": "Sin KPIs. Siembra el catálogo en la pestaña KPIs.", "score": "Puntaje", "comment": "Comentario" },
+    "reports": {
+      "ranking": "Ranking de proveedores (último score)", "trend": "Tendencia por período",
+      "empty": "Aún no hay scorecards para mostrar.", "pickSupplier": "Elige un proveedor para ver su tendencia.",
+      "noTrend": "Este proveedor no tiene scorecards."
+    },
+    "kpis": {
+      "singular": "KPI", "name": "Nombre", "code": "Código", "weight": "Peso", "sortOrder": "Orden",
+      "create": "Nuevo KPI", "edit": "Editar KPI", "formDesc": "Define el KPI y su peso (%) dentro del score ponderado.",
+      "seed": "Sembrar KPIs por defecto", "seeded": "Se sembraron {{count}} KPIs.",
+      "totalWeight": "Peso total de KPIs activos: {{total}}% (ideal 100%)."
+    },
+    "validation": { "supplierRequired": "El proveedor es obligatorio.", "periodRequired": "El período es obligatorio." }
+  },
   "convenios": {
     "title": "Convenios",
     "singular": "convenio",
