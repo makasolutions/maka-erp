@@ -155,6 +155,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   const [emp, setEmp] = useState<EmployeeData>(emptyEmployeeData());
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const partyQ = useQuery({
     queryKey: ["parties", "detail", editRow?.partyId],
@@ -170,7 +171,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   useEffect(() => {
     if (!isOpen) return;
     setTab("id");
-    setErrors(null);
+    setErrors(null); setErrorMsg(null);
     if (isCreate) { setIdentity(emptyIdentity()); setEmp(emptyEmployeeData()); setEmployeeId(null); return; }
     if (partyQ.data) {
       const d = partyQ.data;
@@ -195,14 +196,16 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
         else await createEmployee(editRow!.partyId, emp);
       }
     },
-    onMutate: () => setErrors(null),
+    onMutate: () => { setErrors(null); setErrorMsg(null); },
     onSuccess: () => {
       toast.success(isCreate ? tc("feedback.created") : tc("feedback.updated"));
       queryClient.invalidateQueries({ queryKey: KEY });
       onClose();
     },
     onError: (e) => {
-      setErrors(fieldErrors(e));
+      const fields = fieldErrors(e);
+      setErrors(fields);
+      setErrorMsg(Object.keys(fields).length === 0 ? describe(e) : null);
       toast.error(tc("feedback.saveFailed"), { description: describe(e) });
     },
   });
@@ -231,7 +234,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
             <DialogDescription>{t("formDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <FormErrorSummary errors={errors} />
+            <FormErrorSummary errors={errors} message={errorMsg} />
             <div className="space-y-4">
               <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)]">
                 {tabs.map((tb) => (

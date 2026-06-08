@@ -682,6 +682,10 @@
     "summaryTitle_one": "Corrige el siguiente error:",
     "summaryTitle_other": "Corrige los siguientes {{count}} errores:"
   },
+  "errors": {
+    "unexpected": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
+    "forbidden": "No tienes permisos para realizar esta acción."
+  },
   "mobileNav": {
     "openMenu": "Abrir menú de navegación",
     "primaryNav": "Navegación principal"

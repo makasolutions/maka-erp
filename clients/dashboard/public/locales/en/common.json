@@ -611,6 +611,10 @@
     "summaryTitle_one": "Fix the following error:",
     "summaryTitle_other": "Fix the following {{count}} errors:"
   },
+  "errors": {
+    "unexpected": "An unexpected error occurred. Please try again.",
+    "forbidden": "You don't have permission to perform this action."
+  },
   "mobileNav": {
     "openMenu": "Open navigation menu",
     "primaryNav": "Primary navigation"

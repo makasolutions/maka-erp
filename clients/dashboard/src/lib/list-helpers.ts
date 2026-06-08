@@ -158,19 +158,23 @@ export function validationMessages(err: unknown): string[] {
   return [...seen];
 }
 
+/** Friendly, user-facing message for any error (no status codes, localized). */
 export function describe(err: unknown): string {
   if (err instanceof ApiRequestError) {
-    // Prefer the specific per-field messages over the generic English
-    // "One or more validation errors occurred." title (global behaviour).
+    // Prefer the specific per-field messages over the generic title.
     const messages = validationMessages(err);
     if (messages.length > 0) return messages.join(" · ");
 
-    const reason =
-      err.problem?.reason ??
-      err.problem?.detail ??
-      err.problem?.title ??
-      err.message;
-    return `${err.status} ${reason}`;
+    const reason = err.problem?.reason ?? err.problem?.detail ?? err.problem?.title ?? err.message;
+    // Localize the framework's generic 500 ("An unexpected error occurred…").
+    if (err.status >= 500 || /unexpected error occurred/i.test(reason ?? "")) {
+      return i18next.t("common:errors.unexpected");
+    }
+    if (err.status === 401 || err.status === 403) {
+      return i18next.t("common:errors.forbidden");
+    }
+    // Business messages (e.g. "Ya existe un tercero…") are already friendly/localized.
+    return reason ?? i18next.t("common:errors.unexpected");
   }
   if (err instanceof Error) return err.message;
   return String(err);

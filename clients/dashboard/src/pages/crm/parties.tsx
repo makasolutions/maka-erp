@@ -170,6 +170,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   const [form, setForm] = useState<PartyFormValue>(emptyPartyForm());
   const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const detailQ = useQuery({
     queryKey: ["crm", "parties", "detail", editId],
@@ -179,7 +180,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   useEffect(() => {
     if (!isOpen) return;
-    setErrors(null);
+    setErrors(null); setErrorMsg(null);
     if (isCreate) setForm(emptyPartyForm());
     else if (detailQ.data) setForm(partyFormFromDetail(detailQ.data));
   }, [isOpen, isCreate, detailQ.data]);
@@ -190,14 +191,16 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
       if (isCreate) await createParty(input);
       else await updateParty(editId!, input);
     },
-    onMutate: () => setErrors(null),
+    onMutate: () => { setErrors(null); setErrorMsg(null); },
     onSuccess: () => {
       toast.success(isCreate ? tc("feedback.created") : tc("feedback.updated"));
       queryClient.invalidateQueries({ queryKey: KEY });
       onClose();
     },
     onError: (e) => {
-      setErrors(fieldErrors(e));
+      const fields = fieldErrors(e);
+      setErrors(fields);
+      setErrorMsg(Object.keys(fields).length === 0 ? describe(e) : null);
       toast.error(tc("feedback.saveFailed"), { description: describe(e) });
     },
   });
@@ -217,7 +220,7 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
             <DialogDescription>{t("parties.formDesc")}</DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <FormErrorSummary errors={errors} />
+            <FormErrorSummary errors={errors} message={errorMsg} />
             <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} errors={errors} />
           </DialogBody>
           <DialogFooter>
