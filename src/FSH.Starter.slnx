@@ -32,6 +32,10 @@
     <Project Path="Modules/Parties/Modules.Parties.Contracts/Modules.Parties.Contracts.csproj" />
     <Project Path="Modules/Parties/Modules.Parties/Modules.Parties.csproj" />
   </Folder>
+  <Folder Name="/Modules/Hr/">
+    <Project Path="Modules/Hr/Modules.Hr.Contracts/Modules.Hr.Contracts.csproj" />
+    <Project Path="Modules/Hr/Modules.Hr/Modules.Hr.csproj" />
+  </Folder>
   <Folder Name="/Modules/Chat/">
     <Project Path="Modules/Chat/Modules.Chat.Contracts/Modules.Chat.Contracts.csproj" />
     <Project Path="Modules/Chat/Modules.Chat/Modules.Chat.csproj" />

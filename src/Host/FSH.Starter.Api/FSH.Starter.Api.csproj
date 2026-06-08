@@ -42,6 +42,8 @@
     <ProjectReference Include="..\..\Modules\Lookups\Modules.Lookups.Contracts\Modules.Lookups.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Parties\Modules.Parties\Modules.Parties.csproj" />
     <ProjectReference Include="..\..\Modules\Parties\Modules.Parties.Contracts\Modules.Parties.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\Hr\Modules.Hr\Modules.Hr.csproj" />
+    <ProjectReference Include="..\..\Modules\Hr\Modules.Hr.Contracts\Modules.Hr.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Tickets\Modules.Tickets\Modules.Tickets.csproj" />
     <ProjectReference Include="..\..\Modules\Tickets\Modules.Tickets.Contracts\Modules.Tickets.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\Files\Modules.Files\Modules.Files.csproj" />

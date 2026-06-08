@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>FSH.Modules.Hr</RootNamespace>
+		<AssemblyName>FSH.Modules.Hr</AssemblyName>
+		<PackageId>FullStackHero.Modules.Hr</PackageId>
+		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1062;S1144</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\BuildingBlocks\Persistence\Persistence.csproj" />
+		<ProjectReference Include="..\..\..\BuildingBlocks\Web\Web.csproj" />
+		<ProjectReference Include="..\Modules.Hr.Contracts\Modules.Hr.Contracts.csproj" />
+	</ItemGroup>
+
+</Project>
