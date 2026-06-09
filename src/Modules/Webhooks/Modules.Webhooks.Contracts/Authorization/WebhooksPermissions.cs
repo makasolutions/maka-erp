@@ -18,7 +18,9 @@ public static class WebhooksPermissions
 
     public static IReadOnlyList<FshPermission> All { get; } =
     [
-        new("View Webhook Subscriptions",   ActionConstants.View, Subscriptions.Resource, IsBasic: true),
+        // View NO se marca como permiso básico — las suscripciones contienen la URL destino
+        // y el hash del secreto; solo roles autorizados (Admin) pueden verlas o gestionarlas.
+        new("View Webhook Subscriptions",   ActionConstants.View, Subscriptions.Resource),
         new("Manage Webhook Subscriptions", "Manage",             Subscriptions.Resource),
     ];
 }

@@ -1,7 +1,6 @@
 using Asp.Versioning;
 using FSH.Framework.Persistence;
 using FSH.Framework.Shared.Constants;
-using FSH.Framework.Shared.Identity.Authorization;
 using FSH.Framework.Web.HttpResilience;
 using FSH.Framework.Web.Modules;
 using FSH.Modules.Webhooks.Contracts.Authorization;
@@ -68,16 +67,20 @@ public sealed class WebhooksModule : IModule
             .ReportApiVersions()
             .Build();
 
+        // NOTE (§18.4 #14): do NOT call .RequireAuthorization() here. Doing so attaches an
+        // "authenticated-only" policy that DISABLES the global permission FallbackPolicy, so
+        // the per-endpoint .RequirePermission() metadata is ignored and authorization fails
+        // OPEN to any authenticated user. Other modules (Catalog, etc.) omit it and rely on
+        // the fallback policy that evaluates the RequiredPermission metadata.
         var group = endpoints
             .MapGroup("api/v{version:apiVersion}/webhooks")
             .WithTags("Webhooks")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
 
-        group.MapCreateWebhookSubscriptionEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.Manage);
-        group.MapDeleteWebhookSubscriptionEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.Manage);
-        group.MapGetWebhookSubscriptionsEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.View);
-        group.MapGetWebhookDeliveriesEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.View);
-        group.MapTestWebhookSubscriptionEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.Manage);
+        group.MapCreateWebhookSubscriptionEndpoint();
+        group.MapDeleteWebhookSubscriptionEndpoint();
+        group.MapGetWebhookSubscriptionsEndpoint();
+        group.MapGetWebhookDeliveriesEndpoint();
+        group.MapTestWebhookSubscriptionEndpoint();
     }
 }
