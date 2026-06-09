@@ -43,8 +43,11 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormActions,
   FormGrid,
 } from "@/components/list";
+import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import {
   MakaGridClient,
   MakaGridFilters,
@@ -363,11 +366,14 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const trimmedName = name.trim();
-  const canSubmit = !!trimmedName;
+
+  const [showErrors, setShowErrors] = useState(false);
+  const attrSchema = { name: [rules.required(), rules.max(128)], sortOrder: [rules.integer(), rules.number({ min: 0 })] };
+  const errs = showErrors ? validateSchema({ name, sortOrder }, attrSchema, tc) : {} as Record<string, string>;
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (Object.keys(validateSchema({ name, sortOrder }, attrSchema, tc)).length > 0) { setShowErrors(true); return; }
     if (state.mode === "edit" && attribute) {
       updateMutation.mutate({
         attributeId: attribute.id,
@@ -405,7 +411,7 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
 
           <DialogBody>
             <FormGrid>
-              <Field id="attr-name" span={8} label={t("attributes.fields.name")} required>
+              <Field id="attr-name" span={8} label={t("attributes.fields.name")} required error={errs.name}>
                 <Input
                   id="attr-name"
                   value={name}
@@ -435,7 +441,7 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
                 </div>
               </Field>
 
-              <Field id="attr-sort" span={6} label={t("attributes.fields.sortOrder")}>
+              <Field id="attr-sort" span={6} label={t("attributes.fields.sortOrder")} error={errs.sortOrder}>
                 <Input
                   id="attr-sort"
                   type="number"
@@ -501,14 +507,21 @@ function AttributeEditorDialog({ state, onClose }: { state: EditorState; onClose
           </DialogBody>
 
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isPending}>
-                {tc("actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isPending || !canSubmit}>
-              {isPending ? tc("feedback.saving") : attribute ? tc("actions.saveChanges") : t("attributes.actions.add")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={isPending}>
+                    <CancelIcon className="size-4" />{tc("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={isPending}>
+                  {attribute ? <SaveIcon className="size-4" /> : <CreateIcon className="size-4" />}
+                  {isPending ? tc("feedback.saving") : attribute ? tc("actions.saveChanges") : t("attributes.actions.add")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
