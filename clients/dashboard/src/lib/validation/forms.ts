@@ -2,55 +2,14 @@ import type { TFunction } from "i18next";
 import type { PartyAddress, PartyContact } from "@/api/parties";
 import type { PartyFormValue } from "@/components/party/PartyForm";
 import { isContactBlank } from "@/components/party/PartyForm";
+import { isEmail, isPhone, isUrl, isPersonName, isColombianAddress } from "./predicates";
 
 /**
- * Reglas de validación del frontend, espejo 1:1 de FormValidationRules.cs en el
- * backend (fuente de verdad). Devuelven mensajes traducidos vía el `t` del
- * namespace `common` (claves bajo `validation.*`). Ver §"Estándar de validación
- * de formularios" en CLAUDE.md.
+ * Validadores de entidad (tercero/identidad). Las primitivas por tipo viven en
+ * predicates.ts (espejo de FormValidationRules.cs) y rules.ts (componibles).
+ * Mensajes vía `t` del namespace `common` (claves `validation.*`). Ver §17 en CLAUDE.md.
  */
-
-const PERSON_NAME = /^[\p{L}][\p{L}\p{M}\s.'-]*$/u;
-const EXCESS_REPEAT = /(.)\1{7,}/u;
-const PHONE = /^(3\d{9}|\+\d{7,15})$/;
-// Tolerante: separador "#", "No"/"No."/"Nro"/"N°"/"Número"; números con sufijo de
-// letra ("131A", "53C"). Ej. válidos: "Carrera 53C No 131A - 91", "KR 7 # 12-34".
-const ADDRESS =
-  /^(CL|CALLE|KR|CR|CRA|CARRERA|AV|AVENIDA|AC|AK|DG|DIAGONAL|TV|TRANSV|TRANSVERSAL|CQ|CIRCULAR|CV|CIRCUNVALAR|AU|AUTOPISTA|KM|MZ|MANZANA|VRD|VEREDA)\.?\s+\S+.*(#|N(?:[O°º]|RO|[UÚ]MERO)?\.?)\s*\d+[A-Z]?\s*-\s*\d+[A-Z]?/i;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export const isPersonName = (s?: string | null): boolean => {
-  const v = (s ?? "").trim();
-  return v === "" || (PERSON_NAME.test(v) && !EXCESS_REPEAT.test(v));
-};
-
-export const isUrl = (s?: string | null): boolean => {
-  const raw = (s ?? "").trim();
-  if (raw === "") return true;
-  const withScheme = raw.includes("://") ? raw : `https://${raw}`;
-  try {
-    const u = new URL(withScheme);
-    return (u.protocol === "http:" || u.protocol === "https:") && u.hostname.includes(".") && !u.hostname.includes(" ");
-  } catch {
-    return false;
-  }
-};
-
-export const isPhone = (s?: string | null): boolean => {
-  const v = (s ?? "").trim();
-  if (v === "") return true;
-  return PHONE.test(v.replace(/[\s\-()]/g, ""));
-};
-
-export const isEmail = (s?: string | null): boolean => {
-  const v = (s ?? "").trim();
-  return v === "" || EMAIL.test(v);
-};
-
-export const isColombianAddress = (s?: string | null): boolean => {
-  const v = (s ?? "").trim();
-  return v !== "" && ADDRESS.test(v);
-};
+export { isEmail, isPhone, isUrl, isPersonName, isColombianAddress };
 
 /** Mensaje de error de fecha de nacimiento, o null si es válida. */
 export const birthDateError = (iso: string | null | undefined, t: TFunction): string | null => {

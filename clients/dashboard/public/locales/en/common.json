@@ -627,7 +627,22 @@
     "geoPair": "Latitude and longitude must be entered together.",
     "dateInvalid": "Invalid date.",
     "birthFuture": "Birth date cannot be in the future.",
-    "birthInvalid": "Birth date is not valid."
+    "birthInvalid": "Birth date is not valid.",
+    "minLength": "Must be at least {{n}} characters.",
+    "maxLength": "Cannot exceed {{n}} characters.",
+    "formatInvalid": "The format is not valid.",
+    "numberInvalid": "Must be a valid number.",
+    "numberMin": "Must be greater than or equal to {{n}}.",
+    "numberMax": "Must be less than or equal to {{n}}.",
+    "integerInvalid": "Must be a whole number.",
+    "currencyInvalid": "Must be a valid non-negative amount.",
+    "slugInvalid": "Lowercase letters, numbers and hyphens only (e.g. my-product).",
+    "skuInvalid": "Invalid code. Use letters, numbers and - _ . / (max 64).",
+    "jsonInvalid": "The JSON is not valid.",
+    "enumInvalid": "Select a valid option.",
+    "dateRange": "The end date cannot be before the start date.",
+    "passwordWeak": "The password does not meet the minimum requirements.",
+    "passwordMismatch": "Passwords do not match."
   },
   "errors": {
     "unexpected": "An unexpected error occurred. Please try again.",
