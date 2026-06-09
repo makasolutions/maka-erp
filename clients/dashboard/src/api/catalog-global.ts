@@ -87,3 +87,28 @@ export function addCatalogAlias(entityType: CatalogAliasEntity, targetId: string
 export function deleteCatalogAlias(id: string): Promise<void> {
   return apiFetch<void>(`/api/v1/catalog/global/aliases/${id}`, { method: "DELETE" });
 }
+
+// ── Global products (publish / search / adopt) ───────────────────────────────
+export type GlobalProductSuggestion = {
+  id: string;
+  name: string;
+  defaultSku?: string | null;
+  shortDescription?: string | null;
+  imageUrl?: string | null;
+  score: number;
+  alreadyAdopted: boolean;
+};
+export function searchGlobalProducts(q: string): Promise<GlobalProductSuggestion[]> {
+  return apiFetch<GlobalProductSuggestion[]>(`/api/v1/catalog/global/search-products?q=${encodeURIComponent(q)}`);
+}
+/** Adopt a global product into the tenant catalog. Returns the new tenant product id. */
+export function adoptGlobalProduct(globalProductId: string): Promise<string> {
+  return apiFetch<string>("/api/v1/catalog/global/adopt-product", {
+    method: "POST",
+    body: JSON.stringify({ globalProductId }),
+  });
+}
+/** Publish a tenant product to the global catalog. Returns the global product id. */
+export function publishProductToGlobal(productId: string): Promise<string> {
+  return apiFetch<string>(`/api/v1/catalog/products/${productId}/publish-global`, { method: "POST" });
+}

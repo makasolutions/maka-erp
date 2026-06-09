@@ -242,7 +242,19 @@
     "publishConfirmTitle": "¿Publicar \"{{name}}\"?",
     "publishConfirmDesc": "El producto será visible en el catálogo.",
     "archiveConfirmTitle": "¿Archivar \"{{name}}\"?",
-    "archiveConfirmDesc": "El producto quedará oculto y no podrá comprarse. Se puede reactivar después."
+    "archiveConfirmDesc": "El producto quedará oculto y no podrá comprarse. Se puede reactivar después.",
+    "globalPublish": {
+      "action": "Publicar al catálogo global",
+      "done": "Producto publicado en el catálogo global"
+    },
+    "globalAdopt": {
+      "action": "Adoptar del catálogo global",
+      "title": "Adoptar producto del catálogo global",
+      "description": "Busca un producto en el catálogo global y adóptalo a tu catálogo. Podrás editar nombre, SKU, descripciones, especificaciones y fotos.",
+      "searchPlaceholder": "Buscar por nombre del producto…",
+      "hint": "Escribe al menos 2 caracteres para buscar.",
+      "adopt": "Adoptar"
+    }
   },
   "brands": {
     "title": "Marcas",

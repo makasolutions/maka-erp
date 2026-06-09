@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Archive, BadgeCheck, Copy, Eye, FileText, Package, Plus, Trash2 } from "lucide-react";
+import { Archive, BadgeCheck, Check, Copy, Download, Eye, FileText, Globe, Package, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -37,6 +37,10 @@ import {
   type ProductType,
   type UpdateProductInput,
 } from "@/api/catalog";
+import {
+  adoptGlobalProduct, publishProductToGlobal, searchGlobalProducts,
+  type GlobalProductSuggestion,
+} from "@/api/catalog-global";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -304,6 +308,16 @@ export function ProductsPage() {
     onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
   });
 
+  const [adoptOpen, setAdoptOpen] = useState(false);
+  const publishGlobalMutation = useMutation({
+    mutationFn: (id: string) => publishProductToGlobal(id),
+    onSuccess: () => {
+      toast.success(t("products.globalPublish.done"));
+      pageQueryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+    },
+    onError: (e) => toast.error(tc("feedback.saveFailed"), { description: describe(e) }),
+  });
+
   const trashQuery = useQuery({
     queryKey: ["catalog", "products", "trash"],
     queryFn: () => listTrashedProducts(1, 200),
@@ -440,6 +454,15 @@ export function ProductsPage() {
           {tc("gridFilters.panelToggle")}
         </Button>
         <Button
+          variant="outline"
+          perm={P.catalog.products.create}
+          onClick={() => setAdoptOpen(true)}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Globe className="size-4" />
+          {t("products.globalAdopt.action")}
+        </Button>
+        <Button
           perm={P.catalog.products.create}
           onClick={() => navigate("/catalog/products/new")}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
@@ -448,6 +471,16 @@ export function ProductsPage() {
           {t("products.actions.create")}
         </Button>
       </EntityPageHeader>
+
+      <AdoptGlobalProductDialog
+        open={adoptOpen}
+        onOpenChange={setAdoptOpen}
+        onAdopted={(id) => {
+          pageQueryClient.invalidateQueries({ queryKey: ["catalog", "products"] });
+          setAdoptOpen(false);
+          navigate(`/catalog/products/${id}`);
+        }}
+      />
 
       {trashOpen && (
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
@@ -653,6 +686,13 @@ export function ProductsPage() {
             perm: P.catalog.products.publish,
             dividerBefore: true,
             onClick: row => setEditor({ mode: "publish", product: row }),
+          },
+          {
+            key: "publish-global",
+            label: t("products.globalPublish.action"),
+            icon: Globe,
+            perm: P.catalog.products.publish,
+            onClick: row => publishGlobalMutation.mutate(row.id),
           },
           {
             key: "archive",
@@ -1211,6 +1251,120 @@ function RestoreProductDialog({ state, onClose }: { state: EditorState; onClose:
           >
             {restoreMutation.isPending ? tc("feedback.saving") : t("products.trash.restoreAction")}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AdoptGlobalProductDialog({
+  open,
+  onOpenChange,
+  onAdopted,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onAdopted: (newId: string) => void;
+}) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const [q, setQ] = useState("");
+  const [debounced, setDebounced] = useState("");
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(q), 300);
+    return () => clearTimeout(id);
+  }, [q]);
+
+  useEffect(() => {
+    if (!open) { setQ(""); setDebounced(""); }
+  }, [open]);
+
+  const term = debounced.trim();
+  const { data, isFetching } = useQuery({
+    queryKey: ["catalog", "global-suggest", "products", term],
+    queryFn: () => searchGlobalProducts(term),
+    enabled: open && term.length >= 2,
+    staleTime: 60_000,
+  });
+
+  const adoptMutation = useMutation({
+    mutationFn: (id: string) => adoptGlobalProduct(id),
+    onSuccess: (newId) => {
+      toast.success(tc("feedback.created"));
+      onAdopted(newId);
+    },
+    onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
+  });
+
+  const items = (data ?? []) as GlobalProductSuggestion[];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("products.globalAdopt.title")}</DialogTitle>
+          <DialogDescription>{t("products.globalAdopt.description")}</DialogDescription>
+        </DialogHeader>
+        <DialogBody className="space-y-3">
+          <div className="relative">
+            <Input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("products.globalAdopt.searchPlaceholder")}
+              autoComplete="off"
+            />
+          </div>
+          <div className="min-h-[8rem] rounded-lg border border-[var(--color-border)]">
+            {term.length < 2 ? (
+              <p className="px-3 py-6 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
+                {t("products.globalAdopt.hint")}
+              </p>
+            ) : isFetching && items.length === 0 ? (
+              <p className="px-3 py-6 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
+                {t("globalSuggest.searching")}
+              </p>
+            ) : items.length === 0 ? (
+              <p className="px-3 py-6 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
+                {t("globalSuggest.none")}
+              </p>
+            ) : (
+              <ul className="max-h-72 divide-y divide-[var(--color-border)] overflow-y-auto">
+                {items.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <span className="block truncate text-[13px] font-medium text-[var(--color-foreground)]">{p.name}</span>
+                      <span className="block truncate text-[11.5px] text-[var(--color-muted-foreground)]">
+                        {p.defaultSku ?? p.shortDescription ?? ""}
+                      </span>
+                    </div>
+                    {p.alreadyAdopted ? (
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-success)]/15 px-2 py-0.5 text-[10.5px] font-semibold text-[var(--color-success)]">
+                        <Check className="size-3" />{t("globalSuggest.adopted")}
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={adoptMutation.isPending}
+                        onClick={() => adoptMutation.mutate(p.id)}
+                        className="h-8 shrink-0 gap-1.5"
+                      >
+                        <Download className="size-3.5" />
+                        {t("products.globalAdopt.adopt")}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">{tc("actions.close")}</Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
