@@ -316,6 +316,16 @@
     "singular": "Category",
     "description": "Organise your products into a hierarchical category tree.",
     "searchPlaceholder": "Search by name or slug…",
+    "import": {
+      "action": "Import from global catalog",
+      "title": "Import from global catalog",
+      "desc": "Adopt categories from the global (Google) taxonomy filtered by your tenant's industries. The hierarchy is recreated and duplicates are skipped.",
+      "searchPlaceholder": "Search global category…",
+      "hint": "Selecting a category also imports its parent categories to keep the tree consistent. Configure your industries in Settings → Catalog.",
+      "empty": "No global categories for your industries. Pick industries in Settings → Catalog.",
+      "confirm": "Import ({{count}})",
+      "done": "Imported {{count}} categories."
+    },
     "fields": {
       "name": "Name",
       "slug": "Slug",

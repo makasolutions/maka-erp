@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { ChevronsRight, Eye, GitBranch, Layers, Plus, Trash2 } from "lucide-react";
+import { ChevronsRight, Download, Eye, GitBranch, Layers, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,6 +25,7 @@ import {
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from "@/api/catalog";
+import { getGlobalCategories, importGlobalCategories } from "@/api/catalog-global";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -145,6 +146,7 @@ export function CategoriesPage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
   const [trashOpen, setTrashOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ["catalog", "categories", "list"],
@@ -273,6 +275,15 @@ export function CategoriesPage() {
         </Button>
         <Button
           perm={P.catalog.categories.create}
+          variant="outline"
+          onClick={() => setImportOpen(true)}
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"
+        >
+          <Download className="size-4" />
+          {t("categories.import.action")}
+        </Button>
+        <Button
+          perm={P.catalog.categories.create}
           onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none"
         >
@@ -360,6 +371,7 @@ export function CategoriesPage() {
       />
       <DeleteCategoryDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
       <RestoreCategoryDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />
+      <ImportGlobalCategoriesDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
@@ -703,6 +715,118 @@ function RestoreCategoryDialog({ state, onClose }: { state: EditorState; onClose
             disabled={restoreMutation.isPending || !category}
           >
             {restoreMutation.isPending ? tc("feedback.saving") : t("categories.trash.restoreAction")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+//  Import from the global catalog (industry-filtered Google taxonomy)
+// ────────────────────────────────────────────────────────────────────────
+
+function ImportGlobalCategoriesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation("catalog");
+  const { t: tc } = useTranslation("common");
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const globalQuery = useQuery({
+    queryKey: ["catalog", "global-categories"],
+    queryFn: () => getGlobalCategories(),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!open) {
+      setSearch("");
+      setSelected(new Set());
+    }
+  }, [open]);
+
+  const all = globalQuery.data ?? [];
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return all.slice(0, 400);
+    return all
+      .filter((c) => c.name.toLowerCase().includes(q) || (c.fullPath ?? "").toLowerCase().includes(q))
+      .slice(0, 400);
+  }, [all, search]);
+
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const importMut = useMutation({
+    mutationFn: () => importGlobalCategories([...selected]),
+    onSuccess: (count) => {
+      toast.success(t("categories.import.done", { count }));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
+      onClose();
+    },
+    onError: (e) => toast.error(tc("feedback.saveFailed"), { description: describe(e) }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent size="form">
+        <DialogHeader>
+          <DialogTitle>{t("categories.import.title")}</DialogTitle>
+          <DialogDescription>{t("categories.import.desc")}</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("categories.import.searchPlaceholder")}
+            className="mb-3"
+          />
+          <div className="max-h-[52vh] overflow-y-auto rounded-lg border border-[var(--color-border)]">
+            {globalQuery.isFetching && all.length === 0 ? (
+              <p className="px-3 py-4 text-[13px] text-[var(--color-muted-foreground)]">{tc("feedback.loading")}</p>
+            ) : filtered.length === 0 ? (
+              <p className="px-3 py-4 text-[13px] text-[var(--color-muted-foreground)]">{t("categories.import.empty")}</p>
+            ) : (
+              <ul className="divide-y divide-[var(--color-border)]">
+                {filtered.map((c) => {
+                  const depth = (c.fullPath ?? "").split(">").length - 1;
+                  return (
+                    <li key={c.id}>
+                      <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 hover:bg-[var(--color-muted)]">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(c.id)}
+                          onChange={() => toggle(c.id)}
+                          className="size-4 shrink-0 accent-[var(--color-primary)]"
+                        />
+                        <span style={{ paddingLeft: `${depth * 14}px` }} className="min-w-0">
+                          <span className="block truncate text-[13px] font-medium text-[var(--color-foreground)]">{c.name}</span>
+                          {c.fullPath && (
+                            <span className="block truncate text-[11.5px] text-[var(--color-muted-foreground)]">{c.fullPath}</span>
+                          )}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <p className="mt-2 text-[11.5px] text-[var(--color-muted-foreground)]">{t("categories.import.hint")}</p>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={importMut.isPending}>{tc("actions.cancel")}</Button>
+          </DialogClose>
+          <Button type="button" disabled={selected.size === 0 || importMut.isPending} onClick={() => importMut.mutate()}>
+            {importMut.isPending ? tc("feedback.saving") : t("categories.import.confirm", { count: selected.size })}
           </Button>
         </DialogFooter>
       </DialogContent>

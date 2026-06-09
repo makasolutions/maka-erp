@@ -30,3 +30,11 @@ export function getGlobalCategories(search?: string): Promise<GlobalCategory[]> 
   const qs = search ? `?search=${encodeURIComponent(search)}` : "";
   return apiFetch<GlobalCategory[]>(`/api/v1/catalog/global/global-categories${qs}`);
 }
+
+/** Adopt selected global categories into the tenant's own tree. Returns how many were created. */
+export function importGlobalCategories(categoryIds: string[]): Promise<number> {
+  return apiFetch<number>("/api/v1/catalog/global/import-categories", {
+    method: "POST",
+    body: JSON.stringify({ categoryIds }),
+  });
+}

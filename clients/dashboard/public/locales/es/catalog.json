@@ -316,6 +316,16 @@
     "singular": "Categoría",
     "description": "Organiza tus productos en un árbol jerárquico de categorías.",
     "searchPlaceholder": "Buscar por nombre o slug…",
+    "import": {
+      "action": "Importar del catálogo global",
+      "title": "Importar del catálogo global",
+      "desc": "Adopta categorías de la taxonomía global (Google) filtrada por las industrias de tu tenant. Se recrea la jerarquía y se evitan duplicados.",
+      "searchPlaceholder": "Buscar categoría global…",
+      "hint": "Selecciona una categoría e importará también sus categorías padre para mantener el árbol consistente. Configura tus industrias en Configuración → Catálogo.",
+      "empty": "No hay categorías globales para tus industrias. Selecciona industrias en Configuración → Catálogo.",
+      "confirm": "Importar ({{count}})",
+      "done": "Se importaron {{count}} categorías."
+    },
     "fields": {
       "name": "Nombre",
       "slug": "Slug",
