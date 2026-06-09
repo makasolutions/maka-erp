@@ -171,6 +171,7 @@ public sealed class MultitenancyModule : IModule
 
         // Theme endpoints
         GetTenantThemeEndpoint.Map(group);
+        GetCurrentTenantThemeEndpoint.Map(group);
         UpdateTenantThemeEndpoint.Map(group);
         ResetTenantThemeEndpoint.Map(group);
     }
