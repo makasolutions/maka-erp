@@ -15,7 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormGrid } from "@/components/list";
+import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormActions, FormGrid } from "@/components/list";
+import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import { MakaDateTimeRangePicker, MakaGridClient, MakaPriceWithTax, type MakaDateTimeRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe, formatMoney, toTaxIncluded } from "@/lib/list-helpers";
@@ -166,8 +168,16 @@ function EditCampaignDialog({ state, onClose }: { state: EditorState; onClose: (
     onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
   });
 
-  const canSubmit = !!name.trim() && !!range;
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) saveM.mutate(); };
+  const [showErrors, setShowErrors] = useState(false);
+  const errs = showErrors
+    ? validateSchema({ name, description }, { name: [rules.required(), rules.max(128)], description: [rules.max(500)] }, tc)
+    : {} as Record<string, string>;
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const v = validateSchema({ name, description }, { name: [rules.required(), rules.max(128)], description: [rules.max(500)] }, tc);
+    if (Object.keys(v).length > 0 || !range) { setShowErrors(true); return; }
+    saveM.mutate();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -179,24 +189,30 @@ function EditCampaignDialog({ state, onClose }: { state: EditorState; onClose: (
           </DialogHeader>
           <DialogBody>
             <FormGrid>
-              <Field id="ce-name" span={12} label={t("campaigns.fields.name")} required>
+              <Field id="ce-name" span={12} label={t("campaigns.fields.name")} required error={errs.name}>
                 <Input id="ce-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={128} autoFocus />
               </Field>
-              <Field id="ce-range" span={12} label={t("campaigns.fields.window")} required hint={t("campaigns.windowHint")}>
+              <Field id="ce-range" span={12} label={t("campaigns.fields.window")} required error={showErrors && !range ? tc("validation.required") : undefined} hint={t("campaigns.windowHint")}>
                 <MakaDateTimeRangePicker value={range} onChange={setRange} startLabel={t("campaigns.from")} endLabel={t("campaigns.to")} />
               </Field>
-              <Field id="ce-desc" span={12} label={t("campaigns.fields.description")}>
+              <Field id="ce-desc" span={12} label={t("campaigns.fields.description")} error={errs.description}>
                 <Textarea id="ce-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={saveM.isPending}>{tc("actions.cancel")}</Button>
-            </DialogClose>
-            <Button type="submit" disabled={saveM.isPending || !canSubmit}>
-              {saveM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={saveM.isPending}><CancelIcon className="size-4" />{tc("actions.cancel")}</Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={saveM.isPending}>
+                  <SaveIcon className="size-4" />{saveM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
@@ -238,8 +254,16 @@ function CreateCampaignDialog({ open, onClose, onCreated }: {
     onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
   });
 
-  const canSubmit = !!name.trim() && !!range;
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) createM.mutate(); };
+  const [showErrors, setShowErrors] = useState(false);
+  const errs = showErrors
+    ? validateSchema({ name, description }, { name: [rules.required(), rules.max(128)], description: [rules.max(500)] }, tc)
+    : {} as Record<string, string>;
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const v = validateSchema({ name, description }, { name: [rules.required(), rules.max(128)], description: [rules.max(500)] }, tc);
+    if (Object.keys(v).length > 0 || !range) { setShowErrors(true); return; }
+    createM.mutate();
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -251,25 +275,31 @@ function CreateCampaignDialog({ open, onClose, onCreated }: {
           </DialogHeader>
           <DialogBody>
             <FormGrid>
-              <Field id="cp-name" span={12} label={t("campaigns.fields.name")} required>
+              <Field id="cp-name" span={12} label={t("campaigns.fields.name")} required error={errs.name}>
                 <Input id="cp-name" value={name} onChange={(e) => setName(e.target.value)}
                   placeholder={t("campaigns.namePlaceholder")} autoFocus required maxLength={128} />
               </Field>
-              <Field id="cp-range" span={12} label={t("campaigns.fields.window")} required hint={t("campaigns.windowHint")}>
+              <Field id="cp-range" span={12} label={t("campaigns.fields.window")} required error={showErrors && !range ? tc("validation.required") : undefined} hint={t("campaigns.windowHint")}>
                 <MakaDateTimeRangePicker value={range} onChange={setRange} startLabel={t("campaigns.from")} endLabel={t("campaigns.to")} />
               </Field>
-              <Field id="cp-desc" span={12} label={t("campaigns.fields.description")}>
+              <Field id="cp-desc" span={12} label={t("campaigns.fields.description")} error={errs.description}>
                 <Textarea id="cp-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={createM.isPending}>{tc("actions.cancel")}</Button>
-            </DialogClose>
-            <Button type="submit" disabled={createM.isPending || !canSubmit}>
-              {createM.isPending ? tc("feedback.saving") : t("campaigns.actions.next")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={createM.isPending}><CancelIcon className="size-4" />{tc("actions.cancel")}</Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={createM.isPending}>
+                  <CreateIcon className="size-4" />{createM.isPending ? tc("feedback.saving") : t("campaigns.actions.next")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
