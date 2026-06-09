@@ -172,6 +172,7 @@ public sealed class CatalogModule : IModule
             .WithTags("Catalog - Global")
             .WithApiVersionSet(apiVersionSet);
         global.MapGlobalCatalogEndpoints();
+        global.MapGlobalProductCatalogEndpoints();
 
         var partyPriceLists = endpoints
             .MapGroup("api/v{version:apiVersion}/catalog/party-price-lists")
@@ -208,6 +209,7 @@ public sealed class CatalogModule : IModule
             .WithTags("Catalog - Products")
             .WithApiVersionSet(apiVersionSet);
 
+        products.MapGlobalProductEndpoints();
         products.MapListTrashedProductsEndpoint();
         products.MapGetProductsEndpoint();
         products.MapGetProductByIdEndpoint();

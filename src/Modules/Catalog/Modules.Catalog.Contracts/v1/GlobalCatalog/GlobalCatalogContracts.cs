@@ -60,3 +60,16 @@ public sealed record GetCatalogAliasesQuery(CatalogAliasEntity? EntityType = nul
 public sealed record AddCatalogAliasCommand(CatalogAliasEntity EntityType, Guid TargetId, string Alias) : ICommand<Guid>;
 
 public sealed record DeleteCatalogAliasCommand(Guid Id) : ICommand;
+
+// ── Productos globales (publicar / buscar / adoptar) ─────────────────────────
+public sealed record GlobalProductSuggestionDto(
+    Guid Id, string Name, string? DefaultSku, string? ShortDescription, string? ImageUrl,
+    double Score, bool AlreadyAdopted);
+
+/// <summary>Publica un producto del tenant al catálogo global (copia canónica). Devuelve el id global.</summary>
+public sealed record PublishProductToGlobalCommand(Guid ProductId) : ICommand<Guid>;
+
+public sealed record SearchGlobalProductsQuery(string Q) : IQuery<IReadOnlyList<GlobalProductSuggestionDto>>;
+
+/// <summary>Adopta un producto global al catálogo del tenant (copia editable). Devuelve el id del producto del tenant.</summary>
+public sealed record AdoptGlobalProductCommand(Guid GlobalProductId) : ICommand<Guid>;
