@@ -42,14 +42,23 @@ el resto de comprobaciones pasaron.
   publicador). Confirma `unaccent` + `pg_trgm` + `word_similarity` y la detección
   `AlreadyAdopted`.
 
-### Flujo B — adopción cruzada por otro tenant
-- Verificado que el catálogo `global` expone 2 productos públicos visibles a todos los
-  tenants.
-- «Camara Sony Alpha A7 IV» quedó adoptada como **copia independiente** en `acme`, `root`
-  y `maka-solutions`, cada una con su propio slug **`camara-sony-alpha-a7-iv`**
-  (índice único por tenant → no colisionan entre tenants) y SKU limpio
-  `…-default` editable. Esto valida el aislamiento multitenant y los campos
-  personalizables de la copia adoptada.
+### Flujo B — adopción cruzada por otro tenant (UI, como `root`)
+- Se cerró sesión de `maka-solutions` y se inició como **`root`** (tenant/credenciales
+  tomados del formulario de login dev: `root` / `admin@root.com` / `123Pa$$word!`). Al
+  entrar, el branding volvió al tema por defecto de FSH → **confirma que el branding es
+  por tenant** (no se filtra el de maka).
+- En Productos → **Adoptar del catálogo global** → búsqueda difusa con typo
+  **`maleta pelikan`** → encontró «Maleta Pelican 9999» (SKU global acotado
+  `MAKA-SOLUTIONS-…-1904D8`), **sin** chip «Ya en tu catálogo» (root no la tenía).
+- **Adoptar** → toast «Creado correctamente» → navega a la ficha del producto en `root`
+  con **SKU limpio editable `MALETA-PELICAN-9999-DEFAULT`** y todas las pestañas de campos
+  personalizables (General, Descripción, Atributos, Imágenes y etiquetas, Especificaciones).
+- Verificado en BD: la «Maleta» existe ahora como **3 copias independientes** —
+  `maka-solutions` (SKU original largo), `global` (copia canónica, SKU acotado) y `root`
+  (copia adoptada, SKU limpio). Índices únicos por tenant → sin colisión.
+- Adicionalmente «Camara Sony Alpha A7 IV» ya estaba adoptada como copia independiente en
+  `acme`, `root` y `maka-solutions` (cada una con su slug `camara-sony-alpha-a7-iv`),
+  reforzando el aislamiento multitenant.
 
 ---
 
@@ -100,6 +109,8 @@ el resto de comprobaciones pasaron.
 | Publicar producto SKU largo (Maleta) — antes del fix | ❌ 500 (corregido) |
 | Publicar producto SKU largo (Maleta) — tras el fix | ✅ 200 + toast |
 | Catálogo global compartido visible a todos los tenants | ✅ 2 productos públicos |
+| Adopción cruzada por UI (login `root` → adopta «Maleta») | ✅ copia limpia editable |
+| Branding por tenant (root no hereda el de maka) | ✅ |
 | Adopción cruzada (`acme`/`root` copias independientes de «Camara») | ✅ aislado por tenant |
 | SKU/slug acotados a límites de columna | ✅ ≤64 / ≤220 |
 
