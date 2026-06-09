@@ -26,3 +26,10 @@ public sealed record SetTenantIndustriesCommand(IReadOnlyList<Guid> IndustryIds)
 /// sus industrias seleccionadas. Sin industrias → toda la taxonomía (fallback).
 /// </summary>
 public sealed record GetGlobalCategoriesQuery(string? Search = null) : IQuery<IReadOnlyList<GlobalCategoryDto>>;
+
+/// <summary>
+/// Adopta categorías de la taxonomía global (tenant `global`) al árbol de categorías
+/// propio del tenant actual, recreando la cadena de ancestros y deduplicando por
+/// <c>GoogleCategoryId</c>. Devuelve cuántas categorías nuevas se crearon.
+/// </summary>
+public sealed record ImportGlobalCategoriesCommand(IReadOnlyList<Guid> CategoryIds) : ICommand<int>;

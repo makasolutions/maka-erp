@@ -4,6 +4,7 @@ using FSH.Modules.Catalog.Contracts.Authorization;
 using FSH.Modules.Catalog.Contracts.v1.GlobalCatalog;
 using FSH.Modules.Catalog.Data;
 using FSH.Modules.Catalog.Domain;
+using FSH.Modules.Catalog.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -96,6 +97,81 @@ public sealed class GetGlobalCategoriesQueryHandler(CatalogDbContext db, IGlobal
     }
 }
 
+// ── Importar categorías del catálogo global al árbol del tenant ──────────────
+public sealed class ImportGlobalCategoriesCommandValidator : AbstractValidator<ImportGlobalCategoriesCommand>
+{
+    public ImportGlobalCategoriesCommandValidator() =>
+        RuleFor(x => x.CategoryIds).NotEmpty().WithMessage("Selecciona al menos una categoría para importar.");
+}
+
+public sealed class ImportGlobalCategoriesCommandHandler(CatalogDbContext db, IGlobalCatalogReader global)
+    : ICommandHandler<ImportGlobalCategoriesCommand, int>
+{
+    private sealed record GlobalNode(Guid Id, Guid? ParentId, int GoogleCategoryId, int? RootGoogleCategoryId, string Name, string? FullPath);
+
+    public async ValueTask<int> Handle(ImportGlobalCategoriesCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var wanted = command.CategoryIds.Distinct().ToHashSet();
+        if (wanted.Count == 0) return 0;
+
+        // 1) Read the selected nodes + their ancestor chain from the global tenant.
+        var nodes = await global.RunAsync(async (gdb, ct) =>
+        {
+            var map = new Dictionary<Guid, GlobalNode>();
+            var frontier = wanted.ToList();
+            while (frontier.Count > 0)
+            {
+                var ids = frontier;
+                var batch = await gdb.Categories.AsNoTracking()
+                    .Where(x => ids.Contains(x.Id) && x.GoogleCategoryId != null)
+                    .Select(x => new GlobalNode(x.Id, x.ParentId, x.GoogleCategoryId!.Value, x.RootGoogleCategoryId, x.Name, x.FullPath))
+                    .ToListAsync(ct).ConfigureAwait(false);
+                var next = new List<Guid>();
+                foreach (var n in batch)
+                {
+                    if (!map.TryAdd(n.Id, n)) continue;
+                    if (n.ParentId is { } pid && !map.ContainsKey(pid)) next.Add(pid);
+                }
+                frontier = next;
+            }
+            return map.Values.ToList();
+        }, cancellationToken).ConfigureAwait(false);
+
+        // 2) Parents before children (depth via path segments).
+        var ordered = nodes.OrderBy(n => (n.FullPath ?? string.Empty).Count(c => c == '>')).ToList();
+
+        // 3) Dedupe against the tenant's existing categories by GoogleCategoryId.
+        var tenantByGoogle = (await db.Categories
+                .Where(c => c.GoogleCategoryId != null)
+                .Select(c => new { c.Id, Google = c.GoogleCategoryId!.Value })
+                .ToListAsync(cancellationToken).ConfigureAwait(false))
+            .ToDictionary(e => e.Google, e => e.Id);
+
+        var globalToTenant = new Dictionary<Guid, Guid>();
+        int created = 0;
+        foreach (var n in ordered)
+        {
+            if (tenantByGoogle.TryGetValue(n.GoogleCategoryId, out var existingId))
+            {
+                globalToTenant[n.Id] = existingId;
+                continue;
+            }
+            Guid? parentTenantId = n.ParentId is { } pid && globalToTenant.TryGetValue(pid, out var pt) ? pt : null;
+            int root = n.RootGoogleCategoryId ?? n.GoogleCategoryId;
+            string slug = $"{SlugHelper.Build(null, n.Name)}-{n.GoogleCategoryId}";
+            var entity = Category.FromGoogleTaxonomy(n.GoogleCategoryId, root, n.Name, slug, n.FullPath ?? n.Name, parentTenantId, 0);
+            db.Categories.Add(entity);
+            globalToTenant[n.Id] = entity.Id;
+            tenantByGoogle[n.GoogleCategoryId] = entity.Id;
+            created++;
+        }
+
+        if (created > 0) await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return created;
+    }
+}
+
 // ── Endpoints ────────────────────────────────────────────────────────────────
 public static class GlobalCatalogEndpoints
 {
@@ -129,5 +205,12 @@ public static class GlobalCatalogEndpoints
             .WithName("GetGlobalCategories").WithSummary("Global categories filtered by tenant industry")
             .RequirePermission(CatalogPermissions.Categories.View)
             .Produces<IReadOnlyList<GlobalCategoryDto>>(StatusCodes.Status200OK);
+
+        group.MapPost("/import-categories",
+                async (ImportGlobalCategoriesCommand cmd, IMediator m, CancellationToken ct) =>
+                    Results.Ok(await m.Send(cmd, ct)))
+            .WithName("ImportGlobalCategories").WithSummary("Adopt global categories into the tenant tree")
+            .RequirePermission(CatalogPermissions.Categories.Create)
+            .Produces<int>(StatusCodes.Status200OK);
     }
 }
