@@ -284,7 +284,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
 
       {/* Tab 2 — Contactos */}
       {tab === "contacts" && (
-        <ContactEditor value={v.contacts} onChange={(c) => set({ contacts: c })} disabled={disabled} />
+        <ContactEditor value={v.contacts} onChange={(c) => set({ contacts: c })} disabled={disabled} errors={ce} />
       )}
 
       {/* Tab 3 — CRM */}

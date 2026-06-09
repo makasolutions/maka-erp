@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import {
   isBlank, isEmail, isPhone, isUrl, isPersonName, isColombianAddress, isSlug, isSku,
+  isColombianId, isNotFutureDate, isPastDate, ageInYears,
 } from "./predicates";
 
 /**
@@ -65,6 +66,26 @@ export const rules = {
   },
   enumOf: (values: readonly string[]): Rule => (v, t) =>
     (isBlank(v) || values.includes(str(v)) ? null : t("validation.enumInvalid")),
+
+  /** Identificación colombiana según el tipo de documento (CC/TI/CE/NIT/…). */
+  identification: (idType?: string | null): Rule => (v, t) =>
+    (isColombianId(str(v), idType) ? null : t("validation.idInvalid")),
+
+  /** Fecha que NO puede ser futura (creación/registro/emisión). */
+  dateNotFuture: (): Rule => (v, t) =>
+    (isNotFutureDate(str(v)) ? null : t("validation.dateFuture")),
+
+  /** Fecha de nacimiento: estrictamente anterior a hoy y, opcional, edad mínima. */
+  birthDate: (minAge?: number): Rule => (v, t) => {
+    const s = str(v);
+    if (isBlank(s)) return null;
+    if (!isPastDate(s)) return t("validation.birthFuture");
+    if (minAge != null) {
+      const age = ageInYears(s);
+      if (age != null && age < minAge) return t("validation.minAge", { n: minAge });
+    }
+    return null;
+  },
   json: (): Rule => (v, t) => {
     const s = str(v);
     if (s === "") return null;

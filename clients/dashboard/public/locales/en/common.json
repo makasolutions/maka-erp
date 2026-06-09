@@ -642,7 +642,11 @@
     "enumInvalid": "Select a valid option.",
     "dateRange": "The end date cannot be before the start date.",
     "passwordWeak": "The password does not meet the minimum requirements.",
-    "passwordMismatch": "Passwords do not match."
+    "passwordMismatch": "Passwords do not match.",
+    "idInvalid": "Invalid identification for the document type.",
+    "dateFuture": "The date cannot be in the future.",
+    "minAge": "Must be at least {{n}} years old.",
+    "contactRequiredForCompany": "A company must have at least one contact."
   },
   "errors": {
     "unexpected": "An unexpected error occurred. Please try again.",

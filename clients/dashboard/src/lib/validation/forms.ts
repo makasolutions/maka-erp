@@ -2,7 +2,10 @@ import type { TFunction } from "i18next";
 import type { PartyAddress, PartyContact } from "@/api/parties";
 import type { PartyFormValue } from "@/components/party/PartyForm";
 import { isContactBlank } from "@/components/party/PartyForm";
-import { isEmail, isPhone, isUrl, isPersonName, isColombianAddress } from "./predicates";
+import { isEmail, isPhone, isUrl, isPersonName, isColombianAddress, isColombianId, isPastDate, ageInYears } from "./predicates";
+
+/** Edad mínima de una persona de contacto comercial (regla de negocio Maka, §17). */
+export const MIN_CONTACT_AGE = 15;
 
 /**
  * Validadores de entidad (tercero/identidad). Las primitivas por tipo viven en
@@ -61,6 +64,11 @@ export function validateParty(v: PartyFormValue, t: TFunction): Record<string, s
   });
 
   validateAddressesAndContacts(v.addresses, v.contacts, e, t);
+
+  // Regla de negocio: una empresa (Jurídica) debe tener al menos un contacto (§17/§18).
+  if (v.kind === "Juridica" && !v.contacts.some((c) => !isContactBlank(c))) {
+    e.contacts = t("validation.contactRequiredForCompany");
+  }
   return e;
 }
 
@@ -113,9 +121,31 @@ function validateAddressesAndContacts(
 
   contacts.forEach((c, i) => {
     if (isContactBlank(c)) return;
-    if (!(c.email ?? "").trim()) e[`contacts.${i}.email`] = t("validation.required");
-    else if (!isEmail(c.email)) e[`contacts.${i}.email`] = t("validation.emailInvalid");
-    if (!(c.cell ?? "").trim()) e[`contacts.${i}.cell`] = t("validation.required");
-    else if (!isPhone(c.cell)) e[`contacts.${i}.cell`] = t("validation.phoneInvalid");
+    const key = (f: string) => `contacts.${i}.${f}`;
+
+    // Nombres
+    if ((c.firstName ?? "").trim().length > 50) e[key("firstName")] = t("validation.nameMax");
+    else if (!isPersonName(c.firstName)) e[key("firstName")] = t("validation.nameChars");
+    if ((c.lastName ?? "").trim().length > 50) e[key("lastName")] = t("validation.nameMax");
+    else if (!isPersonName(c.lastName)) e[key("lastName")] = t("validation.nameChars");
+
+    // Identificación según tipo (no letras en numéricos, regex por tipo)
+    if ((c.identificationNumber ?? "").trim() && !isColombianId(c.identificationNumber, c.identificationTypeCode))
+      e[key("identificationNumber")] = t("validation.idInvalid");
+
+    // Fecha de nacimiento: pasada + edad mínima de contacto
+    if ((c.birthDate ?? "").trim()) {
+      if (!isPastDate(c.birthDate)) e[key("birthDate")] = t("validation.birthFuture");
+      else {
+        const age = ageInYears(c.birthDate);
+        if (age != null && age < MIN_CONTACT_AGE) e[key("birthDate")] = t("validation.minAge", { n: MIN_CONTACT_AGE });
+      }
+    }
+
+    // Canales requeridos
+    if (!(c.email ?? "").trim()) e[key("email")] = t("validation.required");
+    else if (!isEmail(c.email)) e[key("email")] = t("validation.emailInvalid");
+    if (!(c.cell ?? "").trim()) e[key("cell")] = t("validation.required");
+    else if (!isPhone(c.cell)) e[key("cell")] = t("validation.phoneInvalid");
   });
 }

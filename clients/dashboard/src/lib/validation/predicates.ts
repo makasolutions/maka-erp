@@ -61,3 +61,59 @@ export const isSku = (s?: string | null): boolean => {
   const v = (s ?? "").trim();
   return v === "" || SKU.test(v);
 };
+
+// ── Identificación colombiana por tipo de documento (§17) ────────────────────
+export const ID_REGEX: Record<string, RegExp> = {
+  CC: /^\d{6,10}$/,
+  TI: /^\d{8,11}$/,
+  NUIP: /^\d{8,11}$/,
+  CE: /^[A-Za-z0-9]{6,15}$/,
+  NIT: /^\d{9,10}$/,
+  NIT_EXT: /^[A-Za-z0-9]{5,20}$/,
+  PASAPORTE: /^[A-Za-z0-9]{6,15}$/,
+};
+/** Tipos de documento que son estrictamente numéricos (máscara solo-dígitos). */
+export const isNumericIdType = (type?: string | null): boolean =>
+  ["CC", "TI", "NUIP", "NIT"].includes((type ?? "").trim().toUpperCase());
+
+/** Valida un número de identificación según su tipo. Vacío = válido (requerido aparte). */
+export const isColombianId = (value?: string | null, type?: string | null): boolean => {
+  const v = (value ?? "").trim();
+  if (v === "") return true;
+  const re = ID_REGEX[(type ?? "").trim().toUpperCase()];
+  return re ? re.test(v) : /^[A-Za-z0-9]{4,20}$/.test(v);
+};
+
+// ── Fechas ───────────────────────────────────────────────────────────────────
+/** Parse ISO `yyyy-MM-dd` (o cualquier Date-string) a Date local, o null. */
+const parseDate = (iso?: string | null): Date | null => {
+  const v = (iso ?? "").trim();
+  if (v === "") return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+const startOfToday = (): Date => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+/** Años cumplidos a partir de una fecha de nacimiento ISO. */
+export const ageInYears = (iso?: string | null): number | null => {
+  const d = parseDate(iso);
+  if (!d) return null;
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const m = today.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+  return age;
+};
+/** true si la fecha NO es futura (≤ hoy). Vacío = válido. */
+export const isNotFutureDate = (iso?: string | null): boolean => {
+  const d = parseDate(iso);
+  return !d || d <= new Date();
+};
+/** true si es estrictamente anterior a hoy (00:00). Vacío = válido. */
+export const isPastDate = (iso?: string | null): boolean => {
+  const d = parseDate(iso);
+  return !d || d < startOfToday();
+};

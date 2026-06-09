@@ -713,7 +713,11 @@
     "enumInvalid": "Selecciona una opción válida.",
     "dateRange": "La fecha final no puede ser anterior a la inicial.",
     "passwordWeak": "La contraseña no cumple los requisitos mínimos.",
-    "passwordMismatch": "Las contraseñas no coinciden."
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "idInvalid": "Identificación inválida para el tipo de documento.",
+    "dateFuture": "La fecha no puede ser futura.",
+    "minAge": "Debe ser mayor de {{n}} años.",
+    "contactRequiredForCompany": "Una empresa debe tener al menos un contacto."
   },
   "errors": {
     "unexpected": "Ocurrió un error inesperado. Por favor intenta de nuevo.",

@@ -311,7 +311,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
               )}
 
               {tab === "contacts" && (
-                <ContactEditor value={identity.contacts} onChange={(c) => setId({ contacts: c })} />
+                <ContactEditor value={identity.contacts} onChange={(c) => setId({ contacts: c })} errors={ce} />
               )}
 
               {tab === "employee" && (
