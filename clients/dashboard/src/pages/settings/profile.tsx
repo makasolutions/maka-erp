@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageInput } from "@/components/file/image-input";
 import { SettingsSection } from "@/pages/settings/settings-layout";
+import { rules, validateSchema } from "@/lib/validation/rules";
 
 const PROFILE_KEY = ["identity", "me"] as const;
 
@@ -24,10 +25,18 @@ export function ProfileSettings() {
     queryFn: getMyProfile,
   });
 
+  const { t: tc } = useTranslation("common");
   const profile = profileQuery.data;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [showErrors, setShowErrors] = useState(false);
+  const profileSchema = {
+    firstName: [rules.max(50), rules.personName()],
+    lastName: [rules.max(50), rules.personName()],
+    phone: [rules.phone()],
+  };
+  const errs = showErrors ? validateSchema({ firstName, lastName, phone }, profileSchema, tc) : {} as Record<string, string>;
 
   // Seed form state from the fetched profile (falls back to the JWT-derived
   // user while the query is in flight so the form isn't empty on first paint).
@@ -64,6 +73,7 @@ export function ProfileSettings() {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (Object.keys(validateSchema({ firstName, lastName, phone }, profileSchema, tc)).length > 0) { setShowErrors(true); return; }
     saveMutation.mutate();
   };
 
@@ -134,7 +144,7 @@ export function ProfileSettings() {
         }
       >
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="first-name" label={t("profile.firstName")}>
+          <Field id="first-name" label={t("profile.firstName")} error={errs.firstName}>
             <Input
               id="first-name"
               value={firstName}
@@ -143,7 +153,7 @@ export function ProfileSettings() {
               className="h-10 text-[13px]"
             />
           </Field>
-          <Field id="last-name" label={t("profile.lastName")}>
+          <Field id="last-name" label={t("profile.lastName")} error={errs.lastName}>
             <Input
               id="last-name"
               value={lastName}
@@ -165,7 +175,7 @@ export function ProfileSettings() {
               {t("profile.emailReadOnly")}
             </p>
           </Field>
-          <Field id="phone" label={t("profile.phone")}>
+          <Field id="phone" label={t("profile.phone")} error={errs.phone}>
             <Input
               id="phone"
               type="tel"
@@ -195,14 +205,22 @@ export function ProfileSettings() {
 function Field({
   id,
   label,
+  error,
   children,
 }: {
   id: string;
   label: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div
+      className={
+        error
+          ? "[&_input]:!border-[var(--color-destructive)] [&_textarea]:!border-[var(--color-destructive)]"
+          : undefined
+      }
+    >
       <Label
         htmlFor={id}
         className="mb-1.5 block text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]"
@@ -210,6 +228,9 @@ function Field({
         {label}
       </Label>
       {children}
+      {error && (
+        <p className="mt-1 text-[11.5px] font-medium text-[var(--color-destructive)]">{error}</p>
+      )}
     </div>
   );
 }
