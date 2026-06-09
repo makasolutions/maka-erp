@@ -12,6 +12,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Eye, Plus, Tag, Trash2 } from "lucide-react";
+import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
 import { toast } from "sonner";
 import {
   createBrand,
@@ -46,8 +47,10 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormActions,
   FormGrid,
 } from "@/components/list";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import {
   MakaGridClient,
   MakaGridFilters,
@@ -431,11 +434,36 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const trimmedName = name.trim();
-  const canSubmit = !!trimmedName;
+
+  const [showErrors, setShowErrors] = useState(false);
+  const errs = useMemo(() => {
+    if (!showErrors) return {} as Record<string, string>;
+    return validateSchema(
+      { name, countryOfOrigin, websiteUrl, description },
+      {
+        name: [rules.required(), rules.max(200)],
+        countryOfOrigin: [rules.pattern(/^[A-Za-z]{2}$/)],
+        websiteUrl: [rules.url()],
+        description: [rules.max(2000)],
+      },
+      tc,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showErrors, name, countryOfOrigin, websiteUrl, description]);
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    const v = validateSchema(
+      { name, countryOfOrigin, websiteUrl, description },
+      {
+        name: [rules.required(), rules.max(200)],
+        countryOfOrigin: [rules.pattern(/^[A-Za-z]{2}$/)],
+        websiteUrl: [rules.url()],
+        description: [rules.max(2000)],
+      },
+      tc,
+    );
+    if (Object.keys(v).length > 0) { setShowErrors(true); return; }
     const payload = {
       name: trimmedName,
       description: description.trim() || null,
@@ -464,7 +492,7 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
           <DialogBody>
             <FormGrid>
-              <Field id="brand-name" span={8} label={t("brands.fields.name")} required
+              <Field id="brand-name" span={8} label={t("brands.fields.name")} required error={errs.name}
                 hint={!brand ? t("globalSuggest.fieldHint") : undefined}>
                 {brand ? (
                   <Input id="brand-name" value={name} onChange={(e) => setName(e.target.value)}
@@ -484,7 +512,7 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                 )}
               </Field>
 
-              <Field id="brand-country" span={4} label={t("brands.fields.country")} hint={t("brands.countryHint")}>
+              <Field id="brand-country" span={4} label={t("brands.fields.country")} error={errs.countryOfOrigin} hint={t("brands.countryHint")}>
                 <Input
                   id="brand-country"
                   value={countryOfOrigin}
@@ -507,7 +535,7 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                 <ImageInput value={logoUrl} onChange={setLogoUrl} ownerType="Brand" ownerId={brand?.id} shape="square" />
               </Field>
 
-              <Field id="brand-website" span={12} label={t("brands.fields.website")} hint={t("brands.websiteHint")}>
+              <Field id="brand-website" span={12} label={t("brands.fields.website")} error={errs.websiteUrl} hint={t("brands.websiteHint")}>
                 <Input
                   id="brand-website"
                   value={websiteUrl}
@@ -518,7 +546,7 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
                 />
               </Field>
 
-              <Field id="brand-description" span={12} label={t("brands.fields.description")} hint={t("brands.descriptionHint")}>
+              <Field id="brand-description" span={12} label={t("brands.fields.description")} error={errs.description} hint={t("brands.descriptionHint")}>
                 <textarea
                   id="brand-description"
                   value={description}
@@ -550,14 +578,21 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
           </DialogBody>
 
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isPending}>
-                {tc("actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isPending || !canSubmit}>
-              {isPending ? tc("feedback.saving") : brand ? tc("actions.saveChanges") : t("brands.actions.add")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={isPending}>
+                    <CancelIcon className="size-4" />{tc("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={isPending}>
+                  {brand ? <SaveIcon className="size-4" /> : <CreateIcon className="size-4" />}
+                  {isPending ? tc("feedback.saving") : brand ? tc("actions.saveChanges") : t("brands.actions.add")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
