@@ -95,7 +95,8 @@
     },
     "validation": {
       "supplierRequired": "The supplier is required.",
-      "periodRequired": "The period is required."
+      "periodRequired": "The period is required.",
+      "scoreRange": "Each criterion score must be between 0 and 5."
     }
   },
   "convenios": {

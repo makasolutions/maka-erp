@@ -17,7 +17,9 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormErrorSummary, FormGrid } from "@/components/list";
+import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormActions, FormErrorSummary, FormGrid } from "@/components/list";
+import { SaveIcon, CancelIcon } from "@/components/ui/icons";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import { MakaGridClient, MakaChart } from "@/components/maka";
 import { PartyPicker } from "@/components/party/PartyPicker";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
@@ -185,10 +187,28 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
   const updateCriterion = (i: number, patch: Partial<ScorecardCriterionInput>) =>
     set({ criteria: form.criteria.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) });
 
+  const [showErrors, setShowErrors] = useState(false);
+  const fieldErrs = showErrors
+    ? validateSchema(
+        { supplierId: form.supplierId ?? "", periodLabel: form.periodLabel, notes: form.notes },
+        { supplierId: [rules.required()], periodLabel: [rules.required(), rules.max(32)], notes: [rules.max(2000)] },
+        tc,
+      )
+    : ({} as Record<string, string>);
+
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.supplierId) { setErrorMsg(t("scorecards.validation.supplierRequired")); return; }
-    if (!form.periodLabel.trim()) { setErrorMsg(t("scorecards.validation.periodRequired")); return; }
+    const v = validateSchema(
+      { supplierId: form.supplierId ?? "", periodLabel: form.periodLabel, notes: form.notes },
+      { supplierId: [rules.required()], periodLabel: [rules.required(), rules.max(32)], notes: [rules.max(2000)] },
+      tc,
+    );
+    const badCriteria = form.criteria.some((c) => c.score < 0 || c.score > 5);
+    if (Object.keys(v).length > 0 || badCriteria) {
+      setShowErrors(true);
+      setErrorMsg(badCriteria ? t("scorecards.validation.scoreRange") : null);
+      return;
+    }
     setErrorMsg(null);
     save.mutate();
   };
@@ -209,21 +229,21 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
               </div>
             )}
             <FormGrid>
-              <Field id="sc-supplier" span={6} label={t("scorecards.fields.supplier")} required>
+              <Field id="sc-supplier" span={6} label={t("scorecards.fields.supplier")} required error={fieldErrs.supplierId}>
                 {isCreate ? (
                   <PartyPicker id="sc-supplier" role="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
                 ) : (
                   <Input id="sc-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
                 )}
               </Field>
-              <Field id="sc-period" span={3} label={t("scorecards.fields.period")} required hint={t("scorecards.fields.periodHint")}>
+              <Field id="sc-period" span={3} label={t("scorecards.fields.period")} required error={fieldErrs.periodLabel} hint={t("scorecards.fields.periodHint")}>
                 <Input id="sc-period" value={form.periodLabel} maxLength={32} disabled={readOnly} placeholder="2026-Q2"
                   onChange={(e) => set({ periodLabel: e.target.value })} />
               </Field>
               <Field id="sc-start" span={3} label={t("scorecards.fields.periodStart")}>
                 <Input id="sc-start" type="date" value={form.periodStart} disabled={readOnly} onChange={(e) => set({ periodStart: e.target.value })} />
               </Field>
-              <Field id="sc-notes" span={12} label={t("scorecards.fields.notes")}>
+              <Field id="sc-notes" span={12} label={t("scorecards.fields.notes")} error={fieldErrs.notes}>
                 <Textarea id="sc-notes" rows={2} value={form.notes} disabled={readOnly} onChange={(e) => set({ notes: e.target.value })} />
               </Field>
             </FormGrid>
@@ -271,12 +291,23 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
             )}
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            {!readOnly && (
-              <Button type="submit" perm={P.catalog.scorecards.manage} disabled={save.isPending}>
-                {save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
-              </Button>
-            )}
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={save.isPending}>
+                    <CancelIcon className="size-4" />{tc("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                !readOnly ? (
+                  <Button type="submit" perm={P.catalog.scorecards.manage} disabled={save.isPending}>
+                    <SaveIcon className="size-4" />
+                    {save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+                  </Button>
+                ) : undefined
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>

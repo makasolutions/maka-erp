@@ -109,7 +109,8 @@
     },
     "validation": {
       "supplierRequired": "El proveedor es obligatorio.",
-      "periodRequired": "El período es obligatorio."
+      "periodRequired": "El período es obligatorio.",
+      "scoreRange": "El puntaje de cada criterio debe estar entre 0 y 5."
     }
   },
   "convenios": {
