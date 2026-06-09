@@ -1,14 +1,19 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Factory, Info, Pencil, Plus, Receipt, Trash2, Truck } from "lucide-react";
+import { Factory, Info, Languages, Pencil, Plus, Receipt, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import {
   createShippingClass, createTaxRate, deleteShippingClass, deleteTaxRate,
   getShippingClasses, getTaxRates, updateShippingClass, updateTaxRate,
   type ShippingClassDto, type TaxRateDto,
 } from "@/api/catalog";
-import { getIndustries, getTenantIndustries, setTenantIndustries } from "@/api/catalog-global";
+import {
+  addCatalogAlias, deleteCatalogAlias, getCatalogAliases, getIndustries, getTenantIndustries,
+  searchGlobalBrands, searchGlobalCategories, setTenantIndustries,
+  type CatalogAliasEntity, type GlobalBrandSuggestion, type GlobalCategorySuggestion,
+} from "@/api/catalog-global";
+import { GlobalSuggestionField } from "@/components/catalog/global-suggestion-field";
 import { SettingsSection } from "@/pages/settings/settings-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +22,7 @@ import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { EntityStatusBadge, Field, FormGrid } from "@/components/list";
+import { Combobox, EntityStatusBadge, Field, FormGrid } from "@/components/list";
 import { describe } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 
@@ -28,6 +33,7 @@ export function CatalogSettings() {
   return (
     <div className="space-y-5">
       <IndustriesSection />
+      <AliasesSection />
       <TaxRatesSection />
       <ShippingClassesSection />
       <SettingsSection title={t("catalogSettings.statuses")} icon={Info}>
@@ -291,6 +297,90 @@ function IndustriesSection() {
           <p className="text-[13px] text-[var(--color-muted-foreground)]">{t("catalogSettings.industries.empty")}</p>
         )}
       </div>
+    </SettingsSection>
+  );
+}
+
+// ── Sinónimos / alias de búsqueda ────────────────────────────────────────────
+
+function AliasesSection() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
+  const { can } = usePerm();
+  const queryClient = useQueryClient();
+  const canManage = can("Permissions.Catalog.Categories.Update");
+
+  const [entity, setEntity] = useState<CatalogAliasEntity>("Brand");
+  const [targetText, setTargetText] = useState("");
+  const [target, setTarget] = useState<{ id: string; name: string } | null>(null);
+  const [alias, setAlias] = useState("");
+
+  const listQ = useQuery({ queryKey: ["catalog", "aliases"], queryFn: () => getCatalogAliases() });
+
+  const reset = () => { setTargetText(""); setTarget(null); setAlias(""); };
+  const add = useMutation({
+    mutationFn: () => addCatalogAlias(entity, target!.id, alias.trim()),
+    onSuccess: () => { toast.success(t("catalogSettings.aliases.added")); queryClient.invalidateQueries({ queryKey: ["catalog", "aliases"] }); reset(); },
+    onError: (e) => toast.error(tc("feedback.saveFailed"), { description: describe(e) }),
+  });
+  const del = useMutation({
+    mutationFn: (id: string) => deleteCatalogAlias(id),
+    onSuccess: () => { toast.success(t("catalogSettings.aliases.deleted")); queryClient.invalidateQueries({ queryKey: ["catalog", "aliases"] }); },
+    onError: (e) => toast.error(tc("feedback.deleteFailed"), { description: describe(e) }),
+  });
+
+  const canAdd = !!target && alias.trim().length >= 2;
+
+  return (
+    <SettingsSection title={t("catalogSettings.aliases.title")} icon={Languages} description={t("catalogSettings.aliases.hint")}>
+      {canManage && (
+        <div className="grid gap-2 px-5 py-4 sm:grid-cols-12">
+          <div className="sm:col-span-3">
+            <Combobox id="alias-entity" label={t("catalogSettings.aliases.entity")} value={entity}
+              onChange={(v) => { if (v) { setEntity(v as CatalogAliasEntity); setTarget(null); setTargetText(""); } }}
+              options={[{ value: "Brand", label: t("catalogSettings.aliases.brand") }, { value: "Category", label: t("catalogSettings.aliases.category") }]} />
+          </div>
+          <div className="sm:col-span-5">
+            {entity === "Brand" ? (
+              <GlobalSuggestionField<GlobalBrandSuggestion>
+                id="alias-target-b" value={targetText} onChange={(v) => { setTargetText(v); setTarget(null); }}
+                search={searchGlobalBrands} queryKey="alias-brands"
+                toItem={(s) => ({ key: s.id, primary: s.name, secondary: s.country, adopted: false })}
+                onPick={(s) => { setTarget({ id: s.id, name: s.name }); setTargetText(s.name); }}
+                placeholder={t("catalogSettings.aliases.targetPlaceholder")} />
+            ) : (
+              <GlobalSuggestionField<GlobalCategorySuggestion>
+                id="alias-target-c" value={targetText} onChange={(v) => { setTargetText(v); setTarget(null); }}
+                search={searchGlobalCategories} queryKey="alias-cats"
+                toItem={(s) => ({ key: s.id, primary: s.name, secondary: s.fullPath, adopted: false })}
+                onPick={(s) => { setTarget({ id: s.id, name: s.name }); setTargetText(s.name); }}
+                placeholder={t("catalogSettings.aliases.targetPlaceholder")} />
+            )}
+          </div>
+          <div className="sm:col-span-3">
+            <Input value={alias} onChange={(e) => setAlias(e.target.value)} maxLength={128}
+              placeholder={t("catalogSettings.aliases.aliasPlaceholder")} aria-label={t("catalogSettings.aliases.alias")} />
+          </div>
+          <div className="sm:col-span-1 flex items-center">
+            <Button size="sm" disabled={!canAdd || add.isPending} onClick={() => add.mutate()}><Plus className="size-4" /></Button>
+          </div>
+        </div>
+      )}
+      <ul className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
+        {(listQ.data ?? []).map((a) => (
+          <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-[13px]">
+            <div className="flex min-w-0 items-center gap-2">
+              <EntityStatusBadge tone="info">{a.entityType === "Brand" ? t("catalogSettings.aliases.brand") : t("catalogSettings.aliases.category")}</EntityStatusBadge>
+              <span className="font-mono text-[var(--color-foreground)]">{a.alias}</span>
+              <span className="text-[var(--color-muted-foreground)]">→ {a.targetName ?? "—"}</span>
+            </div>
+            {canManage && (
+              <Button size="icon" variant="ghost" onClick={() => del.mutate(a.id)} aria-label={t("catalogSettings.delete")} className="hover:text-[var(--color-destructive)]"><Trash2 className="size-4" /></Button>
+            )}
+          </li>
+        ))}
+        {(listQ.data ?? []).length === 0 && <li className="px-5 py-4 text-[13px] text-[var(--color-muted-foreground)]">{t("catalogSettings.aliases.empty")}</li>}
+      </ul>
     </SettingsSection>
   );
 }

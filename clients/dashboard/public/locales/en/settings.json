@@ -333,6 +333,15 @@
       "hint": "Select the sectors you trade in. They filter the visible global categories (Google taxonomy).",
       "empty": "No industries available."
     },
+    "aliases": {
+      "title": "Search synonyms / aliases",
+      "hint": "Improve the smart global-catalog search (e.g. 'cannon'→Canon). Shared across tenants.",
+      "entity": "Type", "brand": "Brand", "category": "Category",
+      "target": "Target", "targetPlaceholder": "Search the brand/category…",
+      "alias": "Alias / synonym", "aliasPlaceholder": "e.g. cannon",
+      "add": "Add alias", "empty": "No aliases yet. Add synonyms to improve search.",
+      "added": "Alias added.", "deleted": "Alias deleted."
+    },
     "taxRates": "Tax rates",
     "taxRatesHint": "VAT rates used on products.",
     "shippingClasses": "Shipping classes",

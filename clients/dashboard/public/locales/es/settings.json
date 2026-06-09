@@ -333,6 +333,15 @@
       "hint": "Selecciona los sectores que comercializas. Filtran las categorías globales visibles (taxonomía Google).",
       "empty": "No hay industrias disponibles."
     },
+    "aliases": {
+      "title": "Sinónimos / alias de búsqueda",
+      "hint": "Mejoran la búsqueda inteligente del catálogo global (ej. 'cannon'→Canon). Compartidos entre tenants.",
+      "entity": "Tipo", "brand": "Marca", "category": "Categoría",
+      "target": "Objetivo", "targetPlaceholder": "Busca la marca/categoría…",
+      "alias": "Alias / sinónimo", "aliasPlaceholder": "Ej. cannon",
+      "add": "Agregar alias", "empty": "Sin alias. Agrega sinónimos para mejorar la búsqueda.",
+      "added": "Alias agregado.", "deleted": "Alias eliminado."
+    },
     "taxRates": "Impuestos",
     "taxRatesHint": "Tarifas de IVA usadas en los productos.",
     "shippingClasses": "Clases de envío",
