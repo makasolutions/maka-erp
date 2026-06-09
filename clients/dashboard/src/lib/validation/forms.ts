@@ -13,8 +13,10 @@ import { isContactBlank } from "@/components/party/PartyForm";
 const PERSON_NAME = /^[\p{L}][\p{L}\p{M}\s.'-]*$/u;
 const EXCESS_REPEAT = /(.)\1{7,}/u;
 const PHONE = /^(3\d{9}|\+\d{7,15})$/;
+// Tolerante: separador "#", "No"/"No."/"Nro"/"N°"/"Número"; números con sufijo de
+// letra ("131A", "53C"). Ej. válidos: "Carrera 53C No 131A - 91", "KR 7 # 12-34".
 const ADDRESS =
-  /^(CL|CALLE|KR|CR|CRA|CARRERA|AV|AVENIDA|AC|AK|DG|DIAGONAL|TV|TRANSV|TRANSVERSAL|CQ|CIRCULAR|CV|CIRCUNVALAR|AU|AUTOPISTA|KM|MZ|MANZANA|VRD|VEREDA)\.?\s+\S+.*#\s*\d+\s*-\s*\d+/i;
+  /^(CL|CALLE|KR|CR|CRA|CARRERA|AV|AVENIDA|AC|AK|DG|DIAGONAL|TV|TRANSV|TRANSVERSAL|CQ|CIRCULAR|CV|CIRCUNVALAR|AU|AUTOPISTA|KM|MZ|MANZANA|VRD|VEREDA)\.?\s+\S+.*(#|N(?:[O°º]|RO|[UÚ]MERO)?\.?)\s*\d+[A-Z]?\s*-\s*\d+[A-Z]?/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const isPersonName = (s?: string | null): boolean => {

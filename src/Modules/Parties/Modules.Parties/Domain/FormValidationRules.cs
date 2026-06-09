@@ -55,9 +55,11 @@ public static partial class FormValidationRules
     }
 
     // ── Dirección colombiana (nomenclatura DIAN, pragmática) ──────────────
-    // <Tipo de vía> <Nº vía> # <Nº> - <Nº> [complemento]. Ej. "CL 100 # 13-21".
+    // <Tipo de vía> <Nº vía> <sep> <Nº> - <Nº> [complemento]. Ej. "CL 100 # 13-21".
+    // Tolerante: separador "#", "No"/"No."/"Nro"/"N°"/"Número"; números con sufijo de
+    // letra ("131A", "53C"). Ej. válidos: "Carrera 53C No 131A - 91", "KR 7 # 12-34".
     [GeneratedRegex(
-        @"^(CL|CALLE|KR|CR|CRA|CARRERA|AV|AVENIDA|AC|AK|DG|DIAGONAL|TV|TRANSV|TRANSVERSAL|CQ|CIRCULAR|CV|CIRCUNVALAR|AU|AUTOPISTA|KM|MZ|MANZANA|VRD|VEREDA)\.?\s+\S+.*#\s*\d+\s*-\s*\d+",
+        @"^(CL|CALLE|KR|CR|CRA|CARRERA|AV|AVENIDA|AC|AK|DG|DIAGONAL|TV|TRANSV|TRANSVERSAL|CQ|CIRCULAR|CV|CIRCUNVALAR|AU|AUTOPISTA|KM|MZ|MANZANA|VRD|VEREDA)\.?\s+\S+.*(#|N(?:[O°º]|RO|[UÚ]MERO)?\.?)\s*\d+[A-Z]?\s*-\s*\d+[A-Z]?",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex AddressRegex();
 
