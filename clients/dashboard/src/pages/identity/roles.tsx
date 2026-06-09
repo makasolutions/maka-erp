@@ -26,8 +26,11 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormActions,
   FormGrid,
 } from "@/components/list";
+import { SaveIcon, CancelIcon } from "@/components/ui/icons";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import {
   MakaGridClient,
   MakaGridFilters,
@@ -202,10 +205,14 @@ function CreateRoleDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslation("identity");
+  const { t: tcommon } = useTranslation("common");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [showErrors, setShowErrors] = useState(false);
+  const schema = { name: [rules.required(), rules.min(2), rules.max(128)], description: [rules.max(512)] };
+  const errs = showErrors ? validateSchema({ name, description }, schema, tcommon) : {} as Record<string, string>;
 
   useEffect(() => {
     if (!open) {
@@ -235,7 +242,7 @@ function CreateRoleDialog({
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (Object.keys(validateSchema({ name, description }, schema, tcommon)).length > 0) { setShowErrors(true); return; }
     mutation.mutate();
   };
 
@@ -249,7 +256,7 @@ function CreateRoleDialog({
           </DialogHeader>
           <DialogBody>
             <FormGrid>
-              <Field id="role-name" span={4} label={t("roles.fields.name")} required>
+              <Field id="role-name" span={4} label={t("roles.fields.name")} required error={errs.name}>
                 <Input
                   id="role-name"
                   value={name}
@@ -264,6 +271,7 @@ function CreateRoleDialog({
                 id="role-description"
                 span={8}
                 label={t("roles.fields.description")}
+                error={errs.description}
                 hint={t("roles.descriptionHint")}
               >
                 <Input
@@ -277,23 +285,21 @@ function CreateRoleDialog({
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={mutation.isPending}
-              >
-                {t("common:actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !name.trim()}
-              className="gap-1.5"
-            >
-              <Plus className="h-4 w-4" />
-              {mutation.isPending ? t("roles.creating") : t("roles.create")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={mutation.isPending}>
+                    <CancelIcon className="size-4" />{tcommon("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={mutation.isPending} className="gap-1.5">
+                  <SaveIcon className="size-4" />
+                  {mutation.isPending ? t("roles.creating") : t("roles.create")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
