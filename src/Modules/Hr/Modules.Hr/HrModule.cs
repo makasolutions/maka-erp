@@ -44,8 +44,10 @@ public sealed class HrModule : IModule
         var group = endpoints
             .MapGroup("api/v{version:apiVersion}/hr/employees")
             .WithTags("Hr")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
+        // §18.4 #14: NO .RequireAuthorization() here — it overrides the global permission
+        // FallbackPolicy and makes per-endpoint .RequirePermission() fail OPEN. The fallback
+        // already enforces authentication + the RequiredPermission metadata.
 
         group.MapGetEmployeesEndpoint();
         group.MapGetEmployeeByPartyIdEndpoint();

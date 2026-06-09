@@ -67,8 +67,10 @@ public sealed class BillingModule : IModule
         var group = endpoints
             .MapGroup("api/v{version:apiVersion}/billing")
             .WithTags("Billing")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
+        // §18.4 #14: NO .RequireAuthorization() here — it overrides the global permission
+        // FallbackPolicy and makes per-endpoint .RequirePermission() fail OPEN. The fallback
+        // already enforces authentication + the RequiredPermission metadata.
 
         group.MapGetPlansEndpoint();
         group.MapCreatePlanEndpoint();

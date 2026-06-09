@@ -52,8 +52,10 @@ public sealed class LookupsModule : IModule
         var tables = endpoints
             .MapGroup("api/v{version:apiVersion}/lookups/tables")
             .WithTags("Lookups - Basic Tables")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
+        // §18.4 #14: NO .RequireAuthorization() here — it overrides the global permission
+        // FallbackPolicy and makes per-endpoint .RequirePermission() fail OPEN. The fallback
+        // already enforces authentication + the RequiredPermission metadata.
 
         tables.MapGetBasicTablesEndpoint();
         tables.MapGetBasicTableByIdEndpoint();
@@ -66,16 +68,20 @@ public sealed class LookupsModule : IModule
         var records = endpoints
             .MapGroup("api/v{version:apiVersion}/lookups/records")
             .WithTags("Lookups - Records")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
+        // §18.4 #14: NO .RequireAuthorization() here — it overrides the global permission
+        // FallbackPolicy and makes per-endpoint .RequirePermission() fail OPEN. The fallback
+        // already enforces authentication + the RequiredPermission metadata.
 
         records.MapGetBasicRecordsByCodeEndpoint();
 
         var geography = endpoints
             .MapGroup("api/v{version:apiVersion}/geography")
             .WithTags("Lookups - Geography (DIVIPOLA)")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
+        // §18.4 #14: NO .RequireAuthorization() here — it overrides the global permission
+        // FallbackPolicy and makes per-endpoint .RequirePermission() fail OPEN. The fallback
+        // already enforces authentication + the RequiredPermission metadata.
 
         geography.MapGeographyEndpoints();
     }

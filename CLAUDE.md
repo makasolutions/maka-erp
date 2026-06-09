@@ -1294,6 +1294,24 @@ Casos reales encontrados; cada uno es ahora un **caso de prueba obligatorio** en
 13. **Fechas de inicio/fin sin `min`/`max` cruzado**: el `MakaDatePicker` de "hasta" debe recibir
     `min={desde}` (y "desde" `max={hasta}` si aplica) para impedir rangos inválidos desde la UI,
     además de la validación al enviar.
+14. **🔴🔴 CRÍTICO — `.RequireAuthorization()` en el grupo hace fail-OPEN a `.RequirePermission()`**:
+    la autorización por permisos se aplica vía el **`FallbackPolicy` global**
+    (`options.FallbackPolicy = GetPolicy(RequiredPermission)`, ver `JwtAuthenticationExtensions`),
+    que exige `RequireAuthenticatedUser` **y** evalúa la metadata `RequiredPermission`. El fallback
+    solo corre en endpoints **sin** metadata de autorización. Si un grupo/endpoint llama
+    `.RequireAuthorization()` (sin política), adjunta la política por defecto (**solo autenticado**),
+    que **reemplaza al fallback** → la metadata `.RequirePermission()` se **ignora** y la
+    autorización **falla ABIERTA**: cualquier usuario autenticado ejecuta operaciones privilegiadas.
+    Detectado por QA real: con un usuario `BASIC` (alice@acme), `POST /lookups/tables` devolvía
+    **201**, `DELETE /parties/{id}` y `/hr/employees/{id}` llegaban al handler (**404**, no 403), y
+    `DELETE /webhooks/...` borraba. **Catalog estaba bien** porque NO llama `.RequireAuthorization()`
+    en el grupo. Afectaba a Billing, Chat, Files, Hr, Lookups, Notifications, Parties, Webhooks.
+    **Regla permanente:** 🚫 PROHIBIDO `.RequireAuthorization()` en grupos/endpoints que usan
+    `.RequirePermission()` — el fallback ya autentica + autoriza. Solo usar `.AllowAnonymous()` para
+    públicos. **Caso de prueba de regresión OBLIGATORIO (set 3):** con un usuario sin el permiso,
+    toda escritura debe devolver **403** (no 200/201/404). Auditoría:
+    `grep -rn "RequireAuthorization" src/Modules --include=*.cs` no debe aparecer junto a grupos con
+    endpoints `.RequirePermission()`.
 
 ### 18.5 — Definición de "terminado" (Definition of Done)
 

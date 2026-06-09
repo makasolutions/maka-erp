@@ -77,8 +77,10 @@ public sealed class FilesModule : IModule
 
         var group = endpoints.MapGroup("api/v{version:apiVersion}/files")
             .WithTags("Files")
-            .WithApiVersionSet(versionSet)
-            .RequireAuthorization();
+            .WithApiVersionSet(versionSet);
+        // §18.4 #14: NO .RequireAuthorization() here — it overrides the global permission
+        // FallbackPolicy and makes per-endpoint .RequirePermission() fail OPEN. The fallback
+        // already enforces authentication + the RequiredPermission metadata.
 
         // Literal routes first so they win over the /{id:guid} catch-all (matches the Catalog
         // pattern for /trash etc.).
