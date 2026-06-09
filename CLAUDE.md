@@ -1141,13 +1141,37 @@ menos 2 tenants distintos para confirmar aislamiento de datos:
 | Url / Website | no | — | 2048 | `http(s)://` válido; antepone `https://` si falta esquema |
 | Teléfono/Celular | según campo | — | — | **CO `^3\d{9}$`** o **E.164 `^\+\d{7,15}$`** (internacional) |
 | NIT | sí | 5 | 15 | dígitos; DV calculado (DIAN), **no editable** |
-| Cédula (CC/TI/NUIP) | sí | 4 | 11 | dígitos (máscara solo-dígitos al teclear) |
+| Identificación **por tipo** | sí | — | — | El formato depende del `IdType` seleccionado (tabla abajo). **NUNCA** permitir letras en docs numéricos; máscara solo-dígitos al teclear. |
 | Latitud | no | — | — | **−90 … 90** (bloqueo duro) |
 | Longitud | no | — | — | **−180 … 180** (bloqueo duro); lat/lng van juntas |
 | Dirección (DIAN) | **sí** | — | — | `<vía> <n> # <n>-<n>`. Ej. `CL 100 # 13-21` |
-| Fecha nacimiento | no | — | — | ≤ hoy y ≥ hoy−120 años |
-| Rango de fechas | — | — | — | `fin ≥ inicio` (fin nula = vigente) |
+| Fecha de nacimiento | no | — | — | **estrictamente < hoy** (nunca hoy ni futura) **y ≥ hoy−120 años**. Para **personas de contacto** además **edad ≥ 15 años** (ver nota legal). |
+| Fecha de creación/registro/emisión | — | — | — | **NUNCA futura** (≤ hoy/ahora). Aplica a toda fecha que represente "cuándo ocurrió/se creó algo". |
+| Rango de fechas (desde/hasta) | — | — | — | **`inicio ≤ fin`** siempre; `fin` nula = vigente. La inicial nunca puede ser mayor que la final. |
 | Valor de canal | sí | — | 256 | formato según tipo (Email→@, Web→url, Tel→phone) |
+
+**Identificación colombiana — regex por tipo (front + back):**
+
+| IdType | Regex | Notas |
+|---|---|---|
+| CC (Cédula de ciudadanía) | `^\d{6,10}$` | solo dígitos, 6–10 |
+| TI (Tarjeta de identidad) | `^\d{8,11}$` | solo dígitos |
+| NUIP | `^\d{8,11}$` | solo dígitos |
+| CE (Cédula de extranjería) | `^[A-Za-z0-9]{6,15}$` | alfanumérico |
+| NIT | `^\d{9,10}$` + DV | DV calculado, no editable |
+| Pasaporte | `^[A-Za-z0-9]{6,15}$` | alfanumérico |
+
+> **Edad mínima de personas de contacto (regla de negocio Maka):** un contacto comercial de una
+> empresa debe tener **≥ 15 años**. Justificación: en Colombia la edad mínima para trabajar es 15
+> (Código de la Infancia y la Adolescencia, Ley 1098/2006, art. 35, con permiso) y la capacidad
+> laboral plena es a los 18; no es lógico registrar como contacto comercial a alguien menor. Se
+> adopta **15** como piso pragmático; endurecer a 18 si el negocio lo requiere. **No** se conoce
+> norma que prohíba el dato en sí, pero esta validación previene errores de digitación.
+
+**Reglas de negocio de Terceros (obligatorias):**
+- Un tercero de tipo **empresa (Jurídica)** DEBE tener **al menos un contacto** (persona de contacto).
+- Toda dirección y contacto se editan con sus **componentes centralizados reutilizables**
+  (`AddressEditor`, `ContactEditor`, `ChannelEditor`) — ver §18 mandato de reuso.
 
 **Nomenclatura DIAN (vías aceptadas, abreviatura canónica):**
 `CL` Calle · `KR` Carrera · `AV` Avenida · `AC` Av. Calle · `AK` Av. Carrera · `DG` Diagonal ·
@@ -1164,5 +1188,104 @@ que un componente Syncfusion que rompa los tokens de tema.
 
 ---
 
+## 18. ESTÁNDAR DE AUDITORÍA Y QA EMPRESARIAL — OBLIGATORIO
+
+> **Premisa central:** asumir que el usuario puede **digitar cualquier cosa en cualquier campo**
+> (entrada hostil/no confiable). NUNCA asumir formato correcto. Toda pantalla, formulario, sección,
+> popup, lista y acción se audita contra los **6 sets de pruebas** antes de darse por terminada.
+> El listón es el de una empresa grande de software: si un caso límite es posible, hay que probarlo.
+
+### 18.1 — Los 6 sets de pruebas (toda feature pasa los 6)
+
+1. **Validación de datos (entrada hostil).** Cada campo: requerido · tipo · min/max · regex/formato ·
+   máscara. Probar: vacío, solo espacios, longitud 0 y máx+1, caracteres no permitidos (letras en
+   numéricos, símbolos, emojis, RTL/Unicode), inyección (`<script>`, `'; DROP`, `{{7*7}}`), pegado
+   masivo, números negativos/cero/decimales/notación científica, fechas imposibles (29-feb no
+   bisiesto, futuras donde no aplica). Ver §17.
+2. **Reglas de negocio.** Invariantes del dominio: empresa ⇒ ≥1 contacto; rango `inicio ≤ fin`;
+   fechas de creación nunca futuras; nacimiento < hoy y edad mínima; documentos inmutables tras
+   aprobar/facturar; stock no negativo; DV del NIT correcto; unicidad por tenant; transiciones de
+   estado válidas. Probar el camino feliz **y** cada invariante violado.
+3. **Seguridad (roles y permisos).** Cada endpoint con `.RequirePermission()`; cada acción/botón
+   del front respeta `perm`. Probar: usuario sin permiso NO ve ni ejecuta la acción (UI + API 403);
+   **aislamiento multitenant** (tenant A nunca ve datos de B, incluso manipulando IDs en la URL);
+   no exponer IDs internos; no PII en logs/URLs; CAPTCHA/credenciales nunca automatizadas.
+4. **Rendimiento.** Queries de lectura `AsNoTracking` + paginación server-side (nunca traer todo);
+   inventario < 200ms; caché Redis donde aplique; índices en TenantId/SKU/Serial/Customer/Order/
+   CreatedAt; listas grandes virtualizadas; sin N+1; payloads acotados.
+5. **Responsive / Mobile-First.** El proyecto es **Mobile-First**: diseñar desde ~360px y escalar.
+   Probar a **360 / 768 / 1024 / 1440 px** en Light **y** Dark. Reglas:
+   - Formularios: `FormGrid` (1 col en móvil), label **siempre arriba**, sin overflow horizontal.
+   - Editores hijos (direcciones/contactos/canales): **NUNCA** `flex` con anchos fijos (`w-40`) que
+     no envuelven; usar grid responsive que colapsa a 1 columna en móvil.
+   - Botones: tamaño/altura táctil adecuada; acciones primarias a la derecha; no botones gigantes
+     en móvil; el set de variantes/anchos vive en el **Button centralizado** (no estilos ad-hoc).
+   - **Listas**: el grid Syncfusion NO es responsive por sí solo. En `< md` usar el fallback de
+     tarjetas (`EntityMobileCard`) — patrón entity-shell. Una tabla que hace scroll horizontal en
+     móvil es un **defecto**.
+6. **Accesibilidad + i18n.** Labels visibles asociados (`htmlFor`); foco visible; navegación por
+   teclado; contraste AA en Light/Dark/acentos; `aria-invalid`/mensajes de error anunciados; **todo
+   texto vía `t()` con clave en ES **y** EN** (§ regla i18n). Sin texto hardcodeado.
+
+### 18.2 — Mandato de **reuso / centralización** (una sola fuente)
+
+> 🚫 PROHIBIDO duplicar lógica de UI o validación que ya tenga un componente/función central.
+> Si hay que cambiar la regla de un campo o el estilo de un control, debe cambiarse en **un solo
+> lugar** y propagarse a todas las pantallas.
+
+- **Editores de dominio reutilizables** (ya compartidos por Terceros **y** Empleados): `AddressEditor`,
+  `ContactEditor`, `ChannelEditor`, `CityPicker`. Cualquier pantalla que capture direcciones/
+  contactos/canales **DEBE** reusarlos. Arreglar la validación de cédula/edad/fecha aquí aplica a
+  todos los formularios automáticamente.
+- **Validación**: primitivas por tipo en `clients/dashboard/src/lib/validation/{predicates,rules}.ts`
+  (espejo de `FormValidationRules.cs`). NUNCA regex ad-hoc en una página: agregar/usar la primitiva.
+- **Controles**: `Button` (variantes/tamaños), `Field`/`FormGrid`/`FormSectionCard`/`FormActions`,
+  `Combobox`, **`MakaDatePicker`** (Syncfusion `SfDatePicker` — pendiente de crear; reemplaza todo
+  `<input type="date">`), `MakaDateRangePicker`. Estilos de un control viven en el control, no por página.
+- **Listas**: el patrón entity-shell (`EntityPageHeader`, `EntityMobileCard`, `MakaGrid`) es la base;
+  el fallback móvil de tarjetas se define una vez y se reutiliza.
+
+### 18.3 — Roles de agentes (Arquitecto · Desarrollador · Pruebas)
+
+Trabajamos con tres roles (un mismo modelo puede encarnarlos secuencialmente, o vía subagentes):
+
+- **Arquitecto** — diseña antes de codear (Plan Mode): entidades, contratos, eventos, módulos,
+  reuso de componentes, impacto multitenant/seguridad/rendimiento. No escribe la implementación.
+- **Desarrollador** — implementa la feature aprobada siguiendo las reglas de este archivo y AGENTS.md.
+- **Pruebas (QA)** — **independiente del desarrollador**. Ejecuta los 6 sets de pruebas sobre lo
+  construido, con entrada hostil y responsive real (Chrome MCP a 360/768/1024px, Light/Dark). El
+  QA **aprende de cada defecto**: cada bug encontrado se agrega al §18.4 (catálogo) y se convierte
+  en caso de regresión permanente para que **no vuelva a pasar**. El QA tiene poder de veto: si un
+  set falla, la feature NO se da por terminada.
+
+### 18.4 — Catálogo de defectos detectados (regresión permanente)
+
+Casos reales encontrados; cada uno es ahora un **caso de prueba obligatorio** en toda feature similar:
+
+1. **Inputs sin label visible** (ContactEditor/ChannelEditor usaban solo `placeholder`): al llenar
+   el campo se perdía el contexto (ej. "Vitae ex explicabo" era el N° de identificación). → Todo
+   input lleva label arriba vía `Field`.
+2. **Número de identificación aceptaba letras**: debe cumplir regex por tipo de documento (§17) y
+   filtrar a solo-dígitos en docs numéricos.
+3. **Fechas con `<input type="date">` nativo** en vez de Syncfusion → crear/usar `MakaDatePicker`.
+4. **Fecha de nacimiento sin reglas**: debe ser < hoy y, para contactos, edad ≥ 15.
+5. **Rangos de fecha sin invariante `inicio ≤ fin`** y **fechas de creación que permitían futuro**.
+6. **Empresa sin exigir ≥1 contacto**.
+7. **Editores hijos no responsive** (`flex` con `w-40` que no envuelve en móvil) y **botón "Agregar"
+   sobredimensionado** en móvil (estilos ad-hoc en vez del Button central).
+8. **Listas no Mobile-First**: `MakaGrid` con scroll horizontal en móvil, sin fallback de tarjetas.
+9. **Design system construido pero no aplicado** (`FormSectionCard` sin usar en el form principal).
+10. **Validación parcial declarada como completa**: marcar "validado" sin cubrir los editores hijos
+    ni el responsive. → Una feature solo está "lista" cuando pasa los **6 sets** documentados.
+
+### 18.5 — Definición de "terminado" (Definition of Done)
+
+Una pantalla/feature está terminada **solo si**: pasa los 6 sets (§18.1) · reusa los componentes
+centrales (§18.2) · `dotnet build`/`npm run build`/`Architecture.Tests` verdes · i18n ES+EN ·
+probada en 360/768/1024px Light+Dark con 0 errores en Console/Network · multitenant verificado ·
+defectos nuevos añadidos a §18.4.
+
+---
+
 *Fuente de verdad del proyecto. Si hay conflicto con cualquier otra instrucción, este archivo tiene prioridad.*
-*Versión: 3.2 | Proyecto: Maka Omni-Commerce Ecosystem | Junio 2026*
+*Versión: 3.3 | Proyecto: Maka Omni-Commerce Ecosystem | Junio 2026*
