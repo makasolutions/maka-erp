@@ -49,9 +49,12 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormActions,
   FormGrid,
   type EntityStatusTone,
 } from "@/components/list";
+import { SaveIcon, CancelIcon } from "@/components/ui/icons";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField, MakaFilterInput } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
@@ -521,9 +524,13 @@ function CreateTicketDialog({
   onCreated: () => void;
 }) {
   const { t } = useTranslation("tickets");
+  const { t: tc } = useTranslation("common");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("Medium");
+  const [showErrors, setShowErrors] = useState(false);
+  const schema = { title: [rules.required(), rules.min(3), rules.max(160)], description: [rules.max(4096)] };
+  const errs = showErrors ? validateSchema({ title, description }, schema, tc) : {} as Record<string, string>;
 
   useEffect(() => {
     if (open) {
@@ -547,7 +554,7 @@ function CreateTicketDialog({
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (Object.keys(validateSchema({ title, description }, schema, tc)).length > 0) { setShowErrors(true); return; }
     mutation.mutate({
       title: title.trim(),
       description: description.trim() || null,
@@ -579,7 +586,7 @@ function CreateTicketDialog({
           </DialogHeader>
           <DialogBody>
             <FormGrid>
-              <Field id="ticket-title" span={8} label={t("dialog.titleLabel")} required>
+              <Field id="ticket-title" span={8} label={t("dialog.titleLabel")} required error={errs.title}>
                 <Input
                   id="ticket-title"
                   value={title}
@@ -600,7 +607,7 @@ function CreateTicketDialog({
                   options={priorityOptions}
                 />
               </Field>
-              <Field id="ticket-description" span={12} label={t("dialog.descLabel")}>
+              <Field id="ticket-description" span={12} label={t("dialog.descLabel")} error={errs.description}>
                 <textarea
                   id="ticket-description"
                   value={description}
@@ -618,14 +625,21 @@ function CreateTicketDialog({
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={mutation.isPending}>
-                {t("common:actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={!title.trim() || mutation.isPending}>
-              {mutation.isPending ? t("dialog.opening") : t("openTicket")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={mutation.isPending}>
+                    <CancelIcon className="size-4" />{tc("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={mutation.isPending}>
+                  <SaveIcon className="size-4" />
+                  {mutation.isPending ? t("dialog.opening") : t("openTicket")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
