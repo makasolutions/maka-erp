@@ -1,7 +1,10 @@
 using Asp.Versioning;
 using FSH.Framework.Persistence;
+using FSH.Framework.Shared.Constants;
+using FSH.Framework.Shared.Identity.Authorization;
 using FSH.Framework.Web.HttpResilience;
 using FSH.Framework.Web.Modules;
+using FSH.Modules.Webhooks.Contracts.Authorization;
 using FSH.Modules.Webhooks.Data;
 using FSH.Modules.Webhooks.Features.v1.CreateWebhookSubscription;
 using FSH.Modules.Webhooks.Features.v1.DeleteWebhookSubscription;
@@ -28,6 +31,7 @@ public sealed class WebhooksModule : IModule
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        PermissionConstants.Register(WebhooksPermissions.All);
         builder.Services.AddHeroDbContext<WebhookDbContext>();
         builder.Services.AddScoped<IDbInitializer, WebhookDbInitializer>();
         builder.Services.AddScoped<IWebhookDeliveryService, WebhookDeliveryService>();
@@ -70,10 +74,10 @@ public sealed class WebhooksModule : IModule
             .WithApiVersionSet(versionSet)
             .RequireAuthorization();
 
-        group.MapCreateWebhookSubscriptionEndpoint();
-        group.MapDeleteWebhookSubscriptionEndpoint();
-        group.MapGetWebhookSubscriptionsEndpoint();
-        group.MapGetWebhookDeliveriesEndpoint();
-        group.MapTestWebhookSubscriptionEndpoint();
+        group.MapCreateWebhookSubscriptionEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.Manage);
+        group.MapDeleteWebhookSubscriptionEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.Manage);
+        group.MapGetWebhookSubscriptionsEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.View);
+        group.MapGetWebhookDeliveriesEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.View);
+        group.MapTestWebhookSubscriptionEndpoint().RequirePermission(WebhooksPermissions.Subscriptions.Manage);
     }
 }
