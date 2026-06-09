@@ -25,6 +25,15 @@ internal static class JwtAuthenticationExtensions
         services.AddAuthorizationBuilder().AddRequiredPermissionPolicy();
         services.AddAuthorization(options =>
         {
+            // Permission evaluation lives in the RequiredPermission policy (it reads each
+            // endpoint's RequiredPermissionAttribute metadata). Wire it as BOTH the default
+            // AND the fallback policy (upstream fix, §18.4 #14):
+            //   - FallbackPolicy covers endpoints with no auth metadata at all.
+            //   - DefaultPolicy covers endpoints that opt in via .RequireAuthorization() —
+            //     without this, a group-level .RequireAuthorization() applies the built-in
+            //     authenticated-only default, which SUPPRESSES the fallback so
+            //     .RequirePermission(...) is never evaluated (broken access control, fail-open).
+            options.DefaultPolicy = options.GetPolicy(RequiredPermissionDefaults.PolicyName)!;
             options.FallbackPolicy = options.GetPolicy(RequiredPermissionDefaults.PolicyName);
         });
         return services;

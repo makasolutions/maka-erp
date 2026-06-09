@@ -27,12 +27,15 @@ public static class ChatPermissions
 
     public static IReadOnlyList<FshPermission> All { get; } =
     [
+        // Self-service chat actions are marked basic so any authenticated tenant member may
+        // attempt them; the real gate is channel membership and message ownership, enforced
+        // inside each handler. Moderation actions stay privileged. Mirrors the upstream authz fix.
         new("View Chat Channels",   ActionConstants.View,   Channels.Resource, IsBasic: true),
-        new("Create Chat Channels", ActionConstants.Create, Channels.Resource),
+        new("Create Chat Channels", ActionConstants.Create, Channels.Resource, IsBasic: true),
         new("Manage All Channels",  "ManageAll",            Channels.Resource),
-        new("Send Messages",        "Send",                 Messages.Resource),
-        new("Edit Own Messages",    "EditOwn",              Messages.Resource),
-        new("Delete Own Messages",  "DeleteOwn",            Messages.Resource),
+        new("Send Messages",        "Send",                 Messages.Resource, IsBasic: true),
+        new("Edit Own Messages",    "EditOwn",              Messages.Resource, IsBasic: true),
+        new("Delete Own Messages",  "DeleteOwn",            Messages.Resource, IsBasic: true),
         new("Delete Any Message",   "DeleteAny",            Messages.Resource),
     ];
 }
