@@ -24,6 +24,8 @@ import {
   type CreateBrandInput,
   type UpdateBrandInput,
 } from "@/api/catalog";
+import { searchGlobalBrands, type GlobalBrandSuggestion } from "@/api/catalog-global";
+import { GlobalSuggestionField } from "@/components/catalog/global-suggestion-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -462,16 +464,24 @@ function BrandEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
 
           <DialogBody>
             <FormGrid>
-              <Field id="brand-name" span={8} label={t("brands.fields.name")} required>
-                <Input
-                  id="brand-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t("brands.namePlaceholder")}
-                  autoFocus
-                  required
-                  maxLength={200}
-                />
+              <Field id="brand-name" span={8} label={t("brands.fields.name")} required
+                hint={!brand ? t("globalSuggest.fieldHint") : undefined}>
+                {brand ? (
+                  <Input id="brand-name" value={name} onChange={(e) => setName(e.target.value)}
+                    placeholder={t("brands.namePlaceholder")} autoFocus required maxLength={200} />
+                ) : (
+                  <GlobalSuggestionField<GlobalBrandSuggestion>
+                    id="brand-name" value={name} onChange={(v) => setName(v)}
+                    search={searchGlobalBrands} queryKey="brands"
+                    toItem={(s) => ({ key: s.id, primary: s.name, secondary: s.country, adopted: s.alreadyAdopted })}
+                    onPick={(s) => {
+                      setName(s.name);
+                      if (s.country) setCountryOfOrigin(s.country.toUpperCase());
+                      if (s.logoUrl) setLogoUrl(s.logoUrl);
+                    }}
+                    placeholder={t("brands.namePlaceholder")} maxLength={200} autoFocus
+                  />
+                )}
               </Field>
 
               <Field id="brand-country" span={4} label={t("brands.fields.country")} hint={t("brands.countryHint")}>

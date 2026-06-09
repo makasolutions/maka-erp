@@ -1,5 +1,14 @@
 {
   "title": "Catalog",
+  "globalSuggest": {
+    "title": "Global catalog suggestions",
+    "searching": "Searching…",
+    "none": "No matches in the global catalog",
+    "adopted": "Already in your catalog",
+    "fieldHint": "Type the name: we search the global catalog (typo/accent tolerant) and you can adopt it.",
+    "adoptedFrom": "Adopted from global: {{path}}",
+    "createNew": "Create as new"
+  },
   "products": {
     "title": "Products",
     "singular": "Product",

@@ -25,7 +25,11 @@ import {
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from "@/api/catalog";
-import { getGlobalCategories, importGlobalCategories } from "@/api/catalog-global";
+import {
+  adoptGlobalCategory, getGlobalCategories, importGlobalCategories, searchGlobalCategories,
+  type GlobalCategorySuggestion,
+} from "@/api/catalog-global";
+import { GlobalSuggestionField } from "@/components/catalog/global-suggestion-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -432,6 +436,7 @@ function CategoryEditorDialog({
   const [parentId, setParentId] = useState(initial.parentId);
   const [sortOrder, setSortOrder] = useState(initial.sortOrder);
   const [isActive, setIsActive] = useState(initial.isActive);
+  const [adopted, setAdopted] = useState<{ id: string; path: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -441,6 +446,7 @@ function CategoryEditorDialog({
       setParentId(initial.parentId);
       setSortOrder(initial.sortOrder);
       setIsActive(initial.isActive);
+      setAdopted(null);
     }
   }, [isOpen, initial]);
 
@@ -472,7 +478,17 @@ function CategoryEditorDialog({
     onError: (err) => toast.error(t("categories.updateFailed"), { description: describe(err) }),
   });
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const adoptMutation = useMutation({
+    mutationFn: () => adoptGlobalCategory(adopted!.id, name.trim(), slugPreview === "—" ? null : slugPreview),
+    onSuccess: () => {
+      toast.success(t("categories.created"));
+      queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
+      onClose();
+    },
+    onError: (err) => toast.error(t("categories.createFailed"), { description: describe(err) }),
+  });
+
+  const isPending = createMutation.isPending || updateMutation.isPending || adoptMutation.isPending;
   const trimmedName = name.trim();
   const canSubmit = !!trimmedName;
 
@@ -489,6 +505,8 @@ function CategoryEditorDialog({
     };
     if (state.mode === "edit" && category) {
       updateMutation.mutate({ categoryId: category.id, ...payload });
+    } else if (adopted) {
+      adoptMutation.mutate();
     } else {
       createMutation.mutate(payload);
     }
@@ -507,16 +525,27 @@ function CategoryEditorDialog({
 
           <DialogBody>
             <FormGrid>
-              <Field id="category-name" span={8} label={t("categories.fields.name")} required>
-                <Input
-                  id="category-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t("categories.namePlaceholder")}
-                  autoFocus
-                  required
-                  maxLength={200}
-                />
+              <Field id="category-name" span={8} label={t("categories.fields.name")} required
+                hint={!category && !adopted ? t("globalSuggest.fieldHint") : undefined}>
+                {category ? (
+                  <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)}
+                    placeholder={t("categories.namePlaceholder")} autoFocus required maxLength={200} />
+                ) : (
+                  <GlobalSuggestionField<GlobalCategorySuggestion>
+                    id="category-name" value={name} onChange={(v) => setName(v)}
+                    search={searchGlobalCategories} queryKey="categories"
+                    toItem={(s) => ({ key: s.id, primary: s.name, secondary: s.fullPath, adopted: s.alreadyAdopted })}
+                    onPick={(s) => { setName(s.name); setAdopted({ id: s.id, path: s.fullPath ?? s.name }); }}
+                    placeholder={t("categories.namePlaceholder")} maxLength={200} autoFocus
+                  />
+                )}
+                {adopted && (
+                  <div className="mt-1.5 flex items-center gap-2 rounded-md bg-[var(--color-success)]/10 px-2.5 py-1 text-[11.5px] text-[var(--color-foreground)]">
+                    <span className="truncate">{t("globalSuggest.adoptedFrom", { path: adopted.path })}</span>
+                    <button type="button" className="ml-auto shrink-0 font-semibold text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]"
+                      onClick={() => setAdopted(null)}>{t("globalSuggest.createNew")}</button>
+                  </div>
+                )}
               </Field>
 
               <Field id="category-sort" span={4} label={t("categories.fields.sortOrder")} hint={t("categories.sortOrderHint")}>
