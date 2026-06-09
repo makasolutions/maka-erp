@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useBranding } from "@/components/theme/tenant-branding";
 import {
   ChevronDown,
   PanelLeftClose,
@@ -86,6 +87,7 @@ function useCollapsedSidebar() {
 export function Sidebar() {
   const { t } = useTranslation("common");
   const { collapsed, toggle } = useCollapsedSidebar();
+  const { logoUrl } = useBranding();
   const location = useLocation();
 
   // Single-select accordion: which section is currently open. Defaults
@@ -130,24 +132,34 @@ export function Sidebar() {
         )}
       >
         <div className={cn("flex items-center", collapsed ? "" : "gap-2.5")}>
-          <span
-            aria-hidden
-            className={cn(
-              "brand-mark grid size-8 place-items-center rounded-lg shrink-0",
-              "font-display text-[12px] font-bold text-[var(--color-primary-foreground)]",
-            )}
-          >
-            F
-          </span>
-          {!collapsed && (
-            <div className="flex flex-col">
-              <span className="whitespace-nowrap font-display text-[15px] font-bold leading-none tracking-tight text-[var(--color-foreground)]">
-                fullstack<span className="text-[var(--color-primary)]">hero</span>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt=""
+              className={cn("shrink-0 rounded-lg object-contain", collapsed ? "size-8" : "h-8 max-w-[150px]")}
+            />
+          ) : (
+            <>
+              <span
+                aria-hidden
+                className={cn(
+                  "brand-mark grid size-8 place-items-center rounded-lg shrink-0",
+                  "font-display text-[12px] font-bold text-[var(--color-primary-foreground)]",
+                )}
+              >
+                F
               </span>
-              <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.7)]">
-                Console
-              </span>
-            </div>
+              {!collapsed && (
+                <div className="flex flex-col">
+                  <span className="whitespace-nowrap font-display text-[15px] font-bold leading-none tracking-tight text-[var(--color-foreground)]">
+                    fullstack<span className="text-[var(--color-primary)]">hero</span>
+                  </span>
+                  <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.7)]">
+                    Console
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
