@@ -1309,12 +1309,14 @@ Casos reales encontrados; cada uno es ahora un **caso de prueba obligatorio** en
     **201**, `DELETE /parties/{id}` y `/hr/employees/{id}` llegaban al handler (**404**, no 403), y
     `DELETE /webhooks/...` borraba. **Catalog estaba bien** porque NO llama `.RequireAuthorization()`
     en el grupo. Afectaba a Billing, Chat, Files, Hr, Lookups, Notifications, Parties, Webhooks.
-    **Regla permanente:** 🚫 PROHIBIDO `.RequireAuthorization()` en grupos/endpoints que usan
-    `.RequirePermission()` — el fallback ya autentica + autoriza. Solo usar `.AllowAnonymous()` para
-    públicos. **Caso de prueba de regresión OBLIGATORIO (set 3):** con un usuario sin el permiso,
-    toda escritura debe devolver **403** (no 200/201/404). Auditoría:
-    `grep -rn "RequireAuthorization" src/Modules --include=*.cs` no debe aparecer junto a grupos con
-    endpoints `.RequirePermission()`.
+    **Fix canónico (adoptado de upstream `eeaed68e`):** en `JwtAuthenticationExtensions` se asigna
+    `options.DefaultPolicy = RequiredPermission policy` (además del `FallbackPolicy`), de modo que
+    `.RequireAuthorization()` también evalúa los permisos. Esto **blinda** el patrón: ya no es
+    posible reintroducir el bypass al re-agregar `RequireAuthorization` a un grupo. Adicionalmente,
+    permisos self-service (p.ej. Chat `Send`/`EditOwn`/`DeleteOwn`) se marcan **IsBasic** cuando la
+    membresía/propiedad es el gate real en el handler.
+    **Caso de prueba de regresión OBLIGATORIO (set 3):** con un usuario sin el permiso, toda
+    escritura debe devolver **403** (no 200/201/404).
 
 ### 18.5 — Definición de "terminado" (Definition of Done)
 
