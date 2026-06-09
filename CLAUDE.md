@@ -1081,9 +1081,27 @@ menos 2 tenants distintos para confirmar aislamiento de datos:
   - Gotcha: el namespace de features se llamó **`SupplierEvaluation`** (no `Scorecards`) porque
     NetArchTest detecta el substring `core` dentro de "S**core**cards" en la regla de pureza `.Core.`.
 
+- **Búsqueda inteligente + adopción** ✅ — al crear **categoría/marca** se busca en el catálogo
+  global con tolerancia a typos/acentos/sinónimos y se sugiere adoptar (editando nombre/slug/etc.).
+  - Postgres `pg_trgm` + `unaccent` en `CatalogDbContext`; migración `Catalog_FuzzySearch`.
+    Entidad **`CatalogAlias`** (tenant `global`: EntityType Category|Brand + TargetId + Alias) con
+    índice GIN trigram; semilla de 25 alias (`cannon`→Canon, `camara`→Cámaras…, `celular`→Teléfonos).
+  - Búsqueda por **SQL crudo** dentro de `global.RunAsync`: `similarity(unaccent(lower(Name)), …)`
+    + match por alias; filtro por industria (roots); `TenantId='global'` explícito; flag
+    `AlreadyAdopted` (categorías por GoogleCategoryId, marcas por Slug). Endpoints
+    `/catalog/global/{search-categories,search-brands,adopt-category,aliases}`.
+  - `AdoptGlobalCategoryCommand`: adopta con nombre/slug **editables**, recreando ancestros y
+    deduplicando. Marca: la adopción precarga el form y usa `createBrand`.
+  - Front: `GlobalSuggestionField` (input con sugerencias debounced + chip "ya en tu catálogo")
+    en los creadores de Categorías y Marcas; gestor de alias en **Configuración → Catálogo**.
+  - **Productos diferidos a Fase G** (no hay catálogo global de productos); el patrón queda listo.
+  - Gotcha: el seeder global corre con `DbMigrator -- seed` (no en `apply`); los SaveChanges de
+    alias en el scope global escriben con `TenantId='global'`.
+
 ### Pendiente (siguientes fases)
 - **Fase G** — Bodega/inventario global (stock público compartido) + tarjeta de producto
-  dropshipping (Costo desde la lista atada al convenio · PV sugerido · Ganancia).
+  dropshipping (Costo desde la lista atada al convenio · PV sugerido · Ganancia) + búsqueda
+  inteligente de **productos** globales en el creador de productos (reusar `GlobalSuggestionField`).
 
 ### Convenciones nuevas confirmadas
 - Datos de marketplace → tenant `global`; lectura cruzada solo vía `IGlobalCatalogReader`.
