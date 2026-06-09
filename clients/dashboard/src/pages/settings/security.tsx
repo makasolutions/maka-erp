@@ -33,7 +33,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Field } from "@/components/list";
+import { Field, FormActions } from "@/components/list";
+import { CancelIcon } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -326,6 +327,7 @@ function ChangePasswordDialog({
   onOpenChange: (next: boolean) => void;
 }) {
   const { t } = useTranslation("settings");
+  const { t: tcommon } = useTranslation("common");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -364,6 +366,10 @@ function ChangePasswordDialog({
 
     if (next.length < 8) {
       setLocalError(t("security.password.errorMinLength"));
+      return;
+    }
+    if (!/(?=.*[A-Za-z])(?=.*\d)/.test(next)) {
+      setLocalError(tcommon("validation.passwordWeak"));
       return;
     }
     if (next !== confirm) {
@@ -435,23 +441,19 @@ function ChangePasswordDialog({
           </DialogBody>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={mutation.isPending}
-            >
-              {t("common:actions.cancel", "Cancel")}
-            </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !current || !next || !confirm}
-            >
-              <KeyRound className="mr-1 h-3.5 w-3.5" />
-              {mutation.isPending
-                ? t("security.password.updating")
-                : t("security.password.update")}
-            </Button>
+            <FormActions
+              secondary={
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
+                  <CancelIcon className="size-4" />{tcommon("actions.cancel")}
+                </Button>
+              }
+              primary={
+                <Button type="submit" disabled={mutation.isPending || !current || !next || !confirm}>
+                  <KeyRound className="size-4" />
+                  {mutation.isPending ? t("security.password.updating") : t("security.password.update")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
