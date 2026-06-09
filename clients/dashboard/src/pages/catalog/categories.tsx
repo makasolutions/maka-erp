@@ -11,6 +11,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { ChevronsRight, Download, Eye, GitBranch, Layers, Plus, Trash2 } from "lucide-react";
+import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -51,8 +52,10 @@ import {
   EntityPageHeader,
   EntityStatusBadge,
   Field,
+  FormActions,
   FormGrid,
 } from "@/components/list";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import {
   MakaGridClient,
   MakaGridFilters,
@@ -490,11 +493,23 @@ function CategoryEditorDialog({
 
   const isPending = createMutation.isPending || updateMutation.isPending || adoptMutation.isPending;
   const trimmedName = name.trim();
-  const canSubmit = !!trimmedName;
+
+  const [showErrors, setShowErrors] = useState(false);
+  const schema = {
+    name: [rules.required(), rules.max(200)],
+    sortOrder: [rules.integer(), rules.number({ min: 0 })],
+    description: [rules.max(2000)],
+  };
+  const errs = useMemo(
+    () => (showErrors ? validateSchema({ name, sortOrder, description }, schema, tc) : {} as Record<string, string>),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showErrors, name, sortOrder, description],
+  );
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    const v = validateSchema({ name, sortOrder, description }, schema, tc);
+    if (Object.keys(v).length > 0) { setShowErrors(true); return; }
     const payload = {
       name: trimmedName,
       description: description.trim() || null,
@@ -525,7 +540,7 @@ function CategoryEditorDialog({
 
           <DialogBody>
             <FormGrid>
-              <Field id="category-name" span={8} label={t("categories.fields.name")} required
+              <Field id="category-name" span={8} label={t("categories.fields.name")} required error={errs.name}
                 hint={!category && !adopted ? t("globalSuggest.fieldHint") : undefined}>
                 {category ? (
                   <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)}
@@ -548,7 +563,7 @@ function CategoryEditorDialog({
                 )}
               </Field>
 
-              <Field id="category-sort" span={4} label={t("categories.fields.sortOrder")} hint={t("categories.sortOrderHint")}>
+              <Field id="category-sort" span={4} label={t("categories.fields.sortOrder")} error={errs.sortOrder} hint={t("categories.sortOrderHint")}>
                 <Input
                   id="category-sort"
                   type="number"
@@ -600,7 +615,7 @@ function CategoryEditorDialog({
                 />
               </Field>
 
-              <Field id="category-description" span={12} label={t("categories.fields.description")} hint={t("categories.descriptionHint")}>
+              <Field id="category-description" span={12} label={t("categories.fields.description")} error={errs.description} hint={t("categories.descriptionHint")}>
                 <textarea
                   id="category-description"
                   value={description}
@@ -636,14 +651,21 @@ function CategoryEditorDialog({
           </DialogBody>
 
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isPending}>
-                {tc("actions.cancel")}
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isPending || !canSubmit}>
-              {isPending ? tc("feedback.saving") : category ? tc("actions.saveChanges") : t("categories.actions.add")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={isPending}>
+                    <CancelIcon className="size-4" />{tc("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={isPending}>
+                  {category ? <SaveIcon className="size-4" /> : <CreateIcon className="size-4" />}
+                  {isPending ? tc("feedback.saving") : category ? tc("actions.saveChanges") : t("categories.actions.add")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
