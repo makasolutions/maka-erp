@@ -49,8 +49,10 @@ import {
   useEffect,
   useMemo,
   useRef,
+  type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { EntityMobileCard } from "@/components/list";
 import {
   ChevronDown,
   Copy,
@@ -912,6 +914,22 @@ export function MakaGrid<T extends object>({
     : Math.max(1, Math.min(10, Math.ceil((Array.isArray(dataSource) ? dataSource.length : 0) / 20)));
   const pageSettings = { pageSize: 20, pageSizes: [20, 50, 100, 1000, "All"], pageCount: clientPageCount };
 
+  // ── Auto mobile cards: derive a label/value list from the column defs ───────
+  // Skip columns without a header and pure image/avatar columns (they read poorly
+  // as a key/value row). Render via the column's `template` when present so badges,
+  // money, dates, avatars, etc. look exactly like the desktop grid.
+  const mobileColumns = useMemo(
+    () => columns.filter((c) => c.headerText && !/image|logo|thumbnail/i.test(String(c.field ?? ""))),
+    [columns],
+  );
+  const renderCell = (col: ColumnModel, row: T): ReactNode => {
+    const tpl = col.template as unknown;
+    if (typeof tpl === "function") return (tpl as (r: T) => ReactNode)(row);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const v = col.field ? (row as any)[col.field] : undefined;
+    return v == null || v === "" ? "—" : String(v);
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="maka-grid-wrapper relative flex flex-col gap-0">
@@ -926,20 +944,49 @@ export function MakaGrid<T extends object>({
         </div>
       )}
 
-      {/* Mobile-first card fallback (§18): cards on phones, grid from md up. */}
-      {mobileCards && (
-        <div className="space-y-2 md:hidden">
-          {dataSource.length === 0 ? (
-            <p className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-6 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
-              {t("grid.emptyMobile", { defaultValue: "Sin resultados." })}
-            </p>
-          ) : (
-            mobileCards(dataSource)
-          )}
-        </div>
-      )}
+      {/* Mobile-first cards (§18): cards on phones, Syncfusion grid from md up.
+          Default cards are auto-derived from the column definitions (label + cell
+          template), so EVERY list is mobile-friendly with zero per-page code. Pass
+          `mobileCards` only to override with a custom card. */}
+      <div className="space-y-2 md:hidden">
+        {dataSource.length === 0 ? (
+          <p className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-6 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
+            {t("grid.emptyMobile", { defaultValue: "Sin resultados." })}
+          </p>
+        ) : mobileCards ? (
+          mobileCards(dataSource)
+        ) : (
+          dataSource.map((row, i) => (
+            <EntityMobileCard
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              key={(row as any).id ?? i}
+              href="#"
+              role={onRowClick ? "button" : undefined}
+              onClick={
+                onRowClick
+                  ? (e) => { e.preventDefault(); onRowClick(row); }
+                  : (e) => e.preventDefault()
+              }
+              className={onRowClick ? undefined : "cursor-default"}
+            >
+              <dl className="space-y-1.5">
+                {mobileColumns.map((col) => (
+                  <div key={String(col.field ?? col.headerText)} className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 text-[10.5px] font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">
+                      {col.headerText}
+                    </dt>
+                    <dd className="ml-auto min-w-0 text-right text-[12.5px] text-[var(--color-foreground)]">
+                      {renderCell(col, row)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </EntityMobileCard>
+          ))
+        )}
+      </div>
 
-      <div className={mobileCards ? "hidden md:block" : undefined}>
+      <div className="hidden md:block">
       <GridComponent
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={gridRef as any}

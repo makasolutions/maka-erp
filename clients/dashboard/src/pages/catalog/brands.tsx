@@ -44,7 +44,6 @@ import { ImageInput } from "@/components/file/image-input";
 import {
   EntityFilterPill,
   EntityInitialsAvatar,
-  EntityMobileCard,
   EntityPageHeader,
   EntityStatusBadge,
   Field,
@@ -333,24 +332,6 @@ export function BrandsPage() {
         permissions={{ edit: P.catalog.brands.update, delete: P.catalog.brands.delete }}
         onEdit={(row) => setEditor({ mode: "edit", brand: row })}
         onDelete={(row) => setEditor({ mode: "delete", brand: row })}
-        mobileCards={(items) =>
-          items.map((row) => (
-            <EntityMobileCard key={row.id} href="#" role="button"
-              onClick={(e) => { e.preventDefault(); if (can(P.catalog.brands.update)) setEditor({ mode: "edit", brand: row }); }}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <BrandAvatar brand={row} size={32} />
-                  <div className="min-w-0">
-                    <div className="truncate text-[14px] font-semibold text-[var(--color-foreground)]">{row.name}</div>
-                    <code className="text-[11px] text-[var(--color-muted-foreground)]">{row.slug}</code>
-                  </div>
-                </div>
-                <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>
-              </div>
-              {row.countryOfOrigin && <div className="mt-2 text-[12px] text-[var(--color-muted-foreground)]">{row.countryOfOrigin}</div>}
-            </EntityMobileCard>
-          ))
-        }
       />
 
       <BrandEditorDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />

@@ -46,7 +46,6 @@ import {
   Combobox,
   EntityFilterPill,
   EntityInitialsAvatar,
-  EntityMobileCard,
   EntityPageHeader,
   EntityStatusBadge,
   Field,
@@ -381,21 +380,6 @@ export function TicketsPage() {
         onCreate={() => setEditor({ mode: "create" })}
         onRowClick={(row) => navigate(`/tickets/${row.id}`)}
         onClearFilters={resetFilters}
-        mobileCards={(items) =>
-          items.map((row) => (
-            <EntityMobileCard key={row.id} href={`/tickets/${row.id}`}
-              onClick={(e) => { e.preventDefault(); navigate(`/tickets/${row.id}`); }}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold text-[var(--color-foreground)]">{row.title}</div>
-                  <code className="text-[11px] text-[var(--color-muted-foreground)]">{row.number}</code>
-                </div>
-                <EntityStatusBadge tone="info">{row.statusLabel}</EntityStatusBadge>
-              </div>
-              <div className="mt-2 text-[12px] text-[var(--color-muted-foreground)]">{row.priorityLabel}</div>
-            </EntityMobileCard>
-          ))
-        }
       />
 
       {makaQuery.isError && (
