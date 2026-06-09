@@ -45,11 +45,15 @@ public sealed class CatalogDbContext : BaseDbContext
     public DbSet<ScorecardKpi>     ScorecardKpis    => Set<ScorecardKpi>();
     public DbSet<SupplierScorecard> SupplierScorecards => Set<SupplierScorecard>();
     public DbSet<ScorecardCriterion> ScorecardCriteria => Set<ScorecardCriterion>();
+    public DbSet<CatalogAlias>     CatalogAliases   => Set<CatalogAlias>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         modelBuilder.HasDefaultSchema(Schema);
+        // Fuzzy search: accent-insensitive (unaccent) + trigram similarity (pg_trgm).
+        modelBuilder.HasPostgresExtension("pg_trgm");
+        modelBuilder.HasPostgresExtension("unaccent");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CatalogDbContext).Assembly);
         // base.OnModelCreating runs LAST — rule from database.md
         base.OnModelCreating(modelBuilder);

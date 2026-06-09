@@ -20,6 +20,61 @@ internal sealed class GlobalCatalogSeeder(CatalogDbContext db, ILogger logger)
         await SeedCategoriesAsync(cancellationToken).ConfigureAwait(false);
         await SeedBrandsAsync(cancellationToken).ConfigureAwait(false);
         await SeedIndustriesAsync(cancellationToken).ConfigureAwait(false);
+        await SeedAliasesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // ── Alias/sinónimos para la búsqueda inteligente ─────────────────────────
+    private async Task SeedAliasesAsync(CancellationToken cancellationToken)
+    {
+        if (await db.CatalogAliases.AnyAsync(cancellationToken).ConfigureAwait(false)) return;
+
+        // (alias, nombre canónico de la MARCA)
+        var brandAliases = new[]
+        {
+            ("cannon", "Canon"), ("canón", "Canon"),
+            ("nikkon", "Nikon"), ("nicon", "Nikon"),
+            ("sonny", "Sony"), ("soni", "Sony"),
+            ("gopro", "GoPro"), ("go pro", "GoPro"),
+            ("black magic", "Blackmagic Design"), ("blackmagic", "Blackmagic Design"),
+            ("dji", "DJI"), ("dyi", "DJI"),
+            ("godox", "Godox"), ("nanlite", "Nanlite"),
+        };
+        // (alias, nombre EXACTO de la categoría Google)
+        var categoryAliases = new[]
+        {
+            ("celular", "Teléfonos móviles"), ("celulares", "Teléfonos móviles"),
+            ("movil", "Teléfonos móviles"), ("smartphone", "Teléfonos móviles"),
+            ("camara", "Cámaras y ópticas"), ("cámaras", "Cámaras y ópticas"),
+            ("audifonos", "Auriculares"), ("audífonos", "Auriculares"), ("auriculares", "Auriculares"),
+            ("dron", "Drones y aviones no tripulados"), ("drone", "Drones y aviones no tripulados"),
+            ("laptop", "Computadoras portátiles"), ("portatil", "Computadoras portátiles"),
+            ("tele", "Televisores"), ("tv", "Televisores"),
+        };
+
+        var brandByName = await db.Brands.AsNoTracking()
+            .ToDictionaryAsync(b => b.Name.ToLowerInvariant(), b => b.Id, cancellationToken).ConfigureAwait(false);
+        // Categorías: resolver por nombre de hoja (puede haber repetidos → tomar el primero).
+        var catByName = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in await db.Categories.AsNoTracking()
+                     .Select(c => new { c.Id, c.Name }).ToListAsync(cancellationToken).ConfigureAwait(false))
+        {
+            catByName.TryAdd(c.Name, c.Id);
+        }
+
+        var aliases = new List<Domain.CatalogAlias>();
+        foreach (var (alias, brand) in brandAliases)
+            if (brandByName.TryGetValue(brand.ToLowerInvariant(), out var id))
+                aliases.Add(Domain.CatalogAlias.Create(Contracts.Enums.CatalogAliasEntity.Brand, id, alias));
+        foreach (var (alias, cat) in categoryAliases)
+            if (catByName.TryGetValue(cat, out var id))
+                aliases.Add(Domain.CatalogAlias.Create(Contracts.Enums.CatalogAliasEntity.Category, id, alias));
+
+        if (aliases.Count > 0)
+        {
+            db.CatalogAliases.AddRange(aliases);
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            logger.LogInformation("Seeded {Count} catalog aliases for the global tenant.", aliases.Count);
+        }
     }
 
     // ── Categorías: taxonomía Google ─────────────────────────────────────────
