@@ -1,3 +1,4 @@
+using FSH.Modules.Catalog.Contracts.Enums;
 using Mediator;
 
 namespace FSH.Modules.Catalog.Contracts.v1.GlobalCatalog;
@@ -33,3 +34,29 @@ public sealed record GetGlobalCategoriesQuery(string? Search = null) : IQuery<IR
 /// <c>GoogleCategoryId</c>. Devuelve cuántas categorías nuevas se crearon.
 /// </summary>
 public sealed record ImportGlobalCategoriesCommand(IReadOnlyList<Guid> CategoryIds) : ICommand<int>;
+
+// ── Búsqueda inteligente (unaccent + pg_trgm + alias) ────────────────────────
+public sealed record GlobalCategorySuggestionDto(
+    Guid Id, int? GoogleCategoryId, string Name, string? FullPath, double Score, bool AlreadyAdopted);
+
+public sealed record GlobalBrandSuggestionDto(
+    Guid Id, string Name, string? Country, string? LogoUrl, double Score, bool AlreadyAdopted);
+
+public sealed record SearchGlobalCategoriesQuery(string Q) : IQuery<IReadOnlyList<GlobalCategorySuggestionDto>>;
+
+public sealed record SearchGlobalBrandsQuery(string Q) : IQuery<IReadOnlyList<GlobalBrandSuggestionDto>>;
+
+/// <summary>
+/// Adopta una categoría global al árbol del tenant: asegura la cadena de ancestros y crea la hoja
+/// con nombre/slug editables. Devuelve el id de la categoría del tenant.
+/// </summary>
+public sealed record AdoptGlobalCategoryCommand(Guid GlobalCategoryId, string? Name, string? Slug) : ICommand<Guid>;
+
+// ── Alias / sinónimos (editable) ─────────────────────────────────────────────
+public sealed record CatalogAliasDto(Guid Id, CatalogAliasEntity EntityType, Guid TargetId, string? TargetName, string Alias);
+
+public sealed record GetCatalogAliasesQuery(CatalogAliasEntity? EntityType = null) : IQuery<IReadOnlyList<CatalogAliasDto>>;
+
+public sealed record AddCatalogAliasCommand(CatalogAliasEntity EntityType, Guid TargetId, string Alias) : ICommand<Guid>;
+
+public sealed record DeleteCatalogAliasCommand(Guid Id) : ICommand;
