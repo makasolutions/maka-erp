@@ -16,8 +16,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormGrid,
+  Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormActions, FormGrid,
 } from "@/components/list";
+import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters, MakaPriceWithTax } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe, formatMoney, toTaxIncluded } from "@/lib/list-helpers";
@@ -239,8 +241,15 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
     onError: (e) => toast.error(tc("feedback.createFailed"), { description: describe(e) }),
   });
 
-  const canSubmit = !!name.trim() && !!segment;
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) createM.mutate(); };
+  const [showErrors, setShowErrors] = useState(false);
+  const plSchema = { name: [rules.required(), rules.max(200)], adjustmentPercent: [rules.number({ min: -100, max: 1000 })], description: [rules.max(500)] };
+  const errs = showErrors ? validateSchema({ name, adjustmentPercent, description }, plSchema, tc) : {} as Record<string, string>;
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const v = validateSchema({ name, adjustmentPercent, description }, plSchema, tc);
+    if (Object.keys(v).length > 0 || !segment) { setShowErrors(true); return; }
+    createM.mutate();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -252,11 +261,11 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
           </DialogHeader>
           <DialogBody>
             <FormGrid>
-              <Field id="pl-name" span={8} label={t("priceLists.fields.name")} required>
+              <Field id="pl-name" span={8} label={t("priceLists.fields.name")} required error={errs.name}>
                 <Input id="pl-name" value={name} onChange={(e) => setName(e.target.value)}
                   placeholder={t("priceLists.namePlaceholder")} autoFocus required maxLength={200} />
               </Field>
-              <Field id="pl-segment" span={4} label={t("priceLists.fields.segment")} required hint={t("priceLists.segmentHint")}>
+              <Field id="pl-segment" span={4} label={t("priceLists.fields.segment")} required error={showErrors && !segment ? tc("validation.required") : undefined} hint={t("priceLists.segmentHint")}>
                 <Combobox id="pl-segment" label={t("priceLists.fields.segment")} value={segment} onChange={setSegment}
                   options={SEGMENTS.map((s) => ({ value: s, label: s }))} searchable
                   onCreate={(q) => setSegment(q.trim())} createLabel={tc("actions.create")} />
@@ -276,7 +285,7 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                 </label>
               </div>
               {!isDefault && (
-                <Field id="pl-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
+                <Field id="pl-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} error={errs.adjustmentPercent} hint={t("priceLists.adjustmentHint")}>
                   <Input id="pl-pct" type="number" step="0.01" value={adjustmentPercent}
                     onChange={(e) => setAdjustmentPercent(e.target.value)} placeholder="-3 / 15" />
                 </Field>
@@ -289,18 +298,24 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                   </label>
                 </div>
               )}
-              <Field id="pl-desc" span={12} label={t("priceLists.fields.description")}>
+              <Field id="pl-desc" span={12} label={t("priceLists.fields.description")} error={errs.description}>
                 <Textarea id="pl-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={createM.isPending}>{tc("actions.cancel")}</Button>
-            </DialogClose>
-            <Button type="submit" disabled={createM.isPending || !canSubmit}>
-              {createM.isPending ? tc("feedback.saving") : t("priceLists.actions.create")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={createM.isPending}><CancelIcon className="size-4" />{tc("actions.cancel")}</Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={createM.isPending}>
+                  <CreateIcon className="size-4" />{createM.isPending ? tc("feedback.saving") : t("priceLists.actions.create")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
@@ -366,8 +381,15 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
     onError: (e) => toast.error(tc("feedback.updateFailed"), { description: describe(e) }),
   });
 
-  const canSubmit = !!name.trim();
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); if (canSubmit) saveM.mutate(); };
+  const [showErrors, setShowErrors] = useState(false);
+  const plSchema = { name: [rules.required(), rules.max(200)], adjustmentPercent: [rules.number({ min: -100, max: 1000 })], description: [rules.max(500)] };
+  const errs = showErrors ? validateSchema({ name, adjustmentPercent, description }, plSchema, tc) : {} as Record<string, string>;
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const v = validateSchema({ name, adjustmentPercent, description }, plSchema, tc);
+    if (Object.keys(v).length > 0) { setShowErrors(true); return; }
+    saveM.mutate();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -379,7 +401,7 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
           </DialogHeader>
           <DialogBody>
             <FormGrid>
-              <Field id="ep-name" span={8} label={t("priceLists.fields.name")} required>
+              <Field id="ep-name" span={8} label={t("priceLists.fields.name")} required error={errs.name}>
                 <Input id="ep-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} autoFocus />
               </Field>
               <div className="col-span-1 flex items-end gap-6 sm:col-span-4">
@@ -402,7 +424,7 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                 </label>
               </div>
               {!isDefault && (
-                <Field id="ep-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} hint={t("priceLists.adjustmentHint")}>
+                <Field id="ep-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} error={errs.adjustmentPercent} hint={t("priceLists.adjustmentHint")}>
                   <Input id="ep-pct" type="number" step="0.01" value={adjustmentPercent}
                     onChange={(e) => setAdjustmentPercent(e.target.value)} placeholder="-3 / 15" />
                 </Field>
@@ -415,18 +437,24 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                   </label>
                 </div>
               )}
-              <Field id="ep-desc" span={12} label={t("priceLists.fields.description")}>
+              <Field id="ep-desc" span={12} label={t("priceLists.fields.description")} error={errs.description}>
                 <Textarea id="ep-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
               </Field>
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={saveM.isPending}>{tc("actions.cancel")}</Button>
-            </DialogClose>
-            <Button type="submit" disabled={saveM.isPending || !canSubmit}>
-              {saveM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
-            </Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={saveM.isPending}><CancelIcon className="size-4" />{tc("actions.cancel")}</Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={saveM.isPending}>
+                  <SaveIcon className="size-4" />{saveM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
