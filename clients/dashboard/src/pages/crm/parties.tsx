@@ -12,7 +12,7 @@ import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { EntityPageHeader, EntityStatusBadge, EntityFilterPill, FormErrorSummary } from "@/components/list";
+import { EntityPageHeader, EntityStatusBadge, EntityFilterPill, EntityMobileCard, FormErrorSummary } from "@/components/list";
 import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import {
@@ -153,6 +153,31 @@ export function PartiesPage() {
         permissions={{ edit: P.parties.update, delete: P.parties.delete }}
         onEdit={(row) => setEditor({ mode: "edit", id: row.id })}
         onDelete={(row) => setEditor({ mode: "delete", party: row })}
+        mobileCards={(rows) =>
+          rows.map((row) => (
+            <EntityMobileCard
+              key={row.id}
+              href="#"
+              role="button"
+              onClick={(e) => { e.preventDefault(); if (can(P.parties.update)) setEditor({ mode: "edit", id: row.id }); }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-semibold text-[var(--color-foreground)]">{row.legalName}</div>
+                  <code className="text-[11.5px] text-[var(--color-muted-foreground)]">
+                    {row.identificationTypeCode} {row.identificationNumber}{row.verificationDigit != null ? `-${row.verificationDigit}` : ""}
+                  </code>
+                </div>
+                <span className="shrink-0 text-[11.5px] text-[var(--color-muted-foreground)]">{t(`parties.stage.${row.stage}`)}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {hasRole(row.roles, "Customer") && <EntityStatusBadge tone="info">{t("parties.role.customer")}</EntityStatusBadge>}
+                {hasRole(row.roles, "Supplier") && <EntityStatusBadge tone="success">{t("parties.role.supplier")}</EntityStatusBadge>}
+                {row.city && <span className="text-[12px] text-[var(--color-muted-foreground)]">· {row.city}</span>}
+              </div>
+            </EntityMobileCard>
+          ))
+        }
       />
 
       <PartyEditorDialog state={editor} onClose={() => setEditor({ mode: "closed" })} />

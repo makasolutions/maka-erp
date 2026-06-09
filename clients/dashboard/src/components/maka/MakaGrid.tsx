@@ -380,6 +380,13 @@ export interface MakaGridProps<T extends object> {
   /** Fires when user clicks a data row (action column excluded). */
   onRowClick?: (row: T) => void;
 
+  /**
+   * Mobile-first fallback (§18): the Syncfusion grid is hidden below `md` and these
+   * cards are shown instead (a grid that scrolls horizontally on a phone is a defect).
+   * Receives the current `dataSource`. When omitted, the grid shows at all widths.
+   */
+  mobileCards?: (rows: T[]) => React.ReactNode;
+
   // ── Permissions ──────────────────────────────────────────────────────────
   permissions?: MakaGridPermissions;
 
@@ -432,6 +439,7 @@ export function MakaGrid<T extends object>({
   entityName,
   onClearFilters,
   onRowClick,
+  mobileCards,
   permissions,
   onCreate,
   onEdit,
@@ -918,6 +926,20 @@ export function MakaGrid<T extends object>({
         </div>
       )}
 
+      {/* Mobile-first card fallback (§18): cards on phones, grid from md up. */}
+      {mobileCards && (
+        <div className="space-y-2 md:hidden">
+          {dataSource.length === 0 ? (
+            <p className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-6 text-center text-[12.5px] text-[var(--color-muted-foreground)]">
+              {t("grid.emptyMobile", { defaultValue: "Sin resultados." })}
+            </p>
+          ) : (
+            mobileCards(dataSource)
+          )}
+        </div>
+      )}
+
+      <div className={mobileCards ? "hidden md:block" : undefined}>
       <GridComponent
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ref={gridRef as any}
@@ -974,6 +996,7 @@ export function MakaGrid<T extends object>({
           ]}
         />
       </GridComponent>
+      </div>
 
       {serverPaging && (
         <MakaServerPager
