@@ -1240,8 +1240,9 @@ que un componente Syncfusion que rompa los tokens de tema.
 - **Validación**: primitivas por tipo en `clients/dashboard/src/lib/validation/{predicates,rules}.ts`
   (espejo de `FormValidationRules.cs`). NUNCA regex ad-hoc en una página: agregar/usar la primitiva.
 - **Controles**: `Button` (variantes/tamaños), `Field`/`FormGrid`/`FormSectionCard`/`FormActions`,
-  `Combobox`, **`MakaDatePicker`** (Syncfusion `SfDatePicker` — pendiente de crear; reemplaza todo
-  `<input type="date">`), `MakaDateRangePicker`. Estilos de un control viven en el control, no por página.
+  `Combobox`, **`MakaDatePicker`** (Syncfusion `SfDatePicker` — **ya creado**; es el ÚNICO control de
+  fecha. 🚫 PROHIBIDO `<input type="date">`), `MakaDateRangePicker`. Estilos de un control viven en el
+  control, no por página.
 - **Listas**: el patrón entity-shell (`EntityPageHeader`, `EntityMobileCard`, `MakaGrid`) es la base;
   el fallback móvil de tarjetas se define una vez y se reutiliza.
 
@@ -1277,6 +1278,22 @@ Casos reales encontrados; cada uno es ahora un **caso de prueba obligatorio** en
 9. **Design system construido pero no aplicado** (`FormSectionCard` sin usar en el form principal).
 10. **Validación parcial declarada como completa**: marcar "validado" sin cubrir los editores hijos
     ni el responsive. → Una feature solo está "lista" cuando pasa los **6 sets** documentados.
+11. **Dos campos con la misma etiqueta** (en ContactEditor: `reference`="Cargo / referencia" y
+    `position`="Cargo"): campos distintos no pueden mostrar el mismo nombre. El libre se renombró a
+    "Referencia"; el estructurado (lista) queda como "Cargo". → Revisar etiquetas duplicadas/ambiguas.
+12. **🔴 Seguridad — gestión de Webhooks sin permiso**: los endpoints `api/v1/webhooks/subscriptions`
+    (crear/listar/test/deliveries/delete) solo tienen `.RequireAuthorization()` a nivel de grupo,
+    **sin `.RequirePermission()`** (`WebhooksModule.cs`). Cualquier usuario autenticado (aunque sea de
+    bajo privilegio) puede gestionar suscripciones de webhook salientes. → **Pendiente**: definir
+    `WebhooksPermissions` (Manage/View), registrarlo, sembrarlo al rol admin y aplicar
+    `.RequirePermission()` por endpoint. Caso de prueba permanente: **cada endpoint nuevo DEBE tener
+    permiso, no basta `RequireAuthorization`** (set 3). Auditoría rápida:
+    `for m in src/Modules/*; do comparar conteo .Map(Get|Post|Put|Delete) vs RequirePermission; done`
+    (excluir endpoints públicos por diseño: login/refresh/forgot/reset/confirm, webhooks entrantes
+    firmados, producto público).
+13. **Fechas de inicio/fin sin `min`/`max` cruzado**: el `MakaDatePicker` de "hasta" debe recibir
+    `min={desde}` (y "desde" `max={hasta}` si aplica) para impedir rangos inválidos desde la UI,
+    además de la validación al enviar.
 
 ### 18.5 — Definición de "terminado" (Definition of Done)
 
