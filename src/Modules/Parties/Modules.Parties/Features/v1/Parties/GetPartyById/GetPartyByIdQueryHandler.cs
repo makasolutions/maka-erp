@@ -24,7 +24,7 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
                 x.HasCredit, x.CreditLimit, x.CreditDaysCode, x.CreditBlocked, x.CreditCurrency, x.Notes, x.BranchId,
                 x.IsGlobalSupplier, x.CreatedAtUtc,
                 x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Barrio, a.Reference,
-                    a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode)).ToList(),
+                    a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode, a.DepartmentCode, a.MunicipalityCode, a.NormalizedLine)).ToList(),
                 x.Contacts.Select(c => new PartyContactDto(c.Id, c.Reference, c.ContactTypeCode, c.AreaCode,
                     c.IdentificationTypeCode, c.IdentificationNumber, c.FirstName, c.LastName, c.PositionCode,
                     c.ProfessionCode, c.BirthDate, c.GenderCode, c.MaritalStatusCode, c.Email, c.Phone, c.Cell,

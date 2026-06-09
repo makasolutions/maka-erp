@@ -24,7 +24,8 @@ internal static class PartyMapping
 
     public static IEnumerable<PartyAddress> ToAddresses(IReadOnlyList<PartyAddressInput>? items) =>
         (items ?? []).Select(a => PartyAddress.Create(a.Country, a.Department, a.City, a.Line,
-            a.Barrio, a.Reference, a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode));
+            a.Barrio, a.Reference, a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode,
+            a.DepartmentCode, a.MunicipalityCode));
 
     public static IEnumerable<PartyContact> ToContacts(IReadOnlyList<PartyContactInput>? items) =>
         (items ?? []).Select(c => PartyContact.Create(c.Reference, c.ContactTypeCode, c.AreaCode,

@@ -42,7 +42,8 @@ public sealed record PartyDetailDto(
     IReadOnlyList<PartyTeamMemberDto> Team);
 
 public sealed record PartyAddressDto(Guid Id, string Country, string? Department, string? City, string? Line,
-    string? Barrio, string? Reference, decimal? Latitude, decimal? Longitude, bool IsPrimary, string? LabelCode);
+    string? Barrio, string? Reference, decimal? Latitude, decimal? Longitude, bool IsPrimary, string? LabelCode,
+    string? DepartmentCode = null, string? MunicipalityCode = null, string? NormalizedLine = null);
 
 public sealed record PartyContactDto(Guid Id, string Reference, string? ContactTypeCode, string? AreaCode,
     string? IdentificationTypeCode, string? IdentificationNumber, string? FirstName, string? LastName,

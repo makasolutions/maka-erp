@@ -15,7 +15,10 @@ public sealed class PartyAddressConfiguration : IEntityTypeConfiguration<PartyAd
         builder.Property(x => x.Country).IsRequired().HasMaxLength(64);
         builder.Property(x => x.Department).HasMaxLength(128);
         builder.Property(x => x.City).HasMaxLength(128);
+        builder.Property(x => x.DepartmentCode).HasMaxLength(8);
+        builder.Property(x => x.MunicipalityCode).HasMaxLength(8);
         builder.Property(x => x.Line).HasMaxLength(256);
+        builder.Property(x => x.NormalizedLine).HasMaxLength(256);
         builder.Property(x => x.Barrio).HasMaxLength(128);
         builder.Property(x => x.Reference).HasMaxLength(256);
         builder.Property(x => x.Latitude).HasPrecision(10, 7);

@@ -12,7 +12,9 @@ public sealed record PartyAddressInput(
     decimal? Latitude,
     decimal? Longitude,
     bool    IsPrimary,
-    string? LabelCode);
+    string? LabelCode,
+    string? DepartmentCode = null,
+    string? MunicipalityCode = null);
 
 public sealed record PartyContactInput(
     string  Reference,

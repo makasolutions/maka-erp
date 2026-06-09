@@ -9,9 +9,13 @@ public sealed class PartyAddress : BaseEntity<Guid>
     public Guid     PartyId   { get; private set; }
     public string?  LabelCode { get; private set; }   // Tabla Básica AddressLabel (Casa, Oficina…)
     public string   Country   { get; private set; } = "Colombia";
-    public string?  Department { get; private set; }
-    public string?  City      { get; private set; }
-    public string?  Line      { get; private set; }
+    public string?  Department { get; private set; }  // nombre visible (compat)
+    public string?  City      { get; private set; }   // nombre visible (compat)
+    public string?  DepartmentCode  { get; private set; } // DIVIPOLA 2 díg.
+    public string?  MunicipalityCode { get; private set; } // DIVIPOLA 5 díg.
+    public string?  Line      { get; private set; }   // dirección cruda tal cual la escribió el cliente
+    public string?  NormalizedLine { get; private set; }  // forma codificada DIAN (derivada)
+    public DateTime? NormalizedAtUtc { get; private set; }
     public string?  Barrio    { get; private set; }
     public string?  Reference { get; private set; }
     public decimal? Latitude  { get; private set; }
@@ -21,20 +25,29 @@ public sealed class PartyAddress : BaseEntity<Guid>
     private PartyAddress() { }
 
     public static PartyAddress Create(string country, string? department, string? city, string? line,
-        string? barrio, string? reference, decimal? latitude, decimal? longitude, bool isPrimary, string? labelCode) => new()
+        string? barrio, string? reference, decimal? latitude, decimal? longitude, bool isPrimary, string? labelCode,
+        string? departmentCode = null, string? municipalityCode = null)
     {
-        Id = Guid.CreateVersion7(),
-        Country = string.IsNullOrWhiteSpace(country) ? "Colombia" : country.Trim(),
-        Department = department?.Trim(),
-        City = city?.Trim(),
-        Line = line?.Trim(),
-        Barrio = barrio?.Trim(),
-        Reference = reference?.Trim(),
-        Latitude = latitude,
-        Longitude = longitude,
-        IsPrimary = isPrimary,
-        LabelCode = labelCode?.Trim(),
-    };
+        string? normalized = DianAddressNormalizer.Normalize(line);
+        return new()
+        {
+            Id = Guid.CreateVersion7(),
+            Country = string.IsNullOrWhiteSpace(country) ? "Colombia" : country.Trim(),
+            Department = department?.Trim(),
+            City = city?.Trim(),
+            DepartmentCode = string.IsNullOrWhiteSpace(departmentCode) ? null : departmentCode.Trim(),
+            MunicipalityCode = string.IsNullOrWhiteSpace(municipalityCode) ? null : municipalityCode.Trim(),
+            Line = line?.Trim(),
+            NormalizedLine = normalized,
+            NormalizedAtUtc = normalized is null ? null : DateTime.UtcNow,
+            Barrio = barrio?.Trim(),
+            Reference = reference?.Trim(),
+            Latitude = latitude,
+            Longitude = longitude,
+            IsPrimary = isPrimary,
+            LabelCode = labelCode?.Trim(),
+        };
+    }
 }
 
 /// <summary>Persona de contacto dentro del tercero (cuentas B2B con varios contactos).</summary>
