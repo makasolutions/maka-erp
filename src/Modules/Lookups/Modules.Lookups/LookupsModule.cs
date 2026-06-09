@@ -9,6 +9,7 @@ using FSH.Modules.Lookups.Features.v1.BasicTables.DeleteBasicTable;
 using FSH.Modules.Lookups.Features.v1.BasicTables.GetBasicTableById;
 using FSH.Modules.Lookups.Features.v1.BasicTables.GetBasicTables;
 using FSH.Modules.Lookups.Features.v1.BasicTables.UpdateBasicTable;
+using FSH.Modules.Lookups.Features.v1.Geography;
 using FSH.Modules.Lookups.Features.v1.Records.DeleteBasicRecord;
 using FSH.Modules.Lookups.Features.v1.Records.GetBasicRecordsByCode;
 using FSH.Modules.Lookups.Features.v1.Records.UpsertBasicRecords;
@@ -69,5 +70,13 @@ public sealed class LookupsModule : IModule
             .RequireAuthorization();
 
         records.MapGetBasicRecordsByCodeEndpoint();
+
+        var geography = endpoints
+            .MapGroup("api/v{version:apiVersion}/geography")
+            .WithTags("Lookups - Geography (DIVIPOLA)")
+            .WithApiVersionSet(versionSet)
+            .RequireAuthorization();
+
+        geography.MapGeographyEndpoints();
     }
 }

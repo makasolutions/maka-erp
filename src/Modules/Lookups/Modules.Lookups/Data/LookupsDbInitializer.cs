@@ -145,6 +145,60 @@ public sealed class LookupsDbInitializer(
 
         await SeedTableAsync("Branch", "Sucursal", 320,
             [("BOGOTA", "Bogotá"), ("MEDELLIN", "Medellín")], cancellationToken).ConfigureAwait(false);
+
+        await SeedDivipolaAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Siembra la geografía DIVIPOLA (DANE) global desde el CSV embebido
+    /// <c>divipola.es-CO.csv</c> (DeptCode;DeptName;MunCode;MunName). Idempotente.
+    /// </summary>
+    private async Task SeedDivipolaAsync(CancellationToken cancellationToken)
+    {
+        if (await dbContext.Departments.IgnoreQueryFilters().AnyAsync(cancellationToken).ConfigureAwait(false))
+            return;
+
+        var assembly = typeof(LookupsDbInitializer).Assembly;
+        string? resource = Array.Find(assembly.GetManifestResourceNames(),
+            n => n.EndsWith("divipola.es-CO.csv", StringComparison.OrdinalIgnoreCase));
+        if (resource is null)
+        {
+            logger.LogWarning("[Lookups] DIVIPOLA seed resource not found");
+            return;
+        }
+
+        await using var stream = assembly.GetManifestResourceStream(resource)!;
+        using var reader = new StreamReader(stream);
+
+        var departments = new Dictionary<string, Department>(StringComparer.Ordinal);
+        var municipalities = new List<Municipality>();
+        bool header = true;
+        string? line;
+        while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) is not null)
+        {
+            if (header) { header = false; continue; }
+            if (line.Length == 0) continue;
+            string[] cols = line.Split(';');
+            if (cols.Length < 4) continue;
+            string dc = cols[0].Trim(), dn = cols[1].Trim(), mc = cols[2].Trim(), mn = cols[3].Trim();
+            if (dc.Length == 0 || mc.Length == 0) continue;
+            if (!departments.ContainsKey(dc)) departments[dc] = Department.Create(dc, dn);
+            municipalities.Add(Municipality.Create(mc, mn, dc));
+        }
+
+        dbContext.Departments.AddRange(departments.Values);
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        const int batch = 500;
+        for (int i = 0; i < municipalities.Count; i += batch)
+        {
+            dbContext.Municipalities.AddRange(municipalities.GetRange(i, Math.Min(batch, municipalities.Count - i)));
+            await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        logger.LogInformation(
+            "[Lookups] seeded DIVIPOLA: {Departments} departments, {Municipalities} municipalities",
+            departments.Count, municipalities.Count);
     }
 
     private async Task SeedTableAsync(

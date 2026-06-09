@@ -21,6 +21,8 @@ public sealed class LookupsDbContext : BaseDbContext
 
     public DbSet<BasicTable>  BasicTables  => Set<BasicTable>();
     public DbSet<BasicRecord> BasicRecords => Set<BasicRecord>();
+    public DbSet<Department>    Departments    => Set<Department>();
+    public DbSet<Municipality>  Municipalities => Set<Municipality>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
