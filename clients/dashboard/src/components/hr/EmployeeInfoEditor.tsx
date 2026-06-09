@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { Field, FormGrid } from "@/components/list";
 import { Input } from "@/components/ui/input";
@@ -5,17 +6,49 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { MakaCurrencyInput } from "@/components/maka";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
+import { rules, validateSchema } from "@/lib/validation/rules";
 import type { EmployeeData } from "@/api/hr";
 
 export interface EmployeeInfoEditorProps {
   value: EmployeeData;
   onChange: (next: EmployeeData) => void;
   disabled?: boolean;
+  /** Validation errors keyed by EmployeeData field (from validateEmployee). */
+  errors?: Record<string, string>;
 }
 
-export function EmployeeInfoEditor({ value: v, onChange, disabled }: EmployeeInfoEditorProps) {
+/**
+ * Validates the labor/payroll fields by type (§17): ISO-4217 currency, non-negative
+ * salary, rest-days code list, notes length, and chronological date relationships.
+ * Returns `{ field: messageKey }` using the common `validation.*` namespace via `t`.
+ */
+export function validateEmployee(v: EmployeeData, t: TFunction): Record<string, string> {
+  const e = validateSchema(
+    {
+      mainCurrency: v.mainCurrency ?? "",
+      baseSalary: v.baseSalary ?? "",
+      restDays: v.restDays ?? "",
+      notes: v.notes ?? "",
+    },
+    {
+      mainCurrency: [rules.pattern(/^[A-Za-z]{3}$/)],
+      baseSalary: [rules.currency({ min: 0 })],
+      restDays: [rules.pattern(/^[A-Za-zÁÉÍÓÚÑ]{2,9}(\s*,\s*[A-Za-zÁÉÍÓÚÑ]{2,9})*$/)],
+      notes: [rules.max(2000)],
+    },
+    t,
+  );
+  // Cross-field: salary start must not precede contract start.
+  if (v.salaryStartDate && v.contractStartDate && v.salaryStartDate < v.contractStartDate) {
+    e.salaryStartDate = t("validation.dateRange");
+  }
+  return e;
+}
+
+export function EmployeeInfoEditor({ value: v, onChange, disabled, errors }: EmployeeInfoEditorProps) {
   const { t } = useTranslation("hr");
   const set = (patch: Partial<EmployeeData>) => onChange({ ...v, ...patch });
+  const err = (k: string) => errors?.[k];
 
   return (
     <div className="space-y-6">
@@ -23,7 +56,7 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled }: EmployeeInf
       <section>
         <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{t("employee.sections.basic")}</h3>
         <FormGrid>
-          <Field id="e-currency" span={3} label={t("employee.fields.mainCurrency")}>
+          <Field id="e-currency" span={3} label={t("employee.fields.mainCurrency")} error={err("mainCurrency")}>
             <Input id="e-currency" value={v.mainCurrency ?? ""} disabled={disabled} maxLength={3}
               onChange={(e) => set({ mainCurrency: e.target.value.toUpperCase() })} />
           </Field>
@@ -74,7 +107,7 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled }: EmployeeInf
             <BasicRecordSelect id="e-pay" tableCode="PayrollPaymentMethod" label={t("employee.fields.paymentMethod")}
               value={v.paymentMethodCode ?? null} onChange={(c) => set({ paymentMethodCode: c })} disabled={disabled} />
           </Field>
-          <Field id="e-notes" span={12} label={t("employee.fields.notes")}>
+          <Field id="e-notes" span={12} label={t("employee.fields.notes")} error={err("notes")}>
             <Textarea id="e-notes" rows={2} value={v.notes ?? ""} disabled={disabled} onChange={(e) => set({ notes: e.target.value })} />
           </Field>
         </FormGrid>
@@ -119,7 +152,7 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled }: EmployeeInf
             <BasicRecordSelect id="e-risk" tableCode="ArlRiskLevel" label={t("employee.fields.arlRiskLevel")}
               value={v.arlRiskLevelCode ?? null} onChange={(c) => set({ arlRiskLevelCode: c })} disabled={disabled} />
           </Field>
-          <Field id="e-rest" span={4} label={t("employee.fields.restDays")}>
+          <Field id="e-rest" span={4} label={t("employee.fields.restDays")} error={err("restDays")}>
             <Input id="e-rest" value={v.restDays ?? ""} disabled={disabled} placeholder="SAB,DOM"
               onChange={(e) => set({ restDays: e.target.value })} />
           </Field>
@@ -142,11 +175,11 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled }: EmployeeInf
             <BasicRecordSelect id="e-stype" tableCode="SalaryType" label={t("employee.fields.salaryType")}
               value={v.salaryTypeCode ?? null} onChange={(c) => set({ salaryTypeCode: c })} disabled={disabled} />
           </Field>
-          <Field id="e-salary" span={4} label={t("employee.fields.baseSalary")}>
+          <Field id="e-salary" span={4} label={t("employee.fields.baseSalary")} error={err("baseSalary")}>
             <MakaCurrencyInput id="e-salary" value={v.baseSalary ?? null} disabled={disabled}
               onChange={(n) => set({ baseSalary: n })} />
           </Field>
-          <Field id="e-sdate" span={4} label={t("employee.fields.salaryStartDate")}>
+          <Field id="e-sdate" span={4} label={t("employee.fields.salaryStartDate")} error={err("salaryStartDate")}>
             <Input id="e-sdate" type="date" value={v.salaryStartDate ?? ""} disabled={disabled}
               onChange={(e) => set({ salaryStartDate: e.target.value || null })} />
           </Field>

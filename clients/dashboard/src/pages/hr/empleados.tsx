@@ -9,14 +9,15 @@ import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { EntityPageHeader, EntityStatusBadge, Field, FormGrid, Combobox, FormErrorSummary } from "@/components/list";
+import { EntityPageHeader, EntityStatusBadge, Field, FormActions, FormGrid, Combobox, FormErrorSummary } from "@/components/list";
+import { SaveIcon, CancelIcon } from "@/components/ui/icons";
 import { MakaGridClient } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
 import { AddressEditor } from "@/components/party/AddressEditor";
 import { ChannelEditor } from "@/components/party/ChannelEditor";
 import { ContactEditor } from "@/components/party/ContactEditor";
-import { EmployeeInfoEditor } from "@/components/hr/EmployeeInfoEditor";
+import { EmployeeInfoEditor, validateEmployee } from "@/components/hr/EmployeeInfoEditor";
 import { emptyAddress, emptyContact, isContactBlank } from "@/components/party/PartyForm";
 import { validateIdentity } from "@/lib/validation/forms";
 import { nitVerificationDigit } from "@/lib/nit";
@@ -213,14 +214,16 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
   });
 
   const ce = showErrors ? validateIdentity(identity, tc) : {};
+  const empErrs = showErrors ? validateEmployee(emp, tc) : {};
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const ve = validateIdentity(identity, tc);
-    if (Object.keys(ve).length > 0) {
+    const vEmp = validateEmployee(emp, tc);
+    if (Object.keys(ve).length > 0 || Object.keys(vEmp).length > 0) {
       setShowErrors(true);
       setErrors(Object.fromEntries(Object.entries(ve).map(([k, m]) => [k, [m]])));
       setErrorMsg(null);
-      setTab("id");
+      setTab(Object.keys(ve).length > 0 ? "id" : "employee");
       return;
     }
     setShowErrors(false);
@@ -312,14 +315,27 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
               )}
 
               {tab === "employee" && (
-                <EmployeeInfoEditor value={emp} onChange={setEmp} />
+                <EmployeeInfoEditor value={emp} onChange={setEmp} errors={empErrs} />
               )}
               </div>
             </div>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={save.isPending}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
+            <FormActions
+              secondary={
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={save.isPending}>
+                    <CancelIcon className="size-4" />{tc("actions.cancel")}
+                  </Button>
+                </DialogClose>
+              }
+              primary={
+                <Button type="submit" disabled={save.isPending}>
+                  <SaveIcon className="size-4" />
+                  {save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+                </Button>
+              }
+            />
           </DialogFooter>
         </form>
       </DialogContent>
