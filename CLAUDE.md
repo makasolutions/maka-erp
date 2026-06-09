@@ -1243,8 +1243,11 @@ que un componente Syncfusion que rompa los tokens de tema.
   `Combobox`, **`MakaDatePicker`** (Syncfusion `SfDatePicker` — **ya creado**; es el ÚNICO control de
   fecha. 🚫 PROHIBIDO `<input type="date">`), `MakaDateRangePicker`. Estilos de un control viven en el
   control, no por página.
-- **Listas**: el patrón entity-shell (`EntityPageHeader`, `EntityMobileCard`, `MakaGrid`) es la base;
-  el fallback móvil de tarjetas se define una vez y se reutiliza.
+- **Listas**: el patrón entity-shell (`EntityPageHeader`, `EntityMobileCard`, `MakaGrid`) es la base.
+  **`MakaGrid` auto-genera las tarjetas móviles desde las `columns`** (label=`headerText`,
+  valor=`template`/`field`) — toda lista es mobile-first con **cero código por página**; la prop
+  `mobileCards` solo se usa para override custom. 🚫 PROHIBIDO una lista que haga scroll horizontal
+  en móvil.
 
 ### 18.3 — Roles de agentes (Arquitecto · Desarrollador · Pruebas)
 
