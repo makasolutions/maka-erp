@@ -20,7 +20,7 @@ import {
 import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormActions, FormErrorSummary, FormGrid } from "@/components/list";
 import { SaveIcon, CancelIcon } from "@/components/ui/icons";
 import { rules, validateSchema } from "@/lib/validation/rules";
-import { MakaGridClient, MakaChart } from "@/components/maka";
+import { MakaGridClient, MakaChart, MakaDatePicker } from "@/components/maka";
 import { PartyPicker } from "@/components/party/PartyPicker";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe } from "@/lib/list-helpers";
@@ -241,7 +241,8 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
                   onChange={(e) => set({ periodLabel: e.target.value })} />
               </Field>
               <Field id="sc-start" span={3} label={t("scorecards.fields.periodStart")}>
-                <Input id="sc-start" type="date" value={form.periodStart} disabled={readOnly} onChange={(e) => set({ periodStart: e.target.value })} />
+                <MakaDatePicker id="sc-start" value={form.periodStart || null} disabled={readOnly} max={new Date()}
+                  onChange={(iso) => set({ periodStart: iso ?? "" })} />
               </Field>
               <Field id="sc-notes" span={12} label={t("scorecards.fields.notes")} error={fieldErrs.notes}>
                 <Textarea id="sc-notes" rows={2} value={form.notes} disabled={readOnly} onChange={(e) => set({ notes: e.target.value })} />

@@ -4,7 +4,7 @@ import { Field, FormGrid } from "@/components/list";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { MakaCurrencyInput } from "@/components/maka";
+import { MakaCurrencyInput, MakaDatePicker } from "@/components/maka";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
 import { rules, validateSchema } from "@/lib/validation/rules";
 import type { EmployeeData } from "@/api/hr";
@@ -69,8 +69,8 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled, errors }: Emp
               value={v.costCenterCode ?? null} onChange={(c) => set({ costCenterCode: c })} disabled={disabled} />
           </Field>
           <Field id="e-seniority" span={3} label={t("employee.fields.seniorityDate")}>
-            <Input id="e-seniority" type="date" value={v.seniorityDate ?? ""} disabled={disabled}
-              onChange={(e) => set({ seniorityDate: e.target.value || null })} />
+            <MakaDatePicker id="e-seniority" value={v.seniorityDate ?? null} disabled={disabled}
+              onChange={(iso) => set({ seniorityDate: iso })} />
           </Field>
           <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
             <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
@@ -126,8 +126,8 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled, errors }: Emp
               value={v.positionCode ?? null} onChange={(c) => set({ positionCode: c })} disabled={disabled} />
           </Field>
           <Field id="e-posdate" span={4} label={t("employee.fields.positionStartDate")}>
-            <Input id="e-posdate" type="date" value={v.positionStartDate ?? ""} disabled={disabled}
-              onChange={(e) => set({ positionStartDate: e.target.value || null })} />
+            <MakaDatePicker id="e-posdate" value={v.positionStartDate ?? null} disabled={disabled}
+              onChange={(iso) => set({ positionStartDate: iso })} />
           </Field>
         </FormGrid>
       </section>
@@ -145,8 +145,8 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled, errors }: Emp
               value={v.contractDurationCode ?? null} onChange={(c) => set({ contractDurationCode: c })} disabled={disabled} />
           </Field>
           <Field id="e-cdate" span={4} label={t("employee.fields.contractStartDate")}>
-            <Input id="e-cdate" type="date" value={v.contractStartDate ?? ""} disabled={disabled}
-              onChange={(e) => set({ contractStartDate: e.target.value || null })} />
+            <MakaDatePicker id="e-cdate" value={v.contractStartDate ?? null} disabled={disabled}
+              onChange={(iso) => set({ contractStartDate: iso })} />
           </Field>
           <Field id="e-risk" span={4} label={t("employee.fields.arlRiskLevel")}>
             <BasicRecordSelect id="e-risk" tableCode="ArlRiskLevel" label={t("employee.fields.arlRiskLevel")}
@@ -180,8 +180,8 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled, errors }: Emp
               onChange={(n) => set({ baseSalary: n })} />
           </Field>
           <Field id="e-sdate" span={4} label={t("employee.fields.salaryStartDate")} error={err("salaryStartDate")}>
-            <Input id="e-sdate" type="date" value={v.salaryStartDate ?? ""} disabled={disabled}
-              onChange={(e) => set({ salaryStartDate: e.target.value || null })} />
+            <MakaDatePicker id="e-sdate" value={v.salaryStartDate ?? null} disabled={disabled}
+              onChange={(iso) => set({ salaryStartDate: iso })} />
           </Field>
           <div className="col-span-1 sm:col-span-12">
             <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">

@@ -20,7 +20,7 @@ import {
 import {
   Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormErrorSummary, FormGrid,
 } from "@/components/list";
-import { MakaGridClient, MakaGridFilters, MakaFilterField, MakaFilterInput } from "@/components/maka";
+import { MakaGridClient, MakaGridFilters, MakaFilterField, MakaFilterInput, MakaDatePicker } from "@/components/maka";
 import { PartyPicker } from "@/components/party/PartyPicker";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe } from "@/lib/list-helpers";
@@ -334,12 +334,13 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
               </Field>
 
               <Field id="ag-from" span={3} label={t("convenios.fields.validFrom")}>
-                <Input id="ag-from" type="date" value={form.validFrom} disabled={readOnly}
-                  onChange={(e) => set({ validFrom: e.target.value })} />
+                <MakaDatePicker id="ag-from" value={form.validFrom || null} disabled={readOnly}
+                  onChange={(iso) => set({ validFrom: iso ?? "" })} />
               </Field>
               <Field id="ag-to" span={3} label={t("convenios.fields.validTo")} hint={t("convenios.fields.validToHint")}>
-                <Input id="ag-to" type="date" value={form.validTo} disabled={readOnly}
-                  onChange={(e) => set({ validTo: e.target.value })} />
+                <MakaDatePicker id="ag-to" value={form.validTo || null} disabled={readOnly}
+                  min={form.validFrom ? new Date(form.validFrom) : undefined}
+                  onChange={(iso) => set({ validTo: iso ?? "" })} />
               </Field>
 
               <Field id="ag-failed" span={4} label={t("convenios.fields.failedDelivery")}>

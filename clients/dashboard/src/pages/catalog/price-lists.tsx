@@ -20,7 +20,7 @@ import {
 } from "@/components/list";
 import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
 import { rules, validateSchema } from "@/lib/validation/rules";
-import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters, MakaPriceWithTax } from "@/components/maka";
+import { MakaFilterField, MakaFilterInput, MakaGridClient, MakaGridFilters, MakaPriceWithTax, MakaDatePicker } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe, formatMoney, toTaxIncluded } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
@@ -271,10 +271,11 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                   onCreate={(q) => setSegment(q.trim())} createLabel={tc("actions.create")} />
               </Field>
               <Field id="pl-from" span={6} label={t("priceLists.fields.validFrom")} hint={t("priceLists.validFromHint")}>
-                <Input id="pl-from" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+                <MakaDatePicker id="pl-from" value={validFrom || null} onChange={(iso) => setValidFrom(iso ?? "")} />
               </Field>
               <Field id="pl-to" span={6} label={t("priceLists.fields.validTo")} hint={t("priceLists.validToHint")}>
-                <Input id="pl-to" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+                <MakaDatePicker id="pl-to" value={validTo || null} min={validFrom ? new Date(validFrom) : undefined}
+                  onChange={(iso) => setValidTo(iso ?? "")} />
               </Field>
               <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
                 <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
@@ -411,10 +412,11 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                 </label>
               </div>
               <Field id="ep-from" span={6} label={t("priceLists.fields.validFrom")}>
-                <Input id="ep-from" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+                <MakaDatePicker id="ep-from" value={validFrom || null} onChange={(iso) => setValidFrom(iso ?? "")} />
               </Field>
               <Field id="ep-to" span={6} label={t("priceLists.fields.validTo")} hint={t("priceLists.validToHint")}>
-                <Input id="ep-to" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+                <MakaDatePicker id="ep-to" value={validTo || null} min={validFrom ? new Date(validFrom) : undefined}
+                  onChange={(iso) => setValidTo(iso ?? "")} />
               </Field>
               <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
                 <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
