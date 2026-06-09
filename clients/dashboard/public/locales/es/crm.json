@@ -56,26 +56,61 @@
     "closedNote": "Este scorecard está cerrado y es inmutable.",
     "scoreHint": "Promedio ponderado por el peso de cada KPI (1–5).",
     "deleteConfirm": "¿Eliminar el scorecard de \"{{name}}\"? Solo se permite en borrador.",
-    "tabs": { "scorecards": "Scorecards", "reports": "Reportes", "kpis": "KPIs" },
-    "actions": { "create": "Nuevo scorecard", "edit": "Editar scorecard", "delete": "Eliminar scorecard", "close": "Cerrar" },
-    "fields": {
-      "supplier": "Proveedor", "period": "Período", "periodHint": "Ej.: 2026-Q2", "periodStart": "Inicio del período",
-      "score": "Score", "grade": "Letra", "status": "Estado", "notes": "Observaciones"
+    "tabs": {
+      "scorecards": "Scorecards",
+      "reports": "Reportes",
+      "kpis": "KPIs"
     },
-    "status": { "Borrador": "Borrador", "Cerrado": "Cerrado" },
-    "criteria": { "title": "Criterios (KPIs)", "empty": "Sin KPIs. Siembra el catálogo en la pestaña KPIs.", "score": "Puntaje", "comment": "Comentario" },
+    "actions": {
+      "create": "Nuevo scorecard",
+      "edit": "Editar scorecard",
+      "delete": "Eliminar scorecard",
+      "close": "Cerrar"
+    },
+    "fields": {
+      "supplier": "Proveedor",
+      "period": "Período",
+      "periodHint": "Ej.: 2026-Q2",
+      "periodStart": "Inicio del período",
+      "score": "Score",
+      "grade": "Letra",
+      "status": "Estado",
+      "notes": "Observaciones"
+    },
+    "status": {
+      "Borrador": "Borrador",
+      "Cerrado": "Cerrado"
+    },
+    "criteria": {
+      "title": "Criterios (KPIs)",
+      "empty": "Sin KPIs. Siembra el catálogo en la pestaña KPIs.",
+      "score": "Puntaje",
+      "comment": "Comentario"
+    },
     "reports": {
-      "ranking": "Ranking de proveedores (último score)", "trend": "Tendencia por período",
-      "empty": "Aún no hay scorecards para mostrar.", "pickSupplier": "Elige un proveedor para ver su tendencia.",
+      "ranking": "Ranking de proveedores (último score)",
+      "trend": "Tendencia por período",
+      "empty": "Aún no hay scorecards para mostrar.",
+      "pickSupplier": "Elige un proveedor para ver su tendencia.",
       "noTrend": "Este proveedor no tiene scorecards."
     },
     "kpis": {
-      "singular": "KPI", "name": "Nombre", "code": "Código", "weight": "Peso", "sortOrder": "Orden",
-      "create": "Nuevo KPI", "edit": "Editar KPI", "formDesc": "Define el KPI y su peso (%) dentro del score ponderado.",
-      "seed": "Sembrar KPIs por defecto", "seeded": "Se sembraron {{count}} KPIs.",
+      "singular": "KPI",
+      "name": "Nombre",
+      "code": "Código",
+      "weight": "Peso",
+      "sortOrder": "Orden",
+      "create": "Nuevo KPI",
+      "edit": "Editar KPI",
+      "formDesc": "Define el KPI y su peso (%) dentro del score ponderado.",
+      "seed": "Sembrar KPIs por defecto",
+      "seeded": "Se sembraron {{count}} KPIs.",
       "totalWeight": "Peso total de KPIs activos: {{total}}% (ideal 100%)."
     },
-    "validation": { "supplierRequired": "El proveedor es obligatorio.", "periodRequired": "El período es obligatorio." }
+    "validation": {
+      "supplierRequired": "El proveedor es obligatorio.",
+      "periodRequired": "El período es obligatorio."
+    }
   },
   "convenios": {
     "title": "Convenios",
@@ -84,41 +119,89 @@
     "formDesc": "Define el proveedor, la tarifa acordada, responsables, políticas y reglas del convenio.",
     "terminatedNote": "Este convenio está terminado y es inmutable.",
     "deleteConfirm": "¿Eliminar el convenio \"{{name}}\"? Solo se permite en borrador.",
-    "actions": { "create": "Nuevo convenio", "edit": "Editar convenio", "delete": "Eliminar convenio" },
-    "filters": { "searchPlaceholder": "Buscar por nombre…" },
+    "actions": {
+      "create": "Nuevo convenio",
+      "edit": "Editar convenio",
+      "delete": "Eliminar convenio"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre…"
+    },
     "fields": {
-      "name": "Nombre", "supplier": "Proveedor", "type": "Tipo", "status": "Estado",
-      "priceList": "Tarifa acordada", "priceListHint": "Lista de precios de la que sale el costo del distribuidor.",
-      "suggestedPriceList": "Tarifa sugerida", "rules": "Reglas",
-      "dispatch": "Despacho", "waybill": "Guía", "settlement": "Liquidación",
-      "validFrom": "Vigente desde", "validTo": "Vigente hasta", "validToHint": "Vacío = sin fin.",
-      "failedDelivery": "Política de entregas fallidas", "returns": "Política de devoluciones",
-      "warranty": "Política de garantías", "notes": "Observaciones"
+      "name": "Nombre",
+      "supplier": "Proveedor",
+      "type": "Tipo",
+      "status": "Estado",
+      "priceList": "Tarifa acordada",
+      "priceListHint": "Lista de precios de la que sale el costo del distribuidor.",
+      "suggestedPriceList": "Tarifa sugerida",
+      "rules": "Reglas",
+      "dispatch": "Despacho",
+      "waybill": "Guía",
+      "settlement": "Liquidación",
+      "validFrom": "Vigente desde",
+      "validTo": "Vigente hasta",
+      "validToHint": "Vacío = sin fin.",
+      "failedDelivery": "Política de entregas fallidas",
+      "returns": "Política de devoluciones",
+      "warranty": "Política de garantías",
+      "notes": "Observaciones"
     },
     "type": {
-      "ProveedorUnico": "Proveedor único", "ProveedorModelo": "Proveedor modelo",
-      "DistribuidorAprobado": "Distribuidor aprobado", "ModeloPendiente": "Modelo pendiente"
+      "ProveedorUnico": "Proveedor único",
+      "ProveedorModelo": "Proveedor modelo",
+      "DistribuidorAprobado": "Distribuidor aprobado",
+      "ModeloPendiente": "Modelo pendiente"
     },
-    "status": { "Borrador": "Borrador", "Vigente": "Vigente", "Suspendido": "Suspendido", "Terminado": "Terminado" },
-    "responsible": { "Proveedor": "Proveedor", "Distribuidor": "Distribuidor", "Plataforma": "Plataforma" },
-    "statusActions": { "activate": "Activar", "suspend": "Suspender", "terminate": "Terminar" },
+    "status": {
+      "Borrador": "Borrador",
+      "Vigente": "Vigente",
+      "Suspendido": "Suspendido",
+      "Terminado": "Terminado"
+    },
+    "responsible": {
+      "Proveedor": "Proveedor",
+      "Distribuidor": "Distribuidor",
+      "Plataforma": "Plataforma"
+    },
+    "statusActions": {
+      "activate": "Activar",
+      "suspend": "Suspender",
+      "terminate": "Terminar"
+    },
     "ruleType": {
-      "CompraMinimaMes": "Compra mínima mensual", "CompraMinimaAnio": "Compra mínima anual",
-      "AntiguedadMinimaMeses": "Antigüedad mínima (meses)", "VendeAEmpresa": "Es persona jurídica",
-      "VendeANatural": "Es persona natural", "DocumentoExigido": "Documento exigido",
-      "CalificacionMinima": "Calificación mínima", "SlaEntregaDias": "SLA de entrega (días)",
+      "CompraMinimaMes": "Compra mínima mensual",
+      "CompraMinimaAnio": "Compra mínima anual",
+      "AntiguedadMinimaMeses": "Antigüedad mínima (meses)",
+      "VendeAEmpresa": "Es persona jurídica",
+      "VendeANatural": "Es persona natural",
+      "DocumentoExigido": "Documento exigido",
+      "CalificacionMinima": "Calificación mínima",
+      "SlaEntregaDias": "SLA de entrega (días)",
       "CumplimientoMinimo": "Cumplimiento mínimo (%)"
     },
     "rules": {
-      "title": "Reglas del convenio", "empty": "Sin reglas. Agrega las condiciones que el distribuidor debe cumplir.",
-      "add": "Agregar regla", "type": "Tipo de regla", "value": "Valor", "mandatory": "Obligatoria",
-      "noValue": "Sin valor", "docPlaceholder": "Código de documento (ej. NIT)"
+      "title": "Reglas del convenio",
+      "empty": "Sin reglas. Agrega las condiciones que el distribuidor debe cumplir.",
+      "add": "Agregar regla",
+      "type": "Tipo de regla",
+      "value": "Valor",
+      "mandatory": "Obligatoria",
+      "noValue": "Sin valor",
+      "docPlaceholder": "Código de documento (ej. NIT)"
     },
     "evaluation": {
-      "title": "Evaluar distribuidor", "distributor": "Distribuidor", "eligible": "Cumple el convenio",
-      "notEligible": "No cumple el convenio", "noRules": "El convenio no tiene reglas."
+      "title": "Evaluar distribuidor",
+      "distributor": "Distribuidor",
+      "eligible": "Cumple el convenio",
+      "notEligible": "No cumple el convenio",
+      "noRules": "El convenio no tiene reglas."
     },
-    "result": { "Cumple": "Cumple", "NoCumple": "No cumple", "Pendiente": "Pendiente" },
+    "result": {
+      "Cumple": "Cumple",
+      "NoCumple": "No cumple",
+      "Pendiente": "Pendiente"
+    },
     "validation": {
       "nameRequired": "El nombre del convenio es obligatorio.",
       "supplierRequired": "El proveedor es obligatorio.",
@@ -133,22 +216,47 @@
     "description": "Clientes y proveedores en un solo registro, con datos fiscales DIAN.",
     "formDesc": "Datos del tercero, direcciones, canales y personas de contacto.",
     "deleteConfirm": "¿Eliminar el tercero \"{{name}}\"? Esta acción se puede revertir desde la papelera.",
-    "actions": { "create": "Nuevo tercero", "edit": "Editar tercero", "delete": "Eliminar tercero" },
-    "filters": { "searchPlaceholder": "Buscar por nombre o identificación…" },
-    "picker": { "placeholder": "Buscar tercero…" },
+    "actions": {
+      "create": "Nuevo tercero",
+      "edit": "Editar tercero",
+      "delete": "Eliminar tercero"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre o identificación…"
+    },
+    "picker": {
+      "placeholder": "Buscar tercero…"
+    },
     "tabs": {
-      "identity": "Identificación", "contacts": "Contactos", "crm": "CRM", "finance": "Financiera", "tax": "Tributaria", "prices": "Listas de precios", "supplier": "Catálogo proveedor"
+      "identity": "Identificación",
+      "contacts": "Contactos",
+      "crm": "CRM",
+      "finance": "Financiera",
+      "tax": "Tributaria",
+      "prices": "Listas de precios",
+      "supplier": "Catálogo proveedor"
     },
     "supplier": {
       "global": "Proveedor global",
       "globalHint": "Publica este proveedor al marketplace global (visible a todos los tenants).",
-      "brands": "Marcas que comercializa", "brandsEmpty": "Sin marcas seleccionadas.", "chooseBrand": "Agregar marca…",
-      "categories": "Categorías que comercializa", "categoriesEmpty": "Sin categorías seleccionadas.", "chooseCategory": "Agregar categoría…"
+      "brands": "Marcas que comercializa",
+      "brandsEmpty": "Sin marcas seleccionadas.",
+      "chooseBrand": "Agregar marca…",
+      "categories": "Categorías que comercializa",
+      "categoriesEmpty": "Sin categorías seleccionadas.",
+      "chooseCategory": "Agregar categoría…"
     },
     "priceLists": {
       "hint": "Listas de precios que aplican a este tercero (cliente o proveedor).",
-      "list": "Lista de precios", "choose": "Elegir lista…", "add": "Asignar", "empty": "Sin listas asignadas.",
-      "kind": { "Segment": "Segmento", "Campaign": "Campaña", "Base": "Base" }
+      "list": "Lista de precios",
+      "choose": "Elegir lista…",
+      "add": "Asignar",
+      "empty": "Sin listas asignadas.",
+      "kind": {
+        "Segment": "Segmento",
+        "Campaign": "Campaña",
+        "Base": "Base"
+      }
     },
     "fields": {
       "party": "Tercero",
@@ -189,10 +297,27 @@
       "invalid": "Documento inválido.",
       "failed": "No se pudo verificar el documento."
     },
-    "kind": { "Juridica": "Persona jurídica", "Natural": "Persona natural" },
-    "role": { "customer": "Cliente", "supplier": "Proveedor" },
-    "status": { "Active": "Activo", "Inactive": "Inactivo", "Prospect": "Prospecto" },
-    "stage": { "Lead": "Lead", "Mql": "MQL", "Sql": "SQL", "Opportunity": "Oportunidad", "Customer": "Cliente", "Inactive": "Inactivo" },
+    "kind": {
+      "Juridica": "Persona jurídica",
+      "Natural": "Persona natural"
+    },
+    "role": {
+      "customer": "Cliente",
+      "supplier": "Proveedor"
+    },
+    "status": {
+      "Active": "Activo",
+      "Inactive": "Inactivo",
+      "Prospect": "Prospecto"
+    },
+    "stage": {
+      "Lead": "Lead",
+      "Mql": "MQL",
+      "Sql": "SQL",
+      "Opportunity": "Oportunidad",
+      "Customer": "Cliente",
+      "Inactive": "Inactivo"
+    },
     "finance": {
       "hasCredit": "Tiene crédito",
       "creditLimit": "Límite de crédito",
@@ -204,20 +329,55 @@
       "computedHint": "Calculado automáticamente."
     },
     "address": {
-      "title": "Direcciones", "singular": "Dirección", "empty": "Sin direcciones.", "add": "Agregar dirección",
-      "makePrimary": "Marcar como principal", "primary": "Predeterminada", "department": "Departamento", "departmentHint": "Se autocompleta al elegir la ciudad.", "city": "Ciudad", "label": "Etiqueta",
-      "line": "Dirección", "lineHint": "Nomenclatura DIAN. Ej.: CL 100 # 13-21.", "barrio": "Barrio", "reference": "Referencia", "lat": "Latitud", "lng": "Longitud"
+      "title": "Direcciones",
+      "singular": "Dirección",
+      "empty": "Sin direcciones.",
+      "add": "Agregar dirección",
+      "makePrimary": "Marcar como principal",
+      "primary": "Predeterminada",
+      "department": "Departamento",
+      "departmentHint": "Se autocompleta al elegir la ciudad.",
+      "city": "Ciudad",
+      "label": "Etiqueta",
+      "line": "Dirección",
+      "lineHint": "Nomenclatura DIAN. Ej.: CL 100 # 13-21.",
+      "barrio": "Barrio",
+      "reference": "Referencia",
+      "lat": "Latitud",
+      "lng": "Longitud",
+      "cityPickDept": "Elige primero el departamento",
+      "normalized": "Formato DIAN"
     },
     "channel": {
-      "title": "Canales de contacto", "empty": "Sin canales.", "add": "Agregar canal", "type": "Tipo",
-      "value": "Valor", "reference": "Referencia", "makePrimary": "Marcar como principal"
+      "title": "Canales de contacto",
+      "empty": "Sin canales.",
+      "add": "Agregar canal",
+      "type": "Tipo",
+      "value": "Valor",
+      "reference": "Referencia",
+      "makePrimary": "Marcar como principal"
     },
     "contact": {
-      "title": "Personas de contacto", "singular": "Contacto", "empty": "Sin personas de contacto.", "add": "Agregar contacto",
-      "reference": "Cargo / referencia", "fullName": "Nombre completo", "email": "Correo", "cell": "Celular", "isCommercial": "Contacto comercial",
-      "type": "Tipo de contacto", "area": "Área", "idType": "Tipo identificación", "idNumber": "Número identificación",
-      "position": "Cargo", "profession": "Profesión", "firstName": "Nombres", "lastName": "Apellidos",
-      "birthDate": "Fecha de nacimiento", "gender": "Género", "maritalStatus": "Estado civil",
+      "title": "Personas de contacto",
+      "singular": "Contacto",
+      "empty": "Sin personas de contacto.",
+      "add": "Agregar contacto",
+      "reference": "Cargo / referencia",
+      "fullName": "Nombre completo",
+      "email": "Correo",
+      "cell": "Celular",
+      "isCommercial": "Contacto comercial",
+      "type": "Tipo de contacto",
+      "area": "Área",
+      "idType": "Tipo identificación",
+      "idNumber": "Número identificación",
+      "position": "Cargo",
+      "profession": "Profesión",
+      "firstName": "Nombres",
+      "lastName": "Apellidos",
+      "birthDate": "Fecha de nacimiento",
+      "gender": "Género",
+      "maritalStatus": "Estado civil",
       "channelRequired": "Correo y celular son obligatorios."
     }
   }

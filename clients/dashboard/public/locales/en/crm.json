@@ -42,26 +42,61 @@
     "closedNote": "This scorecard is closed and immutable.",
     "scoreHint": "Weighted average by each KPI's weight (1–5).",
     "deleteConfirm": "Delete the scorecard for \"{{name}}\"? Only allowed while in draft.",
-    "tabs": { "scorecards": "Scorecards", "reports": "Reports", "kpis": "KPIs" },
-    "actions": { "create": "New scorecard", "edit": "Edit scorecard", "delete": "Delete scorecard", "close": "Close" },
-    "fields": {
-      "supplier": "Supplier", "period": "Period", "periodHint": "E.g.: 2026-Q2", "periodStart": "Period start",
-      "score": "Score", "grade": "Grade", "status": "Status", "notes": "Notes"
+    "tabs": {
+      "scorecards": "Scorecards",
+      "reports": "Reports",
+      "kpis": "KPIs"
     },
-    "status": { "Borrador": "Draft", "Cerrado": "Closed" },
-    "criteria": { "title": "Criteria (KPIs)", "empty": "No KPIs. Seed the catalog in the KPIs tab.", "score": "Score", "comment": "Comment" },
+    "actions": {
+      "create": "New scorecard",
+      "edit": "Edit scorecard",
+      "delete": "Delete scorecard",
+      "close": "Close"
+    },
+    "fields": {
+      "supplier": "Supplier",
+      "period": "Period",
+      "periodHint": "E.g.: 2026-Q2",
+      "periodStart": "Period start",
+      "score": "Score",
+      "grade": "Grade",
+      "status": "Status",
+      "notes": "Notes"
+    },
+    "status": {
+      "Borrador": "Draft",
+      "Cerrado": "Closed"
+    },
+    "criteria": {
+      "title": "Criteria (KPIs)",
+      "empty": "No KPIs. Seed the catalog in the KPIs tab.",
+      "score": "Score",
+      "comment": "Comment"
+    },
     "reports": {
-      "ranking": "Supplier ranking (latest score)", "trend": "Trend by period",
-      "empty": "No scorecards to show yet.", "pickSupplier": "Pick a supplier to see its trend.",
+      "ranking": "Supplier ranking (latest score)",
+      "trend": "Trend by period",
+      "empty": "No scorecards to show yet.",
+      "pickSupplier": "Pick a supplier to see its trend.",
       "noTrend": "This supplier has no scorecards."
     },
     "kpis": {
-      "singular": "KPI", "name": "Name", "code": "Code", "weight": "Weight", "sortOrder": "Order",
-      "create": "New KPI", "edit": "Edit KPI", "formDesc": "Define the KPI and its weight (%) in the weighted score.",
-      "seed": "Seed default KPIs", "seeded": "Seeded {{count}} KPIs.",
+      "singular": "KPI",
+      "name": "Name",
+      "code": "Code",
+      "weight": "Weight",
+      "sortOrder": "Order",
+      "create": "New KPI",
+      "edit": "Edit KPI",
+      "formDesc": "Define the KPI and its weight (%) in the weighted score.",
+      "seed": "Seed default KPIs",
+      "seeded": "Seeded {{count}} KPIs.",
       "totalWeight": "Total weight of active KPIs: {{total}}% (ideal 100%)."
     },
-    "validation": { "supplierRequired": "The supplier is required.", "periodRequired": "The period is required." }
+    "validation": {
+      "supplierRequired": "The supplier is required.",
+      "periodRequired": "The period is required."
+    }
   },
   "convenios": {
     "title": "Agreements",
@@ -70,41 +105,89 @@
     "formDesc": "Define the supplier, agreed tariff, responsibilities, policies and agreement rules.",
     "terminatedNote": "This agreement is terminated and immutable.",
     "deleteConfirm": "Delete the agreement \"{{name}}\"? Only allowed while in draft.",
-    "actions": { "create": "New agreement", "edit": "Edit agreement", "delete": "Delete agreement" },
-    "filters": { "searchPlaceholder": "Search by name…" },
+    "actions": {
+      "create": "New agreement",
+      "edit": "Edit agreement",
+      "delete": "Delete agreement"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name…"
+    },
     "fields": {
-      "name": "Name", "supplier": "Supplier", "type": "Type", "status": "Status",
-      "priceList": "Agreed tariff", "priceListHint": "Price list the distributor cost is derived from.",
-      "suggestedPriceList": "Suggested tariff", "rules": "Rules",
-      "dispatch": "Dispatch", "waybill": "Waybill", "settlement": "Settlement",
-      "validFrom": "Valid from", "validTo": "Valid to", "validToHint": "Empty = no end.",
-      "failedDelivery": "Failed delivery policy", "returns": "Returns policy",
-      "warranty": "Warranty policy", "notes": "Notes"
+      "name": "Name",
+      "supplier": "Supplier",
+      "type": "Type",
+      "status": "Status",
+      "priceList": "Agreed tariff",
+      "priceListHint": "Price list the distributor cost is derived from.",
+      "suggestedPriceList": "Suggested tariff",
+      "rules": "Rules",
+      "dispatch": "Dispatch",
+      "waybill": "Waybill",
+      "settlement": "Settlement",
+      "validFrom": "Valid from",
+      "validTo": "Valid to",
+      "validToHint": "Empty = no end.",
+      "failedDelivery": "Failed delivery policy",
+      "returns": "Returns policy",
+      "warranty": "Warranty policy",
+      "notes": "Notes"
     },
     "type": {
-      "ProveedorUnico": "Sole supplier", "ProveedorModelo": "Model supplier",
-      "DistribuidorAprobado": "Approved distributor", "ModeloPendiente": "Pending model"
+      "ProveedorUnico": "Sole supplier",
+      "ProveedorModelo": "Model supplier",
+      "DistribuidorAprobado": "Approved distributor",
+      "ModeloPendiente": "Pending model"
     },
-    "status": { "Borrador": "Draft", "Vigente": "Active", "Suspendido": "Suspended", "Terminado": "Terminated" },
-    "responsible": { "Proveedor": "Supplier", "Distribuidor": "Distributor", "Plataforma": "Platform" },
-    "statusActions": { "activate": "Activate", "suspend": "Suspend", "terminate": "Terminate" },
+    "status": {
+      "Borrador": "Draft",
+      "Vigente": "Active",
+      "Suspendido": "Suspended",
+      "Terminado": "Terminated"
+    },
+    "responsible": {
+      "Proveedor": "Supplier",
+      "Distribuidor": "Distributor",
+      "Plataforma": "Platform"
+    },
+    "statusActions": {
+      "activate": "Activate",
+      "suspend": "Suspend",
+      "terminate": "Terminate"
+    },
     "ruleType": {
-      "CompraMinimaMes": "Minimum monthly purchase", "CompraMinimaAnio": "Minimum yearly purchase",
-      "AntiguedadMinimaMeses": "Minimum tenure (months)", "VendeAEmpresa": "Is a company",
-      "VendeANatural": "Is an individual", "DocumentoExigido": "Required document",
-      "CalificacionMinima": "Minimum rating", "SlaEntregaDias": "Delivery SLA (days)",
+      "CompraMinimaMes": "Minimum monthly purchase",
+      "CompraMinimaAnio": "Minimum yearly purchase",
+      "AntiguedadMinimaMeses": "Minimum tenure (months)",
+      "VendeAEmpresa": "Is a company",
+      "VendeANatural": "Is an individual",
+      "DocumentoExigido": "Required document",
+      "CalificacionMinima": "Minimum rating",
+      "SlaEntregaDias": "Delivery SLA (days)",
       "CumplimientoMinimo": "Minimum compliance (%)"
     },
     "rules": {
-      "title": "Agreement rules", "empty": "No rules. Add the conditions the distributor must meet.",
-      "add": "Add rule", "type": "Rule type", "value": "Value", "mandatory": "Mandatory",
-      "noValue": "No value", "docPlaceholder": "Document code (e.g. NIT)"
+      "title": "Agreement rules",
+      "empty": "No rules. Add the conditions the distributor must meet.",
+      "add": "Add rule",
+      "type": "Rule type",
+      "value": "Value",
+      "mandatory": "Mandatory",
+      "noValue": "No value",
+      "docPlaceholder": "Document code (e.g. NIT)"
     },
     "evaluation": {
-      "title": "Evaluate distributor", "distributor": "Distributor", "eligible": "Meets the agreement",
-      "notEligible": "Does not meet the agreement", "noRules": "The agreement has no rules."
+      "title": "Evaluate distributor",
+      "distributor": "Distributor",
+      "eligible": "Meets the agreement",
+      "notEligible": "Does not meet the agreement",
+      "noRules": "The agreement has no rules."
     },
-    "result": { "Cumple": "Pass", "NoCumple": "Fail", "Pendiente": "Pending" },
+    "result": {
+      "Cumple": "Pass",
+      "NoCumple": "Fail",
+      "Pendiente": "Pending"
+    },
     "validation": {
       "nameRequired": "The agreement name is required.",
       "supplierRequired": "The supplier is required.",
@@ -119,22 +202,47 @@
     "description": "Customers and suppliers in a single record, with DIAN fiscal data.",
     "formDesc": "Party details, addresses, channels and contact people.",
     "deleteConfirm": "Delete the party \"{{name}}\"? This can be reverted from the trash.",
-    "actions": { "create": "New party", "edit": "Edit party", "delete": "Delete party" },
-    "filters": { "searchPlaceholder": "Search by name or id…" },
-    "picker": { "placeholder": "Search party…" },
+    "actions": {
+      "create": "New party",
+      "edit": "Edit party",
+      "delete": "Delete party"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name or id…"
+    },
+    "picker": {
+      "placeholder": "Search party…"
+    },
     "tabs": {
-      "identity": "Identification", "contacts": "Contacts", "crm": "CRM", "finance": "Financial", "tax": "Tax", "prices": "Price lists", "supplier": "Supplier catalog"
+      "identity": "Identification",
+      "contacts": "Contacts",
+      "crm": "CRM",
+      "finance": "Financial",
+      "tax": "Tax",
+      "prices": "Price lists",
+      "supplier": "Supplier catalog"
     },
     "supplier": {
       "global": "Global supplier",
       "globalHint": "Publish this supplier to the global marketplace (visible to all tenants).",
-      "brands": "Brands traded", "brandsEmpty": "No brands selected.", "chooseBrand": "Add brand…",
-      "categories": "Categories traded", "categoriesEmpty": "No categories selected.", "chooseCategory": "Add category…"
+      "brands": "Brands traded",
+      "brandsEmpty": "No brands selected.",
+      "chooseBrand": "Add brand…",
+      "categories": "Categories traded",
+      "categoriesEmpty": "No categories selected.",
+      "chooseCategory": "Add category…"
     },
     "priceLists": {
       "hint": "Price lists that apply to this party (customer or supplier).",
-      "list": "Price list", "choose": "Choose list…", "add": "Assign", "empty": "No lists assigned.",
-      "kind": { "Segment": "Segment", "Campaign": "Campaign", "Base": "Base" }
+      "list": "Price list",
+      "choose": "Choose list…",
+      "add": "Assign",
+      "empty": "No lists assigned.",
+      "kind": {
+        "Segment": "Segment",
+        "Campaign": "Campaign",
+        "Base": "Base"
+      }
     },
     "fields": {
       "party": "Party",
@@ -175,10 +283,27 @@
       "invalid": "Invalid document.",
       "failed": "Could not verify the document."
     },
-    "kind": { "Juridica": "Company", "Natural": "Individual" },
-    "role": { "customer": "Customer", "supplier": "Supplier" },
-    "status": { "Active": "Active", "Inactive": "Inactive", "Prospect": "Prospect" },
-    "stage": { "Lead": "Lead", "Mql": "MQL", "Sql": "SQL", "Opportunity": "Opportunity", "Customer": "Customer", "Inactive": "Inactive" },
+    "kind": {
+      "Juridica": "Company",
+      "Natural": "Individual"
+    },
+    "role": {
+      "customer": "Customer",
+      "supplier": "Supplier"
+    },
+    "status": {
+      "Active": "Active",
+      "Inactive": "Inactive",
+      "Prospect": "Prospect"
+    },
+    "stage": {
+      "Lead": "Lead",
+      "Mql": "MQL",
+      "Sql": "SQL",
+      "Opportunity": "Opportunity",
+      "Customer": "Customer",
+      "Inactive": "Inactive"
+    },
     "finance": {
       "hasCredit": "Has credit",
       "creditLimit": "Credit limit",
@@ -190,20 +315,55 @@
       "computedHint": "Computed automatically."
     },
     "address": {
-      "title": "Addresses", "singular": "Address", "empty": "No addresses.", "add": "Add address",
-      "makePrimary": "Set as primary", "primary": "Default", "department": "Department", "departmentHint": "Auto-filled when you pick the city.", "city": "City", "label": "Label",
-      "line": "Address", "lineHint": "DIAN nomenclature. E.g.: CL 100 # 13-21.", "barrio": "Neighborhood", "reference": "Reference", "lat": "Latitude", "lng": "Longitude"
+      "title": "Addresses",
+      "singular": "Address",
+      "empty": "No addresses.",
+      "add": "Add address",
+      "makePrimary": "Set as primary",
+      "primary": "Default",
+      "department": "Department",
+      "departmentHint": "Auto-filled when you pick the city.",
+      "city": "City",
+      "label": "Label",
+      "line": "Address",
+      "lineHint": "DIAN nomenclature. E.g.: CL 100 # 13-21.",
+      "barrio": "Neighborhood",
+      "reference": "Reference",
+      "lat": "Latitude",
+      "lng": "Longitude",
+      "cityPickDept": "Pick a department first",
+      "normalized": "DIAN format"
     },
     "channel": {
-      "title": "Contact channels", "empty": "No channels.", "add": "Add channel", "type": "Type",
-      "value": "Value", "reference": "Reference", "makePrimary": "Set as primary"
+      "title": "Contact channels",
+      "empty": "No channels.",
+      "add": "Add channel",
+      "type": "Type",
+      "value": "Value",
+      "reference": "Reference",
+      "makePrimary": "Set as primary"
     },
     "contact": {
-      "title": "Contact people", "singular": "Contact", "empty": "No contact people.", "add": "Add contact",
-      "reference": "Role / reference", "fullName": "Full name", "email": "Email", "cell": "Mobile", "isCommercial": "Commercial contact",
-      "type": "Contact type", "area": "Area", "idType": "ID type", "idNumber": "ID number",
-      "position": "Position", "profession": "Profession", "firstName": "First name", "lastName": "Last name",
-      "birthDate": "Birth date", "gender": "Gender", "maritalStatus": "Marital status",
+      "title": "Contact people",
+      "singular": "Contact",
+      "empty": "No contact people.",
+      "add": "Add contact",
+      "reference": "Role / reference",
+      "fullName": "Full name",
+      "email": "Email",
+      "cell": "Mobile",
+      "isCommercial": "Commercial contact",
+      "type": "Contact type",
+      "area": "Area",
+      "idType": "ID type",
+      "idNumber": "ID number",
+      "position": "Position",
+      "profession": "Profession",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "birthDate": "Birth date",
+      "gender": "Gender",
+      "maritalStatus": "Marital status",
       "channelRequired": "Email and mobile are required."
     }
   }

@@ -1,33 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
+import { getDepartments, type Department, type Municipality } from "@/api/geography";
 
-type GeoMap = Record<string, string[]>;
-
-/** Loads the Colombian departments → cities dataset (public/data/co-geo.json), cached. */
+/**
+ * Loads the DIVIPOLA (DANE) departments → municipalities dataset from the API
+ * (global reference data, cached indefinitely). Replaces the old static co-geo.json.
+ */
 export function useColombiaGeo() {
-  const { data } = useQuery<GeoMap>({
-    queryKey: ["geo", "co"],
-    queryFn: async () => {
-      const r = await fetch("/data/co-geo.json");
-      if (!r.ok) throw new Error("geo load failed");
-      return r.json() as Promise<GeoMap>;
-    },
+  const { data } = useQuery<Department[]>({
+    queryKey: ["geo", "departments"],
+    queryFn: getDepartments,
     staleTime: Infinity,
     gcTime: Infinity,
   });
 
-  const departments = data ? Object.keys(data) : [];
-  const citiesOf = (department: string | null | undefined) =>
-    department && data?.[department] ? data[department] : [];
+  const departments = data ?? [];
+  const municipalitiesOf = (deptCode: string | null | undefined): Municipality[] =>
+    (deptCode && departments.find((d) => d.code === deptCode)?.municipalities) || [];
 
-  /** All cities flattened (for the city-first selector). */
-  const allCities = data ? Object.values(data).flat() : [];
+  const departmentByCode = (code: string | null | undefined): Department | undefined =>
+    code ? departments.find((d) => d.code === code) : undefined;
 
-  /** Reverse lookup: which department a city belongs to (city-first cascade). */
-  const deptOfCity = (city: string | null | undefined): string | null => {
-    if (!city || !data) return null;
-    for (const [dept, cities] of Object.entries(data)) if (cities.includes(city)) return dept;
-    return null;
-  };
+  /** Find the department that owns a municipality code (5-digit). */
+  const departmentOfMunicipality = (munCode: string | null | undefined): Department | undefined =>
+    munCode ? departments.find((d) => d.municipalities.some((m) => m.code === munCode)) : undefined;
 
-  return { departments, citiesOf, allCities, deptOfCity };
+  return { departments, municipalitiesOf, departmentByCode, departmentOfMunicipality };
 }

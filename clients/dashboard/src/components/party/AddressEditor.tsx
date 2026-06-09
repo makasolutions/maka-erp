@@ -3,9 +3,9 @@ import { MapPin, Plus, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Combobox, Field, FormGrid } from "@/components/list";
+import { Field, FormGrid } from "@/components/list";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
-import { useColombiaGeo } from "./use-colombia-geo";
+import { CityPicker } from "./CityPicker";
 import type { PartyAddress } from "@/api/parties";
 
 export interface AddressEditorProps {
@@ -18,7 +18,6 @@ export interface AddressEditorProps {
 
 export function AddressEditor({ value, onChange, disabled, errors }: AddressEditorProps) {
   const { t } = useTranslation("crm");
-  const { allCities, deptOfCity } = useColombiaGeo();
   const err = (i: number, field: string): string | undefined => errors?.[`addresses.${i}.${field}`];
 
   const update = (i: number, patch: Partial<PartyAddress>) =>
@@ -27,8 +26,6 @@ export function AddressEditor({ value, onChange, disabled, errors }: AddressEdit
     onChange([...value, { country: "Colombia", isPrimary: value.length === 0, department: null, city: null, line: "" }]);
   const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
   const makePrimary = (i: number) => onChange(value.map((a, idx) => ({ ...a, isPrimary: idx === i })));
-  // Selecting a city auto-fills its department (city-first cascade).
-  const setCity = (i: number, city: string | null) => update(i, { city, department: deptOfCity(city) });
 
   return (
     <div className="space-y-3">
@@ -43,24 +40,25 @@ export function AddressEditor({ value, onChange, disabled, errors }: AddressEdit
               className="rounded p-1 text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]"><Trash2 className="size-4" /></button>
           </div>
           <FormGrid>
-            {/* Row 1: Etiqueta · Ciudad · Departamento */}
+            {/* Row 1: Etiqueta · Departamento · Ciudad (cascada DIVIPOLA) */}
             <Field id={`addr-label-${i}`} span={4} label={t("parties.address.label")}>
               <BasicRecordSelect id={`addr-label-${i}`} tableCode="AddressLabel" label={t("parties.address.label")}
                 value={a.labelCode ?? null} onChange={(v) => update(i, { labelCode: v })} disabled={disabled} />
             </Field>
-            <Field id={`addr-city-${i}`} span={4} label={t("parties.address.city")} required error={err(i, "city")}>
-              <Combobox id={`addr-city-${i}`} label={t("parties.address.city")} value={a.city ?? null}
-                onChange={(v) => setCity(i, v)} options={allCities.map((c) => ({ value: c, label: c }))}
-                searchable clearable placeholder={t("parties.address.city")} disabled={disabled} />
-            </Field>
-            <Field id={`addr-dept-${i}`} span={4} label={t("parties.address.department")} hint={t("parties.address.departmentHint")}>
-              <Input id={`addr-dept-${i}`} value={a.department ?? ""} disabled aria-label={t("parties.address.department")} />
-            </Field>
+            <CityPicker idPrefix={`addr-geo-${i}`} disabled={disabled} cityError={err(i, "city")}
+              value={{ departmentCode: a.departmentCode, municipalityCode: a.municipalityCode, department: a.department, city: a.city }}
+              onChange={(patch) => update(i, patch)} />
             {/* Row 2: Dirección · Barrio · Referencia */}
             <Field id={`addr-line-${i}`} span={4} label={t("parties.address.line")} required
               error={err(i, "line")} hint={err(i, "line") ? undefined : t("parties.address.lineHint")}>
               <Input id={`addr-line-${i}`} value={a.line ?? ""} disabled={disabled} placeholder="CL 100 # 13-21"
                 onChange={(e) => update(i, { line: e.target.value })} />
+              {a.normalizedLine && (
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-[var(--color-muted-foreground)]">
+                  <span className="font-semibold uppercase tracking-wide">{t("parties.address.normalized")}:</span>
+                  <code className="font-mono text-[var(--color-foreground)]">{a.normalizedLine}</code>
+                </p>
+              )}
             </Field>
             <Field id={`addr-barrio-${i}`} span={4} label={t("parties.address.barrio")}>
               <Input id={`addr-barrio-${i}`} value={a.barrio ?? ""} disabled={disabled}

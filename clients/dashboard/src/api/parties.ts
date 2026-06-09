@@ -42,6 +42,7 @@ export type PartyAddress = {
   id?: string; country: string; department?: string | null; city?: string | null; line?: string | null;
   barrio?: string | null; reference?: string | null; latitude?: number | null; longitude?: number | null;
   isPrimary: boolean; labelCode?: string | null;
+  departmentCode?: string | null; municipalityCode?: string | null; normalizedLine?: string | null;
 };
 export type PartyContact = {
   id?: string; reference: string; contactTypeCode?: string | null; areaCode?: string | null;
