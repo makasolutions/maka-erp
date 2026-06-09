@@ -173,7 +173,10 @@ export function ProductFormPage() {
     onError: (err) => toast.error(tc("feedback.updateFailed"), { description: describe(err) }),
   });
 
-  const step1Valid = !!name.trim() && !!sku.trim();
+  const step1Valid =
+    !!name.trim() && name.trim().length <= 200 &&
+    !!sku.trim() && sku.trim().length <= 64 &&
+    /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(sku.trim());
 
   const goNext = () => {
     if (step === 0 && isNew && !productId) { createMutation.mutate(); return; }
@@ -399,6 +402,8 @@ function GeneralStep({
 
   const typeOptions = PRODUCT_TYPES.map((tp) => ({ value: tp, label: t(`products.types.${tp}`, tp) }));
   const skuTooLong = sku.trim().length > 64;
+  // Formato SKU: alfanumérico en mayúsculas con - _ . / (sin espacios ni símbolos raros).
+  const skuBadFormat = sku.trim().length > 0 && !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(sku.trim());
 
   return (
     <div className="space-y-6">
@@ -407,8 +412,9 @@ function GeneralStep({
           <Field id="p-sku" span={3} label="SKU" required>
             <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
               maxLength={64} required placeholder="SONY-FX3" className="font-mono uppercase"
-              aria-invalid={skuTooLong || !sku.trim()} />
+              aria-invalid={skuTooLong || skuBadFormat || !sku.trim()} />
             {skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.errors.tooLong")}</p>}
+            {skuBadFormat && !skuTooLong && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{tc("validation.skuInvalid")}</p>}
             {!sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
           </Field>
         )}
