@@ -9,7 +9,7 @@ namespace FSH.Modules.Files.Contracts.Events;
 /// </summary>
 public sealed record FileFinalizedIntegrationEvent(
     Guid Id,
-    DateTime OccurredOnUtc,
+    DateTimeOffset OccurredOnUtc,
     string? TenantId,
     string CorrelationId,
     string Source,

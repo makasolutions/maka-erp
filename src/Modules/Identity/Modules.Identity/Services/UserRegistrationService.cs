@@ -266,7 +266,7 @@ internal sealed class UserRegistrationService(
 
         var integrationEvent = new UserRegisteredIntegrationEvent(
             Id: Guid.NewGuid(),
-            OccurredOnUtc: TimeProvider.System.GetUtcNow().UtcDateTime,
+            OccurredOnUtc: TimeProvider.System.GetUtcNow(),
             TenantId: tenantId,
             CorrelationId: Guid.NewGuid().ToString(),
             Source: source,

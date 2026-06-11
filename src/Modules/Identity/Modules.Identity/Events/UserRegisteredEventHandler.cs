@@ -30,7 +30,7 @@ public sealed class UserRegisteredHandler(
 
         var integrationEvent = new UserRegisteredIntegrationEvent(
             Id: notification.EventId,
-            OccurredOnUtc: notification.OccurredOnUtc.UtcDateTime,
+            OccurredOnUtc: notification.OccurredOnUtc,
             TenantId: notification.TenantId,
             CorrelationId: notification.CorrelationId ?? notification.EventId.ToString(),
             Source: nameof(UserRegisteredHandler),

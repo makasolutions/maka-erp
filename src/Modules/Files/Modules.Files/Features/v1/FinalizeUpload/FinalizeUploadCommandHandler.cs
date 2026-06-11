@@ -86,7 +86,7 @@ public sealed class FinalizeUploadCommandHandler(
         var correlationId = Activity.Current?.Id ?? Guid.NewGuid().ToString();
         await outbox.AddAsync(new FileFinalizedIntegrationEvent(
             Id: Guid.NewGuid(),
-            OccurredOnUtc: DateTime.UtcNow,
+            OccurredOnUtc: DateTimeOffset.UtcNow,
             TenantId: tenantId,
             CorrelationId: correlationId,
             Source: "Files",

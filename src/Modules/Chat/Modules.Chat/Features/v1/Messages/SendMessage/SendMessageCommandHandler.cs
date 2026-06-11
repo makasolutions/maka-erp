@@ -112,7 +112,7 @@ public sealed class SendMessageCommandHandler(
                 await outbox.AddAsync(
                     new MentionedInChannelIntegrationEvent(
                         Id: Guid.NewGuid(),
-                        OccurredOnUtc: DateTime.UtcNow,
+                        OccurredOnUtc: DateTimeOffset.UtcNow,
                         TenantId: tenantId,
                         CorrelationId: correlationId,
                         Source: "Chat",

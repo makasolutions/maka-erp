@@ -36,7 +36,7 @@ public sealed class EfCoreOutboxStore<TDbContext> : IOutboxStore
         var message = new OutboxMessage
         {
             Id = @event.Id,
-            CreatedOnUtc = @event.OccurredOnUtc,
+            CreatedOnUtc = @event.OccurredOnUtc.UtcDateTime,   // bookkeeping column stays DateTime UTC (ADR-0002, option A)
             Type = @event.GetType().AssemblyQualifiedName ?? @event.GetType().FullName!,
             Payload = payload,
             TenantId = @event.TenantId,
