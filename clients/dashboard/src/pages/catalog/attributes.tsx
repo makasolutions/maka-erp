@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Eye, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Eye, Layers, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   addAttributeValue,
@@ -53,6 +53,7 @@ import {
   MakaGridFilters,
   MakaFilterField,
   MakaFilterInput,
+  MakaKpiCard,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { describe, slugify } from "@/lib/list-helpers";
@@ -117,22 +118,6 @@ function AttrValueCountCell(row: AttributeRow) {
 }
 
 // ── KPI ─────────────────────────────────────────────────────────────────
-
-function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
-      <div className="flex items-center justify-center gap-2">
-        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
-        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          {label}
-        </span>
-      </div>
-      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value.toLocaleString("es-CO")}
-      </div>
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────
 
@@ -267,8 +252,8 @@ export function AttributesPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("attributes.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
-            <KpiCard label={t("attributes.kpi.forVariations")} value={kpiForVariations} tone="var(--color-success)" />
+            <MakaKpiCard icon={SlidersHorizontal} label={t("attributes.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
+            <MakaKpiCard icon={Layers} label={t("attributes.kpi.forVariations")} value={kpiForVariations} tone="var(--color-success)" />
           </>
         }
       />
@@ -673,7 +658,7 @@ function DeleteAttributeDialog({ state, onClose }: { state: EditorState; onClose
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={deleteMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -681,7 +666,7 @@ function DeleteAttributeDialog({ state, onClose }: { state: EditorState; onClose
             onClick={() => attribute && deleteMutation.mutate(attribute.id)}
             disabled={deleteMutation.isPending || !attribute}
           >
-            {deleteMutation.isPending ? tc("feedback.deleting") : t("attributes.actions.delete")}
+            <Trash2 className="size-4" />{deleteMutation.isPending ? tc("feedback.deleting") : t("attributes.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -17,6 +17,7 @@ export interface PartyPickerProps {
 /** Searchable select of terceros by name/NIT — reusable in Orders, Cotizaciones, Billing. */
 export function PartyPicker({ id, value, onChange, label, role, disabled }: PartyPickerProps) {
   const { t } = useTranslation("crm");
+  const { t: tc } = useTranslation("common");
   const { data } = useQuery({
     queryKey: ["crm", "parties", "picker", role ?? "all"],
     queryFn: () => searchParties({ pageSize: 200, sort: "legalName", role: role ?? null }),
@@ -31,8 +32,16 @@ export function PartyPicker({ id, value, onChange, label, role, disabled }: Part
     [data],
   );
 
+  // The noun is role-aware so the trigger placeholder AND the Combobox filter stay
+  // consistent ("Buscar proveedor…" ↔ "Filtrar proveedor…"), instead of a generic
+  // "tercero" that contradicts a Proveedor/Cliente context.
+  const roleNoun =
+    role === "Supplier" ? t("parties.role.supplier")
+    : role === "Customer" ? t("parties.role.customer")
+    : t("parties.singular");
+  const noun = label ?? roleNoun;
   return (
-    <Combobox id={id} label={label ?? t("parties.singular")} value={value} onChange={onChange}
-      options={options} searchable clearable disabled={disabled} placeholder={t("parties.picker.placeholder")} />
+    <Combobox id={id} label={noun} value={value} onChange={onChange}
+      options={options} searchable clearable disabled={disabled} placeholder={`${tc("actions.search")} ${noun.toLowerCase()}…`} />
   );
 }

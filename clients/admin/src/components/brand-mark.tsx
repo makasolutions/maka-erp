@@ -36,7 +36,7 @@ export function BrandMarkXL({ className }: { className?: string }) {
           className="block h-3 w-3 rounded-[2px] bg-[var(--color-accent-signal)] shadow-[0_0_18px_oklch(from_var(--color-accent-signal)_l_c_h_/_0.5)]"
         />
         <span className="meta text-[var(--color-muted-foreground)]">
-          fullstackhero · platform admin
+          Maka-ERP · platform admin
         </span>
       </div>
       <h1 className="font-display text-[clamp(3rem,7vw,5.5rem)] font-semibold leading-[0.95] tracking-[var(--tracking-display)]">

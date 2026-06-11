@@ -2,16 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  Download,
-  ExternalLink,
-  FileArchive,
-  File as FileIcon,
-  FileImage,
-  FileText,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { Download, ExternalLink, File as FileIcon, FileArchive, FileImage, FileText, Loader2, RotateCcw, Trash2, X } from "lucide-react";
 import {
   Dialog,
   DialogBody,
@@ -207,7 +198,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
                   onClick={() => setConfirmingDelete(false)}
                   disabled={deleteMutation.isPending}
                 >
-                  {t("common:actions.cancel")}
+                  <X className="size-4" />{t("common:actions.cancel")}
                 </Button>
                 <Button
                   size="sm"
@@ -244,7 +235,7 @@ export function FilePreviewDialog({ fileAssetId, initial, onClose, onDeleted }: 
               <DownloadButton file={metaQuery.data} t={t} />
             )}
             <DialogClose asChild>
-              <Button size="sm">{t("preview.close")}</Button>
+              <Button size="sm"><X className="size-4" />{t("preview.close")}</Button>
             </DialogClose>
           </div>
         </DialogFooter>
@@ -301,7 +292,7 @@ function Preview({
             onUrlError();
           }}
         >
-          {t("preview.retry")}
+          <RotateCcw className="size-4" />{t("preview.retry")}
         </Button>
       </div>
     );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Database, List, Plus, Trash2 } from "lucide-react";
+import { Check, Database, Eye, List, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   createBasicTable, deleteBasicTable, getBasicTableById, searchBasicTables,
@@ -90,7 +90,7 @@ export function BasicTablesPage() {
       >
         <Button variant="outline" onClick={() => setPanelOpen((v) => !v)} aria-pressed={panelOpen}
           className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold">
-          {tc("gridFilters.panelToggle")}
+          <Eye className="size-4" />{tc("gridFilters.panelToggle")}
         </Button>
         <Button perm={P.lookups.tables.create} onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none">
@@ -211,8 +211,8 @@ function TableEditorDialog({ state, canGlobal, onClose }: { state: EditorState; 
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={save.isPending || !canSubmit}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
+            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
+            <Button type="submit" disabled={save.isPending || !canSubmit}><Check className="size-4" />{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -242,9 +242,9 @@ function DeleteTableDialog({ state, onClose }: { state: EditorState; onClose: ()
           <DialogDescription>{t("deleteConfirm", { name: table?.name ?? "" })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}>{tc("actions.cancel")}</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
           <Button variant="destructive" onClick={() => table && del.mutate(table.id)} disabled={del.isPending}>
-            {del.isPending ? tc("feedback.saving") : t("actions.delete")}
+            <Trash2 className="size-4" />{del.isPending ? tc("feedback.saving") : t("actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -338,10 +338,10 @@ function RecordsDialog({ state, canGlobal, onClose }: { state: EditorState; canG
           </div>
         </DialogBody>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline">{tc("actions.close")}</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline"><X className="size-4" />{tc("actions.close")}</Button></DialogClose>
           {!readOnly && (
             <Button type="button" onClick={() => save.mutate()} disabled={save.isPending || hasDupes}>
-              {save.isPending ? tc("feedback.saving") : t("saveRecords")}
+              <Check className="size-4" />{save.isPending ? tc("feedback.saving") : t("saveRecords")}
             </Button>
           )}
         </DialogFooter>

@@ -2,15 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  ArrowRight,
-  Building2,
-  Check,
-  Loader2,
-  Mail,
-  MailCheck,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Building2, Check, Loader2, Mail, MailCheck, RotateCcw } from "lucide-react";
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,11 +108,11 @@ export function ForgotPasswordPage() {
                 setError(null);
               }}
             >
-              {t("auth.forgotPasswordForm.tryDifferent")}
+              <RotateCcw className="size-4" />{t("auth.forgotPasswordForm.tryDifferent")}
             </Button>
             <Link to="/login" className="ml-auto">
               <Button type="button" variant="outline">
-                {t("auth.forgotPasswordForm.backToSignIn")}
+                <ArrowLeft className="size-4" />{t("auth.forgotPasswordForm.backToSignIn")}
               </Button>
             </Link>
           </div>

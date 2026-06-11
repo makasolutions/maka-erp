@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Monitor, Moon, Palette, Sun } from "lucide-react";
+import { Check, Monitor, Moon, Palette, Sun, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -548,7 +548,7 @@ function CustomAccentDialog({
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            {t("common:actions.cancel")}
+            <X className="size-4" />{t("common:actions.cancel")}
           </Button>
           <Button
             size="sm"
@@ -557,7 +557,7 @@ function CustomAccentDialog({
               onOpenChange(false);
             }}
           >
-            {t("appearance.applyAccent")}
+            <Check className="size-4" />{t("appearance.applyAccent")}
           </Button>
         </DialogFooter>
       </DialogContent>

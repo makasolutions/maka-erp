@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Loader2, Star, StarOff, Trash2, Upload } from "lucide-react";
+import { Loader2, Star, StarOff, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   addProductImage,
@@ -299,7 +299,7 @@ function PreviewDialog({ image, onClose }: { image: ProductImageDto | null; onCl
         )}
         <DialogFooter>
           <DialogClose asChild>
-            <Button size="sm">{t("productImages.close")}</Button>
+            <Button size="sm"><X className="size-4" />{t("productImages.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -335,11 +335,11 @@ function RemoveDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={busy}>
-              {t("common:actions.cancel")}
+              <X className="size-4" />{t("common:actions.cancel")}
             </Button>
           </DialogClose>
           <Button variant="destructive" onClick={onConfirm} disabled={busy}>
-            {busy ? t("productImages.removing") : t("productImages.remove")}
+            <Trash2 className="size-4" />{busy ? t("productImages.removing") : t("productImages.remove")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Package, Plus, Trash2, XCircle } from "lucide-react";
+import { Check, Megaphone, Package, Plus, Trash2, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   cancelCampaign, createCampaign, getCampaigns, getDefaultVariation, getPriceListById,
@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox, EntityPageHeader, EntityStatusBadge, Field, FormActions, FormGrid } from "@/components/list";
-import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
+import { SaveIcon, CancelIcon, NextIcon } from "@/components/ui/icons";
 import { rules, validateSchema } from "@/lib/validation/rules";
 import { MakaDateTimeRangePicker, MakaGridClient, MakaPriceWithTax, type MakaDateTimeRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
@@ -296,7 +296,7 @@ function CreateCampaignDialog({ open, onClose, onCreated }: {
               }
               primary={
                 <Button type="submit" disabled={createM.isPending}>
-                  <CreateIcon className="size-4" />{createM.isPending ? tc("feedback.saving") : t("campaigns.actions.next")}
+                  {createM.isPending ? tc("feedback.saving") : t("campaigns.actions.next")}<NextIcon className="size-4" />
                 </Button>
               }
             />
@@ -416,11 +416,11 @@ function CampaignItemsDialog({ state, onClose, canEdit }: {
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">{tc("actions.close")}</Button>
+            <Button type="button" variant="outline"><X className="size-4" />{tc("actions.close")}</Button>
           </DialogClose>
           {canEdit && (
             <Button type="button" onClick={() => saveM.mutate()} disabled={saveM.isPending}>
-              {saveM.isPending ? tc("feedback.saving") : t("campaigns.saveProducts")}
+              <Check className="size-4" />{saveM.isPending ? tc("feedback.saving") : t("campaigns.saveProducts")}
             </Button>
           )}
         </DialogFooter>
@@ -458,10 +458,10 @@ function CancelCampaignDialog({ state, onClose }: { state: EditorState; onClose:
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" disabled={cancelM.isPending}>{tc("actions.cancel")}</Button>
+            <Button type="button" variant="outline" disabled={cancelM.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
           </DialogClose>
           <Button variant="destructive" onClick={() => campaign && cancelM.mutate(campaign.id)} disabled={cancelM.isPending}>
-            {cancelM.isPending ? tc("feedback.saving") : t("campaigns.actions.cancel")}
+            <XCircle className="size-4" />{cancelM.isPending ? tc("feedback.saving") : t("campaigns.actions.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>

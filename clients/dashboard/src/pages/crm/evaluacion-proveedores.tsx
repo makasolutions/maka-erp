@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Gauge, Plus } from "lucide-react";
+import { Check, Gauge, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   closeScorecard, computeWeightedScore, createScorecard, deleteScorecard, deleteScorecardKpi,
@@ -236,7 +236,7 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
                   <Input id="sc-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
                 )}
               </Field>
-              <Field id="sc-period" span={3} label={t("scorecards.fields.period")} required error={fieldErrs.periodLabel} hint={t("scorecards.fields.periodHint")}>
+              <Field id="sc-period" span={3} label={t("scorecards.fields.period")} required error={fieldErrs.periodLabel}>
                 <Input id="sc-period" value={form.periodLabel} maxLength={32} disabled={readOnly} placeholder="2026-Q2"
                   onChange={(e) => set({ periodLabel: e.target.value })} />
               </Field>
@@ -286,7 +286,7 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
                 <EntityStatusBadge tone={statusTone(detail.status)}>{t(`scorecards.status.${detail.status}`)}</EntityStatusBadge>
                 {detail.isMutable && (
                   <Button type="button" perm={P.catalog.scorecards.manage} variant="outline" size="sm"
-                    disabled={closeMut.isPending} onClick={() => closeMut.mutate()}>{t("scorecards.actions.close")}</Button>
+                    disabled={closeMut.isPending} onClick={() => closeMut.mutate()}><X className="size-4" />{t("scorecards.actions.close")}</Button>
                 )}
               </div>
             )}
@@ -335,9 +335,9 @@ function DeleteScorecardDialog({ state, onClose }: { state: Editor; onClose: () 
           <DialogDescription>{t("scorecards.deleteConfirm", { name: row ? `${row.supplierName ?? ""} ${row.periodLabel}` : "" })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}>{tc("actions.cancel")}</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
           <Button variant="destructive" onClick={() => row && del.mutate(row.id)} disabled={del.isPending || !row}>
-            {del.isPending ? tc("feedback.deleting") : t("scorecards.actions.delete")}
+            <Trash2 className="size-4" />{del.isPending ? tc("feedback.deleting") : t("scorecards.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -432,7 +432,7 @@ function KpisTab() {
         <div className="flex gap-2">
           {kpis.length === 0 && (
             <Button perm={P.catalog.scorecards.manage} variant="outline" disabled={seed.isPending} onClick={() => seed.mutate()}
-              className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold">{t("scorecards.kpis.seed")}</Button>
+              className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"><Sparkles className="size-4" />{t("scorecards.kpis.seed")}</Button>
           )}
           <Button perm={P.catalog.scorecards.manage} onClick={() => setEditor({ mode: "create" })}
             className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"><Plus className="size-4" />{t("scorecards.kpis.create")}</Button>
@@ -508,8 +508,8 @@ function KpiEditorDialog({ state, onClose }: { state: KpiEditor; onClose: () => 
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={save.isPending || !canSubmit}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
+            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
+            <Button type="submit" disabled={save.isPending || !canSubmit}><Check className="size-4" />{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

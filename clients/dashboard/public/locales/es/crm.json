@@ -189,7 +189,9 @@
       "value": "Valor",
       "mandatory": "Obligatoria",
       "noValue": "Sin valor",
-      "docPlaceholder": "Código de documento (ej. NIT)"
+      "docPlaceholder": "Código de documento (ej. NIT)",
+      "include": "Incluir",
+      "allHint": "Activa solo las condiciones que el distribuidor debe cumplir y dales su valor."
     },
     "evaluation": {
       "title": "Evaluar distribuidor",
@@ -209,6 +211,12 @@
       "dateRange": "La fecha final no puede ser anterior a la inicial.",
       "ruleNumeric": "Una regla numérica requiere un valor válido (≥ 0).",
       "ruleDoc": "Indica el documento exigido."
+    },
+    "tabs": {
+      "general": "General",
+      "policies": "Políticas",
+      "rules": "Reglas",
+      "status": "Estado y evaluación"
     }
   },
   "parties": {

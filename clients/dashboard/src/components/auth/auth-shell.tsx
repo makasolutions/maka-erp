@@ -75,10 +75,10 @@ export function AuthShell({
                 "font-display text-[16px] font-bold text-[var(--color-primary-foreground)]",
               )}
             >
-              F
+              M
             </div>
             <span className="font-display text-[24px] font-semibold tracking-tight">
-              fullstack<span className="text-[var(--color-primary)]">hero</span>
+              Maka<span className="text-[var(--color-primary)]">-ERP</span>
             </span>
           </div>
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.7)]">

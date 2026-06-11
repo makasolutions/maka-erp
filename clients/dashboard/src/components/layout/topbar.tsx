@@ -1,18 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Check,
-  ChevronsUpDown,
-  KeyRound,
-  LogOut,
-  Monitor,
-  Moon,
-  Search,
-  Settings as SettingsIcon,
-  Sun,
-  UserRound,
-} from "lucide-react";
+import { Check, ChevronsUpDown, KeyRound, LogOut, Monitor, Moon, Search, Settings as SettingsIcon, Sun, UserRound, X } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/command-palette";
 import { MobileNavTrigger } from "@/components/layout/mobile-nav";
 import { ChatUnreadBadge } from "@/components/notifications/chat-unread-badge";
@@ -375,7 +364,7 @@ export function Topbar() {
               size="sm"
               onClick={() => setConfirmOpen(false)}
             >
-              {t("actions.cancel")}
+              <X className="size-4" />{t("actions.cancel")}
             </Button>
             <Button
               variant="destructive"

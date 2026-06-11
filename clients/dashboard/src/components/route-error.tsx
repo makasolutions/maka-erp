@@ -1,4 +1,6 @@
 import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router-dom";
+import { House, RefreshCw } from "lucide-react";
+
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,8 +37,8 @@ export function RouteError() {
           </CardContent>
         )}
         <CardFooter className="gap-2">
-          <Button onClick={() => navigate(0)}>{t("actions.refresh")}</Button>
-          <Button variant="outline" onClick={() => navigate("/")}>{t("error.goHome")}</Button>
+          <Button onClick={() => navigate(0)}><RefreshCw className="size-4" />{t("actions.refresh")}</Button>
+          <Button variant="outline" onClick={() => navigate("/")}><House className="size-4" />{t("error.goHome")}</Button>
         </CardFooter>
       </Card>
     </div>

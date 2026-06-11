@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Factory, Info, Languages, Pencil, Plus, Receipt, Trash2, Truck } from "lucide-react";
+import { Check, Factory, Info, Languages, Pencil, Plus, Receipt, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   createShippingClass, createTaxRate, deleteShippingClass, deleteTaxRate,
@@ -144,8 +144,8 @@ function TaxRateDialog({ state, onClose }: { state: TaxEditor; onClose: () => vo
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={!canSubmit || create.isPending || update.isPending}>{create.isPending || update.isPending ? tc("feedback.saving") : t("catalogSettings.save")}</Button>
+            <DialogClose asChild><Button type="button" variant="outline"><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
+            <Button type="submit" disabled={!canSubmit || create.isPending || update.isPending}><Check className="size-4" />{create.isPending || update.isPending ? tc("feedback.saving") : t("catalogSettings.save")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -233,8 +233,8 @@ function ShippingClassDialog({ state, onClose }: { state: ShipEditor; onClose: (
             </FormGrid>
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={!canSubmit || create.isPending || update.isPending}>{create.isPending || update.isPending ? tc("feedback.saving") : t("catalogSettings.save")}</Button>
+            <DialogClose asChild><Button type="button" variant="outline"><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
+            <Button type="submit" disabled={!canSubmit || create.isPending || update.isPending}><Check className="size-4" />{create.isPending || update.isPending ? tc("feedback.saving") : t("catalogSettings.save")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -282,7 +282,7 @@ function IndustriesSection() {
       description={t("catalogSettings.industries.hint")}
       footer={canManage && (
         <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-          {save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+          <Check className="size-4" />{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
         </Button>
       )}
     >

@@ -1,17 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ChevronRight,
-  File as FileIcon,
-  FileArchive,
-  FileImage,
-  FileText,
-  Files,
-  FolderOpen,
-  Search,
-  Share2,
-  X,
-} from "lucide-react";
+import { ChevronRight, File as FileIcon, FileArchive, FileImage, FileText, Files, FolderOpen, RefreshCw, Search, Share2, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/auth/use-auth";
@@ -275,7 +264,7 @@ export function MyFilesPage() {
                 onClick={() => void myFilesQuery.refetch()}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                {t("actions.refresh")}
+                <RefreshCw className="size-4" />{t("actions.refresh")}
               </Button>
             }
           />
@@ -290,7 +279,7 @@ export function MyFilesPage() {
                 onClick={() => void sharedFilesQuery.refetch()}
                 className="h-9 rounded-lg px-4 text-[13px]"
               >
-                {t("actions.refresh")}
+                <RefreshCw className="size-4" />{t("actions.refresh")}
               </Button>
             }
           />

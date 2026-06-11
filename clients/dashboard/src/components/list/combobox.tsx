@@ -382,7 +382,7 @@ const FieldTrigger = ({
       disabled={disabled}
       className={cn(
         "group/field relative flex h-9 w-full cursor-pointer items-center justify-between gap-2",
-        "rounded-md border border-[var(--color-input)] bg-transparent px-3 text-left text-sm shadow-sm",
+        "rounded-[6px] border border-[var(--color-input)] bg-transparent px-3 text-left text-sm shadow-sm",
         "transition-colors duration-[var(--duration-fast)]",
         "hover:border-[var(--color-border-strong)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2",

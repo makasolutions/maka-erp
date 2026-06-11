@@ -34,8 +34,14 @@ export { MakaDatePicker } from "./MakaDatePicker";
 export type { MakaDatePickerProps } from "./MakaDatePicker";
 export type { MakaDateRangePickerProps, MakaDateRange, MakaRangePreset } from "./MakaDateRangePicker";
 
+export { MakaDateTimePicker } from "./MakaDateTimePicker";
+export type { MakaDateTimePickerProps } from "./MakaDateTimePicker";
+
 export { MakaGridFilters, MakaFilterField, MakaFilterInput } from "./MakaGridFilters";
 export type { MakaGridFiltersProps } from "./MakaGridFilters";
+
+export { MakaKpiCard } from "./MakaKpiCard";
+export type { MakaKpiCardProps } from "./MakaKpiCard";
 
 export { MakaChart } from "./MakaChart";
 export type { MakaChartProps, MakaChartType } from "./MakaChart";

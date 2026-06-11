@@ -420,14 +420,14 @@ function CreateChannelDialog({
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            {t("common:actions.cancel")}
+            <X className="size-4" />{t("common:actions.cancel")}
           </Button>
           <Button
             size="sm"
             disabled={!name.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? t("createChannel.creating") : t("createChannel.create")}
+            <Plus className="size-4" />{mutation.isPending ? t("createChannel.creating") : t("createChannel.create")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -598,7 +598,7 @@ function NewDmDialog({
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            {t("common:actions.cancel")}
+            <X className="size-4" />{t("common:actions.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>

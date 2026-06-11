@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Download, Eye, Paperclip, Pencil, Pin, PinOff, SmilePlus, Trash2 } from "lucide-react";
+import { Check, Copy, Download, Eye, MessageSquare, Paperclip, Pencil, Pin, PinOff, SmilePlus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   addReaction,
@@ -646,7 +646,7 @@ function MentionPill({ username }: { username: string }) {
             onClick={copy}
             disabled={dmMutation.isPending}
           >
-            {t("message.copyHandle", { username: resolved?.userName ?? username })}
+            <Copy className="size-4" />{t("message.copyHandle", { username: resolved?.userName ?? username })}
           </Button>
           <Button
             size="sm"
@@ -654,7 +654,7 @@ function MentionPill({ username }: { username: string }) {
             onClick={() => dmMutation.mutate()}
             title={isSelf ? t("message.thatsYou") : undefined}
           >
-            {dmMutation.isPending ? t("message.opening") : t("message.openDm")}
+            <MessageSquare className="size-4" />{dmMutation.isPending ? t("message.opening") : t("message.openDm")}
           </Button>
         </div>
       </DropdownMenuContent>
@@ -885,10 +885,10 @@ function DeleteMessageDialog({
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={pending}>
-            {t("common:actions.cancel")}
+            <X className="size-4" />{t("common:actions.cancel")}
           </Button>
           <Button variant="destructive" size="sm" onClick={onConfirm} disabled={pending}>
-            {pending ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
+            <Trash2 className="size-4" />{pending ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1003,14 +1003,14 @@ function EditMessageInline({
         </span>
         <div className="flex items-center gap-1.5">
           <Button size="sm" variant="ghost" onClick={onClose} disabled={mutation.isPending}>
-            {t("common:actions.cancel")}
+            <X className="size-4" />{t("common:actions.cancel")}
           </Button>
           <Button
             size="sm"
             disabled={!body.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? t("editInline.saving") : t("editInline.save")}
+            <Check className="size-4" />{mutation.isPending ? t("editInline.saving") : t("editInline.save")}
           </Button>
         </div>
       </div>

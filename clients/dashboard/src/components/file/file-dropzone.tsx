@@ -153,7 +153,7 @@ export function FileDropzone({ options, onUploaded, disabled, accept, className 
               reset();
             }}
           >
-            {t("dropzone.cancel")}
+            <X className="size-4" />{t("dropzone.cancel")}
           </Button>
         )}
       </div>

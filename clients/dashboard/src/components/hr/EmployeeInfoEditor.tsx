@@ -7,7 +7,55 @@ import { Switch } from "@/components/ui/switch";
 import { MakaCurrencyInput, MakaDatePicker } from "@/components/maka";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
 import { rules, validateSchema } from "@/lib/validation/rules";
+import { cn } from "@/lib/cn";
 import type { EmployeeData } from "@/api/hr";
+
+/** Week days (Mon→Sun) as DANE-style 3-letter codes; rest days store as a CSV. */
+const WEEK_DAYS: { code: string; label: string }[] = [
+  { code: "LUN", label: "L" }, { code: "MAR", label: "M" }, { code: "MIE", label: "X" },
+  { code: "JUE", label: "J" }, { code: "VIE", label: "V" }, { code: "SAB", label: "S" }, { code: "DOM", label: "D" },
+];
+
+/**
+ * RestDaysPicker — seven day toggles (§18.6: a fixed, known set is far faster than a
+ * free-text "SAB,DOM" the user has to remember to spell). Emits/consumes a week-ordered
+ * CSV of day codes so it drops into the existing string field + validator.
+ */
+function RestDaysPicker({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const active = new Set((value ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean));
+  const toggle = (code: string) => {
+    const next = new Set(active);
+    if (next.has(code)) next.delete(code); else next.add(code);
+    onChange(WEEK_DAYS.filter((d) => next.has(d.code)).map((d) => d.code).join(","));
+  };
+  return (
+    <div className="flex h-9 items-center gap-1" role="group">
+      {WEEK_DAYS.map((d) => {
+        const on = active.has(d.code);
+        return (
+          <button
+            key={d.code}
+            type="button"
+            disabled={disabled}
+            aria-pressed={on}
+            title={d.code}
+            onClick={() => toggle(d.code)}
+            className={cn(
+              "grid size-8 shrink-0 place-items-center rounded-[6px] border text-[12px] font-semibold transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]",
+              "disabled:pointer-events-none disabled:opacity-50",
+              on
+                ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
+                : "border-[var(--color-input)] bg-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+            )}
+          >
+            {d.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export interface EmployeeInfoEditorProps {
   value: EmployeeData;
@@ -152,18 +200,20 @@ export function EmployeeInfoEditor({ value: v, onChange, disabled, errors }: Emp
             <BasicRecordSelect id="e-risk" tableCode="ArlRiskLevel" label={t("employee.fields.arlRiskLevel")}
               value={v.arlRiskLevelCode ?? null} onChange={(c) => set({ arlRiskLevelCode: c })} disabled={disabled} />
           </Field>
-          <Field id="e-rest" span={4} label={t("employee.fields.restDays")} error={err("restDays")}>
-            <Input id="e-rest" value={v.restDays ?? ""} disabled={disabled} placeholder="SAB,DOM"
-              onChange={(e) => set({ restDays: e.target.value })} />
+          {/* Risk flags sit next to "Nivel de riesgo" (related fields together, §18.6). */}
+          <Field id="e-riskflags" span={4} label={t("employee.fields.riskFlags")}>
+            <div className="flex h-9 flex-wrap items-center gap-x-5 gap-y-1">
+              <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={v.highPensionRisk} disabled={disabled} onCheckedChange={(c) => set({ highPensionRisk: c })} />{t("employee.fields.highPensionRisk")}
+              </label>
+              <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
+                <Switch checked={v.appliesLaw1607} disabled={disabled} onCheckedChange={(c) => set({ appliesLaw1607: c })} />{t("employee.fields.appliesLaw1607")}
+              </label>
+            </div>
           </Field>
-          <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
-            <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
-              <Switch checked={v.highPensionRisk} disabled={disabled} onCheckedChange={(c) => set({ highPensionRisk: c })} />{t("employee.fields.highPensionRisk")}
-            </label>
-            <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-foreground)]">
-              <Switch checked={v.appliesLaw1607} disabled={disabled} onCheckedChange={(c) => set({ appliesLaw1607: c })} />{t("employee.fields.appliesLaw1607")}
-            </label>
-          </div>
+          <Field id="e-rest" span={4} label={t("employee.fields.restDays")} error={err("restDays")}>
+            <RestDaysPicker value={v.restDays ?? ""} disabled={disabled} onChange={(val) => set({ restDays: val })} />
+          </Field>
         </FormGrid>
       </section>
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Plus, ShieldCheck, Trash2, UserMinus } from "lucide-react";
+import { Check, Plus, ShieldCheck, Trash2, UserMinus, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   addChannelMembers,
@@ -247,7 +247,7 @@ export function ChannelSettingsDialog({
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              {t("settings.close")}
+              <X className="size-4" />{t("settings.close")}
             </Button>
             {isAdmin && (
               <Button
@@ -255,7 +255,7 @@ export function ChannelSettingsDialog({
                 disabled={!dirty || !name.trim() || saveMutation.isPending}
                 onClick={() => saveMutation.mutate()}
               >
-                {saveMutation.isPending ? t("settings.saving") : t("settings.saveChanges")}
+                <Check className="size-4" />{saveMutation.isPending ? t("settings.saving") : t("settings.saveChanges")}
               </Button>
             )}
           </DialogFooter>
@@ -326,7 +326,7 @@ function ConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
-            {t("settings.cancel")}
+            <X className="size-4" />{t("settings.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -334,7 +334,7 @@ function ConfirmDialog({
             onClick={onConfirm}
             disabled={isPending}
           >
-            {confirmLabel}
+            <Check className="size-4" />{confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

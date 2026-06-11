@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Fingerprint, UserCircle2 } from "lucide-react";
+import { Camera, Check, Fingerprint, RotateCcw, UserCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/auth/use-auth";
@@ -135,10 +135,10 @@ export function ProfileSettings() {
               disabled={saving || !dirty}
               size="sm"
             >
-              {t("profile.reset")}
+              <RotateCcw className="size-4" />{t("profile.reset")}
             </Button>
             <Button type="submit" disabled={saving || !dirty} size="sm">
-              {saving ? t("feedback.saving", { ns: "common" }) : t("profile.saveChanges")}
+              <Check className="size-4" />{saving ? t("feedback.saving", { ns: "common" }) : t("profile.saveChanges")}
             </Button>
           </div>
         }

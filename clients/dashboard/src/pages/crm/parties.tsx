@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus } from "lucide-react";
+import { Building2, Check, Eye, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   createParty, deleteParty, getPartyById, hasRole, searchParties, updateParty,
@@ -103,7 +103,7 @@ export function PartiesPage() {
         description={t("parties.description")}
       >
         <Button variant="outline" onClick={() => setPanelOpen((x) => !x)} aria-pressed={panelOpen}
-          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold">{tc("gridFilters.panelToggle")}</Button>
+          className="h-9 gap-1.5 rounded-lg px-4 text-[13px] font-semibold"><Eye className="size-4" />{tc("gridFilters.panelToggle")}</Button>
         <Button perm={P.parties.create} onClick={() => setEditor({ mode: "create" })}
           className="h-9 flex-1 gap-1.5 rounded-lg px-4 text-[13px] font-semibold sm:flex-none">
           <Plus className="size-4" />{t("parties.actions.create")}
@@ -233,8 +233,8 @@ function PartyEditorDialog({ state, onClose }: { state: EditorState; onClose: ()
             <PartyForm value={form} onChange={setForm} isCreate={isCreate} partyId={editId} errors={errors} showErrors={showErrors} />
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
-            <Button type="submit" disabled={save.isPending}>{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
+            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
+            <Button type="submit" disabled={save.isPending}><Check className="size-4" />{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -263,9 +263,9 @@ function DeletePartyDialog({ state, onClose }: { state: EditorState; onClose: ()
           <DialogDescription>{t("parties.deleteConfirm", { name: party?.legalName ?? "" })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}>{tc("actions.cancel")}</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
           <Button variant="destructive" onClick={() => party && del.mutate(party.id)} disabled={del.isPending}>
-            {del.isPending ? tc("feedback.saving") : t("parties.actions.delete")}
+            <Trash2 className="size-4" />{del.isPending ? tc("feedback.saving") : t("parties.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

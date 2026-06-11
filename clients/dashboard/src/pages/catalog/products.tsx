@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Archive, BadgeCheck, Check, Copy, Download, Eye, FileText, Globe, Package, Plus, Trash2 } from "lucide-react";
+import { Archive, BadgeCheck, Check, CheckCircle2, Copy, Download, Eye, FileText, Globe, Package, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -68,6 +68,7 @@ import {
   MakaGridFilters,
   MakaFilterField,
   MakaFilterInput,
+  MakaKpiCard,
   MakaPriceRangeFilter,
   type MakaPriceRange,
 } from "@/components/maka";
@@ -180,22 +181,6 @@ function ProdPriceCell(row: ProductRow) {
     <div className="flex flex-col items-end gap-0 py-0.5 text-right">
       <span className="font-medium text-[var(--color-foreground)]">{label}</span>
       <span className="text-[9.5px] uppercase tracking-wide text-[var(--color-muted-foreground)]">IVA incl.</span>
-    </div>
-  );
-}
-
-function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
-      <div className="flex items-center justify-center gap-2">
-        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
-        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          {label}
-        </span>
-      </div>
-      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value.toLocaleString("es-CO")}
-      </div>
     </div>
   );
 }
@@ -489,7 +474,7 @@ export function ProductsPage() {
               {t("products.trash.title")}
             </h3>
             <Button variant="ghost" size="sm" onClick={() => setTrashOpen(false)}>
-              {tc("actions.close")}
+              <X className="size-4" />{tc("actions.close")}
             </Button>
           </div>
           <MakaGridServer<ProductRow>
@@ -637,10 +622,10 @@ export function ProductsPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("products.kpi.total")} value={query.data?.totalCount ?? 0} tone="var(--color-primary)" />
-            <KpiCard label={t("products.kpi.draft")} value={kpiDraft} tone="var(--color-muted-foreground)" />
-            <KpiCard label={t("products.kpi.active")} value={kpiActive} tone="var(--color-success)" />
-            <KpiCard label={t("products.kpi.trashed")} value={kpiTrashed} tone="var(--color-destructive)" />
+            <MakaKpiCard icon={Package} label={t("products.kpi.total")} value={query.data?.totalCount ?? 0} tone="var(--color-primary)" />
+            <MakaKpiCard icon={FileText} label={t("products.kpi.draft")} value={kpiDraft} tone="var(--color-muted-foreground)" />
+            <MakaKpiCard icon={CheckCircle2} label={t("products.kpi.active")} value={kpiActive} tone="var(--color-success)" />
+            <MakaKpiCard icon={Trash2} label={t("products.kpi.trashed")} value={kpiTrashed} tone="var(--color-destructive)" />
           </>
         }
       />
@@ -1052,11 +1037,11 @@ function ProductEditorDialog({
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isPending}>
-                {tc("actions.cancel")}
+                <X className="size-4" />{tc("actions.cancel")}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending || !canSubmit}>
-              {isPending ? tc("feedback.saving") : product ? tc("actions.saveChanges") : t("products.actions.add")}
+              <Check className="size-4" />{isPending ? tc("feedback.saving") : product ? tc("actions.saveChanges") : t("products.actions.add")}
             </Button>
           </DialogFooter>
         </form>
@@ -1101,7 +1086,7 @@ function DeleteProductDialog({ state, onClose }: { state: EditorState; onClose: 
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={deleteMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -1109,7 +1094,7 @@ function DeleteProductDialog({ state, onClose }: { state: EditorState; onClose: 
             onClick={() => product && deleteMutation.mutate(product.id)}
             disabled={deleteMutation.isPending || !product}
           >
-            {deleteMutation.isPending ? tc("feedback.deleting") : t("products.actions.delete")}
+            <Trash2 className="size-4" />{deleteMutation.isPending ? tc("feedback.deleting") : t("products.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1148,14 +1133,14 @@ function PublishProductDialog({ state, onClose }: { state: EditorState; onClose:
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={publishMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
             onClick={() => product && publishMutation.mutate(product.id)}
             disabled={publishMutation.isPending || !product}
           >
-            {publishMutation.isPending ? tc("feedback.saving") : t("products.actions.publish")}
+            <Check className="size-4" />{publishMutation.isPending ? tc("feedback.saving") : t("products.actions.publish")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1194,7 +1179,7 @@ function ArchiveProductDialog({ state, onClose }: { state: EditorState; onClose:
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={archiveMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -1203,7 +1188,7 @@ function ArchiveProductDialog({ state, onClose }: { state: EditorState; onClose:
             disabled={archiveMutation.isPending || !product}
             className="text-[var(--color-warning)]"
           >
-            {archiveMutation.isPending ? tc("feedback.saving") : t("products.actions.archive")}
+            <Check className="size-4" />{archiveMutation.isPending ? tc("feedback.saving") : t("products.actions.archive")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1242,14 +1227,14 @@ function RestoreProductDialog({ state, onClose }: { state: EditorState; onClose:
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={restoreMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
             onClick={() => product && restoreMutation.mutate(product.id)}
             disabled={restoreMutation.isPending || !product}
           >
-            {restoreMutation.isPending ? tc("feedback.saving") : t("products.trash.restoreAction")}
+            <RotateCcw className="size-4" />{restoreMutation.isPending ? tc("feedback.saving") : t("products.trash.restoreAction")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1363,7 +1348,7 @@ function AdoptGlobalProductDialog({
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">{tc("actions.close")}</Button>
+            <Button type="button" variant="outline"><X className="size-4" />{tc("actions.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

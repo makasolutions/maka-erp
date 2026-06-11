@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { IdCard, Plus } from "lucide-react";
+import { Hash, IdCard, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -266,36 +266,37 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
               {tab === "id" && (
                 <div className="space-y-6">
                   <FormGrid>
-                    <Field id="emp-idtype" span={3} label={tp("parties.fields.idType")} required error={ce.identificationTypeCode}>
+                    {/* 3 columnas iguales (§18.6). Número + DV comparten una columna:
+                        el número domina y el DV (un solo dígito) ocupa una franja angosta. */}
+                    <Field id="emp-idtype" span={4} label={tp("parties.fields.idType")} required error={ce.identificationTypeCode}>
                       <BasicRecordSelect id="emp-idtype" tableCode="IdentificationType" label={tp("parties.fields.idType")}
                         value={identity.identificationTypeCode} onChange={(c) => setId({ identificationTypeCode: c })} disabled={!isCreate} />
                     </Field>
                     <Field id="emp-idnum" span={4} label={tp("parties.fields.idNumber")} required error={ce.identificationNumber}>
-                      <Input id="emp-idnum" value={identity.identificationNumber} disabled={!isCreate} className="font-mono"
-                        inputMode={numericDoc ? "numeric" : "text"} maxLength={20}
-                        onChange={(e) => setId({ identificationNumber: numericDoc ? e.target.value.replace(/\D/g, "") : e.target.value })} />
-                    </Field>
-                    <Field id="emp-dv" span={2} label={tp("parties.fields.dv")}>
-                      <div className="flex gap-1">
-                        <Input id="emp-dv" type="number" className="font-mono" value={identity.verificationDigit ?? ""}
+                      <div className="flex gap-1.5">
+                        <Input id="emp-idnum" value={identity.identificationNumber} disabled={!isCreate} className="flex-1 font-mono"
+                          inputMode={numericDoc ? "numeric" : "text"} maxLength={20}
+                          onChange={(e) => setId({ identificationNumber: numericDoc ? e.target.value.replace(/\D/g, "") : e.target.value })} />
+                        <Input id="emp-dv" type="number" className="w-14 shrink-0 font-mono" value={identity.verificationDigit ?? ""}
+                          aria-label={tp("parties.fields.dv")} placeholder={tp("parties.fields.dv")} title={tp("parties.fields.dv")}
                           onChange={(e) => setId({ verificationDigit: e.target.value === "" ? null : Number(e.target.value) })} />
                         {isNit && (
-                          <Button type="button" variant="outline" size="sm"
-                            onClick={() => setId({ verificationDigit: nitVerificationDigit(identity.identificationNumber) })}>DV</Button>
+                          <Button type="button" variant="outline" size="sm" className="shrink-0"
+                            onClick={() => setId({ verificationDigit: nitVerificationDigit(identity.identificationNumber) })}><Hash className="size-4" />DV</Button>
                         )}
                       </div>
                     </Field>
-                    <Field id="emp-kind" span={3} label={tp("parties.fields.kind")}>
+                    <Field id="emp-kind" span={4} label={tp("parties.fields.kind")}>
                       <Combobox id="emp-kind" label={tp("parties.fields.kind")} value="Natural" disabled
                         options={[{ value: "Natural", label: tp("parties.kind.Natural") }]} onChange={() => {}} />
                     </Field>
-                    <Field id="emp-first" span={6} label={tp("parties.fields.firstName")} required error={ce.firstName}>
+                    <Field id="emp-first" span={4} label={tp("parties.fields.firstName")} required error={ce.firstName}>
                       <Input id="emp-first" value={identity.firstName} maxLength={50} onChange={(e) => setId({ firstName: e.target.value })} />
                     </Field>
-                    <Field id="emp-last" span={6} label={tp("parties.fields.lastName")} required error={ce.lastName}>
+                    <Field id="emp-last" span={4} label={tp("parties.fields.lastName")} required error={ce.lastName}>
                       <Input id="emp-last" value={identity.lastName} maxLength={50} onChange={(e) => setId({ lastName: e.target.value })} />
                     </Field>
-                    <Field id="emp-email" span={6} label={tp("parties.fields.email")} error={ce.email}>
+                    <Field id="emp-email" span={4} label={tp("parties.fields.email")} error={ce.email}>
                       <Input id="emp-email" type="email" value={identity.email} onChange={(e) => setId({ email: e.target.value })} />
                     </Field>
                   </FormGrid>
@@ -364,9 +365,9 @@ function DeleteEmpleadoDialog({ state, onClose }: { state: EditorState; onClose:
           <DialogDescription>{t("deleteConfirm")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}>{tc("actions.cancel")}</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
           <Button variant="destructive" onClick={() => row && del.mutate(row.id)} disabled={del.isPending}>
-            {del.isPending ? tc("feedback.saving") : t("actions.delete")}
+            <Trash2 className="size-4" />{del.isPending ? tc("feedback.saving") : t("actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

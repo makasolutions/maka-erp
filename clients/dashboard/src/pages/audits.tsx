@@ -10,10 +10,13 @@ import {
   ExternalLink,
   Eye,
   Hash,
+  Info,
+  OctagonAlert,
   ScrollText,
   Shield,
   Tag,
   X,
+  XCircle,
 } from "lucide-react";
 import {
   AuditEventType,
@@ -45,6 +48,7 @@ import {
   MakaFilterInput,
   MakaDateRangePicker,
   makaPresetRange,
+  MakaKpiCard,
 } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
@@ -261,22 +265,6 @@ function AuditOperationCell(row: AuditRow) {
 }
 
 // ── KPI card ──────────────────────────────────────────────────────────────
-function AuditKpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
-      <div className="flex items-center justify-center gap-2">
-        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
-        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          {label}
-        </span>
-      </div>
-      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value.toLocaleString("es-CO")}
-      </div>
-    </div>
-  );
-}
-
 function AuditsMakaSection({ panelOpen }: { panelOpen: boolean }) {
   const { t } = useTranslation("common");
   const { formatDate, formatTime } = useLocalization();
@@ -593,15 +581,15 @@ function AuditsMakaSection({ panelOpen }: { panelOpen: boolean }) {
         }
         kpis={
           <>
-            <AuditKpiCard label={t("audits.total")} value={kpis.grand} tone="var(--color-primary)" />
-            <AuditKpiCard label={fmtEventType(t, AuditEventType.Activity)} value={kpis.activity} tone="var(--color-info)" />
-            <AuditKpiCard label={fmtEventType(t, AuditEventType.EntityChange)} value={kpis.entity} tone="var(--color-chart-2)" />
-            <AuditKpiCard label={fmtEventType(t, AuditEventType.Security)} value={kpis.security} tone="var(--color-warning)" />
-            <AuditKpiCard label={fmtEventType(t, AuditEventType.Exception)} value={kpis.exception} tone="var(--color-destructive)" />
-            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Information)} value={kpis.info} tone="var(--color-info)" />
-            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Warning)} value={kpis.warn} tone="var(--color-warning)" />
-            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Error)} value={kpis.err} tone="var(--color-destructive)" />
-            <AuditKpiCard label={fmtSeverity(t, AuditSeverity.Critical)} value={kpis.crit} tone="var(--color-destructive)" />
+            <MakaKpiCard icon={ScrollText} label={t("audits.total")} value={kpis.grand} tone="var(--color-primary)" />
+            <MakaKpiCard icon={Activity} label={fmtEventType(t, AuditEventType.Activity)} value={kpis.activity} tone="var(--color-info)" />
+            <MakaKpiCard icon={Database} label={fmtEventType(t, AuditEventType.EntityChange)} value={kpis.entity} tone="var(--color-chart-2)" />
+            <MakaKpiCard icon={Shield} label={fmtEventType(t, AuditEventType.Security)} value={kpis.security} tone="var(--color-warning)" />
+            <MakaKpiCard icon={AlertTriangle} label={fmtEventType(t, AuditEventType.Exception)} value={kpis.exception} tone="var(--color-destructive)" />
+            <MakaKpiCard icon={Info} label={fmtSeverity(t, AuditSeverity.Information)} value={kpis.info} tone="var(--color-info)" />
+            <MakaKpiCard icon={AlertTriangle} label={fmtSeverity(t, AuditSeverity.Warning)} value={kpis.warn} tone="var(--color-warning)" />
+            <MakaKpiCard icon={XCircle} label={fmtSeverity(t, AuditSeverity.Error)} value={kpis.err} tone="var(--color-destructive)" />
+            <MakaKpiCard icon={OctagonAlert} label={fmtSeverity(t, AuditSeverity.Critical)} value={kpis.crit} tone="var(--color-destructive)" />
           </>
         }
       />

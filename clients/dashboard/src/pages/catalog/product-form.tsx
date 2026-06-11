@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Boxes, Check, ChevronDown, FileText, Hash, ImageIcon, Layers, Megaphone, Pencil, Plus, SlidersHorizontal, Star, Trash2,
+  ArrowLeft, Boxes, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, Hash, ImageIcon, Layers, Megaphone, Pencil, Plus, Save, SlidersHorizontal, Star, Trash2, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -288,25 +288,25 @@ export function ProductFormPage() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={() => navigate("/catalog/products")}>
-            {t("wizard.cancel")}
+            <X className="size-4" />{t("wizard.cancel")}
           </Button>
           <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
-            {t("wizard.back")}
+            <ChevronLeft className="size-4" />{t("wizard.back")}
           </Button>
         </div>
         <div className="flex items-center gap-2">
           {!isNew || productId ? (
             <Button variant="outline" onClick={() => saveMutation.mutate()} disabled={!canEdit || saveMutation.isPending}>
-              {saveMutation.isPending ? tc("feedback.saving") : t("wizard.saveDraft")}
+              <Save className="size-4" />{saveMutation.isPending ? tc("feedback.saving") : t("wizard.saveDraft")}
             </Button>
           ) : null}
           {step < STEPS.length - 1 ? (
             <Button onClick={goNext} disabled={(step === 0 && !step1Valid) || createMutation.isPending}>
-              {createMutation.isPending ? t("wizard.creating") : t("wizard.next")}
+              {createMutation.isPending ? t("wizard.creating") : t("wizard.next")}<ChevronRight className="size-4" />
             </Button>
           ) : (
             <Button onClick={() => { saveMutation.mutate(); navigate("/catalog/products"); }} disabled={!canEdit}>
-              {t("wizard.finish")}
+              <Check className="size-4" />{t("wizard.finish")}
             </Button>
           )}
         </div>
@@ -409,7 +409,7 @@ function GeneralStep({
     <div className="space-y-6">
       <FormGrid>
         {isNew && (
-          <Field id="p-sku" span={3} label="SKU" required>
+          <Field id="p-sku" span={4} label="SKU" required>
             <Input id="p-sku" value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
               maxLength={64} required placeholder="SONY-FX3" className="font-mono uppercase"
               aria-invalid={skuTooLong || skuBadFormat || !sku.trim()} />
@@ -418,7 +418,7 @@ function GeneralStep({
             {!sku.trim() && <p className="mt-1 text-[11.5px] text-[var(--color-destructive)]">{t("codes.skuRequired")}</p>}
           </Field>
         )}
-        <Field id="p-type" span={isNew ? 3 : 4} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
+        <Field id="p-type" span={isNew ? 4 : 6} label={t("products.fields.type")} required hint={!isNew ? t("wizard.typeHint.immutable") : undefined}>
           <Combobox id="p-type" label={t("products.fields.type")} value={type}
             onChange={(v) => v && setType(v as ProductType)} options={typeOptions} disabled={!isNew} />
           {!isNew && productId && canEdit && convertTarget && (
@@ -428,7 +428,7 @@ function GeneralStep({
             </button>
           )}
         </Field>
-        <Field id="p-name" span={isNew ? 6 : 8} label={t("products.fields.name")} required>
+        <Field id="p-name" span={isNew ? 4 : 6} label={t("products.fields.name")} required>
           <Input id="p-name" value={name} onChange={(e) => setName(e.target.value)}
             maxLength={200} required autoFocus placeholder={t("products.namePlaceholder", "")} />
         </Field>
@@ -672,7 +672,7 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
           )}
           <Button type="button" onClick={requestSave}
             disabled={saveM.isPending || defaultPriceMissing}>
-            {saveM.isPending ? tc("feedback.saving") : t("priceLists.savePrices")}
+            <Check className="size-4" />{saveM.isPending ? tc("feedback.saving") : t("priceLists.savePrices")}
           </Button>
         </div>
       )}
@@ -700,10 +700,10 @@ function PriceListsInputs({ productId, canEdit, variationId: variationIdProp, hi
           </ul>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={saveM.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
             <Button type="button" onClick={() => saveM.mutate()} disabled={saveM.isPending}>
-              {saveM.isPending ? tc("feedback.saving") : t("priceLists.bigChangeConfirm")}
+              <Check className="size-4" />{saveM.isPending ? tc("feedback.saving") : t("priceLists.bigChangeConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -819,7 +819,7 @@ function DefaultVariationCodes({ productId, canEdit }: { productId: string; canE
       {canEdit && variationId && (
         <div className="flex justify-end">
           <Button type="button" onClick={() => saveM.mutate()} disabled={saveM.isPending || hasErrors}>
-            {saveM.isPending ? tc("feedback.saving") : t("codes.saveCodes")}
+            <Check className="size-4" />{saveM.isPending ? tc("feedback.saving") : t("codes.saveCodes")}
           </Button>
         </div>
       )}

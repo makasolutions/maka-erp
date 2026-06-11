@@ -7,25 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  CheckCircle2,
-  CircleSlash2,
-  Clock,
-  Globe,
-  Mail,
-  MonitorSmartphone,
-  Phone,
-  Power,
-  PowerOff,
-  ShieldAlert,
-  ShieldCheck,
-  Smartphone,
-  Trash2,
-  User as UserIcon,
-  UserCog,
-  Users as UsersIcon,
-  XCircle,
-} from "lucide-react";
+import { Ban, Check, CheckCircle2, CircleSlash2, Clock, Globe, Mail, MonitorSmartphone, Phone, Power, PowerOff, ShieldAlert, ShieldCheck, Smartphone, Trash2, User as UserIcon, UserCog, Users as UsersIcon, X, XCircle } from "lucide-react";
 import {
   adminRevokeAllUserSessions,
   adminRevokeUserSession,
@@ -446,14 +428,14 @@ export function UserDetailPage() {
                   onClick={() => setPending(new Map())}
                   disabled={!isDirty || saveRoles.isPending}
                 >
-                  {t("common:actions.discard")}
+                  <X className="size-4" />{t("common:actions.discard")}
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => saveRoles.mutate()}
                   disabled={!isDirty || saveRoles.isPending}
                 >
-                  {saveRoles.isPending ? t("common:feedback.saving") : t("users.detail.saveChanges")}
+                  <Check className="size-4" />{saveRoles.isPending ? t("common:feedback.saving") : t("users.detail.saveChanges")}
                 </Button>
               </div>
             ) : undefined
@@ -559,7 +541,7 @@ export function UserDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={removeUser.isPending}>
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -567,7 +549,7 @@ export function UserDetailPage() {
               onClick={() => removeUser.mutate()}
               disabled={removeUser.isPending}
             >
-              {removeUser.isPending ? t("common:feedback.deleting") : t("users.detail.deleteAction")}
+              <Trash2 className="size-4" />{removeUser.isPending ? t("common:feedback.deleting") : t("users.detail.deleteAction")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -592,11 +574,11 @@ export function UserDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={toggleStatus.isPending}>
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button onClick={() => toggleStatus.mutate()} disabled={toggleStatus.isPending}>
-              {toggleStatus.isPending
+              <Power className="size-4" />{toggleStatus.isPending
                 ? t("users.detail.working")
                 : user.isActive
                   ? t("common:actions.deactivate")
@@ -639,7 +621,7 @@ export function UserDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={impersonate.isPending}>
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -670,7 +652,7 @@ export function UserDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={revokeAll.isPending}>
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -678,7 +660,7 @@ export function UserDetailPage() {
               onClick={() => revokeAll.mutate()}
               disabled={revokeAll.isPending}
             >
-              {revokeAll.isPending ? t("users.detail.revoking") : t("users.detail.revokeAll")}
+              <Ban className="size-4" />{revokeAll.isPending ? t("users.detail.revoking") : t("users.detail.revokeAll")}
             </Button>
           </DialogFooter>
         </DialogContent>

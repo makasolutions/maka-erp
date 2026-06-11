@@ -175,7 +175,9 @@
       "value": "Value",
       "mandatory": "Mandatory",
       "noValue": "No value",
-      "docPlaceholder": "Document code (e.g. NIT)"
+      "docPlaceholder": "Document code (e.g. NIT)",
+      "include": "Include",
+      "allHint": "Enable only the conditions the distributor must meet and set their value."
     },
     "evaluation": {
       "title": "Evaluate distributor",
@@ -195,6 +197,12 @@
       "dateRange": "The end date cannot be earlier than the start date.",
       "ruleNumeric": "A numeric rule requires a valid value (≥ 0).",
       "ruleDoc": "Specify the required document."
+    },
+    "tabs": {
+      "general": "General",
+      "policies": "Policies",
+      "rules": "Rules",
+      "status": "Status & evaluation"
     }
   },
   "parties": {

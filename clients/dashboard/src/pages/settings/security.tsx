@@ -2,17 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  AlertCircle,
-  ClipboardCheck,
-  Copy,
-  KeyRound,
-  LogOut,
-  MonitorSmartphone,
-  ShieldCheck,
-  ShieldOff,
-  Smartphone,
-} from "lucide-react";
+import { AlertCircle, ClipboardCheck, Copy, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, ShieldOff, Smartphone, X } from "lucide-react";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import {
@@ -309,7 +299,7 @@ function PasswordCard() {
             {t("security.password.hint")}
           </div>
           <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-            {t("security.password.change")}
+            <KeyRound className="size-4" />{t("security.password.change")}
           </Button>
         </CardContent>
       </Card>
@@ -663,7 +653,7 @@ function TwoFactorEnroll() {
               onClick={() => verifyMutation.mutate(code)}
               disabled={code.length < 6 || verifyMutation.isPending}
             >
-              {verifyMutation.isPending
+              <ShieldCheck className="size-4" />{verifyMutation.isPending
                 ? t("security.twoFactorSection.verifying")
                 : t("security.twoFactorSection.confirmEnable")}
             </Button>
@@ -675,7 +665,7 @@ function TwoFactorEnroll() {
               }}
               disabled={verifyMutation.isPending}
             >
-              {t("common:actions.cancel", "Cancel")}
+              <X className="size-4" />{t("common:actions.cancel", "Cancel")}
             </Button>
           </div>
         </div>

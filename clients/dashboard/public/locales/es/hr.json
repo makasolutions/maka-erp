@@ -4,8 +4,14 @@
   "description": "Información laboral y de nómina del personal.",
   "formDesc": "Datos del empleado: identificación, contactos e información laboral.",
   "deleteConfirm": "¿Eliminar la información de empleado? Esta acción se puede revertir desde la papelera.",
-  "actions": { "create": "Nuevo empleado", "edit": "Editar empleado", "delete": "Eliminar empleado" },
-  "filters": { "search": "Buscar por cargo o sucursal…" },
+  "actions": {
+    "create": "Nuevo empleado",
+    "edit": "Editar empleado",
+    "delete": "Eliminar empleado"
+  },
+  "filters": {
+    "search": "Buscar por cargo o sucursal…"
+  },
   "employee": {
     "tab": "Información laboral",
     "sections": {
@@ -42,7 +48,8 @@
       "salaryType": "Tipo de salario",
       "baseSalary": "Salario base",
       "salaryStartDate": "Fecha del salario",
-      "legalTransportAllowance": "Auxilio de transporte"
+      "legalTransportAllowance": "Auxilio de transporte",
+      "riskFlags": "Indicadores de riesgo"
     }
   }
 }

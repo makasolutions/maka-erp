@@ -2,15 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  ArrowRight,
-  Check,
-  Eye,
-  EyeOff,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/use-auth";
 import { Button } from "@/components/ui/button";
@@ -158,12 +150,12 @@ export function ResetPasswordPage() {
           <div className="flex gap-2 pt-1">
             <Link to="/forgot-password">
               <Button type="button" variant="outline">
-                {t("auth.resetPasswordForm.requestNewLink")}
+                <RotateCcw className="size-4" />{t("auth.resetPasswordForm.requestNewLink")}
               </Button>
             </Link>
             <Link to="/login">
               <Button type="button" variant="ghost">
-                {t("auth.forgotPasswordForm.backToSignIn")}
+                <ArrowLeft className="size-4" />{t("auth.forgotPasswordForm.backToSignIn")}
               </Button>
             </Link>
           </div>

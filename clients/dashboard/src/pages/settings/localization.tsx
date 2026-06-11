@@ -304,7 +304,7 @@ export function LocalizationSettings() {
         onClick={() => void handleSave()}
         disabled={isSaving}
       >
-        {isSaving ? t("localization.saving") : t("localization.save")}
+        <Check className="size-4" />{isSaving ? t("localization.saving") : t("localization.save")}
       </Button>
     </div>
   );

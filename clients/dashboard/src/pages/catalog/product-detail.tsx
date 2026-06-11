@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Hash, ImageIcon, Layers, Plus, SlidersHorizontal, Sparkles, Star, Tag, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Check, Hash, ImageIcon, Layers, Plus, SlidersHorizontal, Sparkles, Star, Tag, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -708,7 +708,7 @@ export function ProductTagsTab({ productId, canEdit }: { productId: string; canE
 
           <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "…" : t("detail.tags.save")}
+              <Check className="size-4" />{saveMutation.isPending ? "…" : t("detail.tags.save")}
             </Button>
           </div>
         </>
@@ -894,10 +894,10 @@ export function VariationEditorDialog({
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={saveMutation.isPending}>{tc("actions.cancel")}</Button>
+              <Button type="button" variant="outline" disabled={saveMutation.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
             </DialogClose>
             <Button type="submit" disabled={saveMutation.isPending || !canSubmit}>
-              {saveMutation.isPending ? tc("feedback.saving") : variation ? tc("actions.saveChanges") : t("variations.actions.add")}
+              <Check className="size-4" />{saveMutation.isPending ? tc("feedback.saving") : variation ? tc("actions.saveChanges") : t("variations.actions.add")}
             </Button>
           </DialogFooter>
         </form>
@@ -944,10 +944,10 @@ export function DeleteVariationDialog({
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" disabled={deleteMutation.isPending}>{tc("actions.cancel")}</Button>
+            <Button type="button" variant="outline" disabled={deleteMutation.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
           </DialogClose>
           <Button variant="destructive" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-            {deleteMutation.isPending ? tc("feedback.deleting") : t("variations.actions.delete")}
+            <Trash2 className="size-4" />{deleteMutation.isPending ? tc("feedback.deleting") : t("variations.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1088,7 +1088,7 @@ export function CodesDialog({
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">{tc("actions.close")}</Button>
+            <Button type="button" variant="outline"><X className="size-4" />{tc("actions.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

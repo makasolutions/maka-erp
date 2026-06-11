@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthHeadline, AuthShell } from "@/components/auth/auth-shell";
 import { confirmEmail } from "@/api/identity";
@@ -150,12 +150,12 @@ export function ConfirmEmailPage() {
           <div className="flex items-center justify-center gap-2 pt-1">
             <Link to="/login">
               <Button type="button" variant="outline">
-                {t("auth.confirmEmail.backToSignIn")}
+                <ArrowLeft className="size-4" />{t("auth.confirmEmail.backToSignIn")}
               </Button>
             </Link>
             <Link to="/forgot-password">
               <Button type="button" variant="ghost">
-                {t("auth.confirmEmail.resetInstead")}
+                <RotateCcw className="size-4" />{t("auth.confirmEmail.resetInstead")}
               </Button>
             </Link>
           </div>

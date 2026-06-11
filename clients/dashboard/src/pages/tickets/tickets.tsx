@@ -13,6 +13,10 @@ import {
 } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  CheckCheck,
+  CheckCircle2,
+  CircleDot,
+  Clock,
   Eye,
   Plus,
   Ticket as TicketIcon,
@@ -55,7 +59,7 @@ import {
 } from "@/components/list";
 import { SaveIcon, CancelIcon } from "@/components/ui/icons";
 import { rules, validateSchema } from "@/lib/validation/rules";
-import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField, MakaFilterInput } from "@/components/maka";
+import { MakaGridClient, MakaDateRangePicker, makaPresetRange, MakaGridFilters, MakaFilterField, MakaFilterInput, MakaKpiCard } from "@/components/maka";
 import type { MakaDateRange } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { getUserById } from "@/api/identity";
@@ -361,11 +365,11 @@ export function TicketsPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("kpi.total")} value={kpis.total} tone="default" />
-            <KpiCard label={t("status.open")} value={kpis.byStatus.Open} tone="info" />
-            <KpiCard label={t("status.inProgress")} value={kpis.byStatus.InProgress} tone="warning" />
-            <KpiCard label={t("status.resolved")} value={kpis.byStatus.Resolved} tone="success" />
-            <KpiCard label={t("status.closed")} value={kpis.byStatus.Closed} tone="default" />
+            <MakaKpiCard icon={TicketIcon} label={t("kpi.total")} value={kpis.total} tone="var(--color-primary)" />
+            <MakaKpiCard icon={CircleDot} label={t("status.open")} value={kpis.byStatus.Open} tone="var(--color-info)" />
+            <MakaKpiCard icon={Clock} label={t("status.inProgress")} value={kpis.byStatus.InProgress} tone="var(--color-warning)" />
+            <MakaKpiCard icon={CheckCircle2} label={t("status.resolved")} value={kpis.byStatus.Resolved} tone="var(--color-success)" />
+            <MakaKpiCard icon={CheckCheck} label={t("status.closed")} value={kpis.byStatus.Closed} tone="var(--color-primary)" />
           </>
         }
       />
@@ -406,35 +410,6 @@ export function TicketsPage() {
 // ───────────────────────────────────────────────────────────────────────
 //  KPI card — small metric tile for the dashboard tab
 // ───────────────────────────────────────────────────────────────────────
-
-function KpiCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "default" | "info" | "warning" | "success";
-}) {
-  const accent =
-    tone === "info" ? "var(--color-info)"
-    : tone === "warning" ? "var(--color-warning)"
-    : tone === "success" ? "var(--color-success)"
-    : "var(--color-primary)";
-  return (
-    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
-      <div className="flex items-center justify-center gap-2">
-        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: accent }} />
-        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          {label}
-        </span>
-      </div>
-      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value.toLocaleString("es-CO")}
-      </div>
-    </div>
-  );
-}
 
 // ───────────────────────────────────────────────────────────────────────
 //  MakaGrid cell templates — rendered by Syncfusion per row. Each receives

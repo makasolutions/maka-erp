@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Handshake, Plus, Trash2 } from "lucide-react";
+import { Ban, Check, Handshake, Pause, Play, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   changeAgreementStatus, createAgreement, deleteAgreement, evaluateAgreement, getAgreementById,
@@ -18,7 +18,8 @@ import {
   Dialog, DialogBody, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormErrorSummary, FormGrid,
+  Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormErrorSummary, FormGrid, FormTabs,
+  type FormTab,
 } from "@/components/list";
 import { MakaGridClient, MakaGridFilters, MakaFilterField, MakaFilterInput, MakaDatePicker } from "@/components/maka";
 import { PartyPicker } from "@/components/party/PartyPicker";
@@ -176,6 +177,7 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
   const [form, setForm] = useState<FormState>(emptyForm());
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [distributorId, setDistributorId] = useState<string | null>(null);
+  const [tab, setTab] = useState("general");
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
   const detailQ = useQuery({
@@ -198,6 +200,7 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
     if (!isOpen) return;
     setErrorMsg(null);
     setDistributorId(null);
+    setTab("general");
     if (isCreate) { setForm(emptyForm()); return; }
     if (detail) {
       setForm({
@@ -271,10 +274,31 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
     save.mutate();
   };
 
-  const addRule = () => set({ rules: [...form.rules, { ruleType: "AntiguedadMinimaMeses", numericValue: 0, boolValue: null, textValue: null, isMandatory: true }] });
-  const updateRule = (i: number, patch: Partial<AgreementRuleInput>) =>
-    set({ rules: form.rules.map((r, idx) => (idx === i ? { ...r, ...patch } : r)) });
-  const removeRule = (i: number) => set({ rules: form.rules.filter((_, idx) => idx !== i) });
+  // Rules as a fixed list of every possible rule type (§18.6): toggle to include +
+  // fill its value in place. No add/remove + type-picker dance — the user sees the
+  // whole universe of conditions at once and activates the ones that apply.
+  const ruleByType = useMemo(
+    () => new Map(form.rules.map((r) => [r.ruleType, r] as const)),
+    [form.rules],
+  );
+  const toggleRule = (type: AgreementRuleType) =>
+    set(
+      ruleByType.has(type)
+        ? { rules: form.rules.filter((r) => r.ruleType !== type) }
+        : { rules: [...form.rules, { ruleType: type, numericValue: NUMERIC_RULES.has(type) ? 0 : null, boolValue: null, textValue: null, isMandatory: true }] },
+    );
+  const patchRule = (type: AgreementRuleType, patch: Partial<AgreementRuleInput>) =>
+    set({ rules: form.rules.map((r) => (r.ruleType === type ? { ...r, ...patch } : r)) });
+
+  // Per-tab error flags (drive the red dot on each tab after a failed submit).
+  const showErrors = !!errorMsg;
+  const generalHasError = !form.name.trim() || !form.supplierId || (!!form.validTo && form.validTo < form.validFrom);
+  const rulesHaveError = form.rules.some(
+    (r) =>
+      (NUMERIC_RULES.has(r.ruleType) && (r.numericValue == null || r.numericValue < 0)) ||
+      (r.ruleType === "DocumentoExigido" && !(r.textValue ?? "").trim()),
+  );
+  const errDot = <span aria-hidden className="ml-1 inline-block size-1.5 rounded-full bg-[var(--color-destructive)]" />;
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -291,178 +315,199 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
                 {t("convenios.terminatedNote")}
               </div>
             )}
-            <FormGrid>
-              <Field id="ag-name" span={8} label={t("convenios.fields.name")} required>
-                <Input id="ag-name" value={form.name} maxLength={200} disabled={readOnly}
-                  onChange={(e) => set({ name: e.target.value })} />
-              </Field>
-              <Field id="ag-type" span={4} label={t("convenios.fields.type")} required>
-                <Combobox id="ag-type" label={t("convenios.fields.type")} value={form.agreementType}
-                  onChange={(v) => v && set({ agreementType: v as AgreementType })} disabled={readOnly}
-                  options={TYPES.map((x) => ({ value: x, label: t(`convenios.type.${x}`) }))} />
-              </Field>
-              <Field id="ag-supplier" span={6} label={t("convenios.fields.supplier")} required>
-                {isCreate ? (
-                  <PartyPicker id="ag-supplier" role="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
-                ) : (
-                  <Input id="ag-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
-                )}
-              </Field>
-              <Field id="ag-pl" span={3} label={t("convenios.fields.priceList")} hint={t("convenios.fields.priceListHint")}>
-                <Combobox id="ag-pl" label={t("convenios.fields.priceList")} value={form.priceListId}
-                  onChange={(v) => set({ priceListId: v })} options={priceListOptions} searchable clearable disabled={readOnly} />
-              </Field>
-              <Field id="ag-spl" span={3} label={t("convenios.fields.suggestedPriceList")}>
-                <Combobox id="ag-spl" label={t("convenios.fields.suggestedPriceList")} value={form.suggestedPriceListId}
-                  onChange={(v) => set({ suggestedPriceListId: v })} options={priceListOptions} searchable clearable disabled={readOnly} />
-              </Field>
-
-              <Field id="ag-disp" span={4} label={t("convenios.fields.dispatch")}>
-                <Combobox id="ag-disp" label={t("convenios.fields.dispatch")} value={form.dispatchResponsible}
-                  onChange={(v) => v && set({ dispatchResponsible: v as AgreementResponsible })} disabled={readOnly}
-                  options={RESPONSIBLES.map((x) => ({ value: x, label: t(`convenios.responsible.${x}`) }))} />
-              </Field>
-              <Field id="ag-way" span={4} label={t("convenios.fields.waybill")}>
-                <Combobox id="ag-way" label={t("convenios.fields.waybill")} value={form.waybillResponsible}
-                  onChange={(v) => v && set({ waybillResponsible: v as AgreementResponsible })} disabled={readOnly}
-                  options={RESPONSIBLES.map((x) => ({ value: x, label: t(`convenios.responsible.${x}`) }))} />
-              </Field>
-              <Field id="ag-set" span={4} label={t("convenios.fields.settlement")}>
-                <Combobox id="ag-set" label={t("convenios.fields.settlement")} value={form.settlementResponsible}
-                  onChange={(v) => v && set({ settlementResponsible: v as AgreementResponsible })} disabled={readOnly}
-                  options={RESPONSIBLES.map((x) => ({ value: x, label: t(`convenios.responsible.${x}`) }))} />
-              </Field>
-
-              <Field id="ag-from" span={3} label={t("convenios.fields.validFrom")}>
-                <MakaDatePicker id="ag-from" value={form.validFrom || null} disabled={readOnly}
-                  onChange={(iso) => set({ validFrom: iso ?? "" })} />
-              </Field>
-              <Field id="ag-to" span={3} label={t("convenios.fields.validTo")} hint={t("convenios.fields.validToHint")}>
-                <MakaDatePicker id="ag-to" value={form.validTo || null} disabled={readOnly}
-                  min={form.validFrom ? new Date(form.validFrom) : undefined}
-                  onChange={(iso) => set({ validTo: iso ?? "" })} />
-              </Field>
-
-              <Field id="ag-failed" span={4} label={t("convenios.fields.failedDelivery")}>
-                <Textarea id="ag-failed" rows={2} value={form.failedDeliveryPolicy} disabled={readOnly}
-                  onChange={(e) => set({ failedDeliveryPolicy: e.target.value })} />
-              </Field>
-              <Field id="ag-returns" span={4} label={t("convenios.fields.returns")}>
-                <Textarea id="ag-returns" rows={2} value={form.returnsPolicy} disabled={readOnly}
-                  onChange={(e) => set({ returnsPolicy: e.target.value })} />
-              </Field>
-              <Field id="ag-warranty" span={4} label={t("convenios.fields.warranty")}>
-                <Textarea id="ag-warranty" rows={2} value={form.warrantyPolicy} disabled={readOnly}
-                  onChange={(e) => set({ warrantyPolicy: e.target.value })} />
-              </Field>
-              <Field id="ag-notes" span={12} label={t("convenios.fields.notes")}>
-                <Textarea id="ag-notes" rows={2} value={form.notes} disabled={readOnly}
-                  onChange={(e) => set({ notes: e.target.value })} />
-              </Field>
-            </FormGrid>
-
-            {/* Rules editor */}
-            <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-              <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{t("convenios.rules.title")}</h3>
-              {form.rules.length === 0 && (
-                <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("convenios.rules.empty")}</p>
-              )}
-              <div className="space-y-2">
-                {form.rules.map((r, i) => (
-                  <div key={i} className="grid grid-cols-12 items-end gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-2">
-                    <div className="col-span-12 sm:col-span-5">
-                      <Combobox id={`rule-type-${i}`} label={t("convenios.rules.type")} value={r.ruleType}
-                        onChange={(v) => v && updateRule(i, { ruleType: v as AgreementRuleType })} disabled={readOnly}
-                        options={RULE_TYPES.map((x) => ({ value: x, label: t(`convenios.ruleType.${x}`) }))} />
+            <FormTabs
+              active={tab}
+              onChange={setTab}
+              tabs={[
+                {
+                  id: "general",
+                  label: t("convenios.tabs.general"),
+                  badge: showErrors && generalHasError ? errDot : undefined,
+                  content: (
+                    <FormGrid>
+                      <Field id="ag-name" span={4} label={t("convenios.fields.name")} required>
+                        <Input id="ag-name" value={form.name} maxLength={200} disabled={readOnly}
+                          onChange={(e) => set({ name: e.target.value })} />
+                      </Field>
+                      <Field id="ag-type" span={4} label={t("convenios.fields.type")} required>
+                        <Combobox id="ag-type" label={t("convenios.fields.type")} value={form.agreementType}
+                          onChange={(v) => v && set({ agreementType: v as AgreementType })} disabled={readOnly}
+                          options={TYPES.map((x) => ({ value: x, label: t(`convenios.type.${x}`) }))} />
+                      </Field>
+                      <Field id="ag-supplier" span={4} label={t("convenios.fields.supplier")} required>
+                        {isCreate ? (
+                          <PartyPicker id="ag-supplier" role="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
+                        ) : (
+                          <Input id="ag-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
+                        )}
+                      </Field>
+                      <Field id="ag-pl" span={4} label={t("convenios.fields.priceList")} hint={t("convenios.fields.priceListHint")}>
+                        <Combobox id="ag-pl" label={t("convenios.fields.priceList")} value={form.priceListId}
+                          onChange={(v) => set({ priceListId: v })} options={priceListOptions} searchable clearable disabled={readOnly} />
+                      </Field>
+                      <Field id="ag-spl" span={4} label={t("convenios.fields.suggestedPriceList")}>
+                        <Combobox id="ag-spl" label={t("convenios.fields.suggestedPriceList")} value={form.suggestedPriceListId}
+                          onChange={(v) => set({ suggestedPriceListId: v })} options={priceListOptions} searchable clearable disabled={readOnly} />
+                      </Field>
+                      <Field id="ag-disp" span={4} label={t("convenios.fields.dispatch")}>
+                        <Combobox id="ag-disp" label={t("convenios.fields.dispatch")} value={form.dispatchResponsible}
+                          onChange={(v) => v && set({ dispatchResponsible: v as AgreementResponsible })} disabled={readOnly}
+                          options={RESPONSIBLES.map((x) => ({ value: x, label: t(`convenios.responsible.${x}`) }))} />
+                      </Field>
+                      <Field id="ag-way" span={4} label={t("convenios.fields.waybill")}>
+                        <Combobox id="ag-way" label={t("convenios.fields.waybill")} value={form.waybillResponsible}
+                          onChange={(v) => v && set({ waybillResponsible: v as AgreementResponsible })} disabled={readOnly}
+                          options={RESPONSIBLES.map((x) => ({ value: x, label: t(`convenios.responsible.${x}`) }))} />
+                      </Field>
+                      <Field id="ag-set" span={4} label={t("convenios.fields.settlement")}>
+                        <Combobox id="ag-set" label={t("convenios.fields.settlement")} value={form.settlementResponsible}
+                          onChange={(v) => v && set({ settlementResponsible: v as AgreementResponsible })} disabled={readOnly}
+                          options={RESPONSIBLES.map((x) => ({ value: x, label: t(`convenios.responsible.${x}`) }))} />
+                      </Field>
+                      <Field id="ag-from" span={4} label={t("convenios.fields.validFrom")}>
+                        <MakaDatePicker id="ag-from" value={form.validFrom || null} disabled={readOnly}
+                          onChange={(iso) => set({ validFrom: iso ?? "" })} />
+                      </Field>
+                      <Field id="ag-to" span={4} label={t("convenios.fields.validTo")} hint={t("convenios.fields.validToHint")}>
+                        <MakaDatePicker id="ag-to" value={form.validTo || null} disabled={readOnly}
+                          min={form.validFrom ? new Date(form.validFrom) : undefined}
+                          onChange={(iso) => set({ validTo: iso ?? "" })} />
+                      </Field>
+                    </FormGrid>
+                  ),
+                },
+                {
+                  id: "policies",
+                  label: t("convenios.tabs.policies"),
+                  content: (
+                    <FormGrid>
+                      <Field id="ag-failed" span={12} label={t("convenios.fields.failedDelivery")}>
+                        <Textarea id="ag-failed" rows={8} value={form.failedDeliveryPolicy} disabled={readOnly}
+                          onChange={(e) => set({ failedDeliveryPolicy: e.target.value })} />
+                      </Field>
+                      <Field id="ag-returns" span={12} label={t("convenios.fields.returns")}>
+                        <Textarea id="ag-returns" rows={8} value={form.returnsPolicy} disabled={readOnly}
+                          onChange={(e) => set({ returnsPolicy: e.target.value })} />
+                      </Field>
+                      <Field id="ag-warranty" span={12} label={t("convenios.fields.warranty")}>
+                        <Textarea id="ag-warranty" rows={8} value={form.warrantyPolicy} disabled={readOnly}
+                          onChange={(e) => set({ warrantyPolicy: e.target.value })} />
+                      </Field>
+                      <Field id="ag-notes" span={12} label={t("convenios.fields.notes")}>
+                        <Textarea id="ag-notes" rows={8} value={form.notes} disabled={readOnly}
+                          onChange={(e) => set({ notes: e.target.value })} />
+                      </Field>
+                    </FormGrid>
+                  ),
+                },
+                {
+                  id: "rules",
+                  label: t("convenios.tabs.rules"),
+                  badge: showErrors && rulesHaveError ? errDot : undefined,
+                  content: (
+                    <div className="space-y-2">
+                      <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("convenios.rules.allHint")}</p>
+                      {RULE_TYPES.map((type) => {
+                        const r = ruleByType.get(type);
+                        const on = !!r;
+                        return (
+                          <div
+                            key={type}
+                            className={`grid grid-cols-12 items-center gap-3 rounded-lg border border-[var(--color-border)] p-3 ${on ? "bg-[var(--color-card)]" : "bg-[var(--color-background)]"}`}
+                          >
+                            <label className="col-span-12 flex items-center gap-2.5 sm:col-span-5">
+                              <Switch checked={on} disabled={readOnly} onCheckedChange={() => toggleRule(type)} aria-label={t("convenios.rules.include")} />
+                              <span className={`text-[13px] font-medium ${on ? "text-[var(--color-foreground)]" : "text-[var(--color-muted-foreground)]"}`}>
+                                {t(`convenios.ruleType.${type}`)}
+                              </span>
+                            </label>
+                            <div className="col-span-8 sm:col-span-5">
+                              {on && NUMERIC_RULES.has(type) && (
+                                <Input type="number" min={0} aria-label={t("convenios.rules.value")} value={r?.numericValue ?? ""}
+                                  disabled={readOnly} onChange={(e) => patchRule(type, { numericValue: e.target.value === "" ? null : Number(e.target.value) })} />
+                              )}
+                              {on && type === "DocumentoExigido" && (
+                                <Input aria-label={t("convenios.rules.value")} value={r?.textValue ?? ""} disabled={readOnly}
+                                  placeholder={t("convenios.rules.docPlaceholder")} onChange={(e) => patchRule(type, { textValue: e.target.value })} />
+                              )}
+                            </div>
+                            <div className="col-span-4 sm:col-span-2">
+                              {on && (
+                                <label className="flex h-9 items-center gap-2 text-[12.5px] font-medium text-[var(--color-foreground)]">
+                                  <Switch checked={r!.isMandatory} disabled={readOnly} onCheckedChange={(c) => patchRule(type, { isMandatory: c })} />
+                                  {t("convenios.rules.mandatory")}
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="col-span-7 sm:col-span-4">
-                      {NUMERIC_RULES.has(r.ruleType) ? (
-                        <Input type="number" min={0} aria-label={t("convenios.rules.value")} value={r.numericValue ?? ""}
-                          disabled={readOnly} onChange={(e) => updateRule(i, { numericValue: e.target.value === "" ? null : Number(e.target.value) })} />
-                      ) : r.ruleType === "DocumentoExigido" ? (
-                        <Input aria-label={t("convenios.rules.value")} value={r.textValue ?? ""} disabled={readOnly}
-                          placeholder={t("convenios.rules.docPlaceholder")} onChange={(e) => updateRule(i, { textValue: e.target.value })} />
-                      ) : (
-                        <span className="text-[12px] text-[var(--color-muted-foreground)]">{t("convenios.rules.noValue")}</span>
-                      )}
-                    </div>
-                    <div className="col-span-4 sm:col-span-2">
-                      <label className="flex h-9 items-center gap-2 text-[12.5px] font-medium text-[var(--color-foreground)]">
-                        <Switch checked={r.isMandatory} disabled={readOnly} onCheckedChange={(c) => updateRule(i, { isMandatory: c })} />
-                        {t("convenios.rules.mandatory")}
-                      </label>
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      <button type="button" disabled={readOnly} onClick={() => removeRule(i)} aria-label={tc("actions.delete")}
-                        className="rounded p-1.5 text-[var(--color-muted-foreground)] hover:text-[var(--color-destructive)]">
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {!readOnly && (
-                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={addRule}>
-                  <Plus className="size-4" />{t("convenios.rules.add")}
-                </Button>
-              )}
-            </div>
-
-            {/* Status + evaluation (edit only) */}
-            {detail && (
-              <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="text-[12px] font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">{t("convenios.fields.status")}:</span>
-                  <EntityStatusBadge tone={statusTone(detail.status)}>{t(`convenios.status.${detail.status}`)}</EntityStatusBadge>
-                  {detail.isMutable && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {detail.status !== "Vigente" && (
-                        <Button type="button" perm={P.catalog.agreements.manage} variant="outline" size="sm"
-                          disabled={statusMut.isPending} onClick={() => statusMut.mutate("Vigente")}>{t("convenios.statusActions.activate")}</Button>
-                      )}
-                      {detail.status === "Vigente" && (
-                        <Button type="button" perm={P.catalog.agreements.manage} variant="outline" size="sm"
-                          disabled={statusMut.isPending} onClick={() => statusMut.mutate("Suspendido")}>{t("convenios.statusActions.suspend")}</Button>
-                      )}
-                      <Button type="button" perm={P.catalog.agreements.manage} variant="outline" size="sm"
-                        disabled={statusMut.isPending} onClick={() => statusMut.mutate("Terminado")}>{t("convenios.statusActions.terminate")}</Button>
-                    </div>
-                  )}
-                </div>
-
-                <h3 className="mb-2 text-sm font-semibold text-[var(--color-foreground)]">{t("convenios.evaluation.title")}</h3>
-                <div className="max-w-md">
-                  <PartyPicker id="ag-distributor" label={t("convenios.evaluation.distributor")} value={distributorId} onChange={setDistributorId} />
-                </div>
-                {evalQ.data && (
-                  <div className="mt-3 space-y-2">
-                    <EntityStatusBadge tone={evalQ.data.eligible ? "success" : "danger"}>
-                      {evalQ.data.eligible ? t("convenios.evaluation.eligible") : t("convenios.evaluation.notEligible")}
-                    </EntityStatusBadge>
-                    <div className="space-y-1">
-                      {evalQ.data.rules.map((r, i) => (
-                        <div key={i} className="flex items-center justify-between rounded-md border border-[var(--color-border)] px-3 py-1.5 text-[12.5px]">
-                          <span className="text-[var(--color-foreground)]">{t(`convenios.ruleType.${r.ruleType}`)}{r.isMandatory ? " *" : ""}</span>
-                          <span className="flex items-center gap-2 text-[var(--color-muted-foreground)]">
-                            {r.detail}
-                            <EntityStatusBadge tone={resultTone(r.result)}>{t(`convenios.result.${r.result}`)}</EntityStatusBadge>
-                          </span>
-                        </div>
-                      ))}
-                      {evalQ.data.rules.length === 0 && (
-                        <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("convenios.evaluation.noRules")}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  ),
+                },
+                ...(detail
+                  ? [
+                      {
+                        id: "status",
+                        label: t("convenios.tabs.status"),
+                        content: (
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[12px] font-semibold uppercase tracking-wide text-[var(--color-muted-foreground)]">{t("convenios.fields.status")}:</span>
+                              <EntityStatusBadge tone={statusTone(detail.status)}>{t(`convenios.status.${detail.status}`)}</EntityStatusBadge>
+                              {detail.isMutable && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {detail.status !== "Vigente" && (
+                                    <Button type="button" perm={P.catalog.agreements.manage} variant="outline" size="sm"
+                                      disabled={statusMut.isPending} onClick={() => statusMut.mutate("Vigente")}><Play className="size-4" />{t("convenios.statusActions.activate")}</Button>
+                                  )}
+                                  {detail.status === "Vigente" && (
+                                    <Button type="button" perm={P.catalog.agreements.manage} variant="outline" size="sm"
+                                      disabled={statusMut.isPending} onClick={() => statusMut.mutate("Suspendido")}><Pause className="size-4" />{t("convenios.statusActions.suspend")}</Button>
+                                  )}
+                                  <Button type="button" perm={P.catalog.agreements.manage} variant="outline" size="sm"
+                                    disabled={statusMut.isPending} onClick={() => statusMut.mutate("Terminado")}><Ban className="size-4" />{t("convenios.statusActions.terminate")}</Button>
+                                </div>
+                              )}
+                            </div>
+                            <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("convenios.evaluation.title")}</h3>
+                            <div className="max-w-md">
+                              <PartyPicker id="ag-distributor" label={t("convenios.evaluation.distributor")} value={distributorId} onChange={setDistributorId} />
+                            </div>
+                            {evalQ.data && (
+                              <div className="space-y-2">
+                                <EntityStatusBadge tone={evalQ.data.eligible ? "success" : "danger"}>
+                                  {evalQ.data.eligible ? t("convenios.evaluation.eligible") : t("convenios.evaluation.notEligible")}
+                                </EntityStatusBadge>
+                                <div className="space-y-1">
+                                  {evalQ.data.rules.map((r, i) => (
+                                    <div key={i} className="flex items-center justify-between rounded-md border border-[var(--color-border)] px-3 py-1.5 text-[12.5px]">
+                                      <span className="text-[var(--color-foreground)]">{t(`convenios.ruleType.${r.ruleType}`)}{r.isMandatory ? " *" : ""}</span>
+                                      <span className="flex items-center gap-2 text-[var(--color-muted-foreground)]">
+                                        {r.detail}
+                                        <EntityStatusBadge tone={resultTone(r.result)}>{t(`convenios.result.${r.result}`)}</EntityStatusBadge>
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {evalQ.data.rules.length === 0 && (
+                                    <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("convenios.evaluation.noRules")}</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      } as FormTab,
+                    ]
+                  : []),
+              ]}
+            />
           </DialogBody>
           <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}>{tc("actions.cancel")}</Button></DialogClose>
+            <DialogClose asChild><Button type="button" variant="outline" disabled={save.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
             {!readOnly && (
               <Button type="submit" perm={P.catalog.agreements.manage} disabled={save.isPending}>
-                {save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+                <Check className="size-4" />{save.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
               </Button>
             )}
           </DialogFooter>
@@ -497,9 +542,9 @@ function DeleteAgreementDialog({ state, onClose }: { state: EditorState; onClose
           <DialogDescription>{t("convenios.deleteConfirm", { name: row?.name ?? "" })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}>{tc("actions.cancel")}</Button></DialogClose>
+          <DialogClose asChild><Button type="button" variant="outline" disabled={del.isPending}><X className="size-4" />{tc("actions.cancel")}</Button></DialogClose>
           <Button variant="destructive" onClick={() => row && del.mutate(row.id)} disabled={del.isPending || !row}>
-            {del.isPending ? tc("feedback.deleting") : t("convenios.actions.delete")}
+            <Trash2 className="size-4" />{del.isPending ? tc("feedback.deleting") : t("convenios.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

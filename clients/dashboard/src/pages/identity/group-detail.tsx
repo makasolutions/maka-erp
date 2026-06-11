@@ -8,17 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Lock,
-  Search,
-  ShieldCheck,
-  Star,
-  Trash2,
-  UserMinus,
-  UserPlus,
-  Users as UsersIcon,
-  X,
-} from "lucide-react";
+import { Check, Lock, Search, ShieldCheck, Star, Trash2, UserMinus, UserPlus, Users as UsersIcon, X } from "lucide-react";
 import {
   addUsersToGroup,
   deleteGroup,
@@ -282,14 +272,14 @@ export function GroupDetailPage() {
                   onClick={reset}
                   disabled={!isDirty || save.isPending}
                 >
-                  {t("common:actions.discard")}
+                  <X className="size-4" />{t("common:actions.discard")}
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => save.mutate()}
                   disabled={!isDirty || save.isPending}
                 >
-                  {save.isPending ? t("common:feedback.saving") : t("common:actions.saveChanges")}
+                  <Check className="size-4" />{save.isPending ? t("common:feedback.saving") : t("common:actions.saveChanges")}
                 </Button>
               </div>
             ) : undefined
@@ -461,7 +451,7 @@ export function GroupDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={remove.isPending}>
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -469,7 +459,7 @@ export function GroupDetailPage() {
               onClick={() => remove.mutate()}
               disabled={remove.isPending}
             >
-              {remove.isPending ? t("common:feedback.deleting") : t("groups.detail.deleteGroupBtn")}
+              <Trash2 className="size-4" />{remove.isPending ? t("common:feedback.deleting") : t("groups.detail.deleteGroupBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -710,7 +700,7 @@ function AddMembersDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={add.isPending}>
-              {t("common:actions.cancel")}
+              <X className="size-4" />{t("common:actions.cancel")}
             </Button>
           </DialogClose>
           <Button

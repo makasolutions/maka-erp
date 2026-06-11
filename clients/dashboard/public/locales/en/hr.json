@@ -4,8 +4,14 @@
   "description": "Labor and payroll information of personnel.",
   "formDesc": "Employee data: identification, contacts and labor information.",
   "deleteConfirm": "Delete this employee record? This action can be reverted from the trash.",
-  "actions": { "create": "New employee", "edit": "Edit employee", "delete": "Delete employee" },
-  "filters": { "search": "Search by position or branch…" },
+  "actions": {
+    "create": "New employee",
+    "edit": "Edit employee",
+    "delete": "Delete employee"
+  },
+  "filters": {
+    "search": "Search by position or branch…"
+  },
   "employee": {
     "tab": "Labor information",
     "sections": {
@@ -42,7 +48,8 @@
       "salaryType": "Salary type",
       "baseSalary": "Base salary",
       "salaryStartDate": "Salary start date",
-      "legalTransportAllowance": "Transport allowance"
+      "legalTransportAllowance": "Transport allowance",
+      "riskFlags": "Risk flags"
     }
   }
 }

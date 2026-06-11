@@ -380,7 +380,7 @@
   },
   "authShell": {
     "securityNote": "Cifrado en tránsito · Sesión protegida con JWT",
-    "adminLabel": "Administración FullStackHero",
+    "adminLabel": "Administración Maka-ERP",
     "consoleBadge": "Consola · Multi-tenant"
   },
   "health": {

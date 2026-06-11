@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Hash, BadgeCheck } from "lucide-react";
 import { Field, FormGrid, Combobox } from "@/components/list";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -231,16 +232,16 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
                   onChange={(e) => set({ verificationDigit: e.target.value === "" ? null : Number(e.target.value) })} />
                 {isNit && !disabled && isCreate && (
                   <Button type="button" variant="outline" size="sm" title={t("parties.fields.dvCompute")}
-                    onClick={() => set({ verificationDigit: nitVerificationDigit(v.identificationNumber) })}>DV</Button>
+                    onClick={() => set({ verificationDigit: nitVerificationDigit(v.identificationNumber) })}><Hash className="size-4" />DV</Button>
                 )}
               </div>
             </Field>
             {v.kind === "Juridica" ? (
               <>
-                <Field id="p-legal" span={8} label={t("parties.fields.legalName")} required error={ce.legalName}>
+                <Field id="p-legal" span={6} label={t("parties.fields.legalName")} required error={ce.legalName}>
                   <Input id="p-legal" value={v.legalName} maxLength={150} disabled={disabled} onChange={(e) => set({ legalName: e.target.value })} />
                 </Field>
-                <Field id="p-trade" span={4} label={t("parties.fields.tradeName")}>
+                <Field id="p-trade" span={6} label={t("parties.fields.tradeName")}>
                   <Input id="p-trade" value={v.tradeName} disabled={disabled} onChange={(e) => set({ tradeName: e.target.value })} />
                 </Field>
               </>
@@ -264,7 +265,7 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
               <div className="col-span-1 sm:col-span-12">
                 <Button type="button" variant="outline" size="sm" disabled={verifying || !v.identificationTypeCode || !v.identificationNumber.trim()}
                   onClick={onVerify}>
-                  {verifying ? t("parties.verify.verifying") : t("parties.verify.button")}
+                  <BadgeCheck className="size-4" />{verifying ? t("parties.verify.verifying") : t("parties.verify.button")}
                 </Button>
                 <span className="ml-2 text-[11.5px] text-[var(--color-muted-foreground)]">{t("parties.verify.hint")}</span>
               </div>
@@ -290,24 +291,24 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
       {/* Tab 3 — CRM */}
       {tab === "crm" && (
         <FormGrid>
-          <Field id="p-status" span={3} label={t("parties.fields.status")}>
+          <Field id="p-status" span={4} label={t("parties.fields.status")}>
             <Combobox id="p-status" label={t("parties.fields.status")} value={v.status} onChange={(s) => s && set({ status: s as PartyStatus })}
               options={statusOpts.map((s) => ({ value: s, label: t(`parties.status.${s}`) }))} disabled={disabled} />
           </Field>
-          <Field id="p-stage" span={3} label={t("parties.fields.stage")}>
+          <Field id="p-stage" span={4} label={t("parties.fields.stage")}>
             <Combobox id="p-stage" label={t("parties.fields.stage")} value={v.stage} onChange={(s) => s && set({ stage: s as LifecycleStage })}
               options={stageOpts.map((s) => ({ value: s, label: t(`parties.stage.${s}`) }))} disabled={disabled} />
           </Field>
-          <Field id="p-source" span={3} label={t("parties.fields.source")}>
+          <Field id="p-source" span={4} label={t("parties.fields.source")}>
             <BasicRecordSelect id="p-source" tableCode="PartySource" label={t("parties.fields.source")}
               value={v.sourceCode} onChange={(c) => set({ sourceCode: c })} disabled={disabled} />
           </Field>
-          <Field id="p-score" span={3} label={t("parties.fields.leadScore")}>
+          <Field id="p-score" span={4} label={t("parties.fields.leadScore")}>
             <Input id="p-score" type="number" value={String(v.leadScore)} disabled={disabled}
               onChange={(e) => set({ leadScore: Number(e.target.value) || 0 })} />
           </Field>
           <Field id="p-notes" span={12} label={t("parties.fields.notes")}>
-            <Textarea id="p-notes" rows={3} value={v.notes} disabled={disabled} onChange={(e) => set({ notes: e.target.value })} />
+            <Textarea id="p-notes" rows={8} value={v.notes} disabled={disabled} onChange={(e) => set({ notes: e.target.value })} />
           </Field>
         </FormGrid>
       )}

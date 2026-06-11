@@ -1177,3 +1177,43 @@
   flex-shrink: 0;
 }
 
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Maka — radio uniforme de inputs (3px). Toda entrada de datos comparte el
+   mismo border-radius para una sensación consistente. Cubre los inputs
+   Syncfusion que no llevan cssClass propio (MakaDatePicker plano, dropdowns,
+   numeric, autocomplete) sin tocar los popups/calendarios (que sí pueden
+   redondear más). Los controles Tailwind (Input/Textarea/Combobox) ya usan
+   rounded-[3px] en su componente base.
+   --------------------------------------------------------------------------- */
+.e-input-group.e-control-wrapper:not(.maka-drp-anchor *),
+.e-input-group:not(.e-popup):not(.maka-drp-anchor *),
+.e-ddl.e-input-group,
+.e-date-wrapper,
+.e-datetime-wrapper,
+.e-numeric.e-input-group {
+  border-radius: 6px !important;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Maka — altura uniforme de inputs Syncfusion (h-9 = 2.25rem). Los date/datetime
+   pickers de Syncfusion renderizan más bajos que los <Input> Tailwind (h-9), lo
+   que rompe la alineación en una misma fila. Forzamos 2.25rem para que TODO
+   control de entrada tenga la misma altura. Excluye el anchor oculto del
+   daterange (1px). Ver §18.6 / §17.
+   --------------------------------------------------------------------------- */
+.e-date-wrapper:not(.maka-drp-anchor *),
+.e-datetime-wrapper:not(.maka-drp-anchor *),
+.e-input-group.e-control-wrapper:not(.maka-drp-anchor *):not(.e-popup),
+.e-ddl.e-input-group,
+.e-numeric.e-input-group {
+  height: 2.25rem !important;
+  min-height: 2.25rem !important;
+  box-sizing: border-box !important;
+}
+.e-date-wrapper:not(.maka-drp-anchor *) input.e-input,
+.e-datetime-wrapper:not(.maka-drp-anchor *) input.e-input,
+.e-numeric.e-input-group input.e-input {
+  height: auto !important;
+  align-self: center !important;
+}

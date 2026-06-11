@@ -11,7 +11,7 @@
 .e-input-group.maka-datetime.e-control-wrapper {
   background-color: var(--color-background) !important;
   border-color: var(--color-border) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 6px !important;
   color: var(--color-foreground) !important;
 }
 .e-input-group.maka-datetime input.e-input {

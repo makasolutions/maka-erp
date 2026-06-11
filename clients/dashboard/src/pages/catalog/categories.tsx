@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { ChevronsRight, Download, Eye, GitBranch, Layers, Plus, Trash2 } from "lucide-react";
+import { Check, CheckCircle2, ChevronsRight, Download, Eye, GitBranch, Layers, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { SaveIcon, CreateIcon, CancelIcon } from "@/components/ui/icons";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -61,6 +61,7 @@ import {
   MakaGridFilters,
   MakaFilterField,
   MakaFilterInput,
+  MakaKpiCard,
 } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { cn } from "@/lib/cn";
@@ -121,22 +122,6 @@ function CatSlugCell(row: CategoryRow) {
 }
 function CatActiveCell(row: CategoryRow) {
   return <EntityStatusBadge tone={row.isActive ? "success" : "default"}>{row.activeLabel}</EntityStatusBadge>;
-}
-
-function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="flex flex-col items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-center">
-      <div className="flex items-center justify-center gap-2">
-        <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: tone }} />
-        <span className="truncate text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-          {label}
-        </span>
-      </div>
-      <div className="mt-1 font-display text-[26px] font-semibold leading-none tabular-nums text-[var(--color-foreground)]">
-        {value.toLocaleString("es-CO")}
-      </div>
-    </div>
-  );
 }
 
 // ───────────────────────────────────────────────────────────────────────
@@ -306,7 +291,7 @@ export function CategoriesPage() {
               {t("categories.trash.title")}
             </h3>
             <Button variant="ghost" size="sm" onClick={() => setTrashOpen(false)}>
-              {tc("actions.close")}
+              <X className="size-4" />{tc("actions.close")}
             </Button>
           </div>
           <MakaGridClient<CategoryRow>
@@ -351,9 +336,9 @@ export function CategoriesPage() {
         }
         kpis={
           <>
-            <KpiCard label={t("categories.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
-            <KpiCard label={t("categories.kpi.active")} value={kpiActive} tone="var(--color-success)" />
-            <KpiCard label={t("categories.kpi.trashed")} value={kpiTrashed} tone="var(--color-destructive)" />
+            <MakaKpiCard icon={GitBranch} label={t("categories.kpi.total")} value={kpiTotal} tone="var(--color-primary)" />
+            <MakaKpiCard icon={CheckCircle2} label={t("categories.kpi.active")} value={kpiActive} tone="var(--color-success)" />
+            <MakaKpiCard icon={Trash2} label={t("categories.kpi.trashed")} value={kpiTrashed} tone="var(--color-destructive)" />
           </>
         }
       />
@@ -709,7 +694,7 @@ function DeleteCategoryDialog({ state, onClose }: { state: EditorState; onClose:
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={deleteMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
@@ -717,7 +702,7 @@ function DeleteCategoryDialog({ state, onClose }: { state: EditorState; onClose:
             onClick={() => category && deleteMutation.mutate(category.id)}
             disabled={deleteMutation.isPending || !category}
           >
-            {deleteMutation.isPending ? tc("feedback.deleting") : t("categories.actions.delete")}
+            <Trash2 className="size-4" />{deleteMutation.isPending ? tc("feedback.deleting") : t("categories.actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -758,14 +743,14 @@ function RestoreCategoryDialog({ state, onClose }: { state: EditorState; onClose
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={restoreMutation.isPending}>
-              {tc("actions.cancel")}
+              <X className="size-4" />{tc("actions.cancel")}
             </Button>
           </DialogClose>
           <Button
             onClick={() => category && restoreMutation.mutate(category.id)}
             disabled={restoreMutation.isPending || !category}
           >
-            {restoreMutation.isPending ? tc("feedback.saving") : t("categories.trash.restoreAction")}
+            <RotateCcw className="size-4" />{restoreMutation.isPending ? tc("feedback.saving") : t("categories.trash.restoreAction")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -874,10 +859,10 @@ function ImportGlobalCategoriesDialog({ open, onClose }: { open: boolean; onClos
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" disabled={importMut.isPending}>{tc("actions.cancel")}</Button>
+            <Button type="button" variant="outline" disabled={importMut.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
           </DialogClose>
           <Button type="button" disabled={selected.size === 0 || importMut.isPending} onClick={() => importMut.mutate()}>
-            {importMut.isPending ? tc("feedback.saving") : t("categories.import.confirm", { count: selected.size })}
+            <Check className="size-4" />{importMut.isPending ? tc("feedback.saving") : t("categories.import.confirm", { count: selected.size })}
           </Button>
         </DialogFooter>
       </DialogContent>

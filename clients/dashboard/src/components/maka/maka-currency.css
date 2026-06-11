@@ -10,9 +10,9 @@
 /* ── Input group shell (light + dark share the token-driven rules) ─────────── */
 .e-input-group.maka-currency,
 .e-input-group.maka-currency.e-control-wrapper {
-  background-color: var(--color-background) !important;
+  background-color: transparent !important;
   border-color: var(--color-border) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 6px !important;
   color: var(--color-foreground) !important;
 }
 .e-input-group.maka-currency .e-numerictextbox,

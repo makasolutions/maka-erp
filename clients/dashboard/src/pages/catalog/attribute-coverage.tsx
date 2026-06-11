@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCheck, SlidersHorizontal } from "lucide-react";
+import { Check, ClipboardCheck, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   getCategoryCoverageReport, getCategoryRequirements, getCategoryTree, searchAttributes,
@@ -255,10 +255,10 @@ function RequirementsDialog({ open, onClose, categoryId, marketplace }: {
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" disabled={saveM.isPending}>{tc("actions.cancel")}</Button>
+            <Button type="button" variant="outline" disabled={saveM.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
           </DialogClose>
           <Button type="button" onClick={() => saveM.mutate()} disabled={saveM.isPending}>
-            {saveM.isPending ? tc("feedback.saving") : t("coverage.save")}
+            <Check className="size-4" />{saveM.isPending ? tc("feedback.saving") : t("coverage.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

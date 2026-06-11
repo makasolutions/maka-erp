@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Eye, Pencil, Plus, Tag } from "lucide-react";
+import { Check, DollarSign, Eye, Pencil, Plus, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   addPriceListItem, createPriceList, getPriceListById, getPriceLists, getVariations,
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Combobox, EntityFilterPill, EntityPageHeader, EntityStatusBadge, Field, FormActions, FormGrid,
 } from "@/components/list";
@@ -278,12 +279,11 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                   onChange={(iso) => setValidTo(iso ?? "")} />
               </Field>
               <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
-                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)}
-                    className="size-4 accent-[var(--color-primary)]" />
-                  {t("priceLists.fields.isDefault")}
+                <div className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isDefault} onCheckedChange={setIsDefault} aria-label={t("priceLists.fields.isDefault")} />
+                  <span>{t("priceLists.fields.isDefault")}</span>
                   <span className="text-[12px] font-normal text-[var(--color-muted-foreground)]">— {t("priceLists.isDefaultHint")}</span>
-                </label>
+                </div>
               </div>
               {!isDefault && (
                 <Field id="pl-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} error={errs.adjustmentPercent} hint={t("priceLists.adjustmentHint")}>
@@ -292,12 +292,11 @@ function CreatePriceListDialog({ state, onClose }: { state: EditorState; onClose
                 </Field>
               )}
               {!isDefault && (
-                <div className="col-span-1 flex items-end sm:col-span-2">
-                  <label className="flex items-center gap-2 pb-2 text-[13px] font-medium text-[var(--color-foreground)]">
-                    <input type="checkbox" checked={roundEnabled} onChange={(e) => setRoundEnabled(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
-                    {t("priceLists.roundEnabled")}
-                  </label>
-                </div>
+                <Field id="pl-round" span={4} label={t("priceLists.roundEnabled")} hint={t("priceLists.roundEnabledHint")}>
+                  <div className="flex h-9 items-center">
+                    <Switch id="pl-round" checked={roundEnabled} onCheckedChange={setRoundEnabled} aria-label={t("priceLists.roundEnabled")} />
+                  </div>
+                </Field>
               )}
               <Field id="pl-desc" span={12} label={t("priceLists.fields.description")} error={errs.description}>
                 <Textarea id="pl-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
@@ -419,11 +418,11 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                   onChange={(iso) => setValidTo(iso ?? "")} />
               </Field>
               <div className="col-span-1 flex flex-wrap items-center gap-6 sm:col-span-12">
-                <label className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
-                  <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
-                  {t("priceLists.fields.isDefault")}
+                <div className="flex items-center gap-2.5 text-[13px] font-medium text-[var(--color-foreground)]">
+                  <Switch checked={isDefault} onCheckedChange={setIsDefault} aria-label={t("priceLists.fields.isDefault")} />
+                  <span>{t("priceLists.fields.isDefault")}</span>
                   <span className="text-[12px] font-normal text-[var(--color-muted-foreground)]">— {t("priceLists.isDefaultHint")}</span>
-                </label>
+                </div>
               </div>
               {!isDefault && (
                 <Field id="ep-pct" span={4} label={t("priceLists.fields.adjustmentPercent")} error={errs.adjustmentPercent} hint={t("priceLists.adjustmentHint")}>
@@ -432,12 +431,11 @@ function EditPriceListDialog({ state, onClose }: { state: EditorState; onClose: 
                 </Field>
               )}
               {!isDefault && (
-                <div className="col-span-1 flex items-end sm:col-span-2">
-                  <label className="flex items-center gap-2 pb-2 text-[13px] font-medium text-[var(--color-foreground)]">
-                    <input type="checkbox" checked={roundEnabled} onChange={(e) => setRoundEnabled(e.target.checked)} className="size-4 accent-[var(--color-primary)]" />
-                    {t("priceLists.roundEnabled")}
-                  </label>
-                </div>
+                <Field id="ep-round" span={4} label={t("priceLists.roundEnabled")} hint={t("priceLists.roundEnabledHint")}>
+                  <div className="flex h-9 items-center">
+                    <Switch id="ep-round" checked={roundEnabled} onCheckedChange={setRoundEnabled} aria-label={t("priceLists.roundEnabled")} />
+                  </div>
+                </Field>
               )}
               <Field id="ep-desc" span={12} label={t("priceLists.fields.description")} error={errs.description}>
                 <Textarea id="ep-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
@@ -611,7 +609,7 @@ function PriceListDetailDialog({ state, onClose, canEdit }: { state: EditorState
         </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">{tc("actions.close")}</Button>
+            <Button type="button" variant="outline"><X className="size-4" />{tc("actions.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -659,9 +657,9 @@ function EditItemPrice({ listId, item, onDone, onCancel }: {
         </Field>
       </FormGrid>
       <div className="mt-3 flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={updM.isPending}>{tc("actions.cancel")}</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={updM.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
         <Button type="button" disabled={!canSave} onClick={requestSave}>
-          {updM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
+          <Check className="size-4" />{updM.isPending ? tc("feedback.saving") : tc("actions.saveChanges")}
         </Button>
       </div>
 
@@ -682,9 +680,9 @@ function EditItemPrice({ listId, item, onDone, onCancel }: {
             </span>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={updM.isPending}>{tc("actions.cancel")}</Button>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={updM.isPending}><X className="size-4" />{tc("actions.cancel")}</Button>
             <Button type="button" onClick={() => updM.mutate()} disabled={updM.isPending}>
-              {updM.isPending ? tc("feedback.saving") : t("priceLists.bigChangeConfirm")}
+              <Check className="size-4" />{updM.isPending ? tc("feedback.saving") : t("priceLists.bigChangeConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

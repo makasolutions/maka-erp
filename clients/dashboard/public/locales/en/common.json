@@ -380,7 +380,7 @@
   },
   "authShell": {
     "securityNote": "Encrypted in transit · JWT-secured session",
-    "adminLabel": "FullStackHero Administration",
+    "adminLabel": "Maka-ERP Administration",
     "consoleBadge": "Console · Multi-tenant"
   },
   "health": {

@@ -457,14 +457,14 @@ export function RoleDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={reset} disabled={!isDirty || isSaving}>
-                  {t("common:actions.discard")}
+                  <X className="size-4" />{t("common:actions.discard")}
                 </Button>
                 <Button
                   size="sm"
                   onClick={saveAll}
                   disabled={!isDirty || isSaving}
                 >
-                  {isSaving ? t("common:feedback.saving") : t("common:actions.saveChanges")}
+                  <Check className="size-4" />{isSaving ? t("common:feedback.saving") : t("common:actions.saveChanges")}
                 </Button>
               </div>
             </div>
@@ -680,7 +680,7 @@ export function RoleDetailPage() {
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={removeRole.isPending}>
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button
@@ -688,7 +688,7 @@ export function RoleDetailPage() {
               onClick={() => removeRole.mutate()}
               disabled={removeRole.isPending}
             >
-              {removeRole.isPending ? t("common:feedback.deleting") : t("roles.detail.deleteTitle")}
+              <Trash2 className="size-4" />{removeRole.isPending ? t("common:feedback.deleting") : t("roles.detail.deleteTitle")}
             </Button>
           </DialogFooter>
         </DialogContent>

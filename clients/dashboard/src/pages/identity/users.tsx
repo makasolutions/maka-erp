@@ -12,12 +12,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  Eye,
-  Plus,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { Eye, Plus, UserPlus, Users, X } from "lucide-react";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { toast } from "sonner";
 import {
@@ -431,7 +426,7 @@ function RegisterUserDialog({
                 variant="outline"
                 disabled={mutation.isPending}
               >
-                {t("common:actions.cancel")}
+                <X className="size-4" />{t("common:actions.cancel")}
               </Button>
             </DialogClose>
             <Button

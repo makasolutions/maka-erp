@@ -9,23 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  AlertOctagon,
-  AlertTriangle,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  Info,
-  MessageCircle,
-  RefreshCw,
-  RotateCcw,
-  Send,
-  Sparkles,
-  Ticket as TicketIcon,
-  User,
-  UserCheck,
-  UserX,
-} from "lucide-react";
+import { AlertOctagon, AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Clock, Info, LayoutList, MessageCircle, RefreshCw, RotateCcw, Send, Sparkles, Ticket as TicketIcon, User, UserCheck, UserX, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/use-auth";
@@ -735,7 +719,7 @@ function ResolveDialog({
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">{t("common:actions.cancel")}</Button>
+              <Button type="button" variant="outline"><X className="size-4" />{t("common:actions.cancel")}</Button>
             </DialogClose>
             <Button
               type="submit"
@@ -833,7 +817,7 @@ function AssignDialog({
           </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">{t("common:actions.cancel")}</Button>
+              <Button type="button" variant="outline"><X className="size-4" />{t("common:actions.cancel")}</Button>
             </DialogClose>
             <Button
               type="submit"
@@ -908,9 +892,9 @@ function NotFoundPanel({ onBack }: { onBack: () => void }) {
         {t("detail.notFoundBody")}
       </p>
       <div className="flex items-center gap-2">
-        <Button onClick={onBack} variant="outline">{t("detail.backToTickets")}</Button>
+        <Button onClick={onBack} variant="outline"><ArrowLeft className="size-4" />{t("detail.backToTickets")}</Button>
         <Link to="/tickets">
-          <Button>{t("detail.ticketsDesk")}</Button>
+          <Button><LayoutList className="size-4" />{t("detail.ticketsDesk")}</Button>
         </Link>
       </div>
     </div>

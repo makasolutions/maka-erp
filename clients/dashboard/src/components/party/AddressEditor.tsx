@@ -50,7 +50,7 @@ export function AddressEditor({ value, onChange, disabled, errors }: AddressEdit
               onChange={(patch) => update(i, patch)} />
             {/* Row 2: Dirección · Barrio · Referencia */}
             <Field id={`addr-line-${i}`} span={4} label={t("parties.address.line")} required
-              error={err(i, "line")} hint={err(i, "line") ? undefined : t("parties.address.lineHint")}>
+              error={err(i, "line")}>
               <Input id={`addr-line-${i}`} value={a.line ?? ""} disabled={disabled} placeholder="CL 100 # 13-21"
                 onChange={(e) => update(i, { line: e.target.value })} />
               {a.normalizedLine && (

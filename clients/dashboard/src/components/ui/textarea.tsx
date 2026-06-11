@@ -15,7 +15,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         data-slot="textarea"
         rows={rows}
         className={cn(
-          "w-full min-w-0 rounded-lg border border-[var(--color-input)] bg-transparent px-3 py-2",
+          "w-full min-w-0 rounded-[6px] border border-[var(--color-input)] bg-transparent px-3 py-2",
           "text-sm shadow-xs outline-none resize-y",
           "transition-[color,box-shadow,border-color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-out-cubic)]",
           "selection:bg-[var(--color-primary)] selection:text-[var(--color-primary-foreground)]",
