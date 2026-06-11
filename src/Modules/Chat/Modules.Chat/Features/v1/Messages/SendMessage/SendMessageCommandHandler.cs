@@ -1,3 +1,4 @@
+using FSH.Framework.Eventing.Outbox;
 using System.Diagnostics;
 using System.Net;
 using FSH.Framework.Core.Context;
@@ -22,7 +23,7 @@ public sealed class SendMessageCommandHandler(
     ICurrentUser currentUser,
     IHubContext<AppHub> hub,
     IMentionResolver mentionResolver,
-    IEventBus eventBus)
+    IOutboxStore outbox)
     : ICommandHandler<SendMessageCommand, MessageDto>
 {
     public async ValueTask<MessageDto> Handle(SendMessageCommand cmd, CancellationToken cancellationToken)
@@ -108,7 +109,7 @@ public sealed class SendMessageCommandHandler(
             var preview = MakePreview(message.Body ?? string.Empty);
             foreach (var mentionedUserId in notifyUserIds)
             {
-                await eventBus.PublishAsync(
+                await outbox.AddAsync(
                     new MentionedInChannelIntegrationEvent(
                         Id: Guid.NewGuid(),
                         OccurredOnUtc: DateTime.UtcNow,

@@ -42,6 +42,7 @@ public sealed class MentionAndNotificationTests
         await AddMemberAsync(adminClient, channelId, alice.Id);
 
         await SendMessageAsync(adminClient, channelId, $"hey @{alice.UserName} take a look");
+        await _factory.DispatchOutboxAsync();  // dispatcher hosteado OFF en tests
 
         // Verify a notification row was written for Alice via her own /notifications list endpoint.
         using var aliceClient = await _auth.CreateAuthenticatedClientAsync(alice.Email, alice.Password);
@@ -68,6 +69,7 @@ public sealed class MentionAndNotificationTests
         using var inbox = new EventInbox<NotificationPayload>(bobHub, "NotificationCreated");
 
         await SendMessageAsync(adminClient, channelId, $"@{bob.UserName} you up?");
+        await _factory.DispatchOutboxAsync();  // dispatcher hosteado OFF en tests
 
         var received = await inbox.WaitForFirstAsync(p => p.Type == "chat.mention", EventTimeout);
         received.ShouldNotBeNull("Expected NotificationCreated to fire on Bob's hub connection");

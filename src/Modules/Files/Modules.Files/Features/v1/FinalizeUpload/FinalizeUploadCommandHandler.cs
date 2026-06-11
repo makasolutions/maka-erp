@@ -1,3 +1,4 @@
+using FSH.Framework.Eventing.Outbox;
 using System.Diagnostics;
 using System.Net;
 using FSH.Framework.Core.Context;
@@ -23,7 +24,7 @@ public sealed class FinalizeUploadCommandHandler(
     IStorageService storage,
     IFileScanner scanner,
     IQuotaService quotas,
-    IEventBus events,
+    IOutboxStore outbox,
     ICurrentUser currentUser)
     : ICommandHandler<FinalizeUploadCommand, FileAssetDto>
 {
@@ -83,7 +84,7 @@ public sealed class FinalizeUploadCommandHandler(
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         var correlationId = Activity.Current?.Id ?? Guid.NewGuid().ToString();
-        await events.PublishAsync(new FileFinalizedIntegrationEvent(
+        await outbox.AddAsync(new FileFinalizedIntegrationEvent(
             Id: Guid.NewGuid(),
             OccurredOnUtc: DateTime.UtcNow,
             TenantId: tenantId,

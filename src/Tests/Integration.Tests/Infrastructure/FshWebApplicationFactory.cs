@@ -1,3 +1,4 @@
+using FSH.Framework.Eventing.Outbox;
 using System.Reflection;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -311,5 +312,18 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<Program>, I
         }
 
         loadedField?.SetValue(null, false);
+    }
+
+    /// <summary>
+    /// Drena el Outbox de forma determinista. Los tests desactivan el
+    /// OutboxDispatcherHostedService (carrera con las migraciones al boot), así que
+    /// los integration events publicados vía IOutboxStore NO se entregan solos:
+    /// llamar esto después de la acción que publica y antes de asertar al consumidor.
+    /// </summary>
+    public async Task DispatchOutboxAsync(CancellationToken cancellationToken = default)
+    {
+        using var scope = Services.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<OutboxDispatcher>();
+        await dispatcher.DispatchAsync(cancellationToken).ConfigureAwait(false);
     }
 }
