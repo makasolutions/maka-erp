@@ -12,7 +12,7 @@ Read `.agents/rules/frontend/dashboard.md` first.
 ## Step 1 — API module (`src/api/{resource}.ts`)
 
 ```ts
-import { apiFetch } from "@/api/api-fetch";
+import { apiFetch } from "@/lib/api-client";
 
 export type {Resource}Dto = {
   id: string;
@@ -96,11 +96,18 @@ const columns: ColumnModel[] = [
 
 ## Dark mode
 
-MakaGrid handles dark mode automatically via `[data-theme="dark"] .e-grid { ... }` overrides
-in `src/styles/globals.css`. If you add custom cell renderers, use CSS tokens:
-- Text: `var(--color-text-primary)`
-- Background: `var(--color-bg-primary)`
-- Accent: `var(--color-accent)`
+MakaGrid handles dark mode automatically via `.dark .e-grid { ... }` overrides (la clase de tema
+es `.dark` en `<html>`, declarada con `@custom-variant dark` en `src/styles/globals.css` — NO
+`[data-theme="dark"]`). If you add custom cell renderers, use the real CSS tokens:
+- Text: `var(--color-foreground)` / `var(--color-muted-foreground)`
+- Background: `var(--color-background)` / `var(--color-card)`
+- Accent: `var(--color-primary)`
+
+## Mobile-first
+
+`MakaGrid` auto-genera tarjetas móviles desde las `columns` en `< md` (CLAUDE.md §18.2) — cero
+código por página; `mobileCards` solo para override custom. Las páginas de lista siguen el patrón
+entity-shell (`EntityPageHeader` + `MakaGridFilters` + `MakaGrid`).
 
 ## Checklist
 

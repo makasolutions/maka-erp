@@ -6,74 +6,73 @@ argument-hint: [ModuleName] [EntityName]
 
 # Add Entity
 
-Create a domain entity following FSH patterns with full multi-tenancy support.
+Crear una entidad de dominio con los patrones reales del repo. Interfaces verificadas en
+`src/BuildingBlocks/Core/Domain/`. Antes de empezar: `.agents/rules/database.md`.
 
 ## Entity Template
 
 ```csharp
-public sealed class {Entity} : AggregateRoot<Guid>, IHasTenant, IAuditableEntity, ISoftDeletable
+using FSH.Framework.Core.Domain;
+
+namespace FSH.Modules.{Module}.Domain;
+
+public sealed class {Entity} : AggregateRoot<Guid>, ISoftDeletable
 {
-    // Domain properties
-    public string Name { get; private set; } = null!;
+    // Propiedades de dominio — private set, mutación solo por métodos
+    public string Name { get; private set; } = default!;
     public decimal Price { get; private set; }
     public string? Description { get; private set; }
 
-    // IHasTenant - automatic tenant isolation
-    public string TenantId { get; private set; } = null!;
+    // ISoftDeletable — el FILTRO lo aplica el framework (BaseDbContext), no lo escribas tú
+    public bool            IsDeleted    { get; private set; }
+    public DateTimeOffset? DeletedOnUtc { get; private set; }
+    public string?         DeletedBy    { get; private set; }
 
-    // IAuditableEntity - automatic audit trails
-    public DateTimeOffset CreatedAt { get; set; }
-    public string? CreatedBy { get; set; }
-    public DateTimeOffset? LastModifiedAt { get; set; }
-    public string? LastModifiedBy { get; set; }
+    private {Entity}() { }   // EF Core
 
-    // ISoftDeletable - automatic soft deletes
-    public DateTimeOffset? DeletedAt { get; set; }
-    public string? DeletedBy { get; set; }
-
-    // Private constructor for EF Core
-    private {Entity}() { }
-
-    // Factory method - the only way to create
-    public static {Entity} Create(string name, decimal price, string tenantId)
+    public static {Entity} Create(string name, decimal price)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(price);
 
         var entity = new {Entity}
         {
-            Id = Guid.NewGuid(),
-            Name = name,
+            Id = Guid.CreateVersion7(),   // Ids de ENTIDAD: V7 (orden temporal). NewGuid solo para Ids de evento.
+            Name = name.Trim(),
             Price = price,
-            TenantId = tenantId
         };
-
         entity.AddDomainEvent(new {Entity}CreatedEvent(entity.Id));
         return entity;
     }
 
-    // Domain methods for state changes
     public void UpdateDetails(string name, decimal price, string? description)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(price);
-
-        Name = name;
+        Name = name.Trim();
         Price = price;
-        Description = description;
-
+        Description = description?.Trim();
         AddDomainEvent(new {Entity}UpdatedEvent(Id));
     }
 }
 ```
 
+### Tenant y auditoría — los estampa el framework
+
+- **No declares `TenantId` ni lo pases en `Create(...)`**: `BaseEntity`/`BaseDbContext` manejan el
+  tenant (filtro default-ON). Opt-out global solo vía `IGlobalEntity` (`database.md`).
+- Auditoría (`IAuditableEntity`): `CreatedOnUtc` / `CreatedBy` / `LastModifiedOnUtc` /
+  `LastModifiedBy` (`DateTimeOffset`) — estampados por interceptor. **No** uses `CreatedAt`/
+  `LastModifiedAt`: esas firmas no existen.
+
 ## Domain Events
 
 ```csharp
-public sealed record {Entity}CreatedEvent(Guid {Entity}Id) : IDomainEvent;
-public sealed record {Entity}UpdatedEvent(Guid {Entity}Id) : IDomainEvent;
-public sealed record {Entity}DeletedEvent(Guid {Entity}Id) : IDomainEvent;
+public sealed record {Entity}CreatedEvent(Guid {Entity}Id) : DomainEvent;
+public sealed record {Entity}UpdatedEvent(Guid {Entity}Id) : DomainEvent;
 ```
+
+(Eventos **de integración** cross-módulo son otra cosa: `IIntegrationEvent` + Outbox — skill
+`add-integration-event`.)
 
 ## EF Core Configuration
 
@@ -82,33 +81,24 @@ public sealed class {Entity}Configuration : IEntityTypeConfiguration<{Entity}>
 {
     public void Configure(EntityTypeBuilder<{Entity}> builder)
     {
-        builder.ToTable("{entities}");
-
+        builder.ToTable("{Entities}");
         builder.HasKey(x => x.Id);
-
-        builder.Property(x => x.Name)
-            .IsRequired()
-            .HasMaxLength(200);
-
-        builder.Property(x => x.Price)
-            .HasPrecision(18, 2);
-
-        builder.Property(x => x.TenantId)
-            .IsRequired()
-            .HasMaxLength(64);
-
-        builder.HasIndex(x => x.TenantId);
-
-        // Global query filter for soft-delete
-        builder.HasQueryFilter(x => x.DeletedAt == null);
+        builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
+        builder.Property(x => x.Price).HasPrecision(18, 2);
+        builder.HasIndex(x => x.Name);
     }
 }
 ```
 
+- **No escribas `HasQueryFilter` de soft-delete ni de tenant** — los aplica el framework
+  (`ModelBuilderExtensions`, filtro nombrado). Escribirlo a mano lo duplica o lo pisa.
+- Hijo alcanzado SOLO por colección de navegación del padre →
+  `Property(x => x.Id).ValueGeneratedNever()` (gotcha de `database.md`).
+
 ## Register in DbContext
 
 ```csharp
-public sealed class {Module}DbContext : DbContext
+public sealed class {Module}DbContext(...) : BaseDbContext(...)
 {
     public DbSet<{Entity}> {Entities} => Set<{Entity}>();
 
@@ -116,49 +106,23 @@ public sealed class {Module}DbContext : DbContext
     {
         modelBuilder.HasDefaultSchema("{module}");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof({Module}DbContext).Assembly);
+        base.OnModelCreating(modelBuilder);   // AL FINAL — aplica filtros tenant + soft-delete
     }
 }
 ```
 
-## Add Migration
+(Verificado: `CatalogDbContext.cs:59`, `LookupsDbContext.cs:33` — `base.OnModelCreating` **siempre al final**.)
 
-```bash
-dotnet ef migrations add Add{Entity} \
-  --project src/Host/FSH.Starter.Migrations.PostgreSQL \
-  --startup-project src/Host/FSH.Starter.Api
+## Migración
 
-dotnet ef database update \
-  --project src/Host/FSH.Starter.Migrations.PostgreSQL \
-  --startup-project src/Host/FSH.Starter.Api
-```
-
-## Interfaces Reference
-
-| Interface | Purpose | Auto-Handled |
-|-----------|---------|--------------|
-| `IHasTenant` | Tenant isolation | Query filtering |
-| `IAuditableEntity` | Created/Modified tracking | SaveChanges interceptor |
-| `ISoftDeletable` | Soft delete support | Delete interceptor |
-| `AggregateRoot<T>` | Domain events support | Event dispatcher |
-
-## Key Rules
-
-1. **Private constructor** - EF Core needs it, but users use factory methods
-2. **Factory methods** - All creation goes through `Create()` static method
-3. **Domain methods** - State changes through methods, not property setters
-4. **Domain events** - Raise events for significant state changes
-5. **Validation in methods** - Validate in factory/domain methods, not entity
-6. **No public setters** - Properties are `private set`
+Seguir el skill **`create-migration`** (build primero, `--context {Module}DbContext`,
+`--output-dir {Module}`, aplicar con `DbMigrator -- apply`). **La API no migra al startup.**
 
 ## Checklist
 
-- [ ] Implements `AggregateRoot<Guid>`
-- [ ] Implements `IHasTenant` for tenant isolation
-- [ ] Implements `IAuditableEntity` for audit trails
-- [ ] Implements `ISoftDeletable` for soft deletes
-- [ ] Has private constructor
-- [ ] Has static factory method
-- [ ] Domain events raised for state changes
-- [ ] EF configuration created
-- [ ] Added to DbContext
-- [ ] Migration created
+- [ ] `AggregateRoot<Guid>` (+ `ISoftDeletable` si aplica; `IGlobalEntity` SOLO si debe ser cross-tenant)
+- [ ] Constructor privado + factory `Create(...)` con `Guid.CreateVersion7()`
+- [ ] Sin `TenantId` manual, sin `HasQueryFilter` manual
+- [ ] Domain events en cambios de estado significativos
+- [ ] EF config + DbSet + `base.OnModelCreating` al final
+- [ ] Migración vía `create-migration` + DbMigrator

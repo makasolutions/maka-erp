@@ -1325,7 +1325,55 @@ centrales (§18.2) · `dotnet build`/`npm run build`/`Architecture.Tests` verdes
 probada en 360/768/1024px Light+Dark con 0 errores en Console/Network · multitenant verificado ·
 defectos nuevos añadidos a §18.4.
 
+### 18.6 — Diseño de formularios: rapidez de llenado + prevención de errores (OBLIGATORIO)
+
+> **Premisa rectora:** todo formulario se diseña pensando en **cómo el usuario llena los datos de
+> la forma más rápida, eficiente y con el menor margen de error**. La estética sirve a esa meta:
+> menos clics, menos lectura, menos decisiones, menos formas de equivocarse.
+
+**1. Uniformidad visual y rejilla de columnas iguales.**
+- Maquetar a **2 o 3 columnas de igual ancho** (no anchos dispares tipo 8/4, 6/3/3 mezclados sin
+  razón). En `FormGrid` (12 cols): 3 columnas iguales = `span={4}` en todos los campos cortos;
+  2 columnas = `span={6}`. Los campos fluyen en filas parejas (`nombre, tipo, proveedor` /
+  `tarifa, tarifa sugerida, despacho` / …). El ojo recorre una rejilla regular, no un zigzag.
+- Label **siempre arriba**, controles **alineados verticalmente** en la misma fila (misma altura
+  de control; si un control es más bajo, envolverlo en `flex h-9 items-center`). Ver defecto §18.4 #7.
+
+**2. Campos largos (textareas / políticas / descripciones).**
+- Ocupan el **ancho completo** de la rejilla (`span={12}`) y tienen **≥ 8 filas** de altura
+  (`rows={8}`) para que el usuario vea lo que escribe sin pelear con un cajón de 2 líneas.
+- Si meter esos campos largos hace el formulario **demasiado alto**, moverlos a un **segundo tab**
+  con **`FormTabs`** (`@/components/list`). Patrón típico: tab **General** (campos cortos en
+  rejilla) + tab **Detalle/Políticas** (textareas anchas) + tabs por sección lógica. `FormTabs`
+  mantiene **todos los paneles montados** (los ocultos van `hidden`) para no perder lo escrito ni
+  romper la validación al enviar.
+
+**3. Listas de ítems — elegir el control correcto.**
+- Un control de **“+ Agregar” (lista repetible)** solo es apropiado cuando el usuario repite la
+  **misma estructura con datos distintos** y un número **variable** de veces (ej. varias
+  direcciones, varios contactos, varias líneas de pedido). En ese caso, el primer ítem aparece
+  **ya desplegado** (sin obligar un clic para empezar) — menos fricción.
+- Es el control **equivocado** cuando el conjunto de ítems es **fijo y conocido** y cada uno se
+  llena **una sola vez** (ej. las 9 reglas posibles de un convenio, un set de parámetros). Ahí el
+  add/remove + dropdown-para-elegir-tipo obliga al usuario a un baile de “elegir tipo → llenar →
+  agregar otro → elegir tipo…”. **Solución:** mostrar **todos los ítems posibles a la vez** como
+  filas fijas (cada una con un toggle “incluir” + su valor + sus opciones). El usuario ve el
+  universo completo, activa los que aplican y los llena en sitio. Cero clics de descubrimiento.
+
+**4. Defaults y guardarraíles que previenen errores.**
+- Defaults sensatos pre-cargados (fecha de hoy en “vigente desde”, opción más común seleccionada).
+- Opciones **desplegadas/visibles** en vez de escondidas tras un clic cuando el espacio lo permite.
+- Validación tipada §17 que **guía** (error inline + resumen + marca el tab con el error vía el
+  `badge` de `FormTabs`), nunca un “falló” genérico.
+- Restringir entradas imposibles desde la UI (rangos de fecha cruzados con `min`/`max`, máscaras
+  numéricas, controles que solo permiten valores válidos) — ver §17.
+
+> 🚫 PROHIBIDO maquetar un formulario nuevo con columnas de ancho irregular sin razón, textareas
+> minúsculas para texto largo, o un control “+ Agregar” para un conjunto de ítems fijo que se llena
+> una sola vez. Antes de construir, preguntarse: *¿cuál es la secuencia de menos clics y menos
+> errores para que el usuario complete esto?* y diseñar a partir de esa respuesta.
+
 ---
 
 *Fuente de verdad del proyecto. Si hay conflicto con cualquier otra instrucción, este archivo tiene prioridad.*
-*Versión: 3.3 | Proyecto: Maka Omni-Commerce Ecosystem | Junio 2026*
+*Versión: 3.4 | Proyecto: Maka Omni-Commerce Ecosystem | Junio 2026*

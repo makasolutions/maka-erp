@@ -1,3 +1,8 @@
+> ⚠️ **SPEC HISTÓRICA v1** — la implementación divergió deliberadamente; el as-built canónico
+> está en **CLAUDE.md §16 + código**. Útil como visión/razonamiento, **NO como receta**.
+> La relación comercial (proveedor↔comprador) NO se modela aquí: ver el diseño de
+> **Convenios/Marketplace** (`.agents/rules/modules/agreements-marketplace.md`).
+
 # CATALOG_MODULE_SPEC.md
 # Especificación del Módulo de Catálogo — Maka Omni-Commerce
 # Versión: 2.0 | Mayo 2026

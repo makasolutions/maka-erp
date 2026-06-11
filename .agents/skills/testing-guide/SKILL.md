@@ -1,223 +1,128 @@
 ---
 name: testing-guide
-description: Write unit tests, integration tests, and architecture tests for FSH features. Use when adding tests or understanding the testing strategy.
+description: Write unit tests, integration tests, and architecture tests for FSH/Maka features using xUnit + Shouldly + NSubstitute. Use when adding tests or understanding the testing strategy.
 ---
 
 # Testing Guide
 
-FSH uses a layered testing strategy with architecture tests as guardrails.
+Estrategia por capas con los architecture tests como guardarraíl. Stack **real** (verificado en
+`src/Directory.Packages.props`): **xUnit + Shouldly + NSubstitute + AutoFixture + NetArchTest +
+Testcontainers**. FluentAssertions y Moq NO se usan. Convenciones completas: `.agents/rules/testing.md`.
 
 ## Test Project Structure
 
 ```
 src/Tests/
-├── Architecture.Tests/    # Enforces layering rules
-├── Generic.Tests/         # Shared test utilities
-├── Identity.Tests/        # Identity module tests
-├── Multitenancy.Tests/    # Multitenancy module tests
-└── Auditing.Tests/        # Auditing module tests
+├── Architecture.Tests/     # Boundaries + handler↔validator pairing (obligatorios)
+├── Integration.Tests/      # WebApplicationFactory + Testcontainers (requiere Docker)
+├── Integration.Middleware.Tests/
+├── {Module}.Tests/         # Unit: Catalog, Parties, Identity, Chat, Files, Auditing, …
+├── Framework.Tests/ Caching.Tests/ Multitenancy.Tests/
+└── Generic.Tests/          # utilidades compartidas
 ```
 
-## Architecture Tests
+## Handler test (NSubstitute + Shouldly)
 
-Architecture tests enforce module boundaries and layering. They run on every build.
-
-```csharp
-public class ArchitectureTests
-{
-    [Fact]
-    public void Modules_ShouldNot_DependOnOtherModules()
-    {
-        var result = Types.InAssembly(typeof(IdentityModule).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn("Modules.Multitenancy")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Contracts_ShouldNot_DependOnImplementation()
-    {
-        var result = Types.InAssembly(typeof(UserDto).Assembly)
-            .ShouldNot()
-            .HaveDependencyOn("Modules.Identity")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Handlers_ShouldBe_Sealed()
-    {
-        var result = Types.InAssembly(typeof(IdentityModule).Assembly)
-            .That()
-            .ImplementInterface(typeof(ICommandHandler<,>))
-            .Or()
-            .ImplementInterface(typeof(IQueryHandler<,>))
-            .Should()
-            .BeSealed()
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue();
-    }
-}
-```
-
-## Unit Test Patterns
-
-### Handler Tests
+Los handlers inyectan el DbContext (no hay repositorio); para unit tests se usan dobles de los
+servicios colaboradores y/o un DbContext sobre SQLite/InMemory según el patrón del proyecto del
+módulo — copiar el arreglo de un test existente del mismo módulo (ej. `Catalog.Tests`).
 
 ```csharp
-public class Create{Entity}HandlerTests
+public class Create{Entity}CommandHandlerTests
 {
-    private readonly Mock<IRepository<{Entity}>> _repositoryMock;
-    private readonly Mock<ICurrentUser> _currentUserMock;
-    private readonly Create{Entity}Handler _handler;
-
-    public Create{Entity}HandlerTests()
-    {
-        _repositoryMock = new Mock<IRepository<{Entity}>>();
-        _currentUserMock = new Mock<ICurrentUser>();
-        _currentUserMock.Setup(x => x.TenantId).Returns("test-tenant");
-
-        _handler = new Create{Entity}Handler(
-            _repositoryMock.Object,
-            _currentUserMock.Object);
-    }
+    private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
 
     [Fact]
-    public async Task Handle_ValidCommand_Returns{Entity}Id()
+    public async Task Handle_Should_ReturnId_When_CommandIsValid()
     {
         // Arrange
+        _currentUser.GetTenant().Returns("test-tenant");
+        var handler = /* construir con DbContext de test + _currentUser */;
         var command = new Create{Entity}Command("Test", 99.99m);
-        _repositoryMock
-            .Setup(x => x.AddAsync(It.IsAny<{Entity}>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.Id.Should().NotBeEmpty();
-        _repositoryMock.Verify(x => x.AddAsync(
-            It.Is<{Entity}>(e => e.Name == "Test" && e.Price == 99.99m),
-            It.IsAny<CancellationToken>()), Times.Once);
+        result.ShouldNotBe(Guid.Empty);
     }
 }
 ```
 
-### Validator Tests
+⚠️ Al verificar un `CancellationToken` reenviado, asertar el token **específico**
+(`service.Received(1).DoAsync(arg, ct)`): NSubstitute rellena parámetros opcionales con `default`,
+así que `Received(1).DoAsync(arg)` asertaría `CancellationToken.None` silenciosamente.
+
+## Validator test
 
 ```csharp
-public class Create{Entity}ValidatorTests
+public class Create{Entity}CommandValidatorTests
 {
-    private readonly Create{Entity}Validator _validator = new();
+    private readonly Create{Entity}CommandValidator _validator = new();
 
     [Fact]
-    public void Validate_EmptyName_Fails()
+    public void Validate_Should_Fail_When_NameIsEmpty()
     {
-        var command = new Create{Entity}Command("", 99.99m);
-        var result = _validator.Validate(command);
+        var result = _validator.Validate(new Create{Entity}Command("", 99.99m));
 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Name");
-    }
-
-    [Fact]
-    public void Validate_NegativePrice_Fails()
-    {
-        var command = new Create{Entity}Command("Test", -1m);
-        var result = _validator.Validate(command);
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Price");
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == "Name");
     }
 
     [Theory]
     [InlineData("Valid Name", 10)]
-    [InlineData("Another", 0.01)]
-    public void Validate_ValidCommand_Passes(string name, decimal price)
+    public void Validate_Should_Pass_When_CommandIsValid(string name, decimal price)
     {
-        var command = new Create{Entity}Command(name, price);
-        var result = _validator.Validate(command);
-
-        result.IsValid.Should().BeTrue();
+        _validator.Validate(new Create{Entity}Command(name, price)).IsValid.ShouldBeTrue();
     }
 }
 ```
 
-### Entity Tests
+## Entity test
 
 ```csharp
 public class {Entity}Tests
 {
     [Fact]
-    public void Create_ValidInput_Creates{Entity}WithEvent()
+    public void Create_Should_SetProperties_And_RaiseEvent()
     {
-        var entity = {Entity}.Create("Test", 99.99m, "tenant-1");
+        var entity = {Entity}.Create("Test", 99.99m);
 
-        entity.Id.Should().NotBeEmpty();
-        entity.Name.Should().Be("Test");
-        entity.Price.Should().Be(99.99m);
-        entity.TenantId.Should().Be("tenant-1");
-        entity.DomainEvents.Should().ContainSingle(e => e is {Entity}CreatedEvent);
+        entity.Id.ShouldNotBe(Guid.Empty);
+        entity.Name.ShouldBe("Test");
+        entity.DomainEvents.ShouldContain(e => e is {Entity}CreatedEvent);
     }
 
     [Fact]
-    public void Create_EmptyName_ThrowsArgumentException()
+    public void Create_Should_Throw_When_NameIsEmpty()
     {
-        var act = () => {Entity}.Create("", 99.99m, "tenant-1");
-
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void UpdateDetails_ValidInput_UpdatesAndRaisesEvent()
-    {
-        var entity = {Entity}.Create("Original", 50m, "tenant-1");
-        entity.ClearDomainEvents();
-
-        entity.UpdateDetails("Updated", 75m, "New description");
-
-        entity.Name.Should().Be("Updated");
-        entity.Price.Should().Be(75m);
-        entity.Description.Should().Be("New description");
-        entity.DomainEvents.Should().ContainSingle(e => e is {Entity}UpdatedEvent);
+        Should.Throw<ArgumentException>(() => {Entity}.Create("", 99.99m));
     }
 }
 ```
 
-## Running Tests
+## Architecture tests
+
+Viven en `Architecture.Tests` y deben quedar verdes siempre: módulos solo via `.Contracts`,
+handlers `sealed`, tenant-isolation en entidades, y **todo command/paginated-query handler con su
+`{Name}Validator`** (`HandlerValidatorPairingTests`). No escribir nuevos a mano sin mirar los existentes.
+
+## Running
 
 ```bash
-# Run all tests
-dotnet test src/FSH.Starter.slnx
-
-# Run specific test project
-dotnet test src/Tests/Architecture.Tests
-
-# Run with coverage
-dotnet test src/FSH.Starter.slnx --collect:"XPlat Code Coverage"
-
-# Run specific test
-dotnet test --filter "FullyQualifiedName~Create{Entity}HandlerTests"
+dotnet test src/FSH.Starter.slnx                      # todo (Integration requiere Docker)
+dotnet test src/Tests/{Module}.Tests                  # un proyecto
+dotnet test --filter "FullyQualifiedName~{Clase}"     # un test
+dotnet test --collect "XPlat Code Coverage" --settings coverage.runsettings
 ```
 
-## Test Conventions
-
-| Convention | Example |
-|------------|---------|
-| Test class name | `{ClassUnderTest}Tests` |
-| Test method name | `{Method}_{Scenario}_{ExpectedResult}` |
-| Structure | Always Arrange-Act-Assert |
-| Assertions | Multiple asserts OK if same concept |
+Si Docker está caído, Integration.Tests fallan con `DockerUnavailableException` — ambiental, no regresión.
 
 ## Key Rules
 
-1. **Architecture tests are mandatory** - They enforce module boundaries
-2. **Validators need tests** - Cover edge cases
-3. **Handlers need tests** - Mock dependencies
-4. **Entities need tests** - Test factory methods and domain logic
-5. **Use FluentAssertions** - `.Should()` syntax
-6. **Use Moq for mocking** - `Mock<T>` pattern
+1. **Architecture tests obligatorios** — protegen los límites de módulo.
+2. **Naming**: `MethodName_Should_ExpectedBehavior_When_Condition`; Arrange-Act-Assert.
+3. **Shouldly** (`x.ShouldBe(...)`) — nunca FluentAssertions.
+4. **NSubstitute** (`Substitute.For<T>()`) — nunca Moq.
+5. Gotchas de integración (tenant AsyncLocal inline, storage eager, SignalR long-polling):
+   `.agents/rules/integration-testing.md`.

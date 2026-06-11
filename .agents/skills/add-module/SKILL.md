@@ -9,7 +9,7 @@ argument-hint: [ModuleName] [order-number]
 High-ceremony. The part people most often get wrong is **registration — a module must be wired in FOUR places** (Step 6).
 Always read `.agents/rules/architecture.md` before starting.
 
-Naming: Maka uses `Maka.Modules.{Name}` (not `FSH.Modules.{Name}` like the boilerplate).
+Naming (decisión registrada): namespace/assembly **`FSH.Modules.{Name}`** y proyectos **`Modules.{Name}`** / **`Modules.{Name}.Contracts`** — igual que los módulos reales (`FSH.Modules.Lookups/Parties/Catalog`). NO usar `Maka.Modules.*`.
 
 ---
 
@@ -19,13 +19,13 @@ Naming: Maka uses `Maka.Modules.{Name}` (not `FSH.Modules.{Name}` like the boile
 
 ```
 src/Modules/{Name}/
-├── Maka.Modules.{Name}/              ← runtime (internal)
+├── Modules.{Name}/              ← runtime (internal)
 │   ├── Domain/
 │   ├── Data/
 │   │   └── {Name}DbContext.cs
 │   ├── Features/v1/
 │   └── {Name}Module.cs
-└── Maka.Modules.{Name}.Contracts/   ← public API only
+└── Modules.{Name}.Contracts/   ← public API only
     └── v1/
         ├── Authorization/
         │   └── {Name}Permissions.cs
@@ -41,9 +41,9 @@ src/Modules/{Name}/
 `[FshModule]` is an **assembly attribute** (not class-level):
 
 ```csharp
-[assembly: FshModule(typeof(Maka.Modules.{Name}.{Name}Module), {order})]
+[assembly: FshModule(typeof(FSH.Modules.{Name}.{Name}Module), {order})]
 
-namespace Maka.Modules.{Name};
+namespace FSH.Modules.{Name};
 
 public sealed class {Name}Module : IModule
 {
@@ -77,6 +77,10 @@ public sealed class {Name}Module : IModule
             .WithTags("{Name}")
             .WithApiVersionSet(versionSet)
             .RequireAuthorization();
+        // ⚠️ Doctrina §18.4 #14: el grupo autenticado NO basta — TODO endpoint lleva su
+        // .RequirePermission({Name}Permissions.X.Y). El DefaultPolicy hardening (Identity)
+        // hace que .RequireAuthorization() también evalúe permisos, pero la regla sigue:
+        // ningún endpoint sin RequirePermission (CLAUDE.md §8; verificación QA set 3: 403 sin permiso).
         // group.MapCreate{Entity}Endpoint();
     }
 }
@@ -105,7 +109,7 @@ If your module consumes events from another module, load **after** it.
 ### Step 2 — Permissions (`Contracts/Authorization/{Name}Permissions.cs`)
 
 ```csharp
-namespace Maka.Modules.{Name}.Contracts.v1.Authorization;
+namespace FSH.Modules.{Name}.Contracts.v1.Authorization;
 
 public static class {Name}Permissions
 {
@@ -134,7 +138,7 @@ public static class {Name}Permissions
 ### Step 3 — DbContext
 
 ```csharp
-namespace Maka.Modules.{Name}.Data;
+namespace FSH.Modules.{Name}.Data;
 
 public sealed class {Name}DbContext : BaseDbContext
 {
@@ -165,10 +169,10 @@ public sealed class {Name}DbContext : BaseDbContext
 
 ```bash
 dotnet sln src/FSH.Starter.slnx add \
-  src/Modules/{Name}/Maka.Modules.{Name}/Maka.Modules.{Name}.csproj
+  src/Modules/{Name}/Modules.{Name}/Modules.{Name}.csproj
 
 dotnet sln src/FSH.Starter.slnx add \
-  src/Modules/{Name}/Maka.Modules.{Name}.Contracts/Maka.Modules.{Name}.Contracts.csproj
+  src/Modules/{Name}/Modules.{Name}.Contracts/Modules.{Name}.Contracts.csproj
 ```
 
 Add `<ProjectReference>` to the runtime module from:
@@ -205,15 +209,15 @@ Edit **only** `src/Host/FSH.Starter.Api/Program.cs` (this repo has a single host
 // 1. Mediator assemblies — add TWO entries per module:
 options.Assemblies = [
     // ... existing entries ...
-    typeof(Maka.Modules.{Name}.Contracts.{Name}ContractsMarker).Assembly,  // Contracts
-    typeof(Maka.Modules.{Name}.{Name}Module).Assembly,                      // Runtime
+    typeof(FSH.Modules.{Name}.Contracts.{Name}ContractsMarker).Assembly,  // Contracts
+    typeof(FSH.Modules.{Name}.{Name}Module).Assembly,                      // Runtime
 ];
 
 // 2. moduleAssemblies array:
 Assembly[] moduleAssemblies =
 [
     // ... existing entries ...
-    typeof(Maka.Modules.{Name}.{Name}Module).Assembly,
+    typeof(FSH.Modules.{Name}.{Name}Module).Assembly,
 ];
 ```
 
@@ -223,7 +227,7 @@ Assembly[] moduleAssemblies =
 Create the `{Name}ContractsMarker` class in the Contracts project:
 
 ```csharp
-namespace Maka.Modules.{Name}.Contracts;
+namespace FSH.Modules.{Name}.Contracts;
 
 /// <summary>Marker for Mediator assembly scanning.</summary>
 public sealed class {Name}ContractsMarker;
@@ -247,7 +251,7 @@ Hit the new endpoint in Scalar (`https://localhost:7030/scalar`) to confirm it r
 ### Step 8 — API module (`src/api/{name}.ts`)
 
 ```typescript
-import { apiFetch } from "@/api/api-fetch";
+import { apiFetch } from "@/lib/api-client";
 
 export type {Entity}Dto = {
   id: string;
@@ -378,7 +382,7 @@ Verify in both **Light** and **Dark** mode.
 ## Checklist
 
 **Backend:**
-- [ ] Two projects (`Maka.Modules.{Name}` + `.Contracts`), copied from Catalog csproj, renamed
+- [ ] Two projects (`Modules.{Name}` + `Modules.{Name}.Contracts`), copied from Catalog csproj, renamed
 - [ ] Projects added to `.slnx`, referenced from `Api` + `Migrations.PostgreSQL`
 - [ ] `[assembly: FshModule(typeof({Name}Module), {order})]` (assembly-level, NOT class-level)
 - [ ] `IModule`: `AddHeroDbContext<T>()`, `PermissionConstants.Register`, versioned group

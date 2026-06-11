@@ -4,9 +4,10 @@ Read before touching entities, DbContexts, migrations, or query filters.
 
 ## Entities
 
-- `BaseEntity` — `Id`, `CreatedAt`, `UpdatedAt`, `TenantId`.
-- `AggregateRoot` — `BaseEntity` + domain events (`IHasDomainEvents`, `_domainEvents` list).
-- Marker interfaces: `IHasTenant`, `IAuditableEntity`, `ISoftDeletable`, `IGlobalEntity`.
+- `BaseEntity<TId>` — **only** `Id` + domain events (`IHasDomainEvents`, `AddDomainEvent`/`ClearDomainEvents`). It does NOT carry tenant or audit columns (`BaseEntity.cs:7-32`).
+- `AggregateRoot<TId>` — `BaseEntity<TId>` marker for aggregate roots (no extra members today, `AggregateRoot.cs:7-10`).
+- Tenant/audit/soft-delete come from marker interfaces, stamped/filtered by `BaseDbContext` interceptors:
+  `IHasTenant { string TenantId }` · `IAuditableEntity { DateTimeOffset CreatedOnUtc; string? CreatedBy; DateTimeOffset? LastModifiedOnUtc; string? LastModifiedBy }` · `ISoftDeletable { bool IsDeleted; DateTimeOffset? DeletedOnUtc; string? DeletedBy }` · `IGlobalEntity` (opt-out de tenant).
 - Domain events inherit `DomainEvent` (record: `EventId`, `OccurredOnUtc`, `CorrelationId`, `TenantId`). Integration events implement `IIntegrationEvent`; handlers `IIntegrationEventHandler<T>`.
 
 ## Tenant isolation (default-ON)
