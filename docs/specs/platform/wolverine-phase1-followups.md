@@ -76,7 +76,7 @@ Verificado por el test `WolverineWiringE2ETests.Invoking_Phase1SmokeMessage_Shou
 
 ---
 
-## La 5ª capa — refinada en pre-Fase 2 (1 hipótesis viva, 4 descartadas)
+## La 5ª capa — CERRADA con causa raíz en Fase 2 (was: 1 hipótesis viva, 4 descartadas)
 
 **Síntoma original (Fase 1)**: dentro de un handler real (descubierto vía Capa 4, codegen activo según las stack traces), **ningún patrón documentado de Wolverine 6.8 produjo un envelope persistido visible al test** en `wolverine_outgoing_envelopes` ni en `wolverine_incoming_envelopes`. Patrones probados, todos con `outgoing total=0` y `incoming total=0`:
 
@@ -97,21 +97,53 @@ El codegen está activo (la stack trace lo prueba). Las tablas son consultables 
 
 - **Hipótesis #4 — `IncludeMessage<T>` ≠ `IncludeType<T>` para mensajes cascadeados.** ❌ **Descartada por irrelevancia**. Era específica del escenario sintético de Fase 1 (publicar un child message desde un handler de test). En Fase 2 los publicadores son command handlers de Mediator que usan `IDbContextOutbox<T>` directo — **no hay cascading**, no aplica.
 
-- **Hipótesis #5 — Coexistencia de `ISaveChangesInterceptor` propios con el interceptor de Wolverine instalado por `AddDbContextWithWolverineIntegration`.** ⚠️ **Hipótesis viva, no probada**. Identificada en verificación previa pre-Fase 2, evaluada en **mini-tarea cero (Plan Mode, sin ejecución)**. El Plan Mode reveló que `IdentityModule` registra tres interceptores **críticos** vía `sp.GetServices<ISaveChangesInterceptor>()`:
+- **Hipótesis #5 — Coexistencia de `ISaveChangesInterceptor` propios con un interceptor de Wolverine.** ❌ **Hipótesis INVALIDADA con evidencia en Fase 2** (investigación read-only contra source de WolverineFx.EntityFrameworkCore 6.8.0 + Fix variante (a) con E2E verde).
 
-  - `AuditableEntitySaveChangesInterceptor` ([AuditableEntitySaveChangesInterceptor.cs](src/BuildingBlocks/Persistence/Inteceptors/AuditableEntitySaveChangesInterceptor.cs)) — popula audit columns (`CreatedOnUtc/By`, `LastModifiedOnUtc/By`) y maneja soft delete + owned references.
-  - `DomainEventsInterceptor` ([DomainEventsInterceptor.cs](src/BuildingBlocks/Persistence/Inteceptors/DomainEventsInterceptor.cs)) — despacha domain events de `IHasDomainEvents` vía Mediator `IPublisher` post-SaveChanges.
-  - `AuditingSaveChangesInterceptor` ([AuditingSaveChangesInterceptor.cs](src/Modules/Auditing/Modules.Auditing/Persistence/AuditingSaveChangesInterceptor.cs)) — captura cambios de entidad y produce `EntityChange` audit log cross-cutting.
+  Hallazgo definitivo de la investigación: **Wolverine NO usa `ISaveChangesInterceptor`**. La integración EF Core funciona vía **codegen frames inyectados en el cuerpo del handler Wolverine** durante la compilación — `EnrollDbContextInTransaction` al inicio + `CommitEfCoreEnvelopeTransaction` como postprocessor. Cita: `T:Wolverine.EntityFrameworkCore.Codegen.CommitEfCoreEnvelopeTransaction` — *"Commits the EF Core envelope transaction (committing the EF Core database transaction and then flushing the MessageContext's outgoing messages). Emitted as a postprocessor so it runs before the HTTP response writer, ensuring the outbox is flushed before the response is sent (GH-2917)."*
 
-  Quitarlos rompe auditoría, domain events y audit log — **costo arquitectónico real, no quirúrgico**. La hipótesis se reformuló: no es "quitar interceptores", sino **"cómo coexisten interceptores de auditoría/domain-events del proyecto con el outbox transaccional de Wolverine"**. Decisión: diferir a Fase 2 cuando un publicador real (`UserRegistered`) revele la causa raíz con datos reales en juego. La respuesta canónica probablemente exista en doc de Wolverine (Marten + auditing es escenario común) — investigar al toparla, no antes. **Mini-tarea cero no tocó código, working tree limpio, sin deuda nueva.**
+  **Los 3 interceptors propios (`AuditableEntity` / `DomainEvents` / `Auditing`) son ortogonales al outbox EF de Wolverine**. No hay colisión arquitectónica que resolver.
+
+### Causa raíz REAL — bug de uso del API
+
+  La 5ª capa fue causada por una asunción incorrecta sobre la semántica de `IDbContextOutbox<T>.PublishAsync`. Doc oficial (`M:IDbContextOutbox.FlushOutgoingMessagesAsync`):
+
+  > *"Calling this method will force the outbox to send out any outstanding messages that were captured as part of processing the transaction **if you call SaveChangesAsync() directly on the DbContext**."*
+
+  El flujo original era:
+
+  ```csharp
+  await outbox.PublishAsync(evt, delivery);   // encola en memoria del MessageContext
+  await db.SaveChangesAsync(ct);              // persiste user — NO flushea outbox
+  // FIN → envelope nunca toca wolverine_outgoing_envelopes
+  ```
+
+  El flujo correcto, una sola línea de diferencia:
+
+  ```csharp
+  await outbox.PublishAsync(evt, delivery);
+  await outbox.SaveChangesAndFlushMessagesAsync(ct);   // commitea tx EF + flushea outbox
+  ```
+
+  Fix aplicado en Fase 2: la fachada `IIntegrationEventPublisher<TDbContext>` expone un método `SaveChangesAndFlushAsync(ct)` que internamente llama `dbContextOutbox.SaveChangesAndFlushMessagesAsync(ct)` — cubre uniformemente ambas rutas (Wolverine flushea outbox; Legacy persiste el `OutboxMessages` entity ya añadido por `EfCoreOutboxStore`). El `UserRegistrationService.PublishUserRegisteredAsync` reemplazó un único `db.SaveChangesAsync(ct)` por `integrationEventPublisher.SaveChangesAndFlushAsync(ct)`. **Una línea cambiada en el call site**.
+
+### Verificación
+
+  `WolverineUserRegisteredE2ETests.UserRegistration_Should_Publish_Envelope_And_Deliver_Via_RabbitMq` ✅ — registro de usuario por HTTP → envelope persistido en `wolverine_outgoing_envelopes` → entregado por RabbitMQ (Testcontainer) → recibido por consumer test-only con `TenantId` correcto. **Atomicidad estructural ADR-0001 demostrada con publicador real.**
 
 ### Conclusión
 
-Progreso: la 5ª capa pasó de **"5 hipótesis pendientes"** a **"1 hipótesis viva (coexistencia interceptors ↔ outbox EF)"**. Las otras 4 están descartadas con evidencia. La hipótesis viva se valida con publicador real en Fase 2, no con smoke sintético. **ADR-0001 sigue en estado "cableado, atomicidad observable diferida a Fase 2"** — sin cambio.
+Progreso: la 5ª capa pasó de **"5 hipótesis pendientes"** a **"5/5 cerradas con evidencia (4 descartadas + 1 invalidada y reemplazada por causa raíz real)"**. **ADR-0001 sube a "validado estructuralmente — primer publicador real (`UserRegistered`) emite por Wolverine vía outbox transaccional + entrega RabbitMQ verificada E2E"**.
 
-### Lecciones de la verificación previa
+### Lecciones de Fase 1 + Fase 2
 
-Investigar la API real **antes** de implementar (verificación previa pre-Fase 2 con XML docs + búsquedas en doc oficial) descartó 3 hipótesis (#1, #2, #4) y refinó 2 más (#3 parcialmente, #5 reformulada) en ~15 minutos read-only. Este patrón ahorró potencialmente una a dos rondas completas de implementación-y-revertir. **Repetir en futuras fases ante incertidumbre técnica**: una hora de doc + assembly inspection antes de tocar código, no después. La mini-tarea cero (Plan Mode obligatorio antes de implementar) además interceptó un cambio que habría roto auditoría y domain events del proyecto — confirma que el costo de detenerse a leer es siempre menor que el costo de revertir.
+1. **Investigar la API real antes de implementar**. La verificación previa pre-Fase 2 (15 min read-only sobre XML docs) descartó 3 hipótesis antes de tocar código.
+2. **La doc canónica importa más que la intuición**. La hipótesis "colisión de interceptors" se mantuvo viva por turnos sin evidencia que la sostuviera — corregida con investigación read-only de 20 min antes de declarar arquitectura. Wolverine simplemente no usa interceptors EF, y la doc lo deja claro al primer grep contra el XML.
+3. **El smoke sintético out-of-handler de Fase 1 ya estaba mostrando el mismo bug** (`PublishAsync` sin flush) que el publicador real reveló en Fase 2. Fase 1 cerró con asterisco honesto en lugar de fabricar evidencia con experimentos que no aplicaban al uso real. Eso fue correcto.
+4. **El Plan Mode obligatorio antes de cambiar interceptors** (mini-tarea cero) evitó romper auditoría/domain events sobre una hipótesis incorrecta. Patrón a repetir: detenerse a confirmar costos arquitectónicos antes de cualquier cambio que toque BuildingBlocks.
+
+### Oportunidad revelada (semilla para Fase 3)
+
+Wolverine 6.8 trae `M:Wolverine.EntityFrameworkCore.WolverineEntityCoreExtensions.PublishDomainEventsFromEntityFrameworkCore` — un **scraper nativo de domain events** que reemplaza funcionalmente al `DomainEventsInterceptor` propio. *"Tell Wolverine how to 'scrape' domain events from the active EF Core DbContext to publish as messages."* No bloqueante para Fase 2 (los 3 interceptors propios quedan intactos), pero es candidato a evaluar en Fase 3 si decidimos unificar el pipeline de domain events bajo Wolverine.
 
 ---
 
