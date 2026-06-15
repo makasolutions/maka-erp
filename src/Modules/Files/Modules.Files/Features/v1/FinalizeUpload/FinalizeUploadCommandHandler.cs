@@ -1,4 +1,3 @@
-using FSH.Framework.Eventing.Outbox;
 using System.Diagnostics;
 using System.Net;
 using FSH.Framework.Core.Context;
@@ -24,7 +23,7 @@ public sealed class FinalizeUploadCommandHandler(
     IStorageService storage,
     IFileScanner scanner,
     IQuotaService quotas,
-    IOutboxStore outbox,
+    IIntegrationEventPublisher<FilesDbContext> integrationEventPublisher,
     ICurrentUser currentUser)
     : ICommandHandler<FinalizeUploadCommand, FileAssetDto>
 {
@@ -81,10 +80,16 @@ public sealed class FinalizeUploadCommandHandler(
         // Debit quota with the actual bytes. Refunded on hard purge by PurgeDeletedFilesJob.
         await quotas.RecordAsync(tenantId, QuotaResource.StorageBytes, head.SizeBytes, cancellationToken).ConfigureAwait(false);
 
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
+        // ADR-0001/0005 — publicador 4/4 migrado a Wolverine. PublishAsync encola el
+        // envelope; SaveChangesAndFlushAsync committea la tx EF (asset.MarkAvailable +
+        // cualquier otro cambio EF acumulado) Y flushea el envelope a
+        // files.wolverine_outgoing_envelopes EN LA MISMA TRANSACCIÓN — cierre estructural
+        // ADR-0001 para Files. Esto también arregla un bug preexistente menor del bus
+        // propio: en el código anterior el db.SaveChangesAsync ocurría antes del
+        // outbox.AddAsync, así que el asset finalizado podía committearse y el evento
+        // fallar al publicarse (no-atomicidad estructural).
         var correlationId = Activity.Current?.Id ?? Guid.NewGuid().ToString();
-        await outbox.AddAsync(new FileFinalizedIntegrationEvent(
+        await integrationEventPublisher.PublishAsync(new FileFinalizedIntegrationEvent(
             Id: Guid.NewGuid(),
             OccurredOnUtc: DateTimeOffset.UtcNow,
             TenantId: tenantId,
@@ -96,6 +101,8 @@ public sealed class FinalizeUploadCommandHandler(
             ContentType: asset.ContentType,
             SizeBytes: asset.SizeBytes,
             FinalStatus: (int)asset.Status), cancellationToken).ConfigureAwait(false);
+
+        await integrationEventPublisher.SaveChangesAndFlushAsync(cancellationToken).ConfigureAwait(false);
 
         return FileAssetMapper.ToDto(asset);
     }

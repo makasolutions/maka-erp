@@ -167,6 +167,10 @@ builder.Host.UseWolverine(opts =>
         // Publicador 2/4 (ADR-0001/0005). Mismo exchange que UserRegistered (mismo módulo).
         opts.PublishMessage<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>()
             .ToRabbitExchange("maka.wolverine.identity.events");
+
+        // Publicador 4/4 (ADR-0001/0005). Módulo distinto a Identity → exchange propio.
+        opts.PublishMessage<FSH.Modules.Files.Contracts.Events.FileFinalizedIntegrationEvent>()
+            .ToRabbitExchange("maka.wolverine.files.events");
     }
 });
 

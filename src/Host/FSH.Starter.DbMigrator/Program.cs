@@ -381,10 +381,20 @@ try
         }
         else
         {
-            await Console.Out.WriteLineAsync("[wolverine-setup] applying Wolverine schema in 'identity'…")
-                .ConfigureAwait(false);
-            await WolverineSchemaSetup.ApplyAsync(connectionString, logger, CancellationToken.None)
-                .ConfigureAwait(false);
+            // Cada DbContext de módulo enrolado con Wolverine necesita sus 4 tablas
+            // wolverine_* en su propio schema. La lista se extiende cuando un módulo
+            // nuevo migra a Wolverine (publicador real). Mantener ordenada por
+            // orden de migración del proyecto (Fase 2: identity, files).
+            string[] wolverineSchemas = ["identity", "files"];
+            foreach (var wolverineSchema in wolverineSchemas)
+            {
+                await Console.Out.WriteLineAsync(
+                    string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        "[wolverine-setup] applying Wolverine schema in '{0}'…", wolverineSchema))
+                    .ConfigureAwait(false);
+                await WolverineSchemaSetup.ApplyAsync(connectionString, wolverineSchema, logger, CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
             await Console.Out.WriteLineAsync("[wolverine-setup] done").ConfigureAwait(false);
         }
     }

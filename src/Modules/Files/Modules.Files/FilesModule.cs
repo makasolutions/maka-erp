@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using FluentValidation;
+using FSH.Framework.Eventing;
 using FSH.Framework.Persistence;
+using Wolverine.EntityFrameworkCore;
 using FSH.Framework.Shared.Constants;
 using FSH.Framework.Web.Modules;
 using FSH.Modules.Files.Authorization;
@@ -49,7 +51,21 @@ public sealed class FilesModule : IModule
         PermissionConstants.Register(FilesPermissions.All);
 
         builder.Services.Configure<FilesOptions>(builder.Configuration.GetSection("Files"));
-        builder.Services.AddHeroDbContext<FilesDbContext>();
+        // ADR-0001/0005 · Fase 2 publicador 4/4 — Wolverine outbox transaccional sobre
+        // FilesDbContext. Reemplaza AddHeroDbContext por la variante de Wolverine
+        // (mismo patrón que IdentityModule); replica inline la configuración de
+        // ConfigureHeroDatabase + interceptors.
+        builder.Services.AddDbContextWithWolverineIntegration<FilesDbContext>((sp, options) =>
+        {
+            var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+            var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
+            options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
+            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+        }, wolverineDatabaseSchema: "files");
+        builder.Services.AddEventingCore(builder.Configuration);
+        builder.Services.AddEventingForDbContext<FilesDbContext>();
+        // ADR-0005 — fachada de publicación con switch por evento.
+        builder.Services.AddIntegrationEventPublisher<FilesDbContext>();
         builder.Services.AddScoped<IDbInitializer, FilesDbInitializer>();
 
         builder.Services.AddScoped<FileAccessPolicyRegistry>();

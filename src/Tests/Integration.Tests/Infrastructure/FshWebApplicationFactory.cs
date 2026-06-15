@@ -154,6 +154,7 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 ["EventingOptions:RabbitMQ:QueuePrefix"] = "maka.test",
                 ["EventingOptions:IntegrationEventRouting:UserRegisteredIntegrationEvent"] = "Wolverine",
                 ["EventingOptions:IntegrationEventRouting:TokenGeneratedIntegrationEvent"] = "Wolverine",
+                ["EventingOptions:IntegrationEventRouting:FileFinalizedIntegrationEvent"] = "Wolverine",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
                 ["Serilog:MinimumLevel:Override:Microsoft.EntityFrameworkCore"] = "Fatal",
                 ["Serilog:MinimumLevel:Override:Npgsql"] = "Fatal",
@@ -194,19 +195,26 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 // Fase 2 — consumers test-only de los publicadores reales migrados.
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.UserRegisteredE2EConsumer));
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.TokenGeneratedE2EConsumer));
+                opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.FileFinalizedE2EConsumer));
 
-                // Listener test-only: declara queue + binding al exchange donde el API publica.
+                // Listeners test-only: un queue + binding por cada exchange donde el API publica.
                 // Sin este binding, el envelope se publica al exchange pero ningún consumer lo
                 // recibe — el TrackedSession lo ve en Sent pero nunca en Received.
                 opts.UseRabbitMq()
                     .BindExchange("maka.wolverine.identity.events", ExchangeType.Fanout)
                     .ToQueue("maka.wolverine.identity.events.e2e-test");
                 opts.ListenToRabbitQueue("maka.wolverine.identity.events.e2e-test");
+
+                opts.UseRabbitMq()
+                    .BindExchange("maka.wolverine.files.events", ExchangeType.Fanout)
+                    .ToQueue("maka.wolverine.files.events.e2e-test");
+                opts.ListenToRabbitQueue("maka.wolverine.files.events.e2e-test");
             });
 
             // Singletons sink donde los consumers test-only graban para asertar.
             services.AddSingleton<Integration.Tests.Tests.Platform.UserRegisteredCollector>();
             services.AddSingleton<Integration.Tests.Tests.Platform.TokenGeneratedCollector>();
+            services.AddSingleton<Integration.Tests.Tests.Platform.FileFinalizedCollector>();
 
             // Remove hosted services that depend on infrastructure not available in tests or cause race conditions:
             // - RolePermissionSyncHostedService (queries identity schema before migrations run)
@@ -356,8 +364,13 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         // helper que DbMigrator usa en producción (Step 2b). Cero duplicación
         // de lógica entre prod y test. La connection string del Testcontainer
         // se pasa por parámetro: el helper es agnóstico al origen de la cadena.
+        // Lista de schemas alineada con DbMigrator/Program.cs.
         var setupLogger = Services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(FshWebApplicationFactory));
-        await migrator::FSH.Starter.DbMigrator.WolverineSchemaSetup.ApplyAsync(_postgres.GetConnectionString(), setupLogger, CancellationToken.None);
+        var cs = _postgres.GetConnectionString();
+        foreach (var schema in new[] { "identity", "files" })
+        {
+            await migrator::FSH.Starter.DbMigrator.WolverineSchemaSetup.ApplyAsync(cs, schema, setupLogger, CancellationToken.None);
+        }
     }
 
     private static void ResetModuleLoader()

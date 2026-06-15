@@ -16,4 +16,9 @@
 		<ProjectReference Include="..\Modules.Files.Contracts\Modules.Files.Contracts.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- Wolverine outbox transaccional sobre FilesDbContext (ADR-0001, Fase 2 publicador 4/4). -->
+		<PackageReference Include="WolverineFx.EntityFrameworkCore" />
+	</ItemGroup>
+
 </Project>
