@@ -76,9 +76,9 @@ Verificado por el test `WolverineWiringE2ETests.Invoking_Phase1SmokeMessage_Shou
 
 ---
 
-## La 5ª capa — NO RESUELTA en Fase 1
+## La 5ª capa — refinada en pre-Fase 2 (1 hipótesis viva, 4 descartadas)
 
-**Síntoma**: dentro de un handler real (descubierto vía Capa 4, codegen activo según las stack traces), **ningún patrón documentado de Wolverine 6.8 produjo un envelope persistido visible al test** en `wolverine_outgoing_envelopes` ni en `wolverine_incoming_envelopes`. Patrones probados, todos con `outgoing total=0` y `incoming total=0`:
+**Síntoma original (Fase 1)**: dentro de un handler real (descubierto vía Capa 4, codegen activo según las stack traces), **ningún patrón documentado de Wolverine 6.8 produjo un envelope persistido visible al test** en `wolverine_outgoing_envelopes` ni en `wolverine_incoming_envelopes`. Patrones probados, todos con `outgoing total=0` y `incoming total=0`:
 
 1. `IMessageBus bus` inyectado al handler + `await bus.PublishAsync(child)` — el publish corre, no falla, no persiste.
 2. Mismo patrón con `DeliveryOptions { ScheduledTime = DateTimeOffset.UtcNow.AddHours(1) }` — sin efecto.
@@ -87,15 +87,31 @@ Verificado por el test `WolverineWiringE2ETests.Invoking_Phase1SmokeMessage_Shou
 
 El codegen está activo (la stack trace lo prueba). Las tablas son consultables (el `WolverineSchemaSetup` verifica las 4). Pero el outbox no captura los mensajes producidos desde el handler.
 
-**Hipótesis a validar en Fase 2** (sin orden de probabilidad — todas requieren investigación contra source de WolverineFx 6.8):
+### Estado actual de la 5ª capa (post-verificación previa + mini-tarea cero)
 
-1. **`[Transactional]` o equivalente en el handler**: Wolverine puede requerir un atributo explícito (`[Transactional]`, `[WolverineTransaction]`, etc.) para que el codegen enrole el handler en una tx EF que capture los outgoing.
-2. **`opts.OptimizeArtifactWorkflow()`** activado: doc oficial menciona que activa "production-like" wiring del codegen. Puede ser requisito para que el outbox EF tome efecto.
-3. **Transporte real registrado**: con `EventingOptions:Provider != "RabbitMQ"` (caso de tests), Wolverine queda sin transporte external. Posiblemente el outbox solo persiste cuando hay un destination registrado al cual entregar — local queues durables podrían no ser suficiente sin un sending endpoint real.
-4. **`IncludeMessage<T>` ≠ `IncludeType<T>`** para discovery de mensajes cascadeados: la documentación menciona ambos en contextos distintos. Es posible que `IncludeType` cubra el handler pero no el mensaje child cascadeado, que requeriría `IncludeMessage`.
-5. **`SaveChanges` interceptors / `ISaveChangesInterceptor` colisión**: el `AddInterceptors(sp.GetServices<ISaveChangesInterceptor>())` que replicamos de `AddHeroDbContext` puede estar interfiriendo con el interceptor que Wolverine instala via `AddDbContextWithWolverineIntegration`. Probar registrando el DbContext sin interceptors propios y ver si el outbox empieza a capturar.
+- **Hipótesis #1 — `[Transactional]` attribute en el handler.** ❌ **Descartada** por verificación previa pre-Fase 2 (Q1). La doc oficial de `Wolverine.Attributes` describe el atributo como *"In place of using [Transactional] attributes, apply transactional middleware to every message handler that uses transactional services"* — está pensado para handlers Wolverine, no para command handlers de Mediator (que es la forma del repo). Cita: `M:Wolverine.IPolicies.AutoApplyTransactions` XML doc.
 
-**Fase 2 retoma desde aquí**: el escenario de prueba más simple no será sintético — será un publicador real de Identity (uno de los 5 existentes que publican via `IOutboxStore.AddAsync`) migrado a Wolverine. Si ese publicador real produce envelope persistido en `wolverine_outgoing_envelopes`, la 5ª capa quedará validada por construcción y este documento puede archivarse. Si no — investigar las 5 hipótesis en el orden listado.
+- **Hipótesis #2 — `opts.OptimizeArtifactWorkflow()`.** ❌ **Descartada** por verificación previa pre-Fase 2 (Q1). La API **ya no existe** en Wolverine 6.8.0 ni en JasperFx 2.8.2 (removida/renombrada). El reemplazo aparente es `JasperFxOptions` vía `services.CritterStackDefaults(...)` — pero su propósito es configuración de codegen, no del outbox EF.
+
+- **Hipótesis #3 — Transporte real (RabbitMQ activo) cambia la semántica del outbox.** ⚠️ **Parcialmente descartada**. La verificación previa Q1 confirma que la persistencia en outgoing ocurre dentro de `SaveChangesAndFlushMessagesAsync` con o sin transporte; el transporte solo afecta el flush post-commit hacia RabbitMQ. Por tanto la 5ª capa **no es por falta de transporte**. Sin embargo, Fase 2 sí activa RabbitMQ y validará empíricamente este punto al primer publicador real migrado.
+
+- **Hipótesis #4 — `IncludeMessage<T>` ≠ `IncludeType<T>` para mensajes cascadeados.** ❌ **Descartada por irrelevancia**. Era específica del escenario sintético de Fase 1 (publicar un child message desde un handler de test). En Fase 2 los publicadores son command handlers de Mediator que usan `IDbContextOutbox<T>` directo — **no hay cascading**, no aplica.
+
+- **Hipótesis #5 — Coexistencia de `ISaveChangesInterceptor` propios con el interceptor de Wolverine instalado por `AddDbContextWithWolverineIntegration`.** ⚠️ **Hipótesis viva, no probada**. Identificada en verificación previa pre-Fase 2, evaluada en **mini-tarea cero (Plan Mode, sin ejecución)**. El Plan Mode reveló que `IdentityModule` registra tres interceptores **críticos** vía `sp.GetServices<ISaveChangesInterceptor>()`:
+
+  - `AuditableEntitySaveChangesInterceptor` ([AuditableEntitySaveChangesInterceptor.cs](src/BuildingBlocks/Persistence/Inteceptors/AuditableEntitySaveChangesInterceptor.cs)) — popula audit columns (`CreatedOnUtc/By`, `LastModifiedOnUtc/By`) y maneja soft delete + owned references.
+  - `DomainEventsInterceptor` ([DomainEventsInterceptor.cs](src/BuildingBlocks/Persistence/Inteceptors/DomainEventsInterceptor.cs)) — despacha domain events de `IHasDomainEvents` vía Mediator `IPublisher` post-SaveChanges.
+  - `AuditingSaveChangesInterceptor` ([AuditingSaveChangesInterceptor.cs](src/Modules/Auditing/Modules.Auditing/Persistence/AuditingSaveChangesInterceptor.cs)) — captura cambios de entidad y produce `EntityChange` audit log cross-cutting.
+
+  Quitarlos rompe auditoría, domain events y audit log — **costo arquitectónico real, no quirúrgico**. La hipótesis se reformuló: no es "quitar interceptores", sino **"cómo coexisten interceptores de auditoría/domain-events del proyecto con el outbox transaccional de Wolverine"**. Decisión: diferir a Fase 2 cuando un publicador real (`UserRegistered`) revele la causa raíz con datos reales en juego. La respuesta canónica probablemente exista en doc de Wolverine (Marten + auditing es escenario común) — investigar al toparla, no antes. **Mini-tarea cero no tocó código, working tree limpio, sin deuda nueva.**
+
+### Conclusión
+
+Progreso: la 5ª capa pasó de **"5 hipótesis pendientes"** a **"1 hipótesis viva (coexistencia interceptors ↔ outbox EF)"**. Las otras 4 están descartadas con evidencia. La hipótesis viva se valida con publicador real en Fase 2, no con smoke sintético. **ADR-0001 sigue en estado "cableado, atomicidad observable diferida a Fase 2"** — sin cambio.
+
+### Lecciones de la verificación previa
+
+Investigar la API real **antes** de implementar (verificación previa pre-Fase 2 con XML docs + búsquedas en doc oficial) descartó 3 hipótesis (#1, #2, #4) y refinó 2 más (#3 parcialmente, #5 reformulada) en ~15 minutos read-only. Este patrón ahorró potencialmente una a dos rondas completas de implementación-y-revertir. **Repetir en futuras fases ante incertidumbre técnica**: una hora de doc + assembly inspection antes de tocar código, no después. La mini-tarea cero (Plan Mode obligatorio antes de implementar) además interceptó un cambio que habría roto auditoría y domain events del proyecto — confirma que el costo de detenerse a leer es siempre menor que el costo de revertir.
 
 ---
 
