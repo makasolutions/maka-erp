@@ -1,38 +1,36 @@
-using Finbuckle.MultiTenant;
-using Finbuckle.MultiTenant.Abstractions;
-using FSH.Framework.Eventing.Abstractions;
-using FSH.Framework.Shared.Multitenancy;
 using FSH.Framework.Web.Realtime;
 using FSH.Modules.Chat.Contracts.Events;
 using FSH.Modules.Notifications.Data;
 using FSH.Modules.Notifications.Domain;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FSH.Modules.Notifications.IntegrationEventHandlers;
 
 /// <summary>
-/// Subscribes to <see cref="MentionedInChannelIntegrationEvent"/> emitted by the Chat module via
-/// the Outbox. Writes a row to the mentioned user's inbox and pushes a
-/// <c>NotificationCreated</c> event to their SignalR group so the bell badge updates live.
+/// Subscribes to <see cref="MentionedInChannelIntegrationEvent"/> emitted by the Chat module.
+/// Writes a row to the mentioned user's inbox and pushes a <c>NotificationCreated</c> event
+/// to their SignalR group so the bell badge updates live.
 ///
-/// The event arrives from the <c>OutboxDispatcher</c> background pump, which carries NO
-/// HTTP/tenant context (eventing.md gotcha). A constructor-injected DbContext would capture a
-/// null Finbuckle tenant and the write would mis-stamp. So we open a fresh DI scope, install
-/// the event's <c>TenantId</c> into the Finbuckle context, and only then resolve the
-/// <see cref="NotificationsDbContext"/> — same mechanics as <c>GlobalCatalogReader</c> /
-/// <c>WebhookDispatchJob</c>.
+/// Migrado a Wolverine en Fase 3: el <see cref="FSH.Framework.Eventing.Tenant.TenantContextMiddleware"/>
+/// global de Wolverine restaura el Finbuckle <c>ITenantInfo</c> desde <c>envelope.TenantId</c>
+/// ANTES de invocar este handler, así que el <see cref="NotificationsDbContext"/> resuelve
+/// con el tenant correcto sin el bloque manual que el handler previo del bus propio tenía.
+/// Discovery vía <c>IncludeAssembly(typeof(NotificationsModule).Assembly)</c> en Program.cs.
 /// </summary>
-public sealed class MentionedInChannelIntegrationEventHandler(
-    IServiceScopeFactory scopeFactory,
-    IHubContext<AppHub> hub,
-    ILogger<MentionedInChannelIntegrationEventHandler> logger)
-    : IIntegrationEventHandler<MentionedInChannelIntegrationEvent>
+public static class MentionedInChannelIntegrationEventHandler
 {
-    public async Task HandleAsync(MentionedInChannelIntegrationEvent @event, CancellationToken ct = default)
+    public static async Task Handle(
+        MentionedInChannelIntegrationEvent @event,
+        NotificationsDbContext db,
+        IHubContext<AppHub> hub,
+        ILogger<MentionedInChannelIntegrationEventHandlerLog> logger,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(@event);
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(hub);
+        ArgumentNullException.ThrowIfNull(logger);
 
         if (string.IsNullOrWhiteSpace(@event.TenantId))
         {
@@ -59,18 +57,8 @@ public sealed class MentionedInChannelIntegrationEventHandler(
                 authorUserId = @event.AuthorUserId,
             });
 
-        // Fresh scope with the tenant installed BEFORE the DbContext is constructed,
-        // so Finbuckle captures the right TenantInfo for filtering + stamping.
-        using (var scope = scopeFactory.CreateScope())
-        {
-            var info = new AppTenantInfo(@event.TenantId, @event.TenantId);
-            scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>()
-                .MultiTenantContext = new MultiTenantContext<AppTenantInfo>(info);
-
-            var db = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
-            db.Notifications.Add(notification);
-            await db.SaveChangesAsync(ct).ConfigureAwait(false);
-        }
+        db.Notifications.Add(notification);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
 
         await hub.Clients.Group($"user:{@event.MentionedUserId}")
             .SendAsync("NotificationCreated", new
@@ -93,3 +81,7 @@ public sealed class MentionedInChannelIntegrationEventHandler(
         }
     }
 }
+
+#pragma warning disable S2094 // marker para el ILogger categoría
+public sealed class MentionedInChannelIntegrationEventHandlerLog { }
+#pragma warning restore S2094

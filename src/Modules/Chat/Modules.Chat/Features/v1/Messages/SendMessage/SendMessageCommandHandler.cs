@@ -1,4 +1,3 @@
-using FSH.Framework.Eventing.Outbox;
 using System.Diagnostics;
 using System.Net;
 using FSH.Framework.Core.Context;
@@ -23,7 +22,7 @@ public sealed class SendMessageCommandHandler(
     ICurrentUser currentUser,
     IHubContext<AppHub> hub,
     IMentionResolver mentionResolver,
-    IOutboxStore outbox)
+    IIntegrationEventPublisher<ChatDbContext> integrationEventPublisher)
     : ICommandHandler<SendMessageCommand, MessageDto>
 {
     public async ValueTask<MessageDto> Handle(SendMessageCommand cmd, CancellationToken cancellationToken)
@@ -102,6 +101,14 @@ public sealed class SendMessageCommandHandler(
             .ConfigureAwait(false);
 
         // One integration event per distinct mentioned user. Notifications module subscribes.
+        //
+        // ADR-0001/0005 — patrón Chat con SaveChanges ANTES del publish (documentado en
+        // wolverine-phase1-followups.md sección "Chat + Notifications"). Razón: el
+        // SignalR broadcast L100-102 necesita el mensaje ya persistido para evitar race
+        // condition de "ChatMessageCreated llega antes que el mensaje en DB". Acepta
+        // no-atomicidad estructural entre mensaje persistido (L97) y envelopes (encolados
+        // L_publish-loop, flusheados en SaveChangesAndFlushAsync). La ventana de pérdida
+        // es la fracción de ms entre el SaveChanges y el flush dentro del mismo scope.
         if (notifyUserIds.Count > 0)
         {
             var correlationId = Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString();
@@ -109,7 +116,7 @@ public sealed class SendMessageCommandHandler(
             var preview = MakePreview(message.Body ?? string.Empty);
             foreach (var mentionedUserId in notifyUserIds)
             {
-                await outbox.AddAsync(
+                await integrationEventPublisher.PublishAsync(
                     new MentionedInChannelIntegrationEvent(
                         Id: Guid.NewGuid(),
                         OccurredOnUtc: DateTimeOffset.UtcNow,
@@ -125,6 +132,10 @@ public sealed class SendMessageCommandHandler(
                     cancellationToken)
                     .ConfigureAwait(false);
             }
+
+            // Flush del lote de envelopes encolados al outbox EF (SaveChanges no-op de EF
+            // porque el mensaje ya está persistido; el método solo persiste los envelopes).
+            await integrationEventPublisher.SaveChangesAndFlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return dto;

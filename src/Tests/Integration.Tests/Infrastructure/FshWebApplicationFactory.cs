@@ -155,6 +155,7 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 ["EventingOptions:IntegrationEventRouting:UserRegisteredIntegrationEvent"] = "Wolverine",
                 ["EventingOptions:IntegrationEventRouting:TokenGeneratedIntegrationEvent"] = "Wolverine",
                 ["EventingOptions:IntegrationEventRouting:FileFinalizedIntegrationEvent"] = "Wolverine",
+                ["EventingOptions:IntegrationEventRouting:MentionedInChannelIntegrationEvent"] = "Wolverine",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
                 ["Serilog:MinimumLevel:Override:Microsoft.EntityFrameworkCore"] = "Fatal",
                 ["Serilog:MinimumLevel:Override:Npgsql"] = "Fatal",
@@ -209,6 +210,11 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                     .BindExchange("maka.wolverine.files.events", ExchangeType.Fanout)
                     .ToQueue("maka.wolverine.files.events.e2e-test");
                 opts.ListenToRabbitQueue("maka.wolverine.files.events.e2e-test");
+
+                opts.UseRabbitMq()
+                    .BindExchange("maka.wolverine.chat.events", ExchangeType.Fanout)
+                    .ToQueue("maka.wolverine.chat.events.e2e-test");
+                opts.ListenToRabbitQueue("maka.wolverine.chat.events.e2e-test");
             });
 
             // Singletons sink donde los consumers test-only graban para asertar.

@@ -98,6 +98,8 @@ builder.Host.UseWolverine(opts =>
     // en esta fase. Los demás módulos NO se escanean.
     opts.Discovery.DisableConventionalDiscovery();
     opts.Discovery.IncludeAssembly(typeof(FSH.Modules.Identity.IdentityModule).Assembly);
+    // Fase 3 — incluir Notifications para el handler MentionedInChannelIntegrationEventHandler.
+    opts.Discovery.IncludeAssembly(typeof(FSH.Modules.Notifications.NotificationsModule).Assembly);
 
     // Outbox/inbox transaccional respaldado en Postgres, schema "identity"
     // (mismo schema del módulo). Wolverine NO usa migraciones EF: gestiona su
@@ -177,6 +179,10 @@ builder.Host.UseWolverine(opts =>
         // Publicador 4/4 (ADR-0001/0005). Módulo distinto a Identity → exchange propio.
         opts.PublishMessage<FSH.Modules.Files.Contracts.Events.FileFinalizedIntegrationEvent>()
             .ToRabbitExchange("maka.wolverine.files.events");
+
+        // Fase 3 — Chat publisher diferido de Fase 2. Exchange propio del módulo.
+        opts.PublishMessage<FSH.Modules.Chat.Contracts.Events.MentionedInChannelIntegrationEvent>()
+            .ToRabbitExchange("maka.wolverine.chat.events");
     }
 });
 
