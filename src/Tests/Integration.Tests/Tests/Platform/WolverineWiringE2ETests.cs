@@ -110,15 +110,6 @@ public sealed class WolverineWiringE2ETests
 public sealed record Phase1SmokeMessage(string Marker, bool ShouldFail);
 
 /// <summary>
-/// Mensaje child — vestigial. Quedó del intento de demostrar atomicidad estructural
-/// del outbox; ningún patrón out-of-tx-real probado (PublishAsync, cascading return,
-/// scheduled) produjo envelope persistido visible al test. Mantenido como anclaje del
-/// 5º capa documentada en wolverine-phase1-followups.md para que Fase 2 retome desde
-/// aquí con un publicador real.
-/// </summary>
-public sealed record Phase1SmokeChildMessage(string Marker);
-
-/// <summary>
 /// Excepción propia del handler — permite al test asertar con tipo específico.
 /// </summary>
 public sealed class Phase1SmokeException : System.Exception
@@ -149,14 +140,3 @@ public static class Phase1SmokeMessageHandler
     }
 }
 
-/// <summary>
-/// Handler stub del child. Vestigial: existe solo para que <see cref="Phase1SmokeChildMessage"/>
-/// tenga ruta cuando Fase 2 retome los intentos out-of-tx documentados en followups.
-/// </summary>
-public static class Phase1SmokeChildMessageHandler
-{
-    public static void Handle(Phase1SmokeChildMessage _)
-    {
-        // Stub deliberadamente vacío — solo existe para darle ruta al mensaje.
-    }
-}

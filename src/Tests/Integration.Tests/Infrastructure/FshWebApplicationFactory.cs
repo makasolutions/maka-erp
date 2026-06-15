@@ -26,8 +26,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Wolverine;
+using Wolverine.RabbitMQ;
 using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
+using Testcontainers.RabbitMq;
 
 namespace Integration.Tests.Infrastructure;
 
@@ -53,9 +55,17 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         .WithCleanUp(true)
         .Build();
 
+    // Fase 2 (ADR-0001/0005) — RabbitMQ activo en tests para validar el primer publicador
+    // real migrado (UserRegisteredIntegrationEvent → Wolverine outbox EF → RabbitMQ).
+    // El bus propio puede coexistir contra el mismo broker (exchanges distintos).
+    private readonly RabbitMqContainer _rabbitmq = new RabbitMqBuilder("rabbitmq:3.13-management-alpine")
+        .WithAutoRemove(true)
+        .WithCleanUp(true)
+        .Build();
+
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), _minio.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), _minio.StartAsync(), _rabbitmq.StartAsync());
         await CreateMinioBucketAsync();
 
         // Force host creation via the Server property (no leaked HttpClient)
@@ -80,6 +90,7 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
         await _minio.DisposeAsync();
+        await _rabbitmq.DisposeAsync();
     }
 
     /// <summary>The MinIO endpoint URL exposed to the host configuration; useful for tests that need to PUT bytes directly.</summary>
@@ -131,9 +142,21 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 ["OriginOptions:OriginUrl"] = "http://localhost",
                 ["OpenTelemetryOptions:Enabled"] = "false",
                 ["EventingOptions:UseHostedServiceDispatcher"] = "false",
+                // Fase 2 (ADR-0001/0005) — provider RabbitMQ vía Testcontainer; routing del primer
+                // publicador real migrado activado para que el E2E valide la ruta Wolverine.
+                ["EventingOptions:Provider"] = "RabbitMQ",
+                ["EventingOptions:RabbitMQ:Host"] = _rabbitmq.Hostname,
+                ["EventingOptions:RabbitMQ:Port"] = _rabbitmq.GetMappedPublicPort(5672).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["EventingOptions:RabbitMQ:UserName"] = "guest",
+                ["EventingOptions:RabbitMQ:Password"] = "guest",
+                ["EventingOptions:RabbitMQ:VirtualHost"] = "/",
+                ["EventingOptions:RabbitMQ:ExchangeName"] = "maka.events.test",
+                ["EventingOptions:RabbitMQ:QueuePrefix"] = "maka.test",
+                ["EventingOptions:IntegrationEventRouting:UserRegisteredIntegrationEvent"] = "Wolverine",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
                 ["Serilog:MinimumLevel:Override:Microsoft.EntityFrameworkCore"] = "Fatal",
                 ["Serilog:MinimumLevel:Override:Npgsql"] = "Fatal",
+                ["Serilog:MinimumLevel:Override:FSH.Framework.Eventing"] = "Information",
                 ["Serilog:WriteTo:0:Name"] = "Console",
                 ["Serilog:WriteTo:0:Args:restrictedToMinimumLevel"] = "Warning",
                 ["Serilog:WriteTo:1:Name"] = "",
@@ -167,8 +190,20 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
             services.ConfigureWolverine(opts =>
             {
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.Phase1SmokeMessageHandler));
-                opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.Phase1SmokeChildMessageHandler));
+                // Fase 2 — consumer test-only del primer publicador real migrado.
+                opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.UserRegisteredE2EConsumer));
+
+                // Listener test-only: declara queue + binding al exchange donde el API publica.
+                // Sin este binding, el envelope se publica al exchange pero ningún consumer lo
+                // recibe — el TrackedSession lo ve en Sent pero nunca en Received.
+                opts.UseRabbitMq()
+                    .BindExchange("maka.wolverine.identity.events", ExchangeType.Fanout)
+                    .ToQueue("maka.wolverine.identity.events.e2e-test");
+                opts.ListenToRabbitQueue("maka.wolverine.identity.events.e2e-test");
             });
+
+            // Singleton sink donde el consumer test-only graba para asertar.
+            services.AddSingleton<Integration.Tests.Tests.Platform.UserRegisteredCollector>();
 
             // Remove hosted services that depend on infrastructure not available in tests or cause race conditions:
             // - RolePermissionSyncHostedService (queries identity schema before migrations run)
