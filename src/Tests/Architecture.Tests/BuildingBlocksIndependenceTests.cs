@@ -199,8 +199,14 @@ public class BuildingBlocksIndependenceTests
         // Eventing.Abstractions should have no dependencies (lightweight interfaces)
         CheckBuildingBlockDependencies("Eventing.Abstractions", [], layerViolations);
 
-        // Eventing should depend on Core and Eventing.Abstractions
-        CheckBuildingBlockDependencies("Eventing", ["Core", "Eventing.Abstractions"], layerViolations);
+        // Eventing (Layer 3) puede depender de Shared (Layer 1): el middleware INV-9
+        // necesita el value object de tenant que vive en Shared/Multitenancy.
+        // Capa alta a capa baja es legal en el modelo FSH; Persistence y Jobs
+        // (Layer 2) ya lo permiten. Promover el value object al anillo cero arrastraría
+        // Finbuckle al Core, costo desproporcionado. Ver ADR-0006 hallazgo y discusión.
+#pragma warning disable S125 // Prose comment, no code.
+        CheckBuildingBlockDependencies("Eventing", ["Core", "Eventing.Abstractions", "Shared"], layerViolations);
+#pragma warning restore S125
 
         layerViolations.ShouldBeEmpty(
             $"BuildingBlocks should follow layered dependency rules. " +
