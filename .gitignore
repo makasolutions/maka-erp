@@ -536,3 +536,6 @@ clients/**/.env.local
 # QA/audit scratch files
 _divipola_raw.csv
 _*.py
+
+# Backups locales (constitución, ADRs, etc.) — no commiteables
+*.bak
