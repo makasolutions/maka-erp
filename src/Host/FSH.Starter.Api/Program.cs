@@ -101,6 +101,15 @@ builder.Host.UseWolverine(opts =>
     // Fase 3 — incluir Notifications para el handler MentionedInChannelIntegrationEventHandler.
     opts.Discovery.IncludeAssembly(typeof(FSH.Modules.Notifications.NotificationsModule).Assembly);
 
+    // Fase 3 Paso 6 — WebhookFanoutHandler<T> es open-generic; Wolverine no descubre
+    // genéricos abiertos por convención. Registramos un closed-generic explícito por
+    // cada evento ya migrado a Wolverine. IMPORTANT: añadir aquí cuando un nuevo evento
+    // migre a Wolverine.
+    opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Identity.Contracts.Events.UserRegisteredIntegrationEvent>>();
+    opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>>();
+    opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Files.Contracts.Events.FileFinalizedIntegrationEvent>>();
+    opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Chat.Contracts.Events.MentionedInChannelIntegrationEvent>>();
+
     // Outbox/inbox transaccional respaldado en Postgres, schema "identity"
     // (mismo schema del módulo). Wolverine NO usa migraciones EF: gestiona su
     // propio schema (las 4 tablas wolverine_outgoing_envelopes,

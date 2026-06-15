@@ -1,6 +1,4 @@
-using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Eventing.Abstractions;
-using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Webhooks.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,14 +10,20 @@ namespace FSH.Modules.Webhooks.Services;
 /// tenant's active webhook subscriptions, then enqueues a delivery job per
 /// subscription via <see cref="IWebhookDispatcher"/>.
 ///
-/// Registered as an open generic in <c>WebhooksModule</c> so DI materializes
-/// a closed handler for any <typeparamref name="TEvent"/> the event bus
-/// publishes — no per-event wiring required.
+/// Registered as an open generic in <c>WebhooksModule</c> for the legacy bus
+/// (DI materializes a closed handler for any <typeparamref name="TEvent"/>),
+/// AND registrado como closed-generic explicit en <c>Program.cs</c> para cada
+/// evento migrado a Wolverine (vía <c>opts.Discovery.IncludeType</c>). Cada vez
+/// que un evento nuevo migre a Wolverine, hay que añadir su registro cerrado.
 ///
-/// Tenant scoping is two-layer: the event's own <c>TenantId</c> selects the
-/// row scope, and the DbContext's Finbuckle query filter then constrains the
-/// subscription read to that tenant. Events with a null <c>TenantId</c> are
-/// skipped — webhook subscriptions are tenant-only by design.
+/// Tenant scoping: el evento carga su propio <c>TenantId</c> y el
+/// <see cref="FSH.Framework.Eventing.Tenant.TenantContextMiddleware"/> global de
+/// Wolverine restaura el Finbuckle <c>ITenantInfo</c> ANTES de invocar este handler
+/// (Fase 3 Paso 3). El antiguo bloque de restauración manual se eliminó. Eventos
+/// con <c>TenantId</c> nulo se descartan — las subscriptions son tenant-only.
+///
+/// Wolverine descubre <c>HandleAsync</c> por convención. Para closed generics
+/// registrados via <c>IncludeType</c>, el codegen materializa la firma correcta.
 /// </summary>
 public sealed class WebhookFanoutHandler<TEvent> : IIntegrationEventHandler<TEvent>
     where TEvent : IIntegrationEvent
@@ -27,20 +31,17 @@ public sealed class WebhookFanoutHandler<TEvent> : IIntegrationEventHandler<TEve
     private readonly WebhookDbContext _db;
     private readonly IWebhookDispatcher _dispatcher;
     private readonly IEventSerializer _serializer;
-    private readonly IMultiTenantContextAccessor<AppTenantInfo> _tenantContextAccessor;
     private readonly ILogger<WebhookFanoutHandler<TEvent>> _logger;
 
     public WebhookFanoutHandler(
         WebhookDbContext db,
         IWebhookDispatcher dispatcher,
         IEventSerializer serializer,
-        IMultiTenantContextAccessor<AppTenantInfo> tenantContextAccessor,
         ILogger<WebhookFanoutHandler<TEvent>> logger)
     {
         _db = db;
         _dispatcher = dispatcher;
         _serializer = serializer;
-        _tenantContextAccessor = tenantContextAccessor;
         _logger = logger;
     }
 
@@ -54,69 +55,52 @@ public sealed class WebhookFanoutHandler<TEvent> : IIntegrationEventHandler<TEve
             return;
         }
 
-        // Restore the tenant context for the subscription read — the WebhookDbContext
-        // Finbuckle query filter relies on multiTenantContextAccessor seeing the right
-        // tenant. The OutboxDispatcher / event bus background pumps don't carry HTTP
-        // context, so we need to install it explicitly here.
-        var prev = _tenantContextAccessor.MultiTenantContext;
-        try
+        var eventType = typeof(TEvent).Name;
+
+        // Pull active subscriptions for this tenant; filter by event type in memory
+        // because EventsCsv stores a CSV blob, not a join table — there are typically
+        // 0–20 subscriptions per tenant so in-memory matching is fine.
+        //
+        // IMPORTANT: scope by the event's TenantId explicitly via IgnoreQueryFilters
+        // por consistencia con la doctrina del bus propio (el dispatcher background
+        // anteriormente NO carry tenant). Con Wolverine + TenantContextMiddleware el
+        // Finbuckle filter ya está poblado correctamente, pero mantenemos el patrón
+        // para que el handler funcione igual si por alguna razón el middleware no se
+        // ejecuta (ej. invocación in-process out-of-pipeline).
+        var subscriptions = await _db.Subscriptions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(s => s.IsActive && EF.Property<string>(s, "TenantId") == @event.TenantId)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        var matching = subscriptions.Where(s => s.MatchesEvent(eventType)).ToList();
+        if (matching.Count == 0)
         {
-            var info = new AppTenantInfo(@event.TenantId, @event.TenantId);
-            ((IMultiTenantContextSetter)_tenantContextAccessor).MultiTenantContext =
-                new MultiTenantContext<AppTenantInfo>(info);
-
-            var eventType = typeof(TEvent).Name;
-
-            // Pull active subscriptions for this tenant; filter by event type in memory
-            // because EventsCsv stores a CSV blob, not a join table — there are typically
-            // 0–20 subscriptions per tenant so in-memory matching is fine.
-            //
-            // IMPORTANT: scope by the event's TenantId explicitly via IgnoreQueryFilters
-            // instead of relying on the WebhookDbContext's Finbuckle filter. In the
-            // background OutboxDispatcher there is no ambient tenant when the DbContext is
-            // constructed, so Finbuckle captures a null TenantInfo and its filter lambda
-            // throws NullReferenceException at query time (TenantInfo.Id on null). Setting
-            // the accessor above does not retro-fix the already-constructed context, so we
-            // filter on the shadow TenantId property ourselves.
-            var subscriptions = await _db.Subscriptions
-                .IgnoreQueryFilters()
-                .AsNoTracking()
-                .Where(s => s.IsActive && EF.Property<string>(s, "TenantId") == @event.TenantId)
-                .ToListAsync(ct)
-                .ConfigureAwait(false);
-
-            var matching = subscriptions.Where(s => s.MatchesEvent(eventType)).ToList();
-            if (matching.Count == 0)
-            {
-                return;
-            }
-
-            var payload = _serializer.Serialize(@event);
-            foreach (var subscription in matching)
-            {
-                try
-                {
-                    await _dispatcher
-                        .EnqueueAsync(@event.TenantId, subscription.Id, eventType, payload, ct)
-                        .ConfigureAwait(false);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    // One bad subscription must not abort fan-out to others — the dispatcher
-                    // job itself has its own retry policy, this catch is for synchronous
-                    // enqueue-side failures (Hangfire transient errors etc).
-                    _logger.LogWarning(
-                        ex,
-                        "Failed to enqueue webhook delivery for subscription {SubscriptionId} (tenant {TenantId}, event {EventType})",
-                        subscription.Id,
-                        @event.TenantId,
-                        eventType);
-                }
-            }
+            return;
         }
-        finally
+
+        var payload = _serializer.Serialize(@event);
+        foreach (var subscription in matching)
         {
-            ((IMultiTenantContextSetter)_tenantContextAccessor).MultiTenantContext = prev;
+            try
+            {
+                await _dispatcher
+                    .EnqueueAsync(@event.TenantId, subscription.Id, eventType, payload, ct)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // One bad subscription must not abort fan-out to others — the dispatcher
+                // job itself has its own retry policy, this catch is for synchronous
+                // enqueue-side failures (Hangfire transient errors etc).
+                _logger.LogWarning(
+                    ex,
+                    "Failed to enqueue webhook delivery for subscription {SubscriptionId} (tenant {TenantId}, event {EventType})",
+                    subscription.Id,
+                    @event.TenantId,
+                    eventType);
+            }
         }
     }
 }
