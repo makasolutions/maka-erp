@@ -145,6 +145,12 @@ Progreso: la 5ª capa pasó de **"5 hipótesis pendientes"** a **"5/5 cerradas c
 
 Wolverine 6.8 trae `M:Wolverine.EntityFrameworkCore.WolverineEntityCoreExtensions.PublishDomainEventsFromEntityFrameworkCore` — un **scraper nativo de domain events** que reemplaza funcionalmente al `DomainEventsInterceptor` propio. *"Tell Wolverine how to 'scrape' domain events from the active EF Core DbContext to publish as messages."* No bloqueante para Fase 2 (los 3 interceptors propios quedan intactos), pero es candidato a evaluar en Fase 3 si decidimos unificar el pipeline de domain events bajo Wolverine.
 
+### Chat + Notifications — pareja de Fase 3 (decisión Fase 2)
+
+`SendMessageCommandHandler` (Chat) **no se migró en Fase 2** y queda diferido a Fase 3 junto con su consumer `MentionedInChannelIntegrationEventHandler` (Notifications). Justificación: el consumer **es producción real** — escribe `Notification` en `NotificationsDbContext` y dispara SignalR a `user:{id}` con `NotificationCreated` para que el bell-badge UI se actualice. Migrar el publisher a Wolverine sin migrar el consumer en el mismo paso rompería la entrega de notificaciones de mención hasta Fase 3 — pérdida observable. Separar publisher/consumer en commits distintos también introduce dependencia cruzada Chat → Notifications dentro de un solo cambio: si el consumer falla, el publisher queda incompleto sin rollback limpio. La pareja entra a Fase 3 junto con el middleware de tenant, que es donde naturalmente conviven publisher + consumer + tenant scope estructural.
+
+**Hallazgo del patrón de Chat distinto a los publicadores ya migrados (UserRegistered, TokenGenerated)**: en `SendMessageCommandHandler`, `db.SaveChangesAsync(cancellationToken)` ocurre en la línea 97 **antes** del bloque de publish (líneas 105-128, un `foreach` sobre `notifyUserIds` que emite UN envelope por mención). Los dos publicadores anteriores tenían el SaveChanges al final o lo delegaban a servicios previos. Al migrar Chat en Fase 3, el orden tiene que reordenarse: o (a) los `PublishAsync` se ejecutan en el `foreach` y el `SaveChangesAndFlushAsync` final flushea todo el lote, lo cual requiere mover el `db.SaveChangesAsync` original a `SaveChangesAndFlushAsync`; o (b) el publisher se invoca después del flush separado del mensaje y los envelopes van en una segunda tx pequeña (no es el patrón canónico — rompe atomicidad estructural ADR-0001). El Plan Mode de Fase 3 para Chat debe abrir con esta decisión.
+
 ---
 
 ## Lo que Fase 1 sí dejó verificado
