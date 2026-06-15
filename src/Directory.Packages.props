@@ -112,6 +112,19 @@
   </ItemGroup>
   <ItemGroup Label="Messaging">
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.1" />
+    <!-- Wolverine v3 (MIT) — ADR-0001/0004. Fase 1: wired en paralelo en Identity. -->
+    <PackageVersion Include="WolverineFx" Version="6.8.0" />
+    <PackageVersion Include="WolverineFx.RabbitMQ" Version="6.8.0" />
+    <PackageVersion Include="WolverineFx.Postgresql" Version="6.8.0" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.8.0" />
+    <!-- WolverineFx 6.8 movió Roslyn fuera del core; se necesita para TypeLoadMode.Dynamic
+         (default). Alternativa: pre-codegen estático. Para Fase 1 usamos Dynamic. -->
+    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.8.0" />
+    <!-- Pin transitiva de Wolverine: MessagePack 2.5.187 tiene CVE-2026-48109 (GHSA-hv8m-jj95-wg3x,
+         severidad alta, LZ4 OOB). Forzamos 2.5.301 (línea v2 parchada). No usamos MessagePack
+         como serializador (Wolverine queda en System.Text.Json); este pin es solo para que
+         NuGetAudit no bloquee el restore. -->
+    <PackageVersion Include="MessagePack" Version="2.5.301" />
   </ItemGroup>
   <ItemGroup Label="CLI Tools">
     <PackageVersion Include="Spectre.Console" Version="0.55.2" />

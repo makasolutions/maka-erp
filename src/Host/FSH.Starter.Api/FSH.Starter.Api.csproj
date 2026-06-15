@@ -24,6 +24,12 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<!-- Wolverine v3 (ADR-0001/0004). Fase 1 — wired en paralelo al bus propio. -->
+		<PackageReference Include="WolverineFx" />
+		<PackageReference Include="WolverineFx.RabbitMQ" />
+		<PackageReference Include="WolverineFx.Postgresql" />
+		<PackageReference Include="WolverineFx.EntityFrameworkCore" />
+		<PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 
   <ItemGroup>

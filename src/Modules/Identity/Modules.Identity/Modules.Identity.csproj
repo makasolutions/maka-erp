@@ -13,6 +13,8 @@
 	  <PackageReference Include="Mediator.Abstractions" />
 	  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 	  <PackageReference Include="Finbuckle.MultiTenant.Identity.EntityFrameworkCore" />
+	  <!-- Wolverine outbox transaccional sobre el IdentityDbContext (ADR-0001, Fase 1). -->
+	  <PackageReference Include="WolverineFx.EntityFrameworkCore" />
 	  <PackageReference Include="UAParser" />
 	</ItemGroup>
 

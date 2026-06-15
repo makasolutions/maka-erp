@@ -2,6 +2,7 @@
 using FSH.Framework.Core.Context;
 using FSH.Framework.Eventing;
 using FSH.Framework.Persistence;
+using Wolverine.EntityFrameworkCore;
 using FSH.Framework.Quota;
 using FSH.Framework.Storage;
 using FSH.Framework.Storage.Local;
@@ -115,7 +116,27 @@ public class IdentityModule : IModule
         services.AddTransient<IRoleService, RoleService>();
         services.AddHeroStorage(builder.Configuration);
         services.AddScoped<IIdentityService, IdentityService>();
-        services.AddHeroDbContext<IdentityDbContext>();
+        // ADR-0001/0004 · Fase 1 — Wolverine outbox transaccional sobre IdentityDbContext.
+        // Reemplaza el AddHeroDbContext<IdentityDbContext>() estándar por la variante de
+        // Wolverine que enrola el DbContext para que bus.PublishAsync + SaveChangesAsync
+        // produzca un envelope en identity.wolverine_outgoing_envelopes dentro de la MISMA
+        // transacción del SaveChanges (atomicidad estructural ADR-0001). El setup replica
+        // 1:1 lo que AddHeroDbContext (BuildingBlocks/Persistence) hace internamente —
+        // duplicación deliberada y acotada a Identity, porque tocar el extension del
+        // BuildingBlocks queda fuera del alcance de Fase 1.
+        //
+        // Requiere opts.UseEntityFrameworkCoreTransactions() en el callback UseWolverine
+        // del Host (ver FSH.Starter.Api/Program.cs). Discovery: la doc de Wolverine 6.8
+        // exige registrar el DbContext ANTES de UseEntityFrameworkCoreTransactions en la
+        // misma IServiceCollection — IdentityModule corre durante AddModules(), bien antes
+        // del UseWolverine que aplica sobre builder.Host.
+        services.AddDbContextWithWolverineIntegration<IdentityDbContext>((sp, options) =>
+        {
+            var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+            var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
+            options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
+            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+        }, wolverineDatabaseSchema: "identity");
         services.AddEventingCore(builder.Configuration);
         services.AddEventingForDbContext<IdentityDbContext>();
         services.AddIntegrationEventHandlers(typeof(IdentityModule).Assembly);
