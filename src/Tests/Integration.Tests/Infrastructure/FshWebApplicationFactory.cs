@@ -367,7 +367,7 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         // Lista de schemas alineada con DbMigrator/Program.cs.
         var setupLogger = Services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(FshWebApplicationFactory));
         var cs = _postgres.GetConnectionString();
-        foreach (var schema in new[] { "identity", "files" })
+        foreach (var schema in new[] { "identity", "files", "chat", "notifications", "webhooks" })
         {
             await migrator::FSH.Starter.DbMigrator.WolverineSchemaSetup.ApplyAsync(cs, schema, setupLogger, CancellationToken.None);
         }

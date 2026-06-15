@@ -385,7 +385,7 @@ try
             // wolverine_* en su propio schema. La lista se extiende cuando un módulo
             // nuevo migra a Wolverine (publicador real). Mantener ordenada por
             // orden de migración del proyecto (Fase 2: identity, files).
-            string[] wolverineSchemas = ["identity", "files"];
+            string[] wolverineSchemas = ["identity", "files", "chat", "notifications", "webhooks"];
             foreach (var wolverineSchema in wolverineSchemas)
             {
                 await Console.Out.WriteLineAsync(
