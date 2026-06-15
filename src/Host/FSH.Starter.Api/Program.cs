@@ -12,6 +12,7 @@ using FSH.Modules.Catalog;
 using FSH.Modules.Tickets;
 using FSH.Modules.Multitenancy.Features.v1.GetTenantStatus;
 using System.Reflection;
+using FSH.Framework.Eventing.Tenant;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Postgresql;
@@ -132,6 +133,11 @@ builder.Host.UseWolverine(opts =>
     // PublishAsync dentro del scope de un IdentityDbContext queda persistido en
     // identity.wolverine_outgoing_envelopes como parte del SaveChangesAsync.
     opts.Policies.UseDurableLocalQueues();
+
+    // INV-9 estructural (Fase 3) — middleware que restaura el Finbuckle ITenantInfo
+    // desde envelope.TenantId ANTES de ejecutar cada handler. Elimina el patrón
+    // manual que tenían WebhookFanoutHandler y MentionedInChannelHandler.
+    opts.UseTenantContextMiddleware();
 
     // Transporte RabbitMQ — alineado con la misma config que el bus propio:
     // solo activo cuando EventingOptions:Provider == "RabbitMQ" (prod). En dev local

@@ -22,11 +22,15 @@
     <!-- ADR-0005 — IntegrationEventPublisher consume IDbContextOutbox<T> de Wolverine
          cuando IntegrationEventRouting rutea un evento a "Wolverine". -->
     <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <!-- INV-9 estructural (Fase 3) — TenantEnvelopeRule lee Finbuckle context para
+         poblar envelope.TenantId automáticamente. -->
+    <PackageReference Include="Finbuckle.MultiTenant.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Eventing.Abstractions\Eventing.Abstractions.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 
 </Project>
