@@ -1,3 +1,5 @@
+extern alias api;
+extern alias migrator;
 using FSH.Framework.Eventing.Outbox;
 using System.Reflection;
 using Amazon.S3;
@@ -22,12 +24,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Wolverine;
 using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
 
 namespace Integration.Tests.Infrastructure;
 
-public sealed class FshWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Program>, IAsyncLifetime
 {
     private const string MinioAccessKey = "minioadmin";
     private const string MinioSecretKey = "minioadmin";
@@ -155,6 +159,17 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<Program>, I
 
         builder.ConfigureServices(services =>
         {
+            // Smoke test ADR-0001 — extender el discovery de Wolverine para incluir el
+            // handler test-only Phase1SmokeMessageHandler. API canónica de Wolverine 6.8
+            // para overrides de test: ConfigureWolverine es additive (se compone con el
+            // UseWolverine del Program.cs sin reemplazarlo). IncludeType<T> agrega UN solo
+            // tipo handler, sin escanear el assembly entero — cero contaminación de otros tests.
+            services.ConfigureWolverine(opts =>
+            {
+                opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.Phase1SmokeMessageHandler));
+                opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.Phase1SmokeChildMessageHandler));
+            });
+
             // Remove hosted services that depend on infrastructure not available in tests or cause race conditions:
             // - RolePermissionSyncHostedService (queries identity schema before migrations run)
             // - Hangfire server + stale lock cleanup (we register our own InMemory server below)
@@ -298,6 +313,13 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<Program>, I
             var syncer = scope.ServiceProvider.GetRequiredService<FSH.Modules.Identity.Authorization.RolePermissionSyncer>();
             await syncer.SyncAsync(CancellationToken.None);
         }
+
+        // 6. Wolverine schema setup (Fase 1, ADR-0001/0004) — reusamos el MISMO
+        // helper que DbMigrator usa en producción (Step 2b). Cero duplicación
+        // de lógica entre prod y test. La connection string del Testcontainer
+        // se pasa por parámetro: el helper es agnóstico al origen de la cadena.
+        var setupLogger = Services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(FshWebApplicationFactory));
+        await migrator::FSH.Starter.DbMigrator.WolverineSchemaSetup.ApplyAsync(_postgres.GetConnectionString(), setupLogger, CancellationToken.None);
     }
 
     private static void ResetModuleLoader()

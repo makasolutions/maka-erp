@@ -358,6 +358,37 @@ try
         }
     }
 
+    // ── Step 2b — Wolverine schema setup (ADR-0001/0004, Fase 1) ─────────
+    // Crea wolverine_outgoing_envelopes + 3 hermanas en schema "identity".
+    // Tiene que correr DESPUÉS de Step 2 porque ese paso es el que crea el
+    // schema "identity" vía las migraciones EF del IdentityDbContext.
+    //
+    // Se salta para:
+    //   · list-pending → es un read-only; sin DDL.
+    //   · --catalog-only → no migra tenants en este run, así que el schema
+    //     "identity" puede no existir aún. Emitimos un log explícito para que
+    //     un operador que después arranque el API no se pregunte por qué
+    //     truena: el contrato es claro — primero migraciones + Wolverine,
+    //     luego API.
+    if (cli.Command != "list-pending")
+    {
+        if (cli.CatalogOnly)
+        {
+            await Console.Out.WriteLineAsync(
+                "[wolverine-setup] skipped (--catalog-only mode). "
+                + "Apply tenant migrations + Wolverine setup before starting the API.")
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            await Console.Out.WriteLineAsync("[wolverine-setup] applying Wolverine schema in 'identity'…")
+                .ConfigureAwait(false);
+            await WolverineSchemaSetup.ApplyAsync(connectionString, logger, CancellationToken.None)
+                .ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("[wolverine-setup] done").ConfigureAwait(false);
+        }
+    }
+
     // ── Step 3 — demo seed (verb: `seed-demo`) ───────────────────────────
     // Dev-only. Provisions acme + globex tenants with rich demo content
     // (users, custom roles, catalog, tickets, chat) so a fresh dev DB

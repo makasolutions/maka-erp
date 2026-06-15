@@ -36,7 +36,16 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Host\FSH.Starter.Api\FSH.Starter.Api.csproj" />
+        <ProjectReference Include="..\..\Host\FSH.Starter.Api\FSH.Starter.Api.csproj">
+            <Aliases>api</Aliases>
+        </ProjectReference>
+        <!-- Reuse WolverineSchemaSetup (Fase 1, ADR-0001/0004) so the test
+             harness and production DbMigrator share one schema-bootstrap path.
+             Aliased to avoid CS0433: both Api and DbMigrator have top-level
+             Program classes in the global namespace. -->
+        <ProjectReference Include="..\..\Host\FSH.Starter.DbMigrator\FSH.Starter.DbMigrator.csproj">
+            <Aliases>migrator</Aliases>
+        </ProjectReference>
     </ItemGroup>
 
 </Project>
