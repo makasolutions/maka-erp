@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using FluentValidation;
+using FSH.Framework.Eventing;
 using FSH.Framework.Persistence;
+using Wolverine.EntityFrameworkCore;
 using FSH.Framework.Shared.Constants;
 using FSH.Framework.Web.Modules;
 using FSH.Framework.Web.Realtime;
@@ -51,7 +53,20 @@ public sealed class ChatModule : IModule
 
         PermissionConstants.Register(ChatPermissions.All);
 
-        builder.Services.AddHeroDbContext<ChatDbContext>();
+        // ADR-0001/0005 · Fase 3 — Wolverine outbox transaccional sobre ChatDbContext.
+        // Reemplaza AddHeroDbContext por la variante de Wolverine que enrola el DbContext
+        // para que IIntegrationEventPublisher<ChatDbContext> persista envelopes en
+        // chat.wolverine_outgoing_envelopes dentro de la misma transacción del SaveChanges.
+        builder.Services.AddDbContextWithWolverineIntegration<ChatDbContext>((sp, options) =>
+        {
+            var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+            var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
+            options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
+            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+        }, wolverineDatabaseSchema: "chat");
+        builder.Services.AddEventingCore(builder.Configuration);
+        builder.Services.AddEventingForDbContext<ChatDbContext>();
+        builder.Services.AddIntegrationEventPublisher<ChatDbContext>();
         builder.Services.AddScoped<IDbInitializer, ChatDbInitializer>();
         builder.Services.AddValidatorsFromAssembly(typeof(ChatModule).Assembly);
 

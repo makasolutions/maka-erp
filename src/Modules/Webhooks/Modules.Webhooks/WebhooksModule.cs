@@ -1,5 +1,7 @@
 using Asp.Versioning;
+using FSH.Framework.Eventing;
 using FSH.Framework.Persistence;
+using Wolverine.EntityFrameworkCore;
 using FSH.Framework.Shared.Constants;
 using FSH.Framework.Web.HttpResilience;
 using FSH.Framework.Web.Modules;
@@ -31,7 +33,15 @@ public sealed class WebhooksModule : IModule
         ArgumentNullException.ThrowIfNull(builder);
 
         PermissionConstants.Register(WebhooksPermissions.All);
-        builder.Services.AddHeroDbContext<WebhookDbContext>();
+        // ADR-0001/0005 · Fase 3 — Wolverine outbox transaccional sobre WebhookDbContext.
+        builder.Services.AddDbContextWithWolverineIntegration<WebhookDbContext>((sp, options) =>
+        {
+            var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+            var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
+            options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
+            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+        }, wolverineDatabaseSchema: "webhooks");
+        builder.Services.AddIntegrationEventPublisher<WebhookDbContext>();
         builder.Services.AddScoped<IDbInitializer, WebhookDbInitializer>();
         builder.Services.AddScoped<IWebhookDeliveryService, WebhookDeliveryService>();
         builder.Services.AddScoped<IWebhookDispatcher, WebhookDispatcher>();

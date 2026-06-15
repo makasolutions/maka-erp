@@ -2,6 +2,7 @@ using Asp.Versioning;
 using FluentValidation;
 using FSH.Framework.Eventing;
 using FSH.Framework.Persistence;
+using Wolverine.EntityFrameworkCore;
 using FSH.Framework.Shared.Constants;
 using FSH.Framework.Web.Modules;
 using FSH.Modules.Notifications.Contracts.Authorization;
@@ -32,7 +33,15 @@ public sealed class NotificationsModule : IModule
 
         PermissionConstants.Register(NotificationPermissions.All);
 
-        builder.Services.AddHeroDbContext<NotificationsDbContext>();
+        // ADR-0001/0005 · Fase 3 — Wolverine outbox transaccional sobre NotificationsDbContext.
+        builder.Services.AddDbContextWithWolverineIntegration<NotificationsDbContext>((sp, options) =>
+        {
+            var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+            var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
+            options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
+            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+        }, wolverineDatabaseSchema: "notifications");
+        builder.Services.AddIntegrationEventPublisher<NotificationsDbContext>();
         builder.Services.AddScoped<IDbInitializer, NotificationsDbInitializer>();
         builder.Services.AddValidatorsFromAssembly(typeof(NotificationsModule).Assembly);
 

@@ -9,6 +9,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Mediator.Abstractions" />
+		<!-- Wolverine outbox transaccional sobre ChatDbContext (ADR-0001, Fase 3). -->
+		<PackageReference Include="WolverineFx.EntityFrameworkCore" />
 	</ItemGroup>
 
 	<ItemGroup>
