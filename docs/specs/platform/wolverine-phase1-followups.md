@@ -271,4 +271,143 @@ arquitectónicos pendientes.
 - **Sin tocar `BuildingBlocks/Eventing`** — el bus propio (`IEventBus`, `IOutboxStore`, `OutboxDispatcher`, `EventingArchitectureTests`) sigue vivo y será desmantelado en Fase 3 cuando los 4 consumidores migren.
 - **Sin tocar los 5 publicadores** `IOutboxStore.AddAsync` — migran en Fase 2.
 - **Sin tocar los 4 consumidores** `IIntegrationEventHandler` — migran en Fase 3.
+
+---
+
+## Fase 4 — Hardening + investigación pre-Fase 5 (read-only)
+
+### Outgoing rule INV-9 — investigación cerrada, sigue diferido
+
+Investigación contra Wolverine 6.8.0 XML docs (30 min, read-only). Las APIs candidatas
+evaluadas:
+
+- **`IWolverinePolicy`** (`T:Wolverine.Configuration.IWolverinePolicy`): marker interface
+  *"Marker interface to tell Wolverine that yes, this is *some* sort of wolverine policy"*.
+  Su sobrecarga `IPolicies.Add(IWolverinePolicy)` recibe instancia eager. NO ayuda.
+- **`IChainPolicy`** (`T:Wolverine.Configuration.IChainPolicy`): doc *"Generic middleware
+  chain policy that spans messaging and HTTP endpoints. Called during bootstrapping to
+  alter how the message handlers are configured"*. Su método `Apply(IReadOnlyList<IChain>
+  chains, GenerationRules rules, IServiceContainer container)` **SÍ recibe container post-DI**
+  pero opera sobre `chains` (handler chains), **no sobre envelope rules outgoing**.
+- **`IMessageContext`** en `IEnvelopeRule.ApplyCorrelation`: solo expone `CorrelationId`,
+  `UserName`, `Envelope`, y operaciones de respond/reschedule. **No expone `IServiceProvider`
+  ni scope DI** para resolver el accessor on-demand.
+- **`WolverineOptions.MetadataRules`** (global) y **`SubscriberConfiguration.AddOutgoingRule`**
+  (per-endpoint): ambos eager-build. Requieren instancia del rule en setup time.
+- **Ruta singleton + closure**: `IMultiTenantContextAccessor<AppTenantInfo>` de Finbuckle ES
+  singleton con AsyncLocal. **Técnicamente** se puede resolver con un hosted service que
+  mute `MetadataRules` post-`StartAsync`, pero la mutabilidad de la lista runtime no está
+  confirmada en doc oficial y el patrón canónico Wolverine no la documenta.
+
+**Veredicto definitivo (post-investigación Fase 4)**: el outgoing rule sigue **diferido sin
+fecha**. No es un bug fixable trivialmente — es una limitación arquitectónica de Wolverine
+6.8 para el caso "rule que depende de servicios DI". La defensa **NO aporta valor inmediato**
+porque:
+
+1. Los 4 publicadores migrados pasan `TenantId` explícito vía `DeliveryOptions.TenantId`
+   propagado por `IntegrationEventPublisher.PublishAsync` desde el `integrationEvent.TenantId`
+   capturado en el publish-site.
+2. El test `WolverineUserRegisteredE2ETests` aserta `sent.TenantId.ShouldBe("root")` y pasa.
+3. El escenario "publicación cascadeada desde un handler Wolverine que olvida `TenantId`"
+   no existe en el código.
+
+**Re-investigar** solo si: (a) Wolverine 7.x publica una API para rules DI-aware, o (b) aparece
+un caso de uso de "consumer Wolverine que re-publica sin tenant explícito" en módulos forward.
+
+### `PublishDomainEventsFromEntityFrameworkCore` — evaluado, DIFERIDO
+
+API verificada en `WolverineFx.EntityFrameworkCore 6.8.0`:
+
+> *"Enable Wolverine to 'scrape' domain events out of a `DomainEvents` type collection
+> scoped to the current Wolverine handler or scoped container"*
+
+Tres sobrecargas: sin params (busca convención), `<TEntityType>` con función custom,
+`<TEntityType, TDomainEvent>` con marcador.
+
+**Cómo interactúa con nuestros 3 interceptors**:
+
+- **`AuditableEntitySaveChangesInterceptor`** (`CreatedOnUtc/By` + soft delete): ortogonal.
+  Corre en `SavingChangesAsync` modificando `ChangeTracker`. Wolverine scraper corre dentro
+  del codegen del handler Wolverine **post-SaveChanges**. Sin colisión.
+- **`AuditingSaveChangesInterceptor`** (audit log cross-cutting): ortogonal. Captura cambios
+  post-save. Sin colisión.
+- **`DomainEventsInterceptor`** (despacha domain events via Mediator `IPublisher`):
+  **funcionalmente REDUNDANTE** con el scraper Wolverine si el `SaveChanges` ocurre dentro
+  de un handler Wolverine. Ambos leerían los mismos eventos del `ChangeTracker` y los
+  despacharían (uno via Mediator INotificationHandler, otro via Wolverine pipeline).
+
+**Caso real en el proyecto hoy**: **NO existe** un handler Wolverine que muta el DbContext
+y dispara domain events. Los 4 publishers migrados son **command handlers de Mediator**
+(no handlers Wolverine) que llaman al `IIntegrationEventPublisher`. Sus mutaciones del
+DbContext NO ocurren dentro del codegen Wolverine — corren dentro del Mediator handler.
+Por tanto el scraper Wolverine **nunca se ejecuta**, y nuestro `DomainEventsInterceptor`
+propio sigue siendo el único que despacha domain events.
+
+**Veredicto**: **DIFERIR adopción**. La API existe y es funcional, pero el patrón actual del
+proyecto (command handlers Mediator que llaman al publisher fachada) no la activa nunca.
+Adoptaría valor si:
+- Un módulo forward implementa una **saga Wolverine** que muta DbContext.
+- O migramos los command handlers Mediator a `Wolverine.AspNetCore` HTTP endpoints
+  (Wolverine descubriría el codegen y el scraper se activaría).
+
+Cualquiera de los dos sería decisión arquitectónica grande — fuera del alcance del
+pipeline de eventos actual.
+
+### Inventario Fase 5 — borrar bus propio
+
+**Archivos a eliminar** (~932 LOC totales, ~700-800 LOC neto post-cleanup):
+
+| Path | LOC | Razón |
+|---|---|---|
+| `Eventing/InMemory/InMemoryEventBus.cs` | — | Bus propio in-memory |
+| `Eventing/RabbitMq/RabbitMqEventBus.cs` | — | Bus propio RabbitMQ |
+| `Eventing/RabbitMq/RabbitMqOptions.cs` | — | Config del bus propio |
+| `Eventing/Outbox/IOutboxStore.cs` | — | Store outbox del bus propio |
+| `Eventing/Outbox/EfCoreOutboxStore.cs` | — | Impl EF Core |
+| `Eventing/Outbox/OutboxDispatcher.cs` | — | Dispatcher background |
+| `Eventing/Outbox/OutboxDispatcherHostedService.cs` | — | Hosted service del dispatcher |
+| `Eventing/Outbox/OutboxMessage.cs` | — | Entity + EF config |
+| `Eventing/Inbox/IInboxStore.cs` | 10 | Inbox interface |
+| `Eventing/Inbox/EfCoreInboxStore.cs` | — | Impl EF |
+| `Eventing/Inbox/InboxMessage.cs` | 55 | Entity + EF config |
+| `Eventing.Abstractions/IEventBus.cs` | 11 | Marker bus propio |
+| `Eventing.Abstractions/IIntegrationEventHandler.cs` | 10 | Solo usado por bus propio (consumers Fase 3 → Wolverine) |
+
+**Archivos que sobreviven (eventing Wolverine)**:
+- `Eventing.Abstractions/IIntegrationEvent.cs` — contrato cross-módulo.
+- `Eventing.Abstractions/IEventSerializer.cs` — usado por `WebhookFanoutHandler` para JSON.
+- `Eventing.Abstractions/IIntegrationEventPublisher.cs` — fachada ADR-0005.
+- `Eventing/IntegrationEventPublisher.cs` — impl con switch.
+- `Eventing/Serialization/JsonEventSerializer.cs` — usado por `WebhookFanoutHandler`.
+- `Eventing/Tenant/` — middleware INV-9.
+- `Eventing/EventingOptions.cs` — **limpiar campos no usados**: `Provider`, `OutboxBatchSize`,
+  `OutboxMaxRetries`, `EnableInbox`, `OutboxDispatchIntervalSeconds`, `UseHostedServiceDispatcher`
+  desaparecen. Solo sobrevive `IntegrationEventRouting`.
+- `Eventing/ServiceCollectionExtensions.cs` — **limpiar** `AddEventingCore` para que no
+  registre el bus propio; `AddEventingForDbContext` desaparece (sus 3 registros
+  `IOutboxStore`/`IInboxStore`/`OutboxDispatcher` son del bus propio).
+
+**Archivos con referencias activas a limpiar**:
+
+| Archivo | Refs a limpiar |
+|---|---|
+| `Host/FSH.Starter.Api/Program.cs` | Verificar si llama `AddEventingCore` con options del bus propio (el switch ADR-0005 sigue, pero el wiring del provider InMemory/RabbitMQ del bus propio se elimina). |
+| `Modules/Identity/Modules.Identity/IdentityModule.cs` | `AddEventingForDbContext<IdentityDbContext>()` — eliminar; el `IIntegrationEventPublisher<TDbContext>` se mantiene con su `AddIntegrationEventPublisher`. |
+| `Modules/Webhooks/Modules.Webhooks/WebhooksModule.cs` | Eliminar registro DI `typeof(IIntegrationEventHandler<>) → typeof(WebhookFanoutHandler<>)` (el handler vive solo en Wolverine ahora). |
+| `Modules/Webhooks/Modules.Webhooks/Services/WebhookFanoutHandler.cs` | Eliminar `: IIntegrationEventHandler<TEvent>` de la firma. El método `HandleAsync` ya es Wolverine-compatible (descubierto por convención). |
+| `Tests/Architecture.Tests/EventingArchitectureTests.cs` | Los 2 tests (`Modules_Should_Not_Depend_On_IEventBus...`, `Control_Modules_Using_IIntegrationEvent_Are_Allowed`) son del bus propio. **Reemplazar** por: (a) test que verifique que todo módulo que publique integration events usa `IIntegrationEventPublisher<TDbContext>` (no fachada del bus propio); (b) test que confirme que no quedan `IIntegrationEventHandler<T>` en el código (no aplica si la interfaz se elimina). |
+| `Tests/Integration.Tests/Infrastructure/FshWebApplicationFactory.cs` | Eliminar override `EventingOptions:Provider=RabbitMQ` (la config Provider se va). Mantener `EventingOptions:IntegrationEventRouting:*` que sí sobreviven. Eliminar también el remove del `OutboxDispatcherHostedService` (el hosted service ya no existe). |
+| `CLAUDE.md` | Líneas 329, 359, 564, 679, 902, 939: "MassTransit" → "Wolverine"; "MassTransit Sagas" → "Wolverine sagas" (RF-AUTO-4); RF-CAT-7: "vía MassTransit" → "vía Wolverine"; las prohibiciones MassTransit v9 quedan sin sentido. |
+| `AGENTS.md` | Líneas 49 + 115: tabla Tech Stack (Events) y Golden Rules 13 mencionan MassTransit. Actualizar a Wolverine. |
+
+### Otras deudas técnicas — Bloque C linters (Fase 4)
+
+**Frontend (Dashboard + Admin)** — diferidas tras Bloque A+B de Fase 4:
+
+- **Dashboard 55 warnings**:
+  - ~12 `react-refresh/only-export-components` (separar contexts/types a archivos dedicados): `auth-context.tsx`, `EmployeeInfoEditor.tsx`, `MakaGrid.tsx`, `routes.tsx`, `realtime-context.tsx`, `sse-context.tsx`, `theme-provider.tsx`, etc.
+  - Resto `react-hooks/exhaustive-deps`: `parties.tsx`, `my-files.tsx`, `empleados.tsx`, `roles.tsx`, `users.tsx`, `basic-tables.tsx`. **Pueden esconder stale closures con bugs reales** — prioridad alta dentro de las warnings.
+- **Admin 8 warnings** (`realtime-context.tsx`): `react-refresh/only-export-components`. Cosmético — refactor menor.
+
+**Prioridad sugerida**: `exhaustive-deps` antes que `only-export-components` (posibles bugs vs refactor cosmético).
 - **MassTransit v8.5.7 sigue activo** (Apache 2.0) — no migra a v9.
