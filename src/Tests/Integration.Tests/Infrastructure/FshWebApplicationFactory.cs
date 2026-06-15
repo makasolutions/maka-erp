@@ -153,6 +153,7 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 ["EventingOptions:RabbitMQ:ExchangeName"] = "maka.events.test",
                 ["EventingOptions:RabbitMQ:QueuePrefix"] = "maka.test",
                 ["EventingOptions:IntegrationEventRouting:UserRegisteredIntegrationEvent"] = "Wolverine",
+                ["EventingOptions:IntegrationEventRouting:TokenGeneratedIntegrationEvent"] = "Wolverine",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
                 ["Serilog:MinimumLevel:Override:Microsoft.EntityFrameworkCore"] = "Fatal",
                 ["Serilog:MinimumLevel:Override:Npgsql"] = "Fatal",
@@ -190,8 +191,9 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
             services.ConfigureWolverine(opts =>
             {
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.Phase1SmokeMessageHandler));
-                // Fase 2 — consumer test-only del primer publicador real migrado.
+                // Fase 2 — consumers test-only de los publicadores reales migrados.
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.UserRegisteredE2EConsumer));
+                opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.TokenGeneratedE2EConsumer));
 
                 // Listener test-only: declara queue + binding al exchange donde el API publica.
                 // Sin este binding, el envelope se publica al exchange pero ningún consumer lo
@@ -202,8 +204,9 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 opts.ListenToRabbitQueue("maka.wolverine.identity.events.e2e-test");
             });
 
-            // Singleton sink donde el consumer test-only graba para asertar.
+            // Singletons sink donde los consumers test-only graban para asertar.
             services.AddSingleton<Integration.Tests.Tests.Platform.UserRegisteredCollector>();
+            services.AddSingleton<Integration.Tests.Tests.Platform.TokenGeneratedCollector>();
 
             // Remove hosted services that depend on infrastructure not available in tests or cause race conditions:
             // - RolePermissionSyncHostedService (queries identity schema before migrations run)

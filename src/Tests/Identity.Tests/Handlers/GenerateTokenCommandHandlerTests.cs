@@ -1,12 +1,13 @@
 using AutoFixture;
 using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Core.Context;
-using FSH.Framework.Eventing.Outbox;
+using FSH.Framework.Eventing.Abstractions;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Auditing.Contracts;
 using FSH.Modules.Identity.Contracts.DTOs;
 using FSH.Modules.Identity.Contracts.Services;
 using FSH.Modules.Identity.Contracts.v1.Tokens.TokenGeneration;
+using FSH.Modules.Identity.Data;
 using FSH.Modules.Identity.Features.v1.Tokens.TokenGeneration;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -24,7 +25,7 @@ public sealed class GenerateTokenCommandHandlerTests
     private readonly ITokenService _tokenService;
     private readonly ISecurityAudit _securityAudit;
     private readonly IRequestContext _requestContext;
-    private readonly IOutboxStore _outboxStore;
+    private readonly IIntegrationEventPublisher<IdentityDbContext> _integrationEventPublisher;
     private readonly IMultiTenantContextAccessor<AppTenantInfo> _multiTenantContextAccessor;
     private readonly ISessionService _sessionService;
     private readonly ILogger<GenerateTokenCommandHandler> _logger;
@@ -37,7 +38,7 @@ public sealed class GenerateTokenCommandHandlerTests
         _tokenService = Substitute.For<ITokenService>();
         _securityAudit = Substitute.For<ISecurityAudit>();
         _requestContext = Substitute.For<IRequestContext>();
-        _outboxStore = Substitute.For<IOutboxStore>();
+        _integrationEventPublisher = Substitute.For<IIntegrationEventPublisher<IdentityDbContext>>();
         _multiTenantContextAccessor = Substitute.For<IMultiTenantContextAccessor<AppTenantInfo>>();
         _sessionService = Substitute.For<ISessionService>();
         _logger = Substitute.For<ILogger<GenerateTokenCommandHandler>>();
@@ -47,7 +48,7 @@ public sealed class GenerateTokenCommandHandlerTests
             _tokenService,
             _securityAudit,
             _requestContext,
-            _outboxStore,
+            _integrationEventPublisher,
             _multiTenantContextAccessor,
             _sessionService,
             _logger);
@@ -128,7 +129,9 @@ public sealed class GenerateTokenCommandHandlerTests
         await _identityService.Received(1).StoreRefreshTokenAsync(userId, token.RefreshToken, token.RefreshTokenExpiresAt, Arg.Any<CancellationToken>());
         await _securityAudit.Received(1).LoginSucceededAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _securityAudit.Received(1).TokenIssuedAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
-        await _outboxStore.Received(1).AddAsync(Arg.Any<FSH.Framework.Eventing.Abstractions.IIntegrationEvent>(), Arg.Any<CancellationToken>());
+        await _integrationEventPublisher.Received(1)
+            .PublishAsync(Arg.Any<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>(), Arg.Any<CancellationToken>());
+        await _integrationEventPublisher.Received(1).SaveChangesAndFlushAsync(Arg.Any<CancellationToken>());
     }
 
     #endregion
@@ -223,7 +226,9 @@ public sealed class GenerateTokenCommandHandlerTests
         await _identityService.Received(1).ValidateCredentialsAsync(command.Email, command.Password, null, cancellationToken);
         await _tokenService.Received(1).IssueAsync(userId, claims, null, cancellationToken);
         await _identityService.Received(1).StoreRefreshTokenAsync(userId, token.RefreshToken, token.RefreshTokenExpiresAt, cancellationToken);
-        await _outboxStore.Received(1).AddAsync(Arg.Any<FSH.Framework.Eventing.Abstractions.IIntegrationEvent>(), cancellationToken);
+        await _integrationEventPublisher.Received(1)
+            .PublishAsync(Arg.Any<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>(), cancellationToken);
+        await _integrationEventPublisher.Received(1).SaveChangesAndFlushAsync(cancellationToken);
     }
 
     #endregion

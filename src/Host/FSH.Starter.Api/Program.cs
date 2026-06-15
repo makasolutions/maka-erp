@@ -163,6 +163,10 @@ builder.Host.UseWolverine(opts =>
         // de Identity sigue siendo independiente del bus subyacente.
         opts.PublishMessage<FSH.Modules.Identity.Contracts.Events.UserRegisteredIntegrationEvent>()
             .ToRabbitExchange("maka.wolverine.identity.events");
+
+        // Publicador 2/4 (ADR-0001/0005). Mismo exchange que UserRegistered (mismo módulo).
+        opts.PublishMessage<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>()
+            .ToRabbitExchange("maka.wolverine.identity.events");
     }
 });
 

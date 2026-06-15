@@ -1,12 +1,13 @@
 using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Core.Context;
-using FSH.Framework.Eventing.Outbox;
+using FSH.Framework.Eventing.Abstractions;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Auditing.Contracts;
 using FSH.Modules.Identity.Contracts.DTOs;
 using FSH.Modules.Identity.Contracts.Events;
 using FSH.Modules.Identity.Contracts.Services;
 using FSH.Modules.Identity.Contracts.v1.Tokens.TokenGeneration;
+using FSH.Modules.Identity.Data;
 using Mediator;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
@@ -20,7 +21,7 @@ public sealed class GenerateTokenCommandHandler
     private readonly ITokenService _tokenService;
     private readonly ISecurityAudit _securityAudit;
     private readonly IRequestContext _requestContext;
-    private readonly IOutboxStore _outboxStore;
+    private readonly IIntegrationEventPublisher<IdentityDbContext> _integrationEventPublisher;
     private readonly IMultiTenantContextAccessor<AppTenantInfo> _multiTenantContextAccessor;
     private readonly ISessionService _sessionService;
     private readonly ILogger<GenerateTokenCommandHandler> _logger;
@@ -30,7 +31,7 @@ public sealed class GenerateTokenCommandHandler
         ITokenService tokenService,
         ISecurityAudit securityAudit,
         IRequestContext requestContext,
-        IOutboxStore outboxStore,
+        IIntegrationEventPublisher<IdentityDbContext> integrationEventPublisher,
         IMultiTenantContextAccessor<AppTenantInfo> multiTenantContextAccessor,
         ISessionService sessionService,
         ILogger<GenerateTokenCommandHandler> logger)
@@ -39,7 +40,7 @@ public sealed class GenerateTokenCommandHandler
         _tokenService = tokenService;
         _securityAudit = securityAudit;
         _requestContext = requestContext;
-        _outboxStore = outboxStore;
+        _integrationEventPublisher = integrationEventPublisher;
         _multiTenantContextAccessor = multiTenantContextAccessor;
         _sessionService = sessionService;
         _logger = logger;
@@ -138,7 +139,15 @@ public sealed class GenerateTokenCommandHandler
             TokenFingerprint: fingerprint,
             AccessTokenExpiresAtUtc: token.AccessTokenExpiresAt);
 
-        await _outboxStore.AddAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
+        // ADR-0001/0005 — publicador 2/4 migrado a Wolverine.
+        // PublishAsync encola por la ruta del switch; SaveChangesAndFlushAsync committea
+        // la tx del DbContext + flushea el envelope a wolverine_outgoing_envelopes (ruta
+        // Wolverine) o persiste el OutboxMessages entity (ruta Legacy).
+        // TokenGeneratedLogHandler (consumer del bus propio) deja de recibir el evento
+        // hasta Fase 3, cuando los consumers migren al pipeline Wolverine. Sin impacto
+        // observable: ISecurityAudit.TokenIssuedAsync cubre observabilidad de tokens.
+        await _integrationEventPublisher.PublishAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
+        await _integrationEventPublisher.SaveChangesAndFlushAsync(cancellationToken).ConfigureAwait(false);
 
         return token;
     }
