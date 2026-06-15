@@ -7,7 +7,7 @@
     <RootNamespace>FSH.Framework.Eventing</RootNamespace>
     <AssemblyName>FSH.Framework.Eventing</AssemblyName>
     <PackageId>FullStackHero.Framework.Eventing</PackageId>
-    <NoWarn>$(NoWarn);CA1711;CA1716;CA1031;S2139;S1066</NoWarn>
+    <NoWarn>$(NoWarn);CA1711;CA1716;CA1031;S2139;S1066;CA1812;CA2227</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +19,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="RabbitMQ.Client" />
+    <!-- ADR-0005 — IntegrationEventPublisher consume IDbContextOutbox<T> de Wolverine
+         cuando IntegrationEventRouting rutea un evento a "Wolverine". -->
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
   </ItemGroup>
 
   <ItemGroup>

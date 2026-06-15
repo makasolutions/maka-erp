@@ -67,6 +67,27 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// ADR-0005 — registra el <see cref="IIntegrationEventPublisher{TDbContext}"/> que rutea
+    /// cada evento por <c>EventingOptions.IntegrationEventRouting</c> a Wolverine (outbox EF)
+    /// o al bus propio (<c>IOutboxStore</c>). Cada módulo lo registra con su DbContext.
+    /// Requiere que el DbContext esté registrado previamente con
+    /// <c>services.AddDbContextWithWolverineIntegration&lt;TDbContext&gt;(...)</c> para que
+    /// <c>IDbContextOutbox&lt;TDbContext&gt;</c> resuelva.
+    /// </summary>
+    public static IServiceCollection AddIntegrationEventPublisher<TDbContext>(
+        this IServiceCollection services)
+        where TDbContext : DbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddScoped<
+            IIntegrationEventPublisher<TDbContext>,
+            IntegrationEventPublisher<TDbContext>>();
+
+        return services;
+    }
+
+    /// <summary>
     /// Registers integration event handlers from the specified assemblies.
     /// </summary>
     public static IServiceCollection AddIntegrationEventHandlers(

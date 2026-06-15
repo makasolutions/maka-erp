@@ -36,4 +36,12 @@ public sealed class EventingOptions
     /// If false, you should configure Hangfire or another scheduler.
     /// </summary>
     public bool UseHostedServiceDispatcher { get; set; } = true;
+
+    /// <summary>
+    /// ADR-0005 — routing por evento durante la migración Wolverine. Llave: nombre del tipo
+    /// del integration event (<c>typeof(T).Name</c>). Valor: <c>"Wolverine"</c> o <c>"Legacy"</c>.
+    /// Default por omisión: <c>"Legacy"</c> (bus propio). Se cambia a <c>"Wolverine"</c> por
+    /// evento conforme migran; el borrado del bus propio queda para Fase 5.
+    /// </summary>
+    public Dictionary<string, string> IntegrationEventRouting { get; set; } = [];
 }
