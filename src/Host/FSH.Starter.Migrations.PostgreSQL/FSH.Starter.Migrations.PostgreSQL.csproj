@@ -19,6 +19,7 @@
 	  <ProjectReference Include="..\..\Modules\Billing\Modules.Billing\Modules.Billing.csproj" />
 	  <ProjectReference Include="..\..\Modules\Catalog\Modules.Catalog\Modules.Catalog.csproj" />
 	  <ProjectReference Include="..\..\Modules\Lookups\Modules.Lookups\Modules.Lookups.csproj" />
+	  <ProjectReference Include="..\..\Modules\NamingSeries\Modules.NamingSeries\Modules.NamingSeries.csproj" />
 	  <ProjectReference Include="..\..\Modules\Parties\Modules.Parties\Modules.Parties.csproj" />
 	  <ProjectReference Include="..\..\Modules\Hr\Modules.Hr\Modules.Hr.csproj" />
 	  <ProjectReference Include="..\..\Modules\Tickets\Modules.Tickets\Modules.Tickets.csproj" />

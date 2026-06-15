@@ -54,6 +54,8 @@ builder.Services.AddMediator(o =>
         typeof(FSH.Modules.Catalog.CatalogModule),
         typeof(FSH.Modules.Lookups.Contracts.LookupsContractsMarker),
         typeof(FSH.Modules.Lookups.LookupsModule),
+        // NamingSeries (ADR-0007): sin commands/queries Mediator en este PR (solo dominio + DbContext +
+        // contrato del allocator). Re-añadir cuando lleguen Features/v1 con handlers.
         typeof(FSH.Modules.Parties.Contracts.PartiesContractsMarker),
         typeof(FSH.Modules.Parties.PartiesModule),
         typeof(FSH.Modules.Hr.Contracts.HrContractsMarker),
@@ -205,6 +207,7 @@ var moduleAssemblies = new Assembly[]
     typeof(BillingModule).Assembly,
     typeof(CatalogModule).Assembly,
     typeof(FSH.Modules.Lookups.LookupsModule).Assembly,
+    typeof(FSH.Modules.NamingSeries.NamingSeriesModule).Assembly,
     typeof(FSH.Modules.Parties.PartiesModule).Assembly,
     typeof(FSH.Modules.Hr.HrModule).Assembly,
     typeof(TicketsModule).Assembly,

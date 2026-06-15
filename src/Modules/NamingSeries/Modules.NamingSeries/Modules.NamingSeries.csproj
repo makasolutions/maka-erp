@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>FSH.Modules.NamingSeries</RootNamespace>
+		<AssemblyName>FSH.Modules.NamingSeries</AssemblyName>
+		<PackageId>FullStackHero.Modules.NamingSeries</PackageId>
+		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;S2094</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- ADR-0001/0007 — outbox transaccional Wolverine sobre NamingSeriesDbContext. -->
+		<PackageReference Include="WolverineFx.EntityFrameworkCore" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\BuildingBlocks\Eventing\Eventing.csproj" />
+		<ProjectReference Include="..\..\..\BuildingBlocks\Persistence\Persistence.csproj" />
+		<ProjectReference Include="..\..\..\BuildingBlocks\Web\Web.csproj" />
+		<ProjectReference Include="..\Modules.NamingSeries.Contracts\Modules.NamingSeries.Contracts.csproj" />
+	</ItemGroup>
+
+</Project>
