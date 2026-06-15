@@ -127,7 +127,11 @@ public static class Extensions
                     })
                     .AddSource(builder.Environment.ApplicationName)
                     .AddSource("FSH.Hangfire")
-                    .AddSource(CachingTelemetry.ActivitySourceName);
+                    .AddSource(CachingTelemetry.ActivitySourceName)
+                    // ADR-0001/0004 (post-Fase 3) — Wolverine 6.8 emite spans nativos
+                    // bajo el ActivitySource "Wolverine". Captura traces de publish,
+                    // handler invocation, outbox flush, etc.
+                    .AddSource("Wolverine");
 
                 if (options.Exporter.Otlp.Enabled)
                 {
@@ -135,6 +139,13 @@ public static class Extensions
                     {
                         ConfigureOtlpExporter(options.Exporter.Otlp, otlp);
                     });
+                }
+
+                // Console exporter (dev local) — imprime spans en stdout sin
+                // necesidad de OTLP collector. Activado por appsettings.Development.json.
+                if (options.Exporter.Console.Enabled)
+                {
+                    tracing.AddConsoleExporter();
                 }
             });
 

@@ -51,6 +51,16 @@ public sealed class OpenTelemetryOptions
     public sealed class ExporterOptions
     {
         public OtlpOptions Otlp { get; set; } = new();
+        /// <summary>
+        /// Console exporter — útil en dev local para ver spans/metrics en stdout sin
+        /// montar OTLP collector. Default off; activar en appsettings.Development.json.
+        /// </summary>
+        public ConsoleOptions Console { get; set; } = new();
+    }
+
+    public sealed class ConsoleOptions
+    {
+        public bool Enabled { get; set; }
     }
 
     public sealed class OtlpOptions
