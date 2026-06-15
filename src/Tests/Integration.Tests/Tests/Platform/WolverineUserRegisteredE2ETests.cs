@@ -98,6 +98,13 @@ public sealed class WolverineUserRegisteredE2ETests
         collector.Received.Count.ShouldBe(1);
         collector.Received[0].Email.ShouldBe(email);
         collector.Received[0].TenantId.ShouldBe(TestConstants.RootTenantId);
+
+        // Aserto 4 (Fase 3 Paso 3) — INV-9 estructural. El TenantContextMiddleware de
+        // Wolverine debió restaurar el Finbuckle ITenantInfo desde envelope.TenantId
+        // ANTES de invocar al consumer. Si el middleware no está activo o no se ejecuta
+        // antes del handler, el AmbientTenantId queda null → test rojo.
+        collector.AmbientTenantId.ShouldBe(TestConstants.RootTenantId,
+            "INV-9 — TenantContextMiddleware debe poblar el Finbuckle context antes del handler");
     }
 
 }
@@ -112,9 +119,21 @@ public sealed class UserRegisteredCollector
 
     public IReadOnlyList<UserRegisteredIntegrationEvent> Received => [.. _received];
 
+    /// <summary>
+    /// Tenant ambient visto por el handler en el momento de ejecutarse (poblado por
+    /// el <c>TenantContextMiddleware</c> INV-9 de Wolverine). Si el middleware no
+    /// está activo este valor queda en <c>null</c> → test rojo (verificación
+    /// estructural Fase 3 Paso 3).
+    /// </summary>
+    public string? AmbientTenantId { get; set; }
+
     public void Add(UserRegisteredIntegrationEvent evt) => _received.Add(evt);
 
-    public void Clear() => _received.Clear();
+    public void Clear()
+    {
+        _received.Clear();
+        AmbientTenantId = null;
+    }
 }
 
 /// <summary>
@@ -124,10 +143,16 @@ public sealed class UserRegisteredCollector
 /// </summary>
 public static class UserRegisteredE2EConsumer
 {
-    public static void Handle(UserRegisteredIntegrationEvent evt, UserRegisteredCollector collector)
+    public static void Handle(
+        UserRegisteredIntegrationEvent evt,
+        UserRegisteredCollector collector,
+        Finbuckle.MultiTenant.Abstractions.IMultiTenantContextAccessor<FSH.Framework.Shared.Multitenancy.AppTenantInfo> tenantAccessor)
     {
         ArgumentNullException.ThrowIfNull(evt);
         ArgumentNullException.ThrowIfNull(collector);
+        // INV-9 — captura el tenant ambient para asertar que el TenantContextMiddleware
+        // de Wolverine restauró el Finbuckle context ANTES de invocar este handler.
+        collector.AmbientTenantId = tenantAccessor?.MultiTenantContext?.TenantInfo?.Id;
         collector.Add(evt);
     }
 }
