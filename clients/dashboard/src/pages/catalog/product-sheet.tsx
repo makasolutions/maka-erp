@@ -221,8 +221,13 @@ export function ProductSheetPage() {
 
       {/* Lightbox — click the cover to maximise (screen only). */}
       {lightbox && main && (
+        // role="button" en el backdrop — el div entero ACTÚA como un gran botón de cierre.
+        // La semántica de "dialog" se mantiene por el botón interno con aria-label. tabIndex={0}
+        // + onKeyDown permiten cerrar con Enter/Space/Escape vía teclado.
         <div className="no-print fixed inset-0 z-50 grid place-items-center bg-black/80 p-6"
-          role="dialog" aria-modal="true" onClick={() => setLightbox(false)}>
+          role="button" tabIndex={0} aria-label={tc("actions.close")}
+          onClick={() => setLightbox(false)}
+          onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") setLightbox(false); }}>
           <img src={main.url} alt={main.altText ?? ""} className="max-h-[92vh] max-w-[92vw] object-contain" />
           <button type="button" onClick={() => setLightbox(false)} aria-label={tc("actions.close")}
             className="absolute right-4 top-4 grid size-9 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20">

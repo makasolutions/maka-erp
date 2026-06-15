@@ -90,15 +90,12 @@ function ScorecardsTab() {
   const columns: ColumnModel[] = useMemo(() => [
     { field: "supplierLabel", headerText: t("scorecards.fields.supplier"), minWidth: 200 },
     { field: "periodLabel", headerText: t("scorecards.fields.period"), width: 130 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "weightedScore", headerText: t("scorecards.fields.score"), width: 110, textAlign: "Center",
-      template: ((r: Row) => <span className="font-semibold tabular-nums">{r.weightedScore.toFixed(2)}</span>) as any },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      template: ((r: Row) => <span className="font-semibold tabular-nums">{r.weightedScore.toFixed(2)}</span>) as ColumnModel["template"] },
     { field: "grade", headerText: t("scorecards.fields.grade"), width: 90, textAlign: "Center",
-      template: ((r: Row) => <EntityStatusBadge tone={gradeTone(r.grade)}>{r.grade}</EntityStatusBadge>) as any },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      template: ((r: Row) => <EntityStatusBadge tone={gradeTone(r.grade)}>{r.grade}</EntityStatusBadge>) as ColumnModel["template"] },
     { field: "statusLabel", headerText: t("scorecards.fields.status"), width: 120, textAlign: "Center",
-      template: ((r: Row) => <EntityStatusBadge tone={statusTone(r.status)}>{r.statusLabel}</EntityStatusBadge>) as any },
+      template: ((r: Row) => <EntityStatusBadge tone={statusTone(r.status)}>{r.statusLabel}</EntityStatusBadge>) as ColumnModel["template"] },
   ], [t]);
 
   return (
@@ -231,7 +228,7 @@ function ScorecardEditor({ state, onClose }: { state: Editor; onClose: () => voi
             <FormGrid>
               <Field id="sc-supplier" span={6} label={t("scorecards.fields.supplier")} required error={fieldErrs.supplierId}>
                 {isCreate ? (
-                  <PartyPicker id="sc-supplier" role="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
+                  <PartyPicker id="sc-supplier" partyRole="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
                 ) : (
                   <Input id="sc-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
                 )}
@@ -370,7 +367,7 @@ function ReportsTab() {
       <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-[var(--color-foreground)]">{t("scorecards.reports.trend")}</h3>
-          <div className="w-64"><PartyPicker id="trend-supplier" role="Supplier" value={supplierId} onChange={setSupplierId} label={t("scorecards.fields.supplier")} /></div>
+          <div className="w-64"><PartyPicker id="trend-supplier" partyRole="Supplier" value={supplierId} onChange={setSupplierId} label={t("scorecards.fields.supplier")} /></div>
         </div>
         {!supplierId ? (
           <p className="text-[12.5px] text-[var(--color-muted-foreground)]">{t("scorecards.reports.pickSupplier")}</p>
@@ -415,12 +412,10 @@ function KpisTab() {
   const columns: ColumnModel[] = [
     { field: "name", headerText: t("scorecards.kpis.name"), minWidth: 200 },
     { field: "code", headerText: t("scorecards.kpis.code"), width: 140 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "weight", headerText: t("scorecards.kpis.weight"), width: 110, textAlign: "Center",
-      template: ((r: Row) => <span className="tabular-nums">{r.weight}%</span>) as any },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      template: ((r: Row) => <span className="tabular-nums">{r.weight}%</span>) as ColumnModel["template"] },
     { field: "activeLabel", headerText: tc("status.active"), width: 110, textAlign: "Center",
-      template: ((r: Row) => <EntityStatusBadge tone={r.isActive ? "success" : "default"}>{r.activeLabel}</EntityStatusBadge>) as any },
+      template: ((r: Row) => <EntityStatusBadge tone={r.isActive ? "success" : "default"}>{r.activeLabel}</EntityStatusBadge>) as ColumnModel["template"] },
   ];
 
   return (

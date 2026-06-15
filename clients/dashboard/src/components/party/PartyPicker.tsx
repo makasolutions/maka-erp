@@ -9,18 +9,19 @@ export interface PartyPickerProps {
   value: string | null;
   onChange: (partyId: string | null) => void;
   label?: string;
-  /** Optional role filter ("Customer" | "Supplier"). */
-  role?: "Customer" | "Supplier";
+  /** Optional party role filter ("Customer" | "Supplier"). Renombrado a partyRole para
+   *  evitar colisión con el atributo HTML/ARIA `role` (jsx-a11y/aria-role). */
+  partyRole?: "Customer" | "Supplier";
   disabled?: boolean;
 }
 
 /** Searchable select of terceros by name/NIT — reusable in Orders, Cotizaciones, Billing. */
-export function PartyPicker({ id, value, onChange, label, role, disabled }: PartyPickerProps) {
+export function PartyPicker({ id, value, onChange, label, partyRole, disabled }: PartyPickerProps) {
   const { t } = useTranslation("crm");
   const { t: tc } = useTranslation("common");
   const { data } = useQuery({
-    queryKey: ["crm", "parties", "picker", role ?? "all"],
-    queryFn: () => searchParties({ pageSize: 200, sort: "legalName", role: role ?? null }),
+    queryKey: ["crm", "parties", "picker", partyRole ?? "all"],
+    queryFn: () => searchParties({ pageSize: 200, sort: "legalName", role: partyRole ?? null }),
     staleTime: 60 * 1000,
   });
   const options = useMemo(
@@ -36,8 +37,8 @@ export function PartyPicker({ id, value, onChange, label, role, disabled }: Part
   // consistent ("Buscar proveedor…" ↔ "Filtrar proveedor…"), instead of a generic
   // "tercero" that contradicts a Proveedor/Cliente context.
   const roleNoun =
-    role === "Supplier" ? t("parties.role.supplier")
-    : role === "Customer" ? t("parties.role.customer")
+    partyRole === "Supplier" ? t("parties.role.supplier")
+    : partyRole === "Customer" ? t("parties.role.customer")
     : t("parties.singular");
   const noun = label ?? roleNoun;
   return (

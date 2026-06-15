@@ -164,7 +164,13 @@ function makeRestoreCell(ctxRef: React.MutableRefObject<RestoreCtx>) {
     const ctx = ctxRef.current;
     const busy = ctx.restoringId === row.id;
     return (
-      <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+      // role="presentation" — contenedor decorativo; el botón real es el <Button> hijo.
+      <div
+        role="presentation"
+        className="flex items-center justify-end"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         <Button
           perm={ctx.perm}
           variant="outline"

@@ -41,6 +41,7 @@ import {
   type PdfExportProperties,
   type RecordClickEventArgs,
   type ToolbarItems,
+  type ValueAccessor,
 } from "@syncfusion/ej2-react-grids";
 import { L10n } from "@syncfusion/ej2-base";
 import {
@@ -117,11 +118,12 @@ export function makaCurrencyColumn(
     headerText,
     textAlign: "Right",
     width: 160,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    valueAccessor: ((f: string, data: Record<string, unknown>) => {
-      const v = data?.[f];
+    // Syncfusion ValueAccessor: (field, data, column) => Object. La firma exige Object
+    // como tipo de data; recibimos Record<string, unknown> y el cast estructural es seguro.
+    valueAccessor: ((f: string, data: object) => {
+      const v = (data as Record<string, unknown>)?.[f];
       return typeof v === "number" ? formatCOP(v) : v;
-    }) as any,
+    }) as ValueAccessor,
     ...extra,
   };
 }
@@ -529,10 +531,15 @@ export function MakaGrid<T extends object>({
       const hasBottomItems = canDelete || visExtras.some(a => a.dividerBefore);
 
       return (
+        // role="presentation" — este div NO es interactivo; los handlers solo evitan que
+        // el row recibe el click/mousedown/keydown cuando el usuario interactúa con los
+        // botones interiores. Los botones reales son los <button> hijos.
         <div
+          role="presentation"
           className="flex items-center justify-center"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
           <div className="inline-flex rounded-md border border-[var(--color-border)] overflow-hidden">
 

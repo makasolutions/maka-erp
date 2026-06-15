@@ -325,7 +325,14 @@ function makeActionsCell(ctxRef: React.MutableRefObject<ActionsCtx>) {
       return <span className="text-[11px] font-semibold uppercase tracking-wider text-[oklch(from_var(--color-muted-foreground)_l_c_h_/_0.6)]">—</span>;
     }
     return (
-      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+      // role="presentation" — contenedor decorativo cuyos handlers solo evitan que el row
+      // recibe la propagación. Los botones reales son los <Button> hijos.
+      <div
+        role="presentation"
+        className="flex items-center justify-end gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         {row.userId && (
           <Button
             perm={P.identity.sessions.revokeAll}

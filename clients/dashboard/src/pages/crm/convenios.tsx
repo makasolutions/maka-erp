@@ -82,18 +82,12 @@ export function ConveniosPage() {
   }, [listQ.data, nameFilter, statusFilter, t]);
 
   const columns: ColumnModel[] = useMemo(() => [
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "name", headerText: t("convenios.fields.name"), minWidth: 200 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "supplierLabel", headerText: t("convenios.fields.supplier"), minWidth: 180 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "typeLabel", headerText: t("convenios.fields.type"), width: 150 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "statusLabel", headerText: t("convenios.fields.status"), width: 120, template: ((r: AgreementRow) =>
-        <EntityStatusBadge tone={statusTone(r.status)}>{r.statusLabel}</EntityStatusBadge>) as any, textAlign: "Center" },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        <EntityStatusBadge tone={statusTone(r.status)}>{r.statusLabel}</EntityStatusBadge>) as ColumnModel["template"], textAlign: "Center" },
     { field: "priceListName", headerText: t("convenios.fields.priceList"), width: 160 },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     { field: "ruleCount", headerText: t("convenios.fields.rules"), width: 90, textAlign: "Center" },
   ], [t]);
 
@@ -336,7 +330,7 @@ function AgreementEditorDialog({ state, onClose }: { state: EditorState; onClose
                       </Field>
                       <Field id="ag-supplier" span={4} label={t("convenios.fields.supplier")} required>
                         {isCreate ? (
-                          <PartyPicker id="ag-supplier" role="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
+                          <PartyPicker id="ag-supplier" partyRole="Supplier" value={form.supplierId} onChange={(v) => set({ supplierId: v })} />
                         ) : (
                           <Input id="ag-supplier" value={detail?.supplierName ?? ""} disabled readOnly />
                         )}

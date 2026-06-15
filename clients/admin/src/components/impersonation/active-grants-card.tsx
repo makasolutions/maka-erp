@@ -139,7 +139,6 @@ export function ActiveGrantsCard({ tenantId }: { tenantId: string }) {
 }
 
 function RowActions({
-  grant: _grant,
   canRevoke,
   canReopen,
   onRevoke,
