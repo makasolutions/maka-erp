@@ -145,6 +145,34 @@ Progreso: la 5ª capa pasó de **"5 hipótesis pendientes"** a **"5/5 cerradas c
 
 Wolverine 6.8 trae `M:Wolverine.EntityFrameworkCore.WolverineEntityCoreExtensions.PublishDomainEventsFromEntityFrameworkCore` — un **scraper nativo de domain events** que reemplaza funcionalmente al `DomainEventsInterceptor` propio. *"Tell Wolverine how to 'scrape' domain events from the active EF Core DbContext to publish as messages."* No bloqueante para Fase 2 (los 3 interceptors propios quedan intactos), pero es candidato a evaluar en Fase 3 si decidimos unificar el pipeline de domain events bajo Wolverine.
 
+### Outgoing rule INV-9 — diferido post-Fase 3 (decisión Fase 3 Paso 3)
+
+`IEnvelopeRule` para poblar `envelope.TenantId` automáticamente desde el Finbuckle
+context en cada publicación outgoing se **difiere**.
+
+**Causa**: `WolverineOptions.MetadataRules` se construye eager al momento del callback
+`UseWolverine` — antes de que el `IServiceProvider` esté disponible. El patrón de
+inyectar `IServiceProvider` al rule como workaround requiere `BuildServiceProvider()`
+(anti-patrón que crea un container DI temporal) o `IWolverinePolicy.Apply()` con
+orden DI ambiguo (la doc XML no clarifica si `Apply` corre pre- o post-DI build).
+
+**Estado**: no bloqueante. Los tres publicadores migrados en Fase 2 (`UserRegistered`,
+`TokenGenerated`, `FileFinalized`) propagan `TenantId` correctamente vía
+`DeliveryOptions.TenantId` que el `IIntegrationEventPublisher<T>.PublishAsync` rellena
+con `integrationEvent.TenantId` (que a su vez se captura del Finbuckle context en el
+publish-site). El test E2E `WolverineUserRegisteredE2ETests` aserta
+`sent.TenantId.ShouldBe(RootTenantId)` y pasa — propagación demostrada sin el rule.
+
+El outgoing rule es **defensa adicional** para eventos derivados/cascadeados (publicación
+dentro de un consumer Wolverine, sin tenant explícito en `DeliveryOptions`). Ese
+escenario **no existe aún** en el código del proyecto.
+
+**Investigar cuando llegue Fase 4**: si Wolverine 6.8 expone un hook `IWolverinePolicy`
+post-DI-build que permita resolver servicios del container. Candidatos a evaluar:
+`IMessageRoutePolicy`, `IEndpointPolicy`, o un hook tipo `OnHostStarted`. Si existe, la
+implementación del rule queda trivial. Si no, la defensa cascadeada se cubre por
+convención manual en cada handler Wolverine que necesite re-publicar.
+
 ### Chat + Notifications — pareja de Fase 3 (decisión Fase 2)
 
 `SendMessageCommandHandler` (Chat) **no se migró en Fase 2** y queda diferido a Fase 3 junto con su consumer `MentionedInChannelIntegrationEventHandler` (Notifications). Justificación: el consumer **es producción real** — escribe `Notification` en `NotificationsDbContext` y dispara SignalR a `user:{id}` con `NotificationCreated` para que el bell-badge UI se actualice. Migrar el publisher a Wolverine sin migrar el consumer en el mismo paso rompería la entrega de notificaciones de mención hasta Fase 3 — pérdida observable. Separar publisher/consumer en commits distintos también introduce dependencia cruzada Chat → Notifications dentro de un solo cambio: si el consumer falla, el publisher queda incompleto sin rollback limpio. La pareja entra a Fase 3 junto con el middleware de tenant, que es donde naturalmente conviven publisher + consumer + tenant scope estructural.
