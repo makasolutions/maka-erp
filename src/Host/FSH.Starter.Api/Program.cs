@@ -155,6 +155,14 @@ builder.Host.UseWolverine(opts =>
         })
         .EnableWolverineControlQueues()
         .AutoProvision();
+
+        // Fase 2 (ADR-0001/0005) — routing del primer publicador real migrado.
+        // UserRegisteredIntegrationEvent va al exchange "maka.wolverine.identity.events"
+        // (distinguible del exchange del bus propio: "maka.events" / "fsh.events").
+        // El switch ADR-0005 vive en IntegrationEventPublisher<TDbContext>; el call site
+        // de Identity sigue siendo independiente del bus subyacente.
+        opts.PublishMessage<FSH.Modules.Identity.Contracts.Events.UserRegisteredIntegrationEvent>()
+            .ToRabbitExchange("maka.wolverine.identity.events");
     }
 });
 

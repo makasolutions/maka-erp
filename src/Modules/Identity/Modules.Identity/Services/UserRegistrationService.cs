@@ -1,7 +1,7 @@
 using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Core.Common;
 using FSH.Framework.Core.Exceptions;
-using FSH.Framework.Eventing.Outbox;
+using FSH.Framework.Eventing.Abstractions;
 using FSH.Framework.Jobs.Services;
 using FSH.Framework.Mailing;
 using FSH.Framework.Mailing.Services;
@@ -27,7 +27,7 @@ internal sealed class UserRegistrationService(
     IJobService jobService,
     IMailService mailService,
     IMultiTenantContextAccessor<AppTenantInfo> multiTenantContextAccessor,
-    IOutboxStore outboxStore) : IUserRegistrationService
+    IIntegrationEventPublisher<IdentityDbContext> integrationEventPublisher) : IUserRegistrationService
 {
     public async Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal)
     {
@@ -262,8 +262,12 @@ internal sealed class UserRegistrationService(
         var tenantId = multiTenantContextAccessor.MultiTenantContext.TenantInfo?.Id;
         user.RecordRegistered(tenantId);
 
-        await db.SaveChangesAsync(cancellationToken);
-
+        // ADR-0005 / ADR-0001 — sitio único de publicación migrado al publisher con switch.
+        // El publish ocurre EN EL MISMO MÉTODO que el SaveChanges para que la ruta Wolverine
+        // pueda enrolar el envelope en la misma transacción del SaveChanges (outbox transaccional
+        // estructural). El antiguo UserRegisteredHandler (notification post-SaveChanges) se
+        // eliminó porque su patrón es ortogonal al outbox EF — el publish post-commit no puede
+        // enrolarse en una tx que ya cerró. Alineación arquitectónica, no fix oportunista.
         var integrationEvent = new UserRegisteredIntegrationEvent(
             Id: Guid.NewGuid(),
             OccurredOnUtc: TimeProvider.System.GetUtcNow(),
@@ -275,7 +279,14 @@ internal sealed class UserRegistrationService(
             FirstName: user.FirstName ?? string.Empty,
             LastName: user.LastName ?? string.Empty);
 
-        await outboxStore.AddAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
+        await integrationEventPublisher.PublishAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
+
+        // Causa raíz original de la "5ª capa": PublishAsync solo encola en memoria del outbox
+        // EF de Wolverine; el flush a wolverine_outgoing_envelopes requiere
+        // SaveChangesAndFlushMessagesAsync explícito (doc oficial WolverineFx 6.8). Llamar a
+        // db.SaveChangesAsync directo persiste el user pero NO el envelope. La fachada
+        // expone SaveChangesAndFlushAsync que combina ambas operaciones uniformemente.
+        await integrationEventPublisher.SaveChangesAndFlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<string> GetEmailVerificationUriAsync(FshUser user, string origin)

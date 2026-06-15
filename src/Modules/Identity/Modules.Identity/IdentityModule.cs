@@ -139,6 +139,10 @@ public class IdentityModule : IModule
         }, wolverineDatabaseSchema: "identity");
         services.AddEventingCore(builder.Configuration);
         services.AddEventingForDbContext<IdentityDbContext>();
+        // ADR-0005 — fachada de publicación con switch por evento (Wolverine vs bus propio).
+        // El publicador de Identity inyecta IIntegrationEventPublisher<IdentityDbContext>
+        // y no conoce el bus subyacente.
+        services.AddIntegrationEventPublisher<IdentityDbContext>();
         services.AddIntegrationEventHandlers(typeof(IdentityModule).Assembly);
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<IdentityDbContext>(
