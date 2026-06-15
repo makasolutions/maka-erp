@@ -1,30 +1,22 @@
-using FSH.Framework.Eventing.Abstractions;
 using FSH.Modules.Identity.Contracts.Events;
 using Microsoft.Extensions.Logging;
 
 namespace FSH.Modules.Identity.Events;
 
 /// <summary>
-/// Example handler that logs when a token is generated.
-/// This is primarily intended to make it easier to test the integration event pipeline.
+/// Sample handler que loguea cuando un token se genera. Migrado a Wolverine en Fase 3
+/// (mismo patrón estructural que <see cref="UserRegisteredEmailHandler"/>).
+/// Discovery vía IncludeAssembly de Identity en Program.cs.
 /// </summary>
-public sealed class TokenGeneratedLogHandler
-    : IIntegrationEventHandler<TokenGeneratedIntegrationEvent>
+public static class TokenGeneratedLogHandler
 {
-    private readonly ILogger<TokenGeneratedLogHandler> _logger;
-
-    public TokenGeneratedLogHandler(ILogger<TokenGeneratedLogHandler> logger)
-    {
-        _logger = logger;
-    }
-
-    public Task HandleAsync(TokenGeneratedIntegrationEvent @event, CancellationToken ct = default)
+    public static void Handle(TokenGeneratedIntegrationEvent @event, ILogger<TokenGeneratedLogHandlerLog> logger)
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        if (_logger.IsEnabled(LogLevel.Information))
+        if (logger.IsEnabled(LogLevel.Information))
         {
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Token generated for user {UserId} ({Email}) with client {ClientId}, IP {IpAddress}, UserAgent {UserAgent}, expires at {ExpiresAtUtc} (fingerprint: {Fingerprint})",
                 @event.UserId,
                 @event.Email,
@@ -34,7 +26,9 @@ public sealed class TokenGeneratedLogHandler
                 @event.AccessTokenExpiresAtUtc,
                 @event.TokenFingerprint);
         }
-
-        return Task.CompletedTask;
     }
 }
+
+#pragma warning disable S2094 // marker para el ILogger categoría
+public sealed class TokenGeneratedLogHandlerLog { }
+#pragma warning restore S2094
