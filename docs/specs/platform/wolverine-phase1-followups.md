@@ -173,6 +173,76 @@ post-DI-build que permita resolver servicios del container. Candidatos a evaluar
 implementación del rule queda trivial. Si no, la defensa cascadeada se cubre por
 convención manual en cada handler Wolverine que necesite re-publicar.
 
+### Fase 3 cerrada — INV-9 estructural + consumers migrados
+
+**Estado**: Fase 3 cerrada con 7 pasos commiteados. Consumer pipelines migrados,
+middleware incoming INV-9 activo, bug regresivo de Fase 2 corregido.
+
+**Consumers migrados al pipeline Wolverine** (4 handlers):
+
+- `UserRegisteredEmailHandler` (Identity) → welcome email. Restaurado del estado roto desde Fase 2.
+- `TokenGeneratedLogHandler` (Identity) → sample log. Restaurado por uniformidad.
+- `MentionedInChannelIntegrationEventHandler` (Notifications) → notificación + SignalR.
+  Pareja con publisher Chat (`SendMessageCommandHandler`).
+- `WebhookFanoutHandler<T>` (Webhooks) → registrado como closed-generic explícito por
+  cada evento migrado a Wolverine: `UserRegisteredIntegrationEvent`, `TokenGeneratedIntegrationEvent`,
+  `FileFinalizedIntegrationEvent`, `MentionedInChannelIntegrationEvent`. **Importante**:
+  cada vez que un evento nuevo migre a Wolverine en el futuro, **añadir su closed-generic
+  registration en `Program.cs`** (comentario in-line lo recuerda).
+
+**API exacta del middleware INV-9**:
+
+```csharp
+// TenantContextMiddleware (incoming) en BuildingBlocks/Eventing/Tenant/
+public sealed class TenantContextMiddleware
+{
+    public static void Before(Envelope envelope, IMultiTenantContextSetter setter)
+    {
+        if (string.IsNullOrEmpty(envelope.TenantId)) return;
+        var info = new AppTenantInfo(envelope.TenantId, envelope.TenantId);
+        setter.MultiTenantContext = new MultiTenantContext<AppTenantInfo>(info);
+    }
+}
+
+// Registro en Program.cs dentro de UseWolverine:
+opts.UseTenantContextMiddleware();  // extension que llama opts.Policies.AddMiddleware<TenantContextMiddleware>()
+```
+
+Convenciones descubiertas (Plan Mode habría pasado por alto):
+- Clase debe ser pública **e instanciable** (constructor público). Constructor privado
+  rompe el discovery: *"Middleware classes must be public, and have any mix of
+  Before/BeforeAsync/After/AfterAsync/Finally/FinallyAsync methods"*.
+- Suprimir `CA1052` (clase con solo métodos estáticos = static) y `S1118` (constructor
+  privado) localmente.
+- Método `Before` debe ser estático para sin-estado.
+
+**Outgoing rule INV-9 diferido** (sección arriba): `WolverineOptions.MetadataRules` es
+eager-build → no se puede registrar un rule que dependa de Finbuckle context sin hacks.
+Diferido a Fase 4. No bloqueante — los publishers actuales propagan TenantId vía
+`DeliveryOptions.TenantId` explícito.
+
+**Bug regresivo de Fase 2 corregido**: `WebhookFanoutHandler<T>` dejó de procesar los
+3 eventos migrados (UserRegistered/Token/FileFinalized) cuando dejaron de pasar por el
+bus propio. Fase 3 Paso 6 lo restauró con registros cerrados Wolverine.
+
+**Tests Fase 3**:
+- `WolverineUserRegisteredE2ETests` extendido con aserto `AmbientTenantId == "root"`
+  — verifica que `TenantContextMiddleware` se ejecuta ANTES del handler.
+- Tests dedicados de `MentionedInChannel` y `WebhookFanout` diferidos como follow-up
+  (setup de channels + subscriptions es complejo; el patrón core INV-9 ya queda
+  validado por UserRegistered + los 5/5 tests existentes pasan tras la migración).
+
+**`PublishDomainEventsFromEntityFrameworkCore`** (semilla Fase 2): **no se adoptó** en
+Fase 3. La oportunidad de reemplazar el `DomainEventsInterceptor` propio sigue abierta
+para Fase 4 o Fase 5 (consolidación de pipelines).
+
+**Estado de Inventario (CAP-03..09)**: destrabado. Fase 3 entrega `WolverineSchemaSetup`
+multi-schema, el patrón canónico `AddDbContextWithWolverineIntegration<T>` aplicado en
+5 módulos, `IIntegrationEventPublisher<TDbContext>` con switch ADR-0005 funcional, y
+middleware INV-9 incoming activo. Cualquier módulo nuevo (Inventario, Importaciones,
+etc.) que emita integration events puede seguir el mismo patrón sin descubrimientos
+arquitectónicos pendientes.
+
 ### Chat + Notifications — pareja de Fase 3 (decisión Fase 2)
 
 `SendMessageCommandHandler` (Chat) **no se migró en Fase 2** y queda diferido a Fase 3 junto con su consumer `MentionedInChannelIntegrationEventHandler` (Notifications). Justificación: el consumer **es producción real** — escribe `Notification` en `NotificationsDbContext` y dispara SignalR a `user:{id}` con `NotificationCreated` para que el bell-badge UI se actualice. Migrar el publisher a Wolverine sin migrar el consumer en el mismo paso rompería la entrega de notificaciones de mención hasta Fase 3 — pérdida observable. Separar publisher/consumer en commits distintos también introduce dependencia cruzada Chat → Notifications dentro de un solo cambio: si el consumer falla, el publisher queda incompleto sin rollback limpio. La pareja entra a Fase 3 junto con el middleware de tenant, que es donde naturalmente conviven publisher + consumer + tenant scope estructural.
