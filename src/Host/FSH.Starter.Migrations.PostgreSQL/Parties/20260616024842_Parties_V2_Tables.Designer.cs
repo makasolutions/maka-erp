@@ -3,6 +3,7 @@ using System;
 using FSH.Modules.Parties.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FSH.Starter.Migrations.PostgreSQL.Parties
 {
     [DbContext(typeof(PartiesDbContext))]
-    partial class PartiesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260616024842_Parties_V2_Tables")]
+    partial class Parties_V2_Tables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

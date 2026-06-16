@@ -1,0 +1,21 @@
+using FSH.Modules.Parties.Domain.V2.Profiles;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace FSH.Modules.Parties.Data.Configurations.V2;
+
+public sealed class EmployeeProfileConfiguration : IEntityTypeConfiguration<EmployeeProfile>
+{
+    public void Configure(EntityTypeBuilder<EmployeeProfile> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        builder.ToTable("EmployeeProfiles");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.EmployeeCode).HasMaxLength(64);
+        builder.Property(x => x.JobTitle).HasMaxLength(128);
+        builder.HasIndex(x => x.PartyId);
+
+        builder.Ignore(x => x.DomainEvents);
+    }
+}

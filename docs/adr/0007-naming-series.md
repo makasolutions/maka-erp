@@ -115,9 +115,33 @@ Todas implementan `ISubmittable` (ADR-0006): el número se asigna en `Submit()` 
 - El tipo `NamingSeriesDbContextFactory` está físicamente en el .dll (`grep -ao "NamingSeriesDbContextFactory" FSH.Modules.NamingSeries.dll` confirma).
 - La hipótesis de **colisión de naming** (`Domain.NamingSeries` vs `NamingSeriesDbContext` vs namespace `FSH.Modules.NamingSeries`) fue descartada empíricamente: renombrar el DbContext a `NumberingDbContext` no cambió el resultado.
 
-**Hipótesis pendiente de confirmar:** EF Core puede requerir al menos una migración existente en `Migrations.PostgreSQL` para incluir un DbContext en el discovery. Los 13 contextos que sí aparecen tienen migraciones previas; `NamingSeriesDbContext` es el primero sin ninguna. PR2 (Features CRUD + adopción en Billing) añadirá la migración inicial manualmente o experimentará con un workaround alternativo (handcraft de migración + Designer + ModelSnapshot a partir del modelo, o snippet `dotnet ef migrations script` con startup-project alternativo).
+**Hipótesis pendiente de confirmar (al cierre de PR1):** EF Core puede requerir al menos una migración existente para incluir un DbContext en el discovery.
 
-Impacto: el dominio + tests unitarios + contratos del módulo son inmediatamente útiles (consumidores futuros pueden inyectar `INamingSeriesAllocator` y referenciar los tipos del dominio). La capacidad de generar números reales aterriza en PR2 con la tabla.
+### Actualización (PR-B de Parties, jun 2026) — CAUSA PRIMARIA CONFIRMADA
+
+El experimento de PR-B de Parties aisló la causa primaria, distinta de lo que se creía:
+
+**Causa primaria (CONFIRMADA): la integración Wolverine EF envenena la enumeración design-time, y rompe `dotnet ef` para cualquier contexto SIN factory propia.**
+
+Evidencia dura: `PartiesDbContext` (1) usa `AddHeroDbContext` estándar — **NO** Wolverine, (2) tiene **5 migraciones previas**, (3) ya aparecía en `dotnet ef dbcontext list`. Aun así, `dotnet ef migrations add --context PartiesDbContext` **falló con el MISMO error** `Cannot resolve scoped ISaveChangesInterceptor from root provider`. Apenas se le añadió una `PartiesDbContextFactory` (patrón idéntico a las 5 factories de los módulos Wolverine), la migración **funcionó al primer intento** (`Done.`, 9 tablas, diff verificado).
+
+Mecánica: cuando se targetea un contexto **con** factory + `--context`, EF usa la factory directamente y **cortocircuita** la enumeración del host-provider. Sin factory, EF construye el host-provider y enumera todos los DbContexts; los contextos enrolados con `AddDbContextWithWolverineIntegration` resuelven `IEnumerable<ISaveChangesInterceptor>` (scoped) desde el root provider durante ese callback y lanzan, **abortando la operación completa** sin importar el `--context`.
+
+→ Esto **descarta** la hipótesis "necesita migración previa" como causa primaria (Parties tenía 5 y falló igual). **El fix general es: cada contexto que necesite migraciones debe tener su `IDesignTimeDbContextFactory`.**
+
+**Residual de NamingSeries (NO resuelto, dos candidatas — no sobre-concluir):**
+`NamingSeriesDbContext` **tiene** factory y aun así falló en su PR. Comparando:
+- `IdentityDbContext`: Wolverine + factory + **con** migraciones previas → `dbcontext info` funciona.
+- `PartiesDbContext`: no-Wolverine + factory + **con** migraciones previas → funciona (PR-B).
+- `NamingSeriesDbContext`: Wolverine + factory + **SIN** migraciones previas → falla.
+
+El residual de NamingSeries correlaciona con **"sin migración previa"**, pero su perfil (Wolverine **y** sin-migración) no aísla cuál de las dos lo bloquea. Quedan **dos causas candidatas** para el residual, sin distinguir aún:
+1. **Wolverine-específica**: el callback de `AddDbContextWithWolverineIntegration` resolviendo scoped services aun por la ruta de factory.
+2. **Falta de migración previa**: EF no añade una "primera" migración a un contexto que nunca tuvo ninguna, incluso con factory.
+
+Para aislarlas haría falta el caso "no-Wolverine + factory + sin migración previa" — que no existe en el repo. Fix de NamingSeries (su PR2): probar primero replicar el patrón Parties (ya tiene factory); si persiste, generar su 1ª migración por workaround (handcraft de Migration + Designer + ModelSnapshot, o `dotnet ef migrations script`). **El misterio NO se declara resuelto** — solo la causa primaria (que afectaba a todos) lo está.
+
+Impacto: PR-B de Parties materializó las 9 tablas v2 con migración limpia gracias a `PartiesDbContextFactory`. NamingSeries sigue con su migración diferida.
 
 ## Riesgos
 
