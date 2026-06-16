@@ -1,6 +1,14 @@
+using Finbuckle.MultiTenant.Abstractions;
+using FSH.Framework.Core.Context;
+using FSH.Framework.Shared.Multitenancy;
+using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
+using FSH.Modules.Parties.Domain.V2;
+using FSH.Modules.Parties.Domain.V2.Credit;
 using FSH.Modules.Parties.Domain.V2.Profiles;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FSH.Modules.Parties.Features.Sync;
 
@@ -10,57 +18,174 @@ namespace FSH.Modules.Parties.Features.Sync;
 /// <c>SaveChanges</c> (una sola transacción; nunca queda v1 escrito y v2 no).
 ///
 /// Idempotente: diffea el estado v2 actual vs el deseado por v1. Re-guardar un tercero sin cambios
-/// no duplica profiles ni muta estado (Activate/Deactivate son no-op si ya están en el estado pedido).
+/// no duplica profiles ni genera movimientos de crédito espurios (el diff de cupo es contra el
+/// <c>CupoAsignado</c> REAL del CreditAccount cargado, no contra un estado asumido).
 ///
-/// NOTA(unificación futura): el caso "crear profile" se solapa con el mapeo de
+/// NOTA(unificación futura): el caso "crear" se solapa con el mapeo de
 /// <see cref="Migration.PartiesV2BackfillService"/> (bulk, create-only, one-time). Se mantienen
 /// separados a propósito (este es diff/dual-write por request). Si la duplicación se vuelve carga de
 /// mantenimiento, unificar haciendo que el backfill delegue aquí por-party — buscar esta nota.
 /// </summary>
-public sealed class PartyV2Synchronizer(PartiesDbContext db)
+public sealed class PartyV2Synchronizer(
+    PartiesDbContext db,
+    ICurrentUser currentUser,
+    IMultiTenantContextAccessor<AppTenantInfo> tenantAccessor,
+    ILogger<PartyV2Synchronizer> logger)
 {
+    /// <summary>Auditoría real de quién cambió el dato; sentinel cuando no hay usuario autenticado (ej. backfill/tests).</summary>
+    private string RegistradoPor =>
+        currentUser.IsAuthenticated() ? currentUser.GetUserId().ToString() : "dual-write";
+
+    private string TenantId =>
+        tenantAccessor.MultiTenantContext.TenantInfo?.Id
+        ?? throw new InvalidOperationException("Tenant no resuelto para el dual-write.");
+
     /// <summary>
-    /// PR-D5a — sincroniza las facetas Customer/Supplier/Employee desde los flags <c>Roles</c> v1.
-    /// Contact/Partner NO tienen flag v1 (se crean por features v2 dedicadas), no se tocan aquí.
-    ///
-    /// En UPDATE, <paramref name="party"/> debe traer sus navs v2 cargadas (Include) para diffear.
-    /// En CREATE, las navs son null (tercero nuevo) → se crean los profiles que correspondan.
+    /// Sincroniza facetas (D5a) + crédito (D5b) desde el estado v1 del tercero. En UPDATE,
+    /// <paramref name="party"/> debe traer sus navs v2 cargadas (Include). Orden: facetas primero
+    /// (la de cliente devuelve el <c>CustomerProfile</c>), luego crédito (usa esa referencia + el
+    /// CreditAccount actual para diffear), luego el bloqueo de crédito.
     /// </summary>
-    public void SyncProfilesFromRoles(Party party)
+    public async Task SyncAsync(Party party, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(party);
+        var registradoPor = RegistradoPor;
 
-        // Customer
+        var customerProfile = SyncCustomerFacet(party);
+        SyncSupplierFacet(party);
+        SyncEmployeeFacet(party);
+
+        await SyncCreditAsync(party, customerProfile, registradoPor, ct).ConfigureAwait(false);
+        await SyncCreditBlockedAsync(party, registradoPor, ct).ConfigureAwait(false);
+    }
+
+    // ── Facetas (D5a) ──────────────────────────────────────────────────────────────
+    // Customer/Supplier/Employee desde los flags Roles v1 (Contact/Partner no tienen flag v1).
+    // Crear / reactivar / desactivar SOFT (IsActive=false, preserva historial). Idempotente.
+
+    /// <summary>Devuelve el CustomerProfile ACTIVO (creado o existente) si el rol Customer está; si no, null.</summary>
+    private CustomerProfile? SyncCustomerFacet(Party party)
+    {
         if (party.IsCustomer)
         {
-            if (party.CustomerProfile is null) db.CustomerProfiles.Add(CustomerProfile.Create(party.Id));
-            else party.CustomerProfile.Activate(); // idempotente; reactiva si estaba soft-desactivado
+            if (party.CustomerProfile is null)
+            {
+                var cp = CustomerProfile.Create(party.Id);
+                db.CustomerProfiles.Add(cp);
+                return cp;
+            }
+            party.CustomerProfile.Activate();
+            return party.CustomerProfile;
         }
-        else if (party.CustomerProfile is { IsActive: true })
-        {
-            party.CustomerProfile.Deactivate(); // soft (IsActive=false): preserva historial, no borra
-        }
+        if (party.CustomerProfile is { IsActive: true }) party.CustomerProfile.Deactivate();
+        return null;
+    }
 
-        // Supplier
+    private void SyncSupplierFacet(Party party)
+    {
         if (party.IsSupplier)
         {
             if (party.SupplierProfile is null) db.SupplierProfiles.Add(SupplierProfile.Create(party.Id));
             else party.SupplierProfile.Activate();
         }
-        else if (party.SupplierProfile is { IsActive: true })
-        {
-            party.SupplierProfile.Deactivate();
-        }
+        else if (party.SupplierProfile is { IsActive: true }) party.SupplierProfile.Deactivate();
+    }
 
-        // Employee (rol exclusivo según PartyMapping.NormalizeRoles)
+    private void SyncEmployeeFacet(Party party)
+    {
         if (party.IsEmployee)
         {
             if (party.EmployeeProfile is null) db.EmployeeProfiles.Add(EmployeeProfile.Create(party.Id));
             else party.EmployeeProfile.Activate();
         }
-        else if (party.EmployeeProfile is { IsActive: true })
+        else if (party.EmployeeProfile is { IsActive: true }) party.EmployeeProfile.Deactivate();
+    }
+
+    // ── Crédito (D5b) ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Sincroniza el CreditAccount desde <c>CreditLimit</c> v1. El diff de cupo es contra el
+    /// <c>CupoAsignado</c> REAL del account cargado → cero movimientos espurios en un re-save.
+    /// </summary>
+    private async Task SyncCreditAsync(Party party, CustomerProfile? customerProfile, string registradoPor, CancellationToken ct)
+    {
+        decimal desired = party.CreditLimit ?? 0m;
+
+        // Sin faceta cliente activa: no se inventa crédito (consistente con PR-C). Anomalía → log.
+        if (customerProfile is null)
         {
-            party.EmployeeProfile.Deactivate();
+            if (desired > 0 && logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.LogWarning("[dual-write] Party {PartyId}: CreditLimit>0 sin faceta cliente activa — crédito omitido.", party.Id);
+            }
+            return;
         }
+
+        // Se carga SIN Include(Movements): solo se necesita CupoAsignado para diffear; el movimiento
+        // nuevo se agrega a la colección (Added) y los movimientos en BD no se tocan.
+        var account = await db.CreditAccounts
+            .FirstOrDefaultAsync(a => a.CustomerProfileId == customerProfile.Id, ct).ConfigureAwait(false);
+
+        if (account is null)
+        {
+            if (desired > 0)
+            {
+                db.CreditAccounts.Add(CreditAccount.Open(
+                    customerProfile.Id, TenantId, desired, registradoPor,
+                    monedaId: string.IsNullOrWhiteSpace(party.CreditCurrency) ? "COP" : party.CreditCurrency!,
+                    diasCredito: int.TryParse(party.CreditDaysCode, out var d) ? d : 0));
+            }
+            return; // desired == 0 → no inventar crédito
+        }
+
+        if (desired > account.CupoAsignado)
+        {
+            var mov = account.AddMovement(CreditMovementType.Aumento, desired - account.CupoAsignado, registradoPor,
+                motivo: "Dual-write: aumento de cupo (CreditLimit v1).");
+            TrackNewMovement(mov);
+            if (!account.EstaActivo) account.Reactivate();
+        }
+        else if (desired < account.CupoAsignado)
+        {
+            var mov = account.AddMovement(CreditMovementType.Reduccion, account.CupoAsignado - desired, registradoPor,
+                motivo: "Dual-write: reducción de cupo (CreditLimit v1).");
+            TrackNewMovement(mov);
+            // CreditLimit→0: el account queda inactivo pero con su log intacto (la historia reconstruye
+            // el cupo en cualquier punto del tiempo: asignación inicial → reducción a 0).
+            if (desired == 0) account.Deactivate();
+        }
+        // desired == account.CupoAsignado → CERO movimientos (idempotencia — el crux de D5b).
+    }
+
+    /// <summary>
+    /// Fuerza el estado Added de un movimiento NUEVO agregado a un CreditAccount YA rastreado
+    /// (caso UPDATE). EF no puede distinguir "nuevo" de "existente" por la clave Guid generada en
+    /// cliente, así que al aparecer en la colección de un padre rastreado lo trataría como UPDATE
+    /// (afecta 0 filas → DbUpdateConcurrencyException). Mismo motivo que el MarkChildrenAdded del
+    /// UpdatePartyCommandHandler para los hijos v1. En CREATE no hace falta: el account se agrega con
+    /// db.Add y la cascada marca su AsignacionInicial como Added.
+    /// </summary>
+    private void TrackNewMovement(CreditMovement movement) => db.Entry(movement).State = EntityState.Added;
+
+    /// <summary>
+    /// CreditBlocked v1 → PartyHold(Ventas). ASIMETRÍA DELIBERADA: se CREA el hold cuando
+    /// CreditBlocked=true (idempotente: skip si ya hay hold Ventas activo), pero NO se auto-libera
+    /// cuando pasa a false. Un hold es una acción operativa deliberada que el flag v1 podría no
+    /// conocer (bloqueo manual); auto-quitarlo lo desharía silenciosamente. Errar hacia mantener el
+    /// bloqueo. La liberación es siempre manual.
+    /// </summary>
+    private async Task SyncCreditBlockedAsync(Party party, string registradoPor, CancellationToken ct)
+    {
+        if (!party.CreditBlocked) return;
+
+        bool hasActiveVentasHold = await db.PartyHolds
+            .AnyAsync(h => h.PartyId == party.Id && h.HoldType == HoldType.Ventas && h.EstaActivo, ct)
+            .ConfigureAwait(false);
+        if (hasActiveVentasHold) return; // idempotente
+
+        db.PartyHolds.Add(PartyHold.Place(
+            party.Id, HoldType.Ventas,
+            "Dual-write: CreditBlocked=true (crédito bloqueado en v1).",
+            DateOnly.FromDateTime(DateTime.UtcNow), registradoPor));
     }
 }

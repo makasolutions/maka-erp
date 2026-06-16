@@ -46,9 +46,9 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
 
         db.Parties.Add(party);
 
-        // Dual-write v1→v2 (PR-D5a): mismo DbContext → mismo SaveChanges → misma transacción.
-        // Tercero nuevo: navs v2 null → el synchronizer crea los profiles según Roles.
-        synchronizer.SyncProfilesFromRoles(party);
+        // Dual-write v1→v2 (PR-D5): mismo DbContext → mismo SaveChanges → misma transacción.
+        // Tercero nuevo: navs v2 null → el synchronizer crea profiles (D5a) y crédito (D5b) según v1.
+        await synchronizer.SyncAsync(party, cancellationToken).ConfigureAwait(false);
 
         try
         {
