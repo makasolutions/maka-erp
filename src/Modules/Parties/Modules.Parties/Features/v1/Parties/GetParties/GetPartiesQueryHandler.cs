@@ -26,10 +26,16 @@ public sealed class GetPartiesQueryHandler(PartiesDbContext db)
                 (p.TradeName != null && EF.Functions.ILike(p.TradeName, pat)));
         }
 
+        // PR-F1a: el filtro por rol pasa a leer la faceta v2 activa (no la columna Roles v1).
         if (query.Role.HasValue && query.Role.Value != Contracts.Enums.PartyRole.None)
         {
-            int bit = (int)query.Role.Value;
-            parties = parties.Where(p => ((int)p.Roles & bit) == bit);
+            parties = query.Role.Value switch
+            {
+                Contracts.Enums.PartyRole.Customer => parties.Where(p => p.CustomerProfile != null && p.CustomerProfile.IsActive),
+                Contracts.Enums.PartyRole.Supplier => parties.Where(p => p.SupplierProfile != null && p.SupplierProfile.IsActive),
+                Contracts.Enums.PartyRole.Employee => parties.Where(p => p.EmployeeProfile != null && p.EmployeeProfile.IsActive),
+                _ => parties,
+            };
         }
         if (query.Status.HasValue) parties = parties.Where(p => p.Status == query.Status.Value);
         if (query.Stage.HasValue) parties = parties.Where(p => p.Stage == query.Stage.Value);
@@ -52,7 +58,14 @@ public sealed class GetPartiesQueryHandler(PartiesDbContext db)
         return await parties
             .Select(p => new PartyDto(
                 p.Id, p.IdentificationTypeCode, p.IdentificationNumber, p.VerificationDigit, p.Kind, p.LegalName,
-                p.TradeName, p.Roles, p.Status, p.Stage, p.Email,
+                p.TradeName,
+                // PR-F1a: Roles computado desde las facetas v2 activas (no la columna v1). Flags
+                // disjuntos → suma == OR; EF lo traduce a CASE WHEN. Reconstrucción sin pérdida.
+                (Contracts.Enums.PartyRole)(
+                    (p.CustomerProfile != null && p.CustomerProfile.IsActive ? (int)Contracts.Enums.PartyRole.Customer : 0) +
+                    (p.SupplierProfile != null && p.SupplierProfile.IsActive ? (int)Contracts.Enums.PartyRole.Supplier : 0) +
+                    (p.EmployeeProfile != null && p.EmployeeProfile.IsActive ? (int)Contracts.Enums.PartyRole.Employee : 0)),
+                p.Status, p.Stage, p.Email,
                 p.Addresses.Where(a => a.IsPrimary).Select(a => a.City).FirstOrDefault()
                     ?? p.Addresses.Select(a => a.City).FirstOrDefault(),
                 p.AssignedUserId, p.CreatedAtUtc,

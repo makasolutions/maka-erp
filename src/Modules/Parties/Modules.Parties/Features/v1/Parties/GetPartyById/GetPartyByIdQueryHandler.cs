@@ -1,8 +1,10 @@
 using System.Net;
 using FSH.Framework.Core.Exceptions;
+using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Contracts.v1.Parties;
 using FSH.Modules.Parties.Contracts.v1.Parties.GetPartyById;
 using FSH.Modules.Parties.Data;
+using FSH.Modules.Parties.Migration;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,10 +24,12 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
             .Where(x => x.Id == query.Id && !x.IsDeleted)
             .Select(x => new PartyDetailDto(
                 x.Id, x.IdentificationTypeCode, x.IdentificationNumber, x.VerificationDigit, x.Kind, x.LegalName,
-                x.FirstName, x.LastName, x.TradeName, x.Email, x.Website, x.TaxRegimeCode, x.FiscalResponsibilities,
-                x.ActividadEconomicaCiiuCode, x.Roles, x.Status, x.Stage,
+                x.FirstName, x.LastName, x.TradeName, x.Email, x.Website,
+                // PR-F1a: los campos v1 removibles se computan DESPUÉS desde v2 (ver el `with` final).
+                // Placeholders aquí (no se leen las columnas v1).
+                null, null, null, Contracts.Enums.PartyRole.None, x.Status, x.Stage,
                 x.LeadScore, x.SourceCode, x.AssignedUserId, x.MarketingType, x.BirthDate, x.GenderCode, x.MaritalStatusCode,
-                x.HasCredit, x.CreditLimit, x.CreditDaysCode, x.CreditBlocked, x.CreditCurrency, x.Notes, x.BranchId,
+                false, null, null, false, null, x.Notes, x.BranchId,
                 x.IsGlobalSupplier, x.CreatedAtUtc,
                 x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Barrio, a.Reference,
                     a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode, a.DepartmentCode, a.MunicipalityCode, a.NormalizedLine)).ToList(),
@@ -90,6 +94,34 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return p with { V2 = p.V2! with { Credit = credit, ActiveHolds = holds } };
+        var v2 = p.V2! with { Credit = credit, ActiveHolds = holds };
+
+        // PR-F1a: reconstrucción del shape v1 del DTO DESDE v2 (contrato del wizard estable).
+        //  - Roles ← facetas activas (sin pérdida).  - crédito ← CreditAccount (sin pérdida).
+        //  - CreditBlocked ← hold Ventas activo.     - CIIU ← actividad principal.
+        //  - TaxRegimeCode ← reverse-map best-effort de los ejes (PÉRDIDA CONOCIDA, ver TaxRegimeMapper.ToCode).
+        var roles =
+            (v2.Customer is { IsActive: true } ? PartyRole.Customer : PartyRole.None) |
+            (v2.Supplier is { IsActive: true } ? PartyRole.Supplier : PartyRole.None) |
+            (v2.Employee is { IsActive: true } ? PartyRole.Employee : PartyRole.None);
+        string? ciiu = v2.CiiuActivities.FirstOrDefault(c => c.IsPrincipal)?.CiiuCode;
+        string? taxRegimeCode = TaxRegimeMapper.ToCode(v2.Fiscal?.RegimenTributario, v2.Fiscal?.ResponsabilidadIVA);
+        string? fiscalResp = v2.Fiscal is { ResponsabilidadesFiscales.Count: > 0 }
+            ? string.Join(',', v2.Fiscal.ResponsabilidadesFiscales) : null;
+        bool creditBlocked = holds.Any(h => h.HoldType == HoldType.Ventas);
+
+        return p with
+        {
+            V2 = v2,
+            Roles = roles,
+            TaxRegimeCode = taxRegimeCode,
+            FiscalResponsibilities = fiscalResp,
+            ActividadEconomicaCiiuCode = ciiu,
+            HasCredit = credit is { EstaActivo: true },
+            CreditLimit = credit?.CupoAsignado,
+            CreditDaysCode = credit is null ? null : credit.DiasCredito.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            CreditCurrency = credit?.MonedaId,
+            CreditBlocked = creditBlocked,
+        };
     }
 }

@@ -46,6 +46,38 @@ public static class TaxRegimeMapper
         bool mapped = regimen is not null || iva is not null;
         return new TaxRegimeMapping(mapped, regimen, iva, IsEmpty: false);
     }
+
+    /// <summary>
+    /// Reverse-map best-effort (PR-F1a): de los dos ejes v2 a un <c>TaxRegimeCode</c> CANÓNICO, para
+    /// reconstruir el campo v1 del DTO desde v2 (el contrato del wizard se mantiene estable).
+    ///
+    /// PÉRDIDA CONOCIDA: el forward <see cref="Map"/> es muchos-a-uno (varios strings v1 → el mismo
+    /// par de ejes), así que esta reconstrucción NO round-trips el string original — devuelve un
+    /// código canónico equivalente (p.ej. tanto "REGIMEN_COMUN_RESPONSABLE_IVA" como
+    /// "ORDINARIO_RESPONSABLE" colapsan a "ORDINARIO_RESPONSABLE_IVA"). Es la razón por la que el
+    /// front debería leer los ejes v2 directos (FiscalData) en vez de este campo derivado. Los tokens
+    /// canónicos se alinean con los que <see cref="Map"/> reconoce → el par de ejes round-trips
+    /// aunque el string no (p.ej. "SIMPLE" sí vuelve a "SIMPLE").
+    /// </summary>
+    public static string? ToCode(RegimenTributario? regimen, ResponsabilidadIVA? iva)
+    {
+        string? regimenToken = regimen switch
+        {
+            RegimenTributario.Simple => "SIMPLE",
+            RegimenTributario.Especial => "ESPECIAL",
+            RegimenTributario.Ordinario => "ORDINARIO",
+            _ => null,
+        };
+        string? ivaToken = iva switch
+        {
+            ResponsabilidadIVA.Responsable => "RESPONSABLE_IVA",
+            ResponsabilidadIVA.NoResponsable => "NO_RESPONSABLE_IVA",
+            _ => null,
+        };
+
+        var code = string.Join('_', new[] { regimenToken, ivaToken }.Where(p => p is not null));
+        return string.IsNullOrEmpty(code) ? null : code;
+    }
 }
 
 /// <summary>Resultado del análisis de un <c>TaxRegimeCode</c> v1.</summary>

@@ -14,9 +14,12 @@ using Microsoft.Extensions.Logging;
 namespace FSH.Modules.Parties.Features.Sync;
 
 /// <summary>
-/// Dual-write v1→v2 (PR-D5): sincroniza el estado v2 de UN tercero desde su estado v1, dentro del
-/// mismo <see cref="PartiesDbContext"/> que el handler — así el v2 se persiste en el MISMO
-/// <c>SaveChanges</c> (una sola transacción; nunca queda v1 escrito y v2 no).
+/// Escritura v2 (PR-D5 dual-write → PR-F1a escritura PRIMARIA): escribe el estado v2 de UN tercero
+/// a partir de un <see cref="PartyV2WriteInput"/> (valores en lenguaje v1 que el handler construye
+/// desde el comando — ya NO lee las propiedades v1 del <c>Party</c>), dentro del mismo
+/// <see cref="PartiesDbContext"/> que el handler → el v2 se persiste en el MISMO <c>SaveChanges</c>
+/// (una sola transacción). Hasta F1b, el handler además sigue escribiendo las columnas v1 vía
+/// <c>Party.Create/Update</c> (redundante, reversible); este componente nunca dependió de ellas.
 ///
 /// Idempotente: diffea el estado v2 actual vs el deseado por v1. Re-guardar un tercero sin cambios
 /// no duplica profiles ni genera movimientos de crédito espurios (el diff de cupo es contra el
@@ -42,25 +45,41 @@ public sealed class PartyV2Synchronizer(
         ?? throw new InvalidOperationException("Tenant no resuelto para el dual-write.");
 
     /// <summary>
-    /// Sincroniza facetas (D5a) + crédito (D5b) desde el estado v1 del tercero. En UPDATE,
-    /// <paramref name="party"/> debe traer sus navs v2 cargadas (Include). Orden: facetas primero
-    /// (la de cliente devuelve el <c>CustomerProfile</c>), luego crédito (usa esa referencia + el
-    /// CreditAccount actual para diffear), luego el bloqueo de crédito.
+    /// Escribe el estado v2 de UN tercero a partir del <see cref="PartyV2WriteInput"/> (PR-F1a:
+    /// la fuente ya NO son las propiedades v1 del <c>Party</c>, sino el input en lenguaje v1 que el
+    /// handler construye desde el comando). En UPDATE, <paramref name="party"/> debe traer sus navs
+    /// v2 cargadas (Include). Orden: facetas primero (la de cliente devuelve el <c>CustomerProfile</c>),
+    /// luego crédito (usa esa referencia + el CreditAccount actual para diffear), luego el bloqueo.
     /// </summary>
-    public async Task SyncAsync(Party party, CancellationToken ct = default)
+    public async Task SyncAsync(Party party, PartyV2WriteInput input, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(party);
+        ArgumentNullException.ThrowIfNull(input);
         var registradoPor = RegistradoPor;
 
-        var customerProfile = SyncCustomerFacet(party);
-        SyncSupplierFacet(party);
-        SyncEmployeeFacet(party);
+        var customerProfile = SyncCustomerFacet(party, input.Roles);
+        SyncSupplierFacet(party, input.Roles);
+        SyncEmployeeFacet(party, input.Roles);
 
-        await SyncCreditAsync(party, customerProfile, registradoPor, ct).ConfigureAwait(false);
-        await SyncCreditBlockedAsync(party, registradoPor, ct).ConfigureAwait(false);
+        await SyncCreditAsync(party, customerProfile, input, registradoPor, ct).ConfigureAwait(false);
+        await SyncCreditBlockedAsync(party, input, registradoPor, ct).ConfigureAwait(false);
 
-        SyncFiscalData(party);
-        SyncCiiu(party);
+        SyncFiscalData(party, input);
+        SyncCiiu(party, input);
+    }
+
+    /// <summary>
+    /// Sincroniza SOLO las facetas (Customer/Supplier/Employee) desde un set de roles, sin tocar
+    /// crédito/fiscal/CIIU. Para <c>SetPartyRoles</c>, que únicamente cambia roles y no debe
+    /// re-derivar el resto. <paramref name="party"/> debe traer sus navs de profile cargadas.
+    /// </summary>
+    public Task SyncFacetsAsync(Party party, PartyRole roles, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(party);
+        SyncCustomerFacet(party, roles);
+        SyncSupplierFacet(party, roles);
+        SyncEmployeeFacet(party, roles);
+        return Task.CompletedTask;
     }
 
     // ── FiscalData + CIIU (D5c) ────────────────────────────────────────────────────
@@ -74,9 +93,9 @@ public sealed class PartyV2Synchronizer(
     /// está + log (consistente con PR-C, sin throw). FiscalData es owned inline → la mutación la detecta
     /// el DetectChanges del handler (no es entidad nueva).
     /// </summary>
-    private void SyncFiscalData(Party party)
+    private void SyncFiscalData(Party party, PartyV2WriteInput input)
     {
-        var mapping = TaxRegimeMapper.Map(party.TaxRegimeCode);
+        var mapping = TaxRegimeMapper.Map(input.TaxRegimeCode);
         if (mapping.IsEmpty) return; // v1 sin código → nada que derivar
 
         if (!mapping.Mapped)
@@ -84,7 +103,7 @@ public sealed class PartyV2Synchronizer(
             if (logger.IsEnabled(LogLevel.Warning))
             {
                 logger.LogWarning("[dual-write] Party {PartyId}: TaxRegimeCode '{Code}' no mapea a régimen — FiscalData sin cambios.",
-                    party.Id, party.TaxRegimeCode);
+                    party.Id, input.TaxRegimeCode);
             }
             return;
         }
@@ -107,9 +126,9 @@ public sealed class PartyV2Synchronizer(
     /// IN PLACE (sin tocar IsPrincipal) → sin swap del flag que viole ix_ciiu_principal. v1 sin código
     /// → no-op (no remueve). Requiere party.CiiuActivities cargado (Include en Update).
     /// </summary>
-    private void SyncCiiu(Party party)
+    private void SyncCiiu(Party party, PartyV2WriteInput input)
     {
-        var desired = party.ActividadEconomicaCiiuCode?.Trim();
+        var desired = input.ActividadEconomicaCiiuCode?.Trim();
         if (string.IsNullOrWhiteSpace(desired)) return;
 
         var principal = party.CiiuActivities.FirstOrDefault(c => c.IsPrincipal);
@@ -131,9 +150,9 @@ public sealed class PartyV2Synchronizer(
     // Crear / reactivar / desactivar SOFT (IsActive=false, preserva historial). Idempotente.
 
     /// <summary>Devuelve el CustomerProfile ACTIVO (creado o existente) si el rol Customer está; si no, null.</summary>
-    private CustomerProfile? SyncCustomerFacet(Party party)
+    private CustomerProfile? SyncCustomerFacet(Party party, PartyRole roles)
     {
-        if (party.IsCustomer)
+        if (roles.HasFlag(PartyRole.Customer))
         {
             if (party.CustomerProfile is null)
             {
@@ -148,9 +167,9 @@ public sealed class PartyV2Synchronizer(
         return null;
     }
 
-    private void SyncSupplierFacet(Party party)
+    private void SyncSupplierFacet(Party party, PartyRole roles)
     {
-        if (party.IsSupplier)
+        if (roles.HasFlag(PartyRole.Supplier))
         {
             if (party.SupplierProfile is null) db.SupplierProfiles.Add(SupplierProfile.Create(party.Id));
             else party.SupplierProfile.Activate();
@@ -158,9 +177,9 @@ public sealed class PartyV2Synchronizer(
         else if (party.SupplierProfile is { IsActive: true }) party.SupplierProfile.Deactivate();
     }
 
-    private void SyncEmployeeFacet(Party party)
+    private void SyncEmployeeFacet(Party party, PartyRole roles)
     {
-        if (party.IsEmployee)
+        if (roles.HasFlag(PartyRole.Employee))
         {
             if (party.EmployeeProfile is null) db.EmployeeProfiles.Add(EmployeeProfile.Create(party.Id));
             else party.EmployeeProfile.Activate();
@@ -174,9 +193,9 @@ public sealed class PartyV2Synchronizer(
     /// Sincroniza el CreditAccount desde <c>CreditLimit</c> v1. El diff de cupo es contra el
     /// <c>CupoAsignado</c> REAL del account cargado → cero movimientos espurios en un re-save.
     /// </summary>
-    private async Task SyncCreditAsync(Party party, CustomerProfile? customerProfile, string registradoPor, CancellationToken ct)
+    private async Task SyncCreditAsync(Party party, CustomerProfile? customerProfile, PartyV2WriteInput input, string registradoPor, CancellationToken ct)
     {
-        decimal desired = party.CreditLimit ?? 0m;
+        decimal desired = input.CreditLimit ?? 0m;
 
         // Sin faceta cliente activa: no se inventa crédito (consistente con PR-C). Anomalía → log.
         if (customerProfile is null)
@@ -199,8 +218,8 @@ public sealed class PartyV2Synchronizer(
             {
                 db.CreditAccounts.Add(CreditAccount.Open(
                     customerProfile.Id, TenantId, desired, registradoPor,
-                    monedaId: string.IsNullOrWhiteSpace(party.CreditCurrency) ? "COP" : party.CreditCurrency!,
-                    diasCredito: int.TryParse(party.CreditDaysCode, out var d) ? d : 0));
+                    monedaId: string.IsNullOrWhiteSpace(input.CreditCurrency) ? "COP" : input.CreditCurrency!,
+                    diasCredito: int.TryParse(input.CreditDaysCode, out var d) ? d : 0));
             }
             return; // desired == 0 → no inventar crédito
         }
@@ -241,9 +260,9 @@ public sealed class PartyV2Synchronizer(
     /// conocer (bloqueo manual); auto-quitarlo lo desharía silenciosamente. Errar hacia mantener el
     /// bloqueo. La liberación es siempre manual.
     /// </summary>
-    private async Task SyncCreditBlockedAsync(Party party, string registradoPor, CancellationToken ct)
+    private async Task SyncCreditBlockedAsync(Party party, PartyV2WriteInput input, string registradoPor, CancellationToken ct)
     {
-        if (!party.CreditBlocked) return;
+        if (!input.CreditBlocked) return;
 
         bool hasActiveVentasHold = await db.PartyHolds
             .AnyAsync(h => h.PartyId == party.Id && h.HoldType == HoldType.Ventas && h.EstaActivo, ct)

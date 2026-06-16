@@ -46,9 +46,13 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
 
         db.Parties.Add(party);
 
-        // Dual-write v1→v2 (PR-D5): mismo DbContext → mismo SaveChanges → misma transacción.
-        // Tercero nuevo: navs v2 null → el synchronizer crea profiles (D5a) y crédito (D5b) según v1.
-        await synchronizer.SyncAsync(party, cancellationToken).ConfigureAwait(false);
+        // Escritura v2 (PR-D5 → PR-F1a escritura primaria): mismo DbContext → mismo SaveChanges →
+        // misma transacción. El synchronizer lee del input en lenguaje v1 (construido desde el
+        // comando), NO de las propiedades v1 del party. Tercero nuevo: navs v2 null → crea profiles
+        // (D5a) y crédito (D5b). Party.Create además escribió las columnas v1 (redundante hasta F1b).
+        var v2Input = new PartyV2WriteInput(roles, command.CreditLimit, command.CreditCurrency,
+            command.CreditDaysCode, command.CreditBlocked, command.TaxRegimeCode, command.ActividadEconomicaCiiuCode);
+        await synchronizer.SyncAsync(party, v2Input, cancellationToken).ConfigureAwait(false);
 
         try
         {

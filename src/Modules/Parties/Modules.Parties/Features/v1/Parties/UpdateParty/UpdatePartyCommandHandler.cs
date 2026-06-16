@@ -44,13 +44,16 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
         party.ReplaceChannels(PartyMapping.ToChannels(command.Channels));
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
 
-        // Dual-write v1→v2 (PR-D5): mismo DbContext → mismo SaveChanges → misma transacción.
+        // Escritura v2 (PR-D5 → PR-F1a escritura primaria): mismo DbContext → mismo SaveChanges.
+        // El synchronizer lee del input en lenguaje v1 (desde el comando), NO de las propiedades v1.
         // Corre ANTES del DetectChanges de abajo: lo NUEVO (profiles, CreditAccount, movimientos,
         // holds) se agrega vía db.*.Add (estado Added explícito, sobrevive AutoDetectChangesEnabled=
         // false); las mutaciones sobre entidades ya rastreadas (profiles incluidos, CreditAccount
         // cargado para diffear) las marca Modified el DetectChanges siguiente. Nada de esto está en
         // las colecciones de MarkChildrenAdded (solo hijos v1), así que esa danza no los afecta.
-        await synchronizer.SyncAsync(party, cancellationToken).ConfigureAwait(false);
+        var v2Input = new PartyV2WriteInput(roles, command.CreditLimit, command.CreditCurrency,
+            command.CreditDaysCode, command.CreditBlocked, command.TaxRegimeCode, command.ActividadEconomicaCiiuCode);
+        await synchronizer.SyncAsync(party, v2Input, cancellationToken).ConfigureAwait(false);
 
         // En un grafo ya rastreado, EF trata los hijos NUEVOS (con GUID generado en
         // cliente) como filas existentes → genera UPDATE (PartyId 0→real) que afecta
