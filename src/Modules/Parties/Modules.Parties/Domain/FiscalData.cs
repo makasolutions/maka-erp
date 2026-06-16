@@ -1,6 +1,6 @@
 using FSH.Modules.Parties.Contracts.Enums;
 
-namespace FSH.Modules.Parties.Domain.V2;
+namespace FSH.Modules.Parties.Domain;
 
 /// <summary>
 /// Identidad fiscal del tercero (modelo v2, SPEC §4). Value object inmutable.

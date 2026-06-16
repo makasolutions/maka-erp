@@ -1,7 +1,7 @@
 using System.Reflection;
 using FSH.Modules.Parties.Contracts.Enums;
-using FSH.Modules.Parties.Domain.V2.Credit;
-using FSH.Modules.Parties.Domain.V2.Exceptions;
+using FSH.Modules.Parties.Domain.Credit;
+using FSH.Modules.Parties.Domain.Exceptions;
 
 namespace Parties.Tests.Domain;
 

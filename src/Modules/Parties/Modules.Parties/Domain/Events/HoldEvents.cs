@@ -1,7 +1,7 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
 
-namespace FSH.Modules.Parties.Domain.V2.Events;
+namespace FSH.Modules.Parties.Domain.Events;
 
 // PR-A: tipos de evento DEFINIDOS. Su emisión se cablea en PR-D (agregado Party).
 

@@ -1,5 +1,5 @@
 using FSH.Modules.Parties.Contracts.Enums;
-using FSH.Modules.Parties.Domain.V2;
+using FSH.Modules.Parties.Domain;
 
 namespace Parties.Tests.Domain;
 

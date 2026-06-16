@@ -1,5 +1,5 @@
 using FSH.Modules.Parties.Domain;
-using FSH.Modules.Parties.Domain.V2.Profiles;
+using FSH.Modules.Parties.Domain.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

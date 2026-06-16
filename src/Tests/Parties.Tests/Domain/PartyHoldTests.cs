@@ -1,6 +1,6 @@
 using FSH.Modules.Parties.Contracts.Enums;
-using FSH.Modules.Parties.Domain.V2;
-using FSH.Modules.Parties.Domain.V2.Exceptions;
+using FSH.Modules.Parties.Domain;
+using FSH.Modules.Parties.Domain.Exceptions;
 
 namespace Parties.Tests.Domain;
 

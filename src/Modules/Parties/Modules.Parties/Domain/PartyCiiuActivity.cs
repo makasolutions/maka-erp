@@ -1,6 +1,6 @@
 using FSH.Framework.Core.Domain;
 
-namespace FSH.Modules.Parties.Domain.V2;
+namespace FSH.Modules.Parties.Domain;
 
 /// <summary>
 /// Actividad económica CIIU de un tercero (SPEC §7). El RUT permite múltiples CIIU (1..N),

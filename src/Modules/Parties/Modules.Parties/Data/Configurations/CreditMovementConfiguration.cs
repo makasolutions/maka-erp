@@ -1,8 +1,8 @@
-using FSH.Modules.Parties.Domain.V2.Credit;
+using FSH.Modules.Parties.Domain.Credit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace FSH.Modules.Parties.Data.Configurations.V2;
+namespace FSH.Modules.Parties.Data.Configurations;
 
 public sealed class CreditMovementConfiguration : IEntityTypeConfiguration<CreditMovement>
 {

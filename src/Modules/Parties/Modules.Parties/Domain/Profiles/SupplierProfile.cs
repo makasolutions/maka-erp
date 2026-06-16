@@ -1,6 +1,6 @@
 using FSH.Framework.Core.Domain;
 
-namespace FSH.Modules.Parties.Domain.V2.Profiles;
+namespace FSH.Modules.Parties.Domain.Profiles;
 
 /// <summary>Términos de pago de un proveedor (owned VO de <see cref="SupplierProfile"/>, SPEC §6.2).</summary>
 public sealed record PaymentTerms

@@ -1,7 +1,7 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
 
-namespace FSH.Modules.Parties.Domain.V2.Profiles;
+namespace FSH.Modules.Parties.Domain.Profiles;
 
 /// <summary>
 /// Faceta contacto B2B (SPEC §6.3). La relación con la empresa madre es <c>Party.ParentPartyId</c>

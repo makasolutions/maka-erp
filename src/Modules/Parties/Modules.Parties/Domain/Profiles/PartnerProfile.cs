@@ -1,6 +1,6 @@
 using FSH.Framework.Core.Domain;
 
-namespace FSH.Modules.Parties.Domain.V2.Profiles;
+namespace FSH.Modules.Parties.Domain.Profiles;
 
 /// <summary>
 /// Faceta socio/accionista (SPEC §6.4). PR-A: entidad independiente con <c>PartyId</c> Guid.

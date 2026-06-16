@@ -1,9 +1,9 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
-using FSH.Modules.Parties.Domain.V2.Events;
-using FSH.Modules.Parties.Domain.V2.Exceptions;
+using FSH.Modules.Parties.Domain.Events;
+using FSH.Modules.Parties.Domain.Exceptions;
 
-namespace FSH.Modules.Parties.Domain.V2.Credit;
+namespace FSH.Modules.Parties.Domain.Credit;
 
 /// <summary>
 /// Cuenta de crédito de un cliente (SPEC §9). Agregado raíz: posee el historial inmutable de

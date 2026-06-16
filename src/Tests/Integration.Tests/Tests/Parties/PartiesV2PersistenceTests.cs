@@ -4,9 +4,8 @@ using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
-using FSH.Modules.Parties.Domain.V2;
-using FSH.Modules.Parties.Domain.V2.Credit;
-using FSH.Modules.Parties.Domain.V2.Profiles;
+using FSH.Modules.Parties.Domain.Credit;
+using FSH.Modules.Parties.Domain.Profiles;
 using Integration.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -192,7 +191,7 @@ public sealed class PartiesV2PersistenceTests
         await WithTenant(root, async db =>
         {
             var p = await db.Parties.SingleAsync(x => x.Id == conRepId);
-            p.AssignLegalRepresentative(FSH.Modules.Parties.Domain.V2.LegalRepresentative.Create(
+            p.AssignLegalRepresentative(FSH.Modules.Parties.Domain.LegalRepresentative.Create(
                 "Ana", "Gómez", TipoIdentificacion.CC, "52000111", celular: "3001234567", esPEP: true));
             await db.SaveChangesAsync();
         });

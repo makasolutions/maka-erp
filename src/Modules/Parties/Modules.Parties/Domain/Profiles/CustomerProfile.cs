@@ -1,6 +1,6 @@
 using FSH.Framework.Core.Domain;
 
-namespace FSH.Modules.Parties.Domain.V2.Profiles;
+namespace FSH.Modules.Parties.Domain.Profiles;
 
 /// <summary>
 /// Faceta cliente de un tercero (SPEC §6.1). Solo configuración de la faceta — el crédito vive en

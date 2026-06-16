@@ -4,7 +4,7 @@ using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
-using FSH.Modules.Parties.Domain.V2.Exceptions;
+using FSH.Modules.Parties.Domain.Exceptions;
 using Integration.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,6 +1,6 @@
 using FSH.Framework.Core.Domain;
 
-namespace FSH.Modules.Parties.Domain.V2.Profiles;
+namespace FSH.Modules.Parties.Domain.Profiles;
 
 /// <summary>
 /// Faceta empleado — mínimo M1 (SPEC §6.5). Solo lo necesario para que un empleado funcione en M1

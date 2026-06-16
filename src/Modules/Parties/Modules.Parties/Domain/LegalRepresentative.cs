@@ -1,6 +1,6 @@
 using FSH.Modules.Parties.Contracts.Enums;
 
-namespace FSH.Modules.Parties.Domain.V2;
+namespace FSH.Modules.Parties.Domain;
 
 /// <summary>
 /// Representante legal de una persona jurídica (modelo v2, SPEC §5). Value object inmutable.

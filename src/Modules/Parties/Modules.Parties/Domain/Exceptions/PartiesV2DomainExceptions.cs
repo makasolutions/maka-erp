@@ -1,4 +1,4 @@
-namespace FSH.Modules.Parties.Domain.V2.Exceptions;
+namespace FSH.Modules.Parties.Domain.Exceptions;
 
 #pragma warning disable CA1032 // Excepciones de dominio con causa única; no requieren los ctors estándar.
 

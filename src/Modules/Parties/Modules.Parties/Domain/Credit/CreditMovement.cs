@@ -1,7 +1,7 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
 
-namespace FSH.Modules.Parties.Domain.V2.Credit;
+namespace FSH.Modules.Parties.Domain.Credit;
 
 /// <summary>
 /// Movimiento inmutable en la cuenta de crédito de un cliente (SPEC §9, log inmutable).

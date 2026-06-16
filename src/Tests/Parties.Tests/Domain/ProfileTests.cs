@@ -1,4 +1,4 @@
-using FSH.Modules.Parties.Domain.V2.Profiles;
+using FSH.Modules.Parties.Domain.Profiles;
 
 namespace Parties.Tests.Domain;
 

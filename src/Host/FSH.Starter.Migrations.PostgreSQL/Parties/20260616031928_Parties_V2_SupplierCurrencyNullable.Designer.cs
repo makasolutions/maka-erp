@@ -433,7 +433,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Credit.CreditAccount", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Credit.CreditAccount", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -485,7 +485,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Credit.CreditMovement", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Credit.CreditMovement", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -534,7 +534,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.PartyCiiuActivity", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.PartyCiiuActivity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -567,7 +567,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.PartyHold", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.PartyHold", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -613,7 +613,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Profiles.ContactProfile", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Profiles.ContactProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -651,7 +651,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Profiles.CustomerProfile", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Profiles.CustomerProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -704,7 +704,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Profiles.EmployeeProfile", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Profiles.EmployeeProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -755,7 +755,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Profiles.PartnerProfile", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Profiles.PartnerProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -791,7 +791,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Profiles.SupplierProfile", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Profiles.SupplierProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -876,18 +876,18 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Credit.CreditMovement", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Credit.CreditMovement", b =>
                 {
-                    b.HasOne("FSH.Modules.Parties.Domain.V2.Credit.CreditAccount", null)
+                    b.HasOne("FSH.Modules.Parties.Domain.Credit.CreditAccount", null)
                         .WithMany("Movements")
                         .HasForeignKey("CreditAccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Profiles.SupplierProfile", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Profiles.SupplierProfile", b =>
                 {
-                    b.OwnsOne("FSH.Modules.Parties.Domain.V2.Profiles.PaymentTerms", "PaymentTerms", b1 =>
+                    b.OwnsOne("FSH.Modules.Parties.Domain.Profiles.PaymentTerms", "PaymentTerms", b1 =>
                         {
                             b1.Property<Guid>("SupplierProfileId")
                                 .HasColumnType("uuid");
@@ -923,7 +923,7 @@ namespace FSH.Starter.Migrations.PostgreSQL.Parties
                     b.Navigation("Team");
                 });
 
-            modelBuilder.Entity("FSH.Modules.Parties.Domain.V2.Credit.CreditAccount", b =>
+            modelBuilder.Entity("FSH.Modules.Parties.Domain.Credit.CreditAccount", b =>
                 {
                     b.Navigation("Movements");
                 });

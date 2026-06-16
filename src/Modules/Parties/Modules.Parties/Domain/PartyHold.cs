@@ -1,8 +1,8 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
-using FSH.Modules.Parties.Domain.V2.Exceptions;
+using FSH.Modules.Parties.Domain.Exceptions;
 
-namespace FSH.Modules.Parties.Domain.V2;
+namespace FSH.Modules.Parties.Domain;
 
 /// <summary>
 /// Bloqueo de un tercero (patrón Frappe Block/Hold, SPEC §10). Reemplaza el booleano
