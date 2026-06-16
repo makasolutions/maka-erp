@@ -89,21 +89,4 @@ public sealed class PartiesV2ComputedOutputTests
         dto.V2!.Supplier.ShouldNotBeNull();
         dto.V2.Supplier!.IsActive.ShouldBeTrue();
     }
-
-    [Fact]
-    public async Task V1_Columns_Still_Present_After_F1a_Reversible()
-    {
-        // F1a es reversible: las columnas v1 siguen físicamente escritas por Party.Create.
-        var num = $"f1a-{Guid.NewGuid():N}"[..14];
-        var id = await CreateAsync(num, PartyRole.Customer | PartyRole.Supplier, creditLimit: 300_000m);
-
-        await InScope(async sp =>
-        {
-            var db = sp.GetRequiredService<PartiesDbContext>();
-            var party = await db.Parties.SingleAsync(p => p.Id == id);
-            party.Roles.ShouldBe(PartyRole.Customer | PartyRole.Supplier); // columna v1 aún escrita
-            party.CreditLimit.ShouldBe(300_000m);                          // columna v1 aún escrita
-            return 0;
-        });
-    }
 }

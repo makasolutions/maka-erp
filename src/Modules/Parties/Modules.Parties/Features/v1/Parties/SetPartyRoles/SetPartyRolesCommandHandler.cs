@@ -23,10 +23,9 @@ public sealed class SetPartyRolesCommandHandler(PartiesDbContext db, PartyV2Sync
             ?? throw new CustomException("Tercero no encontrado.", Enumerable.Empty<string>(), HttpStatusCode.NotFound);
 
         var roles = PartyMapping.NormalizeRoles(command.Roles);
-        party.SetRoles(roles); // sigue escribiendo la columna v1 (hasta F1b); fuente de verdad = profiles
 
-        // PR-F1a: SetPartyRoles ahora SÍ sincroniza profiles (antes solo escribía el flag v1 — gap
-        // pre-D5). Sin esto, el output computado desde v2 divergiría de la acción de roles.
+        // PR-F1b: la fuente de verdad de roles son las facetas v2 (la columna Roles v1 ya no existe).
+        // SetPartyRoles sincroniza los profiles; el output del DTO computa Roles desde ellos.
         await synchronizer.SyncFacetsAsync(party, roles, cancellationToken).ConfigureAwait(false);
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

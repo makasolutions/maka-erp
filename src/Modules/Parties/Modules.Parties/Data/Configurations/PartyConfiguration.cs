@@ -20,31 +20,26 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.Property(x => x.LegalName).IsRequired().HasMaxLength(200);
         builder.Property(x => x.FirstName).HasMaxLength(120);
         builder.Property(x => x.LastName).HasMaxLength(120);
-        builder.Property(x => x.ActividadEconomicaCiiuCode).HasMaxLength(64);
-        builder.Property(x => x.CreditDaysCode).HasMaxLength(64);
         builder.Property(x => x.TradeName).HasMaxLength(200);
         builder.Property(x => x.Email).HasMaxLength(256);
         builder.Property(x => x.Website).HasMaxLength(256);
-        builder.Property(x => x.TaxRegimeCode).HasMaxLength(64);
-        builder.Property(x => x.FiscalResponsibilities).HasMaxLength(512);
         builder.Property(x => x.SourceCode).HasMaxLength(64);
         builder.Property(x => x.MarketingType).HasMaxLength(64);
         builder.Property(x => x.GenderCode).HasMaxLength(64);
         builder.Property(x => x.MaritalStatusCode).HasMaxLength(64);
-        builder.Property(x => x.CreditCurrency).HasMaxLength(3);
-        builder.Property(x => x.CreditLimit).HasPrecision(18, 2);
         builder.Property(x => x.Notes).HasMaxLength(1000);
         builder.Property(x => x.DeletedBy).HasMaxLength(64);
 
         builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.Stage).HasConversion<string>().HasMaxLength(16);
-        builder.Property(x => x.Roles).HasConversion<int>();
+        // PR-F1b: columnas v1 (Roles/CreditLimit/CreditBlocked/CreditCurrency/CreditDaysCode/
+        // HasCredit/TaxRegimeCode/FiscalResponsibilities/ActividadEconomicaCiiuCode) + ix Roles
+        // REMOVIDAS. El modelo v2 (profiles/CreditAccount/FiscalData/CIIU) es la única fuente.
 
         // El índice ÚNICO por (TenantId, tipo, número) se define en PartiesDbContext
         // tras base.OnModelCreating, porque el shadow TenantId aún no existe aquí.
         builder.HasIndex(x => x.LegalName);
-        builder.HasIndex(x => x.Roles);
         builder.HasIndex(x => x.AssignedUserId);
         builder.HasIndex(x => x.IsDeleted);
 

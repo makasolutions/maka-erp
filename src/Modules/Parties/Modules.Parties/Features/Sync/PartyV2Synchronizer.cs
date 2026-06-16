@@ -21,14 +21,9 @@ namespace FSH.Modules.Parties.Features.Sync;
 /// (una sola transacción). Hasta F1b, el handler además sigue escribiendo las columnas v1 vía
 /// <c>Party.Create/Update</c> (redundante, reversible); este componente nunca dependió de ellas.
 ///
-/// Idempotente: diffea el estado v2 actual vs el deseado por v1. Re-guardar un tercero sin cambios
-/// no duplica profiles ni genera movimientos de crédito espurios (el diff de cupo es contra el
-/// <c>CupoAsignado</c> REAL del CreditAccount cargado, no contra un estado asumido).
-///
-/// NOTA(unificación futura): el caso "crear" se solapa con el mapeo de
-/// <see cref="Migration.PartiesV2BackfillService"/> (bulk, create-only, one-time). Se mantienen
-/// separados a propósito (este es diff/dual-write por request). Si la duplicación se vuelve carga de
-/// mantenimiento, unificar haciendo que el backfill delegue aquí por-party — buscar esta nota.
+/// Idempotente: diffea el estado v2 actual vs el deseado por el input. Re-guardar un tercero sin
+/// cambios no duplica profiles ni genera movimientos de crédito espurios (el diff de cupo es contra
+/// el <c>CupoAsignado</c> REAL del CreditAccount cargado, no contra un estado asumido).
 /// </summary>
 public sealed class PartyV2Synchronizer(
     PartiesDbContext db,

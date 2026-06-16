@@ -10,7 +10,7 @@ namespace Parties.Tests.Domain;
 public class PartyCiiuActivityTests
 {
     private static Party NewParty() =>
-        Party.Create("CC", "1234567", null, PartyKind.Natural, "Tercero CIIU", PartyRole.Customer);
+        Party.Create("CC", "1234567", null, PartyKind.Natural, "Tercero CIIU");
 
     [Fact]
     public void SetPrincipalCiiu_UnmarksPrevious_LeavesExactlyOnePrincipal()

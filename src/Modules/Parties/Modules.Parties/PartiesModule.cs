@@ -36,10 +36,6 @@ public sealed class PartiesModule : IModule
         builder.Services.AddHeroDbContext<PartiesDbContext>();
         builder.Services.AddScoped<IDbInitializer, PartiesDbInitializer>();
 
-        // Backfill v1→v2 (PR-C). Servicio scoped invocado por el verbo `backfill-parties-v2`
-        // del DbMigrator (orquestación multi-tenant) y por los integration tests.
-        builder.Services.AddScoped<Migration.PartiesV2BackfillService>();
-
         // Jerarquía de terceros (PR-D3): carga ancestros (recursive CTE) para las validaciones
         // de ciclos y la delegación comercial. Lo consumen las features de D5 y los integration tests.
         builder.Services.AddScoped<Domain.PartyHierarchyService>();

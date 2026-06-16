@@ -33,7 +33,7 @@ public sealed class PartiesV2HierarchyTests
     }
 
     private static Party NewParty(string suffix) =>
-        Party.Create("NIT", $"h-{suffix}-{Guid.NewGuid():N}"[..14], 1, PartyKind.Juridica, $"Tercero {suffix}", PartyRole.Customer);
+        Party.Create("NIT", $"h-{suffix}-{Guid.NewGuid():N}"[..14], 1, PartyKind.Juridica, $"Tercero {suffix}");
 
     [Fact]
     public async Task GetAncestorIds_Returns_Full_Chain_Via_Recursive_Cte()

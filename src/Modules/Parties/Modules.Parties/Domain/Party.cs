@@ -33,15 +33,14 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public string? Email      { get; private set; }
     public string? Website    { get; private set; }
 
-    // Fiscal DIAN (mínimo; se refina en Billing)
-    public string? TaxRegimeCode             { get; private set; }
-    public string? FiscalResponsibilities    { get; private set; }
-    public string? ActividadEconomicaCiiuCode { get; private set; }
+    // Fiscal DIAN v1 (TaxRegimeCode/FiscalResponsibilities/ActividadEconomicaCiiuCode) REMOVIDO en
+    // PR-F1b → ahora vive en FiscalData (ejes) + PartyCiiuActivity. El DTO reconstruye los campos
+    // v1 desde v2 (output computado, contrato del wizard estable).
 
     /// <summary>
     /// Identidad fiscal v2 (owned VO, SPEC §4) — ejes RegimenTributario + ResponsabilidadIVA
-    /// SEPARADOS. PR-D1: aditivo y nullable; coexiste con el <see cref="TaxRegimeCode"/> v1 (que
-    /// Catalog sigue leyendo) hasta PR-F. Lo puebla el backfill desde TaxRegimeCode (TaxRegimeMapper).
+    /// SEPARADOS. PR-F1b: ÚNICA fuente fiscal (el <c>TaxRegimeCode</c> string v1 fue removido). El
+    /// synchronizer la escribe desde el input del comando (vía TaxRegimeMapper) y el DTO la reexpone.
     /// </summary>
     public FiscalData? FiscalData { get; private set; }
 
@@ -52,7 +51,8 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     /// </summary>
     public LegalRepresentative? LegalRepresentative { get; private set; }
 
-    public PartyRole   Roles  { get; private set; }
+    // Roles (PartyRole flags) REMOVIDO en PR-F1b → la fuente de verdad de rol son las facetas v2
+    // (CustomerProfile/SupplierProfile/EmployeeProfile activas). El DTO computa Roles desde ellas.
     public PartyStatus Status { get; private set; }
 
     /// <summary>Proveedor publicado al marketplace global (visible a todos los tenants).</summary>
@@ -70,12 +70,8 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public string?   GenderCode       { get; private set; }
     public string?   MaritalStatusCode { get; private set; }
 
-    // Financiera (B2B). Debe/CupoDisponible se calculan con CxC/CxP a futuro.
-    public bool     HasCredit      { get; private set; }
-    public decimal? CreditLimit    { get; private set; }
-    public string?  CreditDaysCode { get; private set; }
-    public bool     CreditBlocked  { get; private set; }
-    public string?  CreditCurrency { get; private set; }
+    // Financiera v1 (HasCredit/CreditLimit/CreditDaysCode/CreditBlocked/CreditCurrency) REMOVIDA en
+    // PR-F1b → vive en CreditAccount + PartyHold(Ventas). El DTO la reconstruye desde ahí.
 
     public string? Notes    { get; private set; }
     public Guid?   BranchId { get; private set; }
@@ -86,10 +82,6 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public bool            IsDeleted    { get; private set; }
     public DateTimeOffset? DeletedOnUtc { get; private set; }
     public string?         DeletedBy    { get; private set; }
-
-    public bool IsCustomer => Roles.HasFlag(PartyRole.Customer);
-    public bool IsSupplier => Roles.HasFlag(PartyRole.Supplier);
-    public bool IsEmployee => Roles.HasFlag(PartyRole.Employee);
 
     public ICollection<PartyAddress>    Addresses { get; private set; } = new List<PartyAddress>();
     public ICollection<PartyContact>    Contacts  { get; private set; } = new List<PartyContact>();
@@ -112,17 +104,17 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
 
     private Party() { }
 
+    // PR-F1b: los campos v1 (roles/fiscal/crédito) salieron de la firma. Quien los necesite los
+    // pasa por el comando → PartyV2WriteInput → el synchronizer escribe el modelo v2.
     public static Party Create(
         string identificationTypeCode, string identificationNumber, int? verificationDigit,
-        PartyKind kind, string legalName, PartyRole roles,
+        PartyKind kind, string legalName,
         string? tradeName = null, string? email = null, string? website = null,
-        string? taxRegimeCode = null, string? fiscalResponsibilities = null,
         PartyStatus status = PartyStatus.Active, LifecycleStage stage = LifecycleStage.Lead,
         int leadScore = 0, string? sourceCode = null, Guid? assignedUserId = null, string? marketingType = null,
         DateOnly? birthDate = null, string? genderCode = null, string? maritalStatusCode = null,
-        decimal? creditLimit = null, string? creditCurrency = null, string? notes = null, Guid? branchId = null,
-        string? firstName = null, string? lastName = null, string? actividadEconomicaCiiuCode = null,
-        bool hasCredit = false, string? creditDaysCode = null, bool creditBlocked = false)
+        string? notes = null, Guid? branchId = null,
+        string? firstName = null, string? lastName = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identificationTypeCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(identificationNumber);
@@ -132,10 +124,6 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
         {
             FirstName = firstName?.Trim(),
             LastName = lastName?.Trim(),
-            ActividadEconomicaCiiuCode = actividadEconomicaCiiuCode?.Trim(),
-            HasCredit = hasCredit,
-            CreditDaysCode = creditDaysCode?.Trim(),
-            CreditBlocked = creditBlocked,
             Id = Guid.CreateVersion7(),
             IdentificationTypeCode = identificationTypeCode.Trim(),
             IdentificationNumber = identificationNumber.Trim(),
@@ -145,9 +133,6 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
             TradeName = tradeName?.Trim(),
             Email = email?.Trim(),
             Website = website?.Trim(),
-            TaxRegimeCode = taxRegimeCode?.Trim(),
-            FiscalResponsibilities = fiscalResponsibilities?.Trim(),
-            Roles = roles,
             Status = status,
             Stage = stage,
             LeadScore = leadScore,
@@ -157,38 +142,30 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
             BirthDate = birthDate,
             GenderCode = genderCode?.Trim(),
             MaritalStatusCode = maritalStatusCode?.Trim(),
-            CreditLimit = creditLimit,
-            CreditCurrency = creditCurrency?.Trim(),
             Notes = notes?.Trim(),
             BranchId = branchId,
             CreatedAtUtc = DateTime.UtcNow,
         };
     }
 
+    // PR-F1b: los campos v1 (roles/fiscal/crédito) salieron de la firma — el synchronizer los
+    // escribe en v2 desde el PartyV2WriteInput del comando.
     public void Update(
-        PartyKind kind, string legalName, PartyRole roles, string? tradeName, string? email, string? website,
-        string? taxRegimeCode, string? fiscalResponsibilities, PartyStatus status, LifecycleStage stage,
+        PartyKind kind, string legalName, string? tradeName, string? email, string? website,
+        PartyStatus status, LifecycleStage stage,
         int leadScore, string? sourceCode, Guid? assignedUserId, string? marketingType,
         DateOnly? birthDate, string? genderCode, string? maritalStatusCode,
-        decimal? creditLimit, string? creditCurrency, string? notes, Guid? branchId, int? verificationDigit,
-        string? firstName, string? lastName, string? actividadEconomicaCiiuCode,
-        bool hasCredit, string? creditDaysCode, bool creditBlocked)
+        string? notes, Guid? branchId, int? verificationDigit,
+        string? firstName, string? lastName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(legalName);
         Kind = kind;
         LegalName = legalName.Trim();
         FirstName = firstName?.Trim();
         LastName = lastName?.Trim();
-        ActividadEconomicaCiiuCode = actividadEconomicaCiiuCode?.Trim();
-        HasCredit = hasCredit;
-        CreditDaysCode = creditDaysCode?.Trim();
-        CreditBlocked = creditBlocked;
-        Roles = roles;
         TradeName = tradeName?.Trim();
         Email = email?.Trim();
         Website = website?.Trim();
-        TaxRegimeCode = taxRegimeCode?.Trim();
-        FiscalResponsibilities = fiscalResponsibilities?.Trim();
         Status = status;
         Stage = stage;
         LeadScore = leadScore;
@@ -198,19 +175,15 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
         BirthDate = birthDate;
         GenderCode = genderCode?.Trim();
         MaritalStatusCode = maritalStatusCode?.Trim();
-        CreditLimit = creditLimit;
-        CreditCurrency = creditCurrency?.Trim();
         Notes = notes?.Trim();
         BranchId = branchId;
         VerificationDigit = verificationDigit;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
-    public void SetRoles(PartyRole roles) { Roles = roles; UpdatedAtUtc = DateTime.UtcNow; }
-
     /// <summary>
-    /// Asigna la identidad fiscal v2 (owned VO). PR-D1: usado por el backfill para persistir el
-    /// régimen derivado del <see cref="TaxRegimeCode"/> v1. Reemplaza el VO completo — el caller
+    /// Asigna la identidad fiscal v2 (owned VO). Lo usa el synchronizer para persistir el régimen
+    /// derivado del input del comando (vía TaxRegimeMapper). Reemplaza el VO completo — el caller
     /// decide la idempotencia (no sobreescribir si ya hay datos fiscales).
     /// </summary>
     public void AssignFiscalData(FiscalData fiscalData)

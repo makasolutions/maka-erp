@@ -45,7 +45,7 @@ public sealed class PartiesV2PersistenceTests
         await WithTenant(tenant, async db =>
         {
             var party = Party.Create("NIT", $"seed-{Guid.NewGuid():N}"[..14], 1,
-                PartyKind.Juridica, "Seed Party", PartyRole.Customer);
+                PartyKind.Juridica, "Seed Party");
             db.Parties.Add(party);
             await db.SaveChangesAsync();
             id = party.Id;
@@ -219,7 +219,7 @@ public sealed class PartiesV2PersistenceTests
         {
             var party = FSH.Modules.Parties.Domain.Party.Create(
                 "NIT", $"nav-{Guid.NewGuid():N}"[..14], 1, FSH.Modules.Parties.Contracts.Enums.PartyKind.Juridica,
-                "Tercero Navegable", FSH.Modules.Parties.Contracts.Enums.PartyRole.Customer | FSH.Modules.Parties.Contracts.Enums.PartyRole.Supplier);
+                "Tercero Navegable");
             db.Parties.Add(party);
             await db.SaveChangesAsync();
             partyId = party.Id;
@@ -253,7 +253,7 @@ public sealed class PartiesV2PersistenceTests
         {
             var party = FSH.Modules.Parties.Domain.Party.Create(
                 "NIT", $"del-{Guid.NewGuid():N}"[..14], 1, FSH.Modules.Parties.Contracts.Enums.PartyKind.Juridica,
-                "Cliente Con Crédito", FSH.Modules.Parties.Contracts.Enums.PartyRole.Customer);
+                "Cliente Con Crédito");
             db.Parties.Add(party);
             await db.SaveChangesAsync();
 

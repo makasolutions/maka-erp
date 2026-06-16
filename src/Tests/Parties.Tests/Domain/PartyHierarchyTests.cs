@@ -13,7 +13,7 @@ namespace Parties.Tests.Domain;
 public class PartyHierarchyTests
 {
     private static Party NewParty(string num) =>
-        Party.Create("NIT", num, 1, PartyKind.Juridica, $"Tercero {num}", PartyRole.Customer);
+        Party.Create("NIT", num, 1, PartyKind.Juridica, $"Tercero {num}");
 
     [Fact]
     public void AssignParent_Happy_SetsParent()

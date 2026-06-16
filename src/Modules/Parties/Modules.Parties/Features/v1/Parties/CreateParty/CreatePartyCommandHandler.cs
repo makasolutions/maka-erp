@@ -31,13 +31,12 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
         int? dv = IdentificationValidator.ResolveVerificationDigit(typeCode, number, command.VerificationDigit);
 
         var party = Party.Create(
-            typeCode, number, dv, command.Kind, legalName, roles,
-            command.TradeName, command.Email, command.Website, command.TaxRegimeCode, command.FiscalResponsibilities,
+            typeCode, number, dv, command.Kind, legalName,
+            command.TradeName, command.Email, command.Website,
             command.Status, command.Stage, command.LeadScore, command.SourceCode, command.AssignedUserId, command.MarketingType,
-            command.BirthDate, command.GenderCode, command.MaritalStatusCode, command.CreditLimit, command.CreditCurrency,
+            command.BirthDate, command.GenderCode, command.MaritalStatusCode,
             command.Notes, command.BranchId,
-            command.FirstName, command.LastName, command.ActividadEconomicaCiiuCode,
-            command.HasCredit, command.CreditDaysCode, command.CreditBlocked);
+            command.FirstName, command.LastName);
 
         party.ReplaceAddresses(PartyMapping.ToAddresses(command.Addresses));
         party.ReplaceContacts(PartyMapping.ToContacts(command.Contacts));

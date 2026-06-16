@@ -320,7 +320,7 @@ try
     // ── Step 2 — per-tenant migrations + (optional) seeds ────────────────
     // `seed-demo` short-circuits Step 2 because it provisions its own demo tenants
     // (acme, globex) by running migrate + seed inline against each — handled below.
-    if (!cli.CatalogOnly && cli.Command != "seed-demo" && cli.Command != "backfill-parties-v2")
+    if (!cli.CatalogOnly && cli.Command != "seed-demo")
     {
         var tenantStore = host.Services.GetRequiredService<IMultiTenantStore<AppTenantInfo>>();
         var tenantService = host.Services.GetRequiredService<ITenantService>();
@@ -375,7 +375,7 @@ try
     //     un operador que después arranque el API no se pregunte por qué
     //     truena: el contrato es claro — primero migraciones + Wolverine,
     //     luego API.
-    if (cli.Command != "list-pending" && cli.Command != "backfill-parties-v2")
+    if (cli.Command != "list-pending")
     {
         if (cli.CatalogOnly)
         {
@@ -402,46 +402,6 @@ try
             }
             await Console.Out.WriteLineAsync("[wolverine-setup] done").ConfigureAwait(false);
         }
-    }
-
-    // ── Step 2c — Parties v1→v2 backfill (verb: `backfill-parties-v2`) ────
-    // PR-C (SPEC parties §0.1). Idempotente: lee Party v1 / escribe tablas v2
-    // nuevas. Itera tenants (filtrable con --tenant). --dry-run reporta sin
-    // escribir. Asume que las migraciones v2 (PR-B) ya se aplicaron (correr
-    // `apply` antes). Reversible: truncar las tablas v2 (no automatizado).
-    if (cli.Command == "backfill-parties-v2")
-    {
-        var store = host.Services.GetRequiredService<IMultiTenantStore<AppTenantInfo>>();
-        var allTenants = (await store.GetAllAsync().ConfigureAwait(false)).ToList();
-        var targets = string.IsNullOrEmpty(cli.Tenant)
-            ? allTenants
-            : allTenants.Where(t => string.Equals(t.Id, cli.Tenant, StringComparison.OrdinalIgnoreCase)).ToList();
-
-        await Console.Out.WriteLineAsync(string.Format(CultureInfo.InvariantCulture,
-            "[backfill-parties-v2] {0} tenant(s){1}", targets.Count, cli.DryRun ? " — DRY-RUN" : ""))
-            .ConfigureAwait(false);
-
-        var aggregate = new BackfillReport { DryRun = cli.DryRun };
-        foreach (var tenant in targets)
-        {
-            using var scope = host.Services.CreateScope();
-            scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>()
-                .MultiTenantContext = new MultiTenantContext<AppTenantInfo>(tenant);
-            var svc = scope.ServiceProvider.GetRequiredService<PartiesV2BackfillService>();
-            var report = await svc.RunAsync(cli.DryRun, tenant.Id, CancellationToken.None).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync(report.ToSummary($"tenant {tenant.Id}")).ConfigureAwait(false);
-            aggregate.Merge(report);
-        }
-
-        if (targets.Count > 1)
-        {
-            await Console.Out.WriteLineAsync(aggregate.ToSummary("TOTAL")).ConfigureAwait(false);
-        }
-        await Console.Out.WriteLineAsync(
-            "[backfill-parties-v2] reversible: para deshacer, truncar las tablas v2 (CustomerProfiles, "
-            + "SupplierProfiles, ContactProfiles, PartnerProfiles, EmployeeProfiles, CreditAccounts, "
-            + "CreditMovements, PartyHolds, PartyCiiuActivities). No automatizado por diseño.")
-            .ConfigureAwait(false);
     }
 
     // ── Step 3 — demo seed (verb: `seed-demo`) ───────────────────────────
