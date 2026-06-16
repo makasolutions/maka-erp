@@ -114,6 +114,23 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         });
         builder.Navigation(x => x.FiscalData).IsRequired(false);
 
+        // LegalRepresentative owned NULLABLE (PR-D4) — mismo patrón que FiscalData (D1): OwnsOne +
+        // Navigation().IsRequired(false). Todo escalar (sin colección → sin value converter).
+        // TipoIdentificacion → smallint. Columnas RepLegal_*.
+        builder.OwnsOne(x => x.LegalRepresentative, lr =>
+        {
+            lr.Property(p => p.Nombres).HasColumnName("RepLegal_Nombres").HasMaxLength(120);
+            lr.Property(p => p.Apellidos).HasColumnName("RepLegal_Apellidos").HasMaxLength(120);
+            lr.Property(p => p.TipoIdentificacion).HasConversion<short>().HasColumnName("RepLegal_TipoIdentificacion");
+            lr.Property(p => p.NumeroIdentificacion).HasColumnName("RepLegal_NumeroIdentificacion").HasMaxLength(64);
+            lr.Property(p => p.Telefono).HasColumnName("RepLegal_Telefono").HasMaxLength(32);
+            lr.Property(p => p.TelefonoExtension).HasColumnName("RepLegal_TelefonoExtension").HasMaxLength(16);
+            lr.Property(p => p.Celular).HasColumnName("RepLegal_Celular").HasMaxLength(32);
+            lr.Property(p => p.Email).HasColumnName("RepLegal_Email").HasMaxLength(256);
+            lr.Property(p => p.EsPEP).HasColumnName("RepLegal_EsPEP");
+        });
+        builder.Navigation(x => x.LegalRepresentative).IsRequired(false);
+
         builder.Ignore(x => x.DomainEvents);
     }
 }

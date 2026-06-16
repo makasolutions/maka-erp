@@ -176,6 +176,39 @@ public sealed class PartiesV2PersistenceTests
     }
 
     [Fact]
+    public async Task LegalRepresentative_Owned_Nullable_RoundTrips()
+    {
+        // PR-D4: owned nullable. Party sin rep → null; Party con rep → round-trip incl. enum.
+        var root = Tenant(TestConstants.RootTenantId);
+
+        var sinRepId = await SeedPartyAsync(root);
+        await WithTenant(root, async db =>
+        {
+            var p = await db.Parties.SingleAsync(x => x.Id == sinRepId);
+            p.LegalRepresentative.ShouldBeNull();
+        });
+
+        var conRepId = await SeedPartyAsync(root);
+        await WithTenant(root, async db =>
+        {
+            var p = await db.Parties.SingleAsync(x => x.Id == conRepId);
+            p.AssignLegalRepresentative(FSH.Modules.Parties.Domain.V2.LegalRepresentative.Create(
+                "Ana", "Gómez", TipoIdentificacion.CC, "52000111", celular: "3001234567", esPEP: true));
+            await db.SaveChangesAsync();
+        });
+
+        await WithTenant(root, async db =>
+        {
+            var p = await db.Parties.SingleAsync(x => x.Id == conRepId);
+            p.LegalRepresentative.ShouldNotBeNull();
+            p.LegalRepresentative!.Nombres.ShouldBe("Ana");
+            p.LegalRepresentative.TipoIdentificacion.ShouldBe(TipoIdentificacion.CC);
+            p.LegalRepresentative.NumeroIdentificacion.ShouldBe("52000111");
+            p.LegalRepresentative.EsPEP.ShouldBeTrue();
+        });
+    }
+
+    [Fact]
     public async Task Party_Navigates_To_Customer_And_Supplier_Profiles()
     {
         // PR-D2: navs one-to-one Party→Profiles. Insertamos Party + 2 facetas y navegamos vía Include.

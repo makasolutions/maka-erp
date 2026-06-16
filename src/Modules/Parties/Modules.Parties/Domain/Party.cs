@@ -45,6 +45,13 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     /// </summary>
     public FiscalData? FiscalData { get; private set; }
 
+    /// <summary>
+    /// Representante legal (owned VO nullable, SPEC §5) — personas jurídicas. PR-D4: aditivo y
+    /// nullable (arranca null; v1 no tiene datos de rep. legal que backfillear). Usa el enum
+    /// <c>TipoIdentificacion</c> v2; la reconciliación con el código v1 está en <c>IdentificationTypeMapper</c>.
+    /// </summary>
+    public LegalRepresentative? LegalRepresentative { get; private set; }
+
     public PartyRole   Roles  { get; private set; }
     public PartyStatus Status { get; private set; }
 
@@ -210,6 +217,14 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     {
         ArgumentNullException.ThrowIfNull(fiscalData);
         FiscalData = fiscalData;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>Asigna (o reemplaza) el representante legal v2 (owned VO). PR-D4.</summary>
+    public void AssignLegalRepresentative(LegalRepresentative legalRepresentative)
+    {
+        ArgumentNullException.ThrowIfNull(legalRepresentative);
+        LegalRepresentative = legalRepresentative;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

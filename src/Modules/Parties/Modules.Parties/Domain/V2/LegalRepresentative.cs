@@ -6,10 +6,8 @@ namespace FSH.Modules.Parties.Domain.V2;
 /// Representante legal de una persona jurídica (modelo v2, SPEC §5). Value object inmutable.
 ///
 /// Divergencia v1↔v2: usa <see cref="Contracts.Enums.TipoIdentificacion"/> (enum) en lugar
-/// de los códigos de Tabla Básica de v1.
-/// TODO(PR-D): resolver el mapeo enum↔código al enlazar Party v2.
-///
-/// PR-A: VO independiente, se incrustará como owned VO del Party en PR-D. Sin mapeo EF aún.
+/// de los códigos de Tabla Básica de v1. La reconciliación enum↔código se resolvió en PR-D4
+/// (ver <c>IdentificationTypeMapper</c>). PR-D4: incrustado como owned VO nullable del Party.
 /// </summary>
 public sealed record LegalRepresentative
 {
