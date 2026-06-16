@@ -1,4 +1,5 @@
 using FSH.Modules.Parties.Contracts.Enums;
+using FSH.Modules.Parties.Contracts.v1.Parties;
 
 namespace FSH.Modules.Parties.Features.Sync;
 
@@ -16,4 +17,6 @@ public sealed record PartyV2WriteInput(
     string?   CreditDaysCode,
     bool      CreditBlocked,
     string?   TaxRegimeCode,
-    string?   ActividadEconomicaCiiuCode);
+    string?   ActividadEconomicaCiiuCode,
+    // Ejes fiscales v2 autoritativos (≠ null → tienen precedencia sobre TaxRegimeCode). Front siempre los manda.
+    PartyFiscalAxesInput? FiscalAxes = null);

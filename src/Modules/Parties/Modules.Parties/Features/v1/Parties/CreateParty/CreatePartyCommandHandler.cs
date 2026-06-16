@@ -50,7 +50,8 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
         // comando), NO de las propiedades v1 del party. Tercero nuevo: navs v2 null → crea profiles
         // (D5a) y crédito (D5b). Party.Create además escribió las columnas v1 (redundante hasta F1b).
         var v2Input = new PartyV2WriteInput(roles, command.CreditLimit, command.CreditCurrency,
-            command.CreditDaysCode, command.CreditBlocked, command.TaxRegimeCode, command.ActividadEconomicaCiiuCode);
+            command.CreditDaysCode, command.CreditBlocked, command.TaxRegimeCode, command.ActividadEconomicaCiiuCode,
+            command.FiscalAxes);
         await synchronizer.SyncAsync(party, v2Input, cancellationToken).ConfigureAwait(false);
 
         try

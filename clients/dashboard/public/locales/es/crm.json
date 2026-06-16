@@ -284,6 +284,8 @@
       "website": "Página web",
       "roles": "Roles",
       "taxRegime": "Régimen tributario",
+      "regimen": "Régimen de renta",
+      "responsabilidadIVA": "Responsabilidad de IVA",
       "fiscalResp": "Responsabilidades fiscales",
       "ciiu": "Actividad económica (CIIU)",
       "status": "Estado",
@@ -313,6 +315,15 @@
     "role": {
       "customer": "Cliente",
       "supplier": "Proveedor"
+    },
+    "regimen": {
+      "Ordinario": "Ordinario",
+      "Simple": "Simple (RST)",
+      "Especial": "Especial"
+    },
+    "iva": {
+      "Responsable": "Responsable de IVA",
+      "NoResponsable": "No responsable de IVA"
     },
     "status": {
       "Active": "Activo",

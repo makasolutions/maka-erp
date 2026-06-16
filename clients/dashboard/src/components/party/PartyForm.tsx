@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { MakaCurrencyInput } from "@/components/maka";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
+import { MultiRecordSelect } from "@/components/lookups/MultiRecordSelect";
 import { AddressEditor } from "./AddressEditor";
 import { ChannelEditor } from "./ChannelEditor";
 import { ContactEditor } from "./ContactEditor";
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 import {
   rolesToApi, verifyIdentification, type LifecycleStage, type PartyAddress, type PartyChannel, type PartyContact,
   type PartyDetailDto, type PartyKind, type PartyRoles, type PartyStatus, type PartyWriteInput,
+  type RegimenTributario, type ResponsabilidadIVA,
 } from "@/api/parties";
 
 export type PartyFormValue = {
@@ -35,8 +37,9 @@ export type PartyFormValue = {
   supplier: boolean;
   email: string;
   website: string;
-  taxRegimeCode: string | null;
-  fiscalResponsibilities: string | null;
+  regimenTributario: RegimenTributario | null;
+  responsabilidadIVA: ResponsabilidadIVA | null;
+  responsabilidadesFiscales: string[];
   actividadEconomicaCiiuCode: string | null;
   status: PartyStatus;
   stage: LifecycleStage;
@@ -57,7 +60,7 @@ export function emptyPartyForm(): PartyFormValue {
   return {
     identificationTypeCode: null, identificationNumber: "", verificationDigit: null, kind: "Juridica",
     legalName: "", firstName: "", lastName: "", tradeName: "", customer: true, supplier: false, email: "", website: "",
-    taxRegimeCode: null, fiscalResponsibilities: null, actividadEconomicaCiiuCode: null,
+    regimenTributario: null, responsabilidadIVA: null, responsabilidadesFiscales: [], actividadEconomicaCiiuCode: null,
     status: "Active", stage: "Lead", leadScore: 0, sourceCode: null,
     hasCredit: false, creditLimit: null, creditDaysCode: "30", creditBlocked: false, isGlobalSupplier: false,
     notes: "", addresses: [emptyAddress()], contacts: [emptyContact()], channels: [],
@@ -84,8 +87,12 @@ export function partyFormFromDetail(d: PartyDetailDto): PartyFormValue {
     verificationDigit: d.verificationDigit ?? null, kind: d.kind, legalName: d.legalName,
     firstName: d.firstName ?? "", lastName: d.lastName ?? "", tradeName: d.tradeName ?? "",
     customer: rolesHas(d.roles, "Customer"), supplier: rolesHas(d.roles, "Supplier"),
-    email: d.email ?? "", website: d.website ?? "", taxRegimeCode: d.taxRegimeCode ?? null,
-    fiscalResponsibilities: d.fiscalResponsibilities ?? null, actividadEconomicaCiiuCode: d.actividadEconomicaCiiuCode ?? null,
+    email: d.email ?? "", website: d.website ?? "",
+    // Ejes fiscales v2: leídos del sub-objeto V2 anidado (no del taxRegimeCode plano reverse-mapeado).
+    regimenTributario: d.v2?.fiscal?.regimenTributario ?? null,
+    responsabilidadIVA: d.v2?.fiscal?.responsabilidadIVA ?? null,
+    responsabilidadesFiscales: d.v2?.fiscal?.responsabilidadesFiscales ?? [],
+    actividadEconomicaCiiuCode: d.actividadEconomicaCiiuCode ?? null,
     status: d.status, stage: d.stage, leadScore: d.leadScore, sourceCode: d.sourceCode ?? null,
     hasCredit: d.hasCredit, creditLimit: d.creditLimit ?? null, creditDaysCode: d.creditDaysCode ?? null,
     creditBlocked: d.creditBlocked, isGlobalSupplier: d.isGlobalSupplier, notes: d.notes ?? "",
@@ -100,7 +107,14 @@ export function partyFormToInput(v: PartyFormValue): PartyWriteInput {
     verificationDigit: v.verificationDigit, kind: v.kind, legalName: legalName || v.legalName.trim() || "—",
     firstName: v.firstName.trim() || null, lastName: v.lastName.trim() || null,
     roles: rolesToApi(v.customer, v.supplier), tradeName: v.tradeName.trim() || null, email: v.email.trim() || null,
-    website: v.website.trim() || null, taxRegimeCode: v.taxRegimeCode, fiscalResponsibilities: v.fiscalResponsibilities,
+    website: v.website.trim() || null,
+    // Fuente de verdad fiscal = ejes v2 (autoritativos). Los planos legacy van null.
+    taxRegimeCode: null, fiscalResponsibilities: null,
+    fiscalAxes: {
+      regimenTributario: v.regimenTributario,
+      responsabilidadIVA: v.responsabilidadIVA,
+      responsabilidadesFiscales: v.responsabilidadesFiscales,
+    },
     actividadEconomicaCiiuCode: v.actividadEconomicaCiiuCode,
     status: v.status, stage: v.stage, leadScore: v.leadScore, sourceCode: v.sourceCode, marketingType: null,
     birthDate: null, genderCode: null, maritalStatusCode: null,
@@ -163,6 +177,8 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
 
   const statusOpts: PartyStatus[] = ["Active", "Inactive", "Prospect"];
   const stageOpts: LifecycleStage[] = ["Lead", "Mql", "Sql", "Opportunity", "Customer", "Inactive"];
+  const regimenOpts: RegimenTributario[] = ["Ordinario", "Simple", "Especial"];
+  const ivaOpts: ResponsabilidadIVA[] = ["Responsable", "NoResponsable"];
   const isNit = (v.identificationTypeCode ?? "") === "NIT";
   // Documentos numéricos → máscara de solo dígitos al teclear.
   const numericDoc = ["NIT", "NIT_EXT", "CC", "TI", "NUIP"].includes((v.identificationTypeCode ?? "").toUpperCase());
@@ -341,20 +357,26 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
         </FormGrid>
       )}
 
-      {/* Tab 5 — Tributaria */}
+      {/* Tab 5 — Tributaria (ejes v2 separados: régimen ⟂ IVA + responsabilidades como lista) */}
       {tab === "tax" && (
         <FormGrid>
-          <Field id="p-regime" span={4} label={t("parties.fields.taxRegime")}>
-            <BasicRecordSelect id="p-regime" tableCode="TaxRegime" label={t("parties.fields.taxRegime")}
-              value={v.taxRegimeCode} onChange={(c) => set({ taxRegimeCode: c })} disabled={disabled} />
+          <Field id="p-regime" span={4} label={t("parties.fields.regimen")}>
+            <Combobox id="p-regime" label={t("parties.fields.regimen")} clearable searchable={false}
+              value={v.regimenTributario} onChange={(c) => set({ regimenTributario: (c as RegimenTributario | null) })}
+              options={regimenOpts.map((o) => ({ value: o, label: t(`parties.regimen.${o}`) }))} disabled={disabled} />
           </Field>
-          <Field id="p-fiscal" span={4} label={t("parties.fields.fiscalResp")}>
-            <BasicRecordSelect id="p-fiscal" tableCode="FiscalResponsibility" label={t("parties.fields.fiscalResp")}
-              value={v.fiscalResponsibilities} onChange={(c) => set({ fiscalResponsibilities: c })} disabled={disabled} />
+          <Field id="p-iva" span={4} label={t("parties.fields.responsabilidadIVA")}>
+            <Combobox id="p-iva" label={t("parties.fields.responsabilidadIVA")} clearable searchable={false}
+              value={v.responsabilidadIVA} onChange={(c) => set({ responsabilidadIVA: (c as ResponsabilidadIVA | null) })}
+              options={ivaOpts.map((o) => ({ value: o, label: t(`parties.iva.${o}`) }))} disabled={disabled} />
           </Field>
           <Field id="p-ciiu" span={4} label={t("parties.fields.ciiu")}>
             <BasicRecordSelect id="p-ciiu" tableCode="Ciiu" label={t("parties.fields.ciiu")}
               value={v.actividadEconomicaCiiuCode} onChange={(c) => set({ actividadEconomicaCiiuCode: c })} disabled={disabled} />
+          </Field>
+          <Field id="p-fiscal" span={12} label={t("parties.fields.fiscalResp")}>
+            <MultiRecordSelect id="p-fiscal" tableCode="FiscalResponsibility" label={t("parties.fields.fiscalResp")}
+              value={v.responsabilidadesFiscales} onChange={(c) => set({ responsabilidadesFiscales: c })} disabled={disabled} />
           </Field>
         </FormGrid>
       )}

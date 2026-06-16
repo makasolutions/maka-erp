@@ -37,4 +37,6 @@ public sealed record UpdatePartyCommand(
     IReadOnlyList<PartyAddressInput>?    Addresses = null,
     IReadOnlyList<PartyContactInput>?    Contacts = null,
     IReadOnlyList<PartyChannelInput>?    Channels = null,
-    IReadOnlyList<PartyTeamMemberInput>? Team = null) : ICommand<Guid>;
+    IReadOnlyList<PartyTeamMemberInput>? Team = null,
+    // Ejes fiscales v2 autoritativos (alternativa al TaxRegimeCode legacy). Default null = legacy.
+    PartyFiscalAxesInput? FiscalAxes = null) : ICommand<Guid>;

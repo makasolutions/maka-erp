@@ -6,6 +6,25 @@ export type PartyStatus = "Active" | "Inactive" | "Prospect";
 export type LifecycleStage = "Lead" | "Mql" | "Sql" | "Opportunity" | "Customer" | "Inactive";
 export type PartyTeamRole = "Owner" | "Member";
 
+/** Ejes fiscales v2 (SPEC §4/§13) — ortogonales (régimen de renta ⟂ responsabilidad de IVA). */
+export type RegimenTributario = "Ordinario" | "Simple" | "Especial";
+export type ResponsabilidadIVA = "Responsable" | "NoResponsable";
+
+/** Input autoritativo de ejes fiscales — alternativa al taxRegimeCode plano legacy. */
+export type PartyFiscalAxesInput = {
+  regimenTributario: RegimenTributario | null;
+  responsabilidadIVA: ResponsabilidadIVA | null;
+  responsabilidadesFiscales: string[];
+};
+
+/** Porción fiscal del sub-objeto V2 del detalle (lo único que el tab Tributaria consume hoy). */
+export type PartyV2FiscalView = {
+  regimenTributario: RegimenTributario | null;
+  responsabilidadIVA: ResponsabilidadIVA | null;
+  responsabilidadesFiscales: string[];
+};
+export type PartyV2DetailView = { fiscal: PartyV2FiscalView | null };
+
 /** [Flags] enum serialized as string ("None" | "Customer" | "Supplier" | "Customer, Supplier"). */
 export type PartyRoles = string;
 
@@ -93,6 +112,8 @@ export type PartyDetailDto = {
   contacts: PartyContact[];
   channels: PartyChannel[];
   team: PartyTeamMember[];
+  /** Sub-objeto v2 anidado (el backend lo expone; el front consume solo `fiscal` por ahora). */
+  v2?: PartyV2DetailView | null;
 };
 
 export type SearchPartiesParams = {
@@ -136,6 +157,7 @@ export type PartyWriteInput = {
   tradeName?: string | null;
   email?: string | null;
   website?: string | null;
+  /** Legacy plano — el front lo manda null; la fuente de verdad fiscal es `fiscalAxes`. */
   taxRegimeCode?: string | null;
   fiscalResponsibilities?: string | null;
   actividadEconomicaCiiuCode?: string | null;
@@ -159,6 +181,8 @@ export type PartyWriteInput = {
   contacts: PartyContact[];
   channels: PartyChannel[];
   team: PartyTeamMember[];
+  /** Ejes fiscales v2 autoritativos (el backend los prefiere sobre taxRegimeCode). */
+  fiscalAxes?: PartyFiscalAxesInput;
 };
 
 export function createParty(input: PartyWriteInput): Promise<string> {

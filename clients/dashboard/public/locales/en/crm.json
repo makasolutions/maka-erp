@@ -270,6 +270,8 @@
       "website": "Website",
       "roles": "Roles",
       "taxRegime": "Tax regime",
+      "regimen": "Income tax regime",
+      "responsabilidadIVA": "VAT liability",
       "fiscalResp": "Fiscal responsibilities",
       "ciiu": "Economic activity (CIIU)",
       "status": "Status",
@@ -299,6 +301,15 @@
     "role": {
       "customer": "Customer",
       "supplier": "Supplier"
+    },
+    "regimen": {
+      "Ordinario": "Ordinary",
+      "Simple": "Simple (RST)",
+      "Especial": "Special"
+    },
+    "iva": {
+      "Responsable": "VAT liable",
+      "NoResponsable": "Not VAT liable"
     },
     "status": {
       "Active": "Active",

@@ -2,6 +2,7 @@ using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Core.Context;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Parties.Contracts.Enums;
+using FSH.Modules.Parties.Contracts.v1.Parties;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Domain.Credit;
@@ -79,16 +80,23 @@ public sealed class PartyV2Synchronizer(
     // ── FiscalData + CIIU (D5c) ────────────────────────────────────────────────────
 
     /// <summary>
-    /// TaxRegimeCode v1 → ejes RegimenTributario + ResponsabilidadIVA del FiscalData (reusa
-    /// <see cref="TaxRegimeMapper"/>). DOBLE CANDADO para no pisar lo que v1 NO conoce:
-    /// (1) <c>record with</c> copia todos los demás campos (GranContribuyente, ResponsabilidadesFiscales,
-    /// FlagPEP…) y solo cambia los dos ejes; (2) <c>?? current</c> preserva un eje que el mapper no
-    /// derivó. Idempotente: solo asigna si algún eje cambió. Código no mapeable → deja FiscalData como
-    /// está + log (consistente con PR-C, sin throw). FiscalData es owned inline → la mutación la detecta
-    /// el DetectChanges del handler (no es entidad nueva).
+    /// Escribe los ejes fiscales del FiscalData. DOS modos:
+    /// (A) AUTORITATIVO — el comando trae <c>FiscalAxes</c> (front v2): escribe los ejes +
+    ///     ResponsabilidadesFiscales tal cual (null limpia), con guarda anti-wipe (ver
+    ///     <see cref="ApplyFiscalAxes"/>). Es el único camino que escribe la LISTA.
+    /// (B) LEGACY — sin FiscalAxes: deriva los 2 ejes desde el <c>TaxRegimeCode</c> string (reusa
+    ///     <see cref="TaxRegimeMapper"/>) con DOBLE CANDADO (record with + ?? current) — best-effort,
+    ///     preserva lo no derivado. No mapeable → deja FiscalData como está + log.
+    /// FiscalData es owned inline → la mutación la detecta el DetectChanges del handler.
     /// </summary>
     private void SyncFiscalData(Party party, PartyV2WriteInput input)
     {
+        if (input.FiscalAxes is { } axes)
+        {
+            ApplyFiscalAxes(party, axes);
+            return;
+        }
+
         var mapping = TaxRegimeMapper.Map(input.TaxRegimeCode);
         if (mapping.IsEmpty) return; // v1 sin código → nada que derivar
 
@@ -111,6 +119,39 @@ public sealed class PartyV2Synchronizer(
             party.AssignFiscalData(current with { RegimenTributario = newRegimen, ResponsabilidadIVA = newIva });
         }
         // ejes sin cambio → no-op (idempotente)
+    }
+
+    /// <summary>
+    /// Modo AUTORITATIVO: escribe los ejes + ResponsabilidadesFiscales tal cual vienen del comando
+    /// (null/lista-vacía limpia — el front es la autoridad del estado fiscal). DOBLE CANDADO mantenido
+    /// (record with preserva GranContribuyente/FlagPEP/FormaJuridica/etc.). Idempotente (solo asigna
+    /// si algo cambió). GUARDA ANTI-WIPE: un FiscalAxes vacío-total (2 ejes null + lista vacía) sobre
+    /// un FiscalData YA poblado NO lo borra — es casi seguro un no-op o un bug de lectura, no una
+    /// intención real (un tercero siempre tiene naturaleza fiscal). Borrar en silencio se notaría
+    /// recién en una auditoría DIAN.
+    /// </summary>
+    private static void ApplyFiscalAxes(Party party, PartyFiscalAxesInput axes)
+    {
+        IReadOnlyList<string> responsabilidades = axes.ResponsabilidadesFiscales ?? [];
+
+        bool allEmpty = axes.RegimenTributario is null && axes.ResponsabilidadIVA is null && responsabilidades.Count == 0;
+        if (allEmpty && party.FiscalData is not null) return; // guarda anti-wipe
+
+        var current = party.FiscalData ?? FiscalData.Empty;
+        bool changed =
+            axes.RegimenTributario != current.RegimenTributario ||
+            axes.ResponsabilidadIVA != current.ResponsabilidadIVA ||
+            !responsabilidades.SequenceEqual(current.ResponsabilidadesFiscales);
+
+        if (changed)
+        {
+            party.AssignFiscalData(current with
+            {
+                RegimenTributario = axes.RegimenTributario,
+                ResponsabilidadIVA = axes.ResponsabilidadIVA,
+                ResponsabilidadesFiscales = responsabilidades,
+            });
+        }
     }
 
     /// <summary>

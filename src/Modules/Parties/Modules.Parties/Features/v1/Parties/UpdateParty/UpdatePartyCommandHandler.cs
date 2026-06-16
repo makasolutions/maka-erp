@@ -51,7 +51,8 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
         // cargado para diffear) las marca Modified el DetectChanges siguiente. Nada de esto está en
         // las colecciones de MarkChildrenAdded (solo hijos v1), así que esa danza no los afecta.
         var v2Input = new PartyV2WriteInput(roles, command.CreditLimit, command.CreditCurrency,
-            command.CreditDaysCode, command.CreditBlocked, command.TaxRegimeCode, command.ActividadEconomicaCiiuCode);
+            command.CreditDaysCode, command.CreditBlocked, command.TaxRegimeCode, command.ActividadEconomicaCiiuCode,
+            command.FiscalAxes);
         await synchronizer.SyncAsync(party, v2Input, cancellationToken).ConfigureAwait(false);
 
         // En un grafo ya rastreado, EF trata los hijos NUEVOS (con GUID generado en
