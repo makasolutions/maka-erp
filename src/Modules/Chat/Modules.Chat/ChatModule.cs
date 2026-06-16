@@ -62,7 +62,9 @@ public sealed class ChatModule : IModule
             var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
             var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
             options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
-            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
+            // NO resolver los ISaveChangesInterceptor (scoped) aquí: el helper Wolverine registra las
+            // options SINGLETON, así que `sp` es root → "Cannot resolve scoped service from root provider"
+            // (rompía el login). EF los auto-descubre desde el scope del contexto. Ver IdentityModule.
         }, wolverineDatabaseSchema: "chat");
         builder.Services.AddEventingCore(builder.Configuration);
         builder.Services.AddEventingForDbContext<ChatDbContext>();
