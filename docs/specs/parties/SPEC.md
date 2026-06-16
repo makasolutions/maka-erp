@@ -558,7 +558,12 @@ public static class PartiesPermissions
 | PR-A · Dominio v2 (tipos nuevos, sin tocar Party v1) | ✅ **Completo (626422ab)** — ~888 LOC dominio + 21/21 tests, v1 intacto, namespace `Domain.V2` |
 | PR-B · Persistencia v2 (tablas nuevas aditivas) | ✅ **Completo (37577b22)** — 9 tablas aditivas (0 ALTER de Parties), 5/5 integration tests, primer `OwnsOne` del repo (PaymentTerms). ADR-0007: causa primaria del discovery EF confirmada (factory por contexto) |
 | PR-C · Backfill de datos v1 → v2 | ✅ **Completo** — comando idempotente `backfill-parties-v2 [--dry-run]` en DbMigrator. Mapea Roles→Profiles, CreditLimit→CreditAccount+movimiento, CIIU→PartyCiiuActivity, CreditBlocked→PartyHold(Ventas). TaxRegimeCode se **analiza y reporta** (sin persistir — `FiscalData` es owned de Party, llega en PR-D). 6/6 integration tests. Mini-commit previo: `DefaultCurrencyId` nullable |
-| PR-D · Enlazar navegación + delegación al padre **+ reconciliar enum↔código Tabla Básica** | ⬜ Pendiente |
+| PR-D · Enlazar Party v2 (desglosado en 5 sub-PRs por dependencia) | ⏳ **En curso** |
+| &nbsp;&nbsp;· **PR-D1** FiscalData owned en Party + poblar | ✅ **Completo** — `OwnsOne` nullable (primer owned nullable del repo, patrón de referencia para D4) + value converter de `ResponsabilidadesFiscales` (códigos DIAN). Migración aditiva (10 columnas `FiscalData_*`, 0 columnas v1 tocadas). El backfill ahora **persiste** el régimen desde `TaxRegimeCode` (cierra el gap analiza-only de PR-C). 13/13 integration tests, Catalog verde |
+| &nbsp;&nbsp;· **PR-D2** nav Party↔Profiles + CIIU collection + invariante principal al agregado | ⬜ Pendiente |
+| &nbsp;&nbsp;· **PR-D3** `ParentPartyId` + `ResolveCommercialEntity()` (delegación Odoo) | ⬜ Pendiente |
+| &nbsp;&nbsp;· **PR-D4** reconciliación `TipoIdentificacion` ↔ código Tabla Básica + `LegalRepresentative` owned | ⬜ Pendiente |
+| &nbsp;&nbsp;· **PR-D5** features dual-write + lectura interna de v2 | ⬜ Pendiente |
 | PR-E · Cutover de Catalog/Convenios | ⬜ Pendiente |
 | PR-F · Limpieza destructiva de columnas v1 **+ promover `Domain.V2.*` → `Domain.*`** | ⬜ Pendiente |
 

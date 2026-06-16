@@ -144,9 +144,79 @@ public sealed class PartiesV2BackfillTests
 
         var report = await RunBackfillAsync(tenant, dryRun: false);
 
-        // No lanza; el código no derivable queda reportado como deuda PR-D.
+        // No lanza; el código no derivable queda reportado como deuda PR-D, y NO se puebla FiscalData.
         report.TaxRegimeUnmapped.ShouldContain(report.TaxRegimeUnmapped.Single());
         report.TaxRegimeMappedClean.ShouldBe(0);
+        report.FiscalDataPopulated.ShouldBe(0);
+
+        await InTenant(tenant, async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var party = await db.Parties.SingleAsync(p => p.IdentificationNumber == "444");
+            party.FiscalData?.RegimenTributario.ShouldBeNull();
+            return 0;
+        });
+    }
+
+    [Fact]
+    public async Task Mappable_TaxRegimeCode_Persists_FiscalData_Idempotently()
+    {
+        // PR-D1: el backfill ahora PERSISTE el régimen en Party.FiscalData (cierra el gap
+        // analiza-only de PR-C). "REGIMEN_COMUN_RESPONSABLE_IVA" → Ordinario + Responsable.
+        var tenant = Tenant();
+        await SeedPartyAsync(tenant, Party.Create("NIT", "777", 1, PartyKind.Juridica, "Régimen Común",
+            PartyRole.Customer, taxRegimeCode: "REGIMEN_COMUN_RESPONSABLE_IVA"));
+
+        var first = await RunBackfillAsync(tenant, dryRun: false);
+        first.FiscalDataPopulated.ShouldBe(1);
+        first.TaxRegimeMappedClean.ShouldBe(1);
+
+        await InTenant(tenant, async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var party = await db.Parties.SingleAsync(p => p.IdentificationNumber == "777");
+            party.FiscalData.ShouldNotBeNull();
+            party.FiscalData!.RegimenTributario.ShouldBe(RegimenTributario.Ordinario);
+            party.FiscalData.ResponsabilidadIVA.ShouldBe(ResponsabilidadIVA.Responsable);
+            return 0;
+        });
+
+        // Idempotente: segunda corrida no vuelve a poblar.
+        var second = await RunBackfillAsync(tenant, dryRun: false);
+        second.FiscalDataPopulated.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task FiscalData_ResponsabilidadesFiscales_ValueConverter_RoundTrips()
+    {
+        // El value converter de la colección DIAN (códigos R-99-PN/O-13…) round-trips inline.
+        var tenant = Tenant();
+        var partyId = Guid.Empty;
+        await InTenant(tenant, async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var party = Party.Create("NIT", "888", 1, PartyKind.Juridica, "Con Responsabilidades", PartyRole.Customer);
+            party.AssignFiscalData(new FSH.Modules.Parties.Domain.V2.FiscalData
+            {
+                RegimenTributario = RegimenTributario.Ordinario,
+                ResponsabilidadesFiscales = ["R-99-PN", "O-13", "O-15"],
+                GranContribuyente = true,
+            });
+            db.Parties.Add(party);
+            await db.SaveChangesAsync();
+            partyId = party.Id;
+            return 0;
+        });
+
+        await InTenant(tenant, async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var party = await db.Parties.SingleAsync(p => p.Id == partyId);
+            party.FiscalData.ShouldNotBeNull();
+            party.FiscalData!.ResponsabilidadesFiscales.ShouldBe(new[] { "R-99-PN", "O-13", "O-15" });
+            party.FiscalData.GranContribuyente.ShouldBeTrue();
+            return 0;
+        });
     }
 
     [Fact]

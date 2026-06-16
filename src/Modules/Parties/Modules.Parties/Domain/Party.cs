@@ -1,5 +1,6 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
+using FSH.Modules.Parties.Domain.V2;
 
 namespace FSH.Modules.Parties.Domain;
 
@@ -27,6 +28,13 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public string? TaxRegimeCode             { get; private set; }
     public string? FiscalResponsibilities    { get; private set; }
     public string? ActividadEconomicaCiiuCode { get; private set; }
+
+    /// <summary>
+    /// Identidad fiscal v2 (owned VO, SPEC §4) — ejes RegimenTributario + ResponsabilidadIVA
+    /// SEPARADOS. PR-D1: aditivo y nullable; coexiste con el <see cref="TaxRegimeCode"/> v1 (que
+    /// Catalog sigue leyendo) hasta PR-F. Lo puebla el backfill desde TaxRegimeCode (TaxRegimeMapper).
+    /// </summary>
+    public FiscalData? FiscalData { get; private set; }
 
     public PartyRole   Roles  { get; private set; }
     public PartyStatus Status { get; private set; }
@@ -169,6 +177,18 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     }
 
     public void SetRoles(PartyRole roles) { Roles = roles; UpdatedAtUtc = DateTime.UtcNow; }
+
+    /// <summary>
+    /// Asigna la identidad fiscal v2 (owned VO). PR-D1: usado por el backfill para persistir el
+    /// régimen derivado del <see cref="TaxRegimeCode"/> v1. Reemplaza el VO completo — el caller
+    /// decide la idempotencia (no sobreescribir si ya hay datos fiscales).
+    /// </summary>
+    public void AssignFiscalData(FiscalData fiscalData)
+    {
+        ArgumentNullException.ThrowIfNull(fiscalData);
+        FiscalData = fiscalData;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
 
     public void SetGlobalSupplier(bool isGlobalSupplier)
     {

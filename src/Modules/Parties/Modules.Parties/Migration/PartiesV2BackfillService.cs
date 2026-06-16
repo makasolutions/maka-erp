@@ -26,7 +26,9 @@ public sealed class PartiesV2BackfillService(PartiesDbContext db, ILogger<Partie
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // v1: solo terceros vivos (el global query filter de ISoftDeletable + tenant ya aplican).
-        var parties = await db.Parties.AsNoTracking().ToListAsync(ct).ConfigureAwait(false);
+        // TRACKED (no AsNoTracking): PR-D1 escribe Party.FiscalData sobre la misma fila Party, así
+        // que el SaveChanges final persiste tanto las filas v2 nuevas como el FiscalData del Party.
+        var parties = await db.Parties.ToListAsync(ct).ConfigureAwait(false);
 
         foreach (var party in parties)
         {
@@ -142,11 +144,38 @@ public sealed class PartiesV2BackfillService(PartiesDbContext db, ILogger<Partie
                 }
             }
 
-            // ── TaxRegimeCode → ANÁLISIS (sin persistir; deuda PR-D) ───────────
+            // ── TaxRegimeCode → FiscalData (PR-D1: ahora PERSISTE; cierra el gap analiza-only de PR-C) ──
             var fiscal = TaxRegimeMapper.Map(party.TaxRegimeCode);
-            if (fiscal.IsEmpty) report.TaxRegimeEmpty++;
-            else if (fiscal.Mapped) report.TaxRegimeMappedClean++;
-            else report.TaxRegimeUnmapped.Add(party.Id);
+            if (fiscal.IsEmpty)
+            {
+                report.TaxRegimeEmpty++;
+            }
+            else if (fiscal.Mapped)
+            {
+                report.TaxRegimeMappedClean++;
+
+                // Idempotente y robusto a la materialización EF (null vs VO vacío): solo poblar si
+                // los dos ejes están sin asignar. AssignFiscalData reemplaza el VO (en backfill
+                // FiscalData arranca vacío, no hay flags que preservar).
+                bool fiscalEmpty = party.FiscalData is null
+                    || (party.FiscalData.RegimenTributario is null && party.FiscalData.ResponsabilidadIVA is null);
+                if (fiscalEmpty && (fiscal.Regimen is not null || fiscal.ResponsabilidadIVA is not null))
+                {
+                    if (!dryRun)
+                    {
+                        party.AssignFiscalData(new FiscalData
+                        {
+                            RegimenTributario = fiscal.Regimen,
+                            ResponsabilidadIVA = fiscal.ResponsabilidadIVA,
+                        });
+                    }
+                    report.FiscalDataPopulated++;
+                }
+            }
+            else
+            {
+                report.TaxRegimeUnmapped.Add(party.Id);
+            }
         }
 
         if (!dryRun)

@@ -35,6 +35,9 @@ public sealed class BackfillReport
     public int TaxRegimeMappedClean { get; set; }
     public int TaxRegimeEmpty { get; set; }
 
+    /// <summary>FiscalData (régimen+IVA) persistidos en Party desde TaxRegimeCode (PR-D1).</summary>
+    public int FiscalDataPopulated { get; set; }
+
     /// <summary>PartyIds cuyo TaxRegimeCode NO mapeó limpio — deuda de reconciliación que hereda PR-D.</summary>
     public Collection<Guid> TaxRegimeUnmapped { get; } = [];
 
@@ -61,6 +64,7 @@ public sealed class BackfillReport
         SuppliersWithoutCurrency += other.SuppliersWithoutCurrency;
         TaxRegimeMappedClean += other.TaxRegimeMappedClean;
         TaxRegimeEmpty += other.TaxRegimeEmpty;
+        FiscalDataPopulated += other.FiscalDataPopulated;
         foreach (var id in other.TaxRegimeUnmapped) TaxRegimeUnmapped.Add(id);
         foreach (var id in other.CreditWithoutCustomer) CreditWithoutCustomer.Add(id);
     }
@@ -78,6 +82,7 @@ public sealed class BackfillReport
         sb.Append(CultureInfo.InvariantCulture, $"  PartyHolds (CreditBlocked):+{HoldsCreated} creados / {HoldsSkipped} ya existían\n");
         sb.Append(CultureInfo.InvariantCulture, $"  Suppliers sin moneda:      {SuppliersWithoutCurrency} (DefaultCurrencyId null — PR-D)\n");
         sb.Append(CultureInfo.InvariantCulture, $"  TaxRegime mapeado limpio:  {TaxRegimeMappedClean}\n");
+        sb.Append(CultureInfo.InvariantCulture, $"  FiscalData poblados:       {FiscalDataPopulated} (régimen+IVA persistido en Party — PR-D1)\n");
         sb.Append(CultureInfo.InvariantCulture, $"  TaxRegime vacío (sin dato):{TaxRegimeEmpty}\n");
         sb.Append(CultureInfo.InvariantCulture, $"  TaxRegime NO mapeado:      {TaxRegimeUnmapped.Count} (deuda PR-D)\n");
         sb.Append(CultureInfo.InvariantCulture, $"  Crédito sin rol Customer:  {CreditWithoutCustomer.Count} (anomalía, no se creó CreditAccount)\n");
