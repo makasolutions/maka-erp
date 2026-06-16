@@ -15,9 +15,10 @@ internal sealed record MigratorCommand(
     string? Tenant,
     bool CatalogOnly,
     bool SeedAfter,
+    bool DryRun,
     bool Help)
 {
-    private static readonly string[] KnownVerbs = ["apply", "seed", "seed-demo", "list-pending"];
+    private static readonly string[] KnownVerbs = ["apply", "seed", "seed-demo", "list-pending", "backfill-parties-v2"];
 
     public static MigratorCommand Parse(string[] args)
     {
@@ -33,9 +34,10 @@ internal sealed record MigratorCommand(
         var tenant = ExtractValue(args, "--tenant");
         var catalogOnly = args.Any(a => string.Equals(a, "--catalog-only", StringComparison.OrdinalIgnoreCase));
         var seedAfter = args.Any(a => string.Equals(a, "--seed", StringComparison.OrdinalIgnoreCase));
+        var dryRun = args.Any(a => string.Equals(a, "--dry-run", StringComparison.OrdinalIgnoreCase));
         var help = args.Any(a => a is "-h" or "--help");
 
-        return new MigratorCommand(verb, tenant, catalogOnly, seedAfter, help);
+        return new MigratorCommand(verb, tenant, catalogOnly, seedAfter, dryRun, help);
     }
 
     private static string? ExtractValue(string[] args, string flag)
@@ -63,17 +65,21 @@ internal sealed record MigratorCommand(
           dotnet run --project src/Host/FSH.Starter.DbMigrator -- [verb] [options]
 
         Verbs:
-          apply           Apply pending migrations (default). Use --seed to also run SeedAsync.
-          seed            Run only the SeedAsync step per tenant.
-          seed-demo       Provision the demo tenants (acme, globex) with users, catalog,
-                          tickets, and chat. Dev-only — refuses to run unless
-                          ASPNETCORE_ENVIRONMENT=Development.
-          list-pending    Print pending migrations without applying anything.
+          apply               Apply pending migrations (default). Use --seed to also run SeedAsync.
+          seed                Run only the SeedAsync step per tenant.
+          seed-demo           Provision the demo tenants (acme, globex) with users, catalog,
+                              tickets, and chat. Dev-only — refuses to run unless
+                              ASPNETCORE_ENVIRONMENT=Development.
+          list-pending        Print pending migrations without applying anything.
+          backfill-parties-v2 Backfill Parties v1 data into the new v2 tables (Profiles,
+                              CreditAccounts, CiiuActivities, Holds). Idempotent, reads v1 /
+                              writes v2 only. Use --dry-run to report without writing.
 
         Options:
           --tenant <id>        Restrict to a single tenant id (default: all tenants).
           --catalog-only       Skip the per-tenant pass; only the tenant catalog is migrated.
           --seed               After apply, also call ITenantService.SeedTenantAsync.
+          --dry-run            For backfill-parties-v2: report what would change without writing.
           -h, --help           Print this help text.
 
         Exit codes:

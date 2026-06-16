@@ -36,6 +36,10 @@ public sealed class PartiesModule : IModule
         builder.Services.AddHeroDbContext<PartiesDbContext>();
         builder.Services.AddScoped<IDbInitializer, PartiesDbInitializer>();
 
+        // Backfill v1→v2 (PR-C). Servicio scoped invocado por el verbo `backfill-parties-v2`
+        // del DbMigrator (orquestación multi-tenant) y por los integration tests.
+        builder.Services.AddScoped<Migration.PartiesV2BackfillService>();
+
         // Identity verification (NIT/cédula): local validation + swappable lookup provider.
         builder.Services.Configure<IdentityVerificationOptions>(
             builder.Configuration.GetSection("IdentityVerification"));

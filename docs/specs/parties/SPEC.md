@@ -222,7 +222,7 @@ Solo configuración de la **faceta cliente**. El crédito vive en `CreditAccount
 |---|---|---|
 | `PartyId` | `Guid` PK/FK | |
 | `ClassificationId` | `Guid?` → SupplierClassification | |
-| `DefaultCurrencyId` | `Guid` | COP/USD (importadores) |
+| `DefaultCurrencyId` | `Guid?` | COP/USD (importadores). **Nullable** (PR-C): v1 no tiene catálogo de monedas con Guid; se poblará cuando exista el catálogo (PR-D+) |
 | `PaymentTerms` | owned VO | DiasCredito, FormaPagoId |
 | `WithholdingRuleId` | `Guid?` | |
 | `DefaultPriceListId` | `Guid?` | Lista de compra (Frappe: default_price_list) |
@@ -556,8 +556,8 @@ public static class PartiesPermissions
 | PR | Estado |
 |---|---|
 | PR-A · Dominio v2 (tipos nuevos, sin tocar Party v1) | ✅ **Completo (626422ab)** — ~888 LOC dominio + 21/21 tests, v1 intacto, namespace `Domain.V2` |
-| PR-B · Persistencia v2 (tablas nuevas aditivas) | ⏳ **En curso** — confirma hipótesis discovery EF (ADR-0007) |
-| PR-C · Backfill de datos v1 → v2 | ⬜ Pendiente |
+| PR-B · Persistencia v2 (tablas nuevas aditivas) | ✅ **Completo (37577b22)** — 9 tablas aditivas (0 ALTER de Parties), 5/5 integration tests, primer `OwnsOne` del repo (PaymentTerms). ADR-0007: causa primaria del discovery EF confirmada (factory por contexto) |
+| PR-C · Backfill de datos v1 → v2 | ✅ **Completo** — comando idempotente `backfill-parties-v2 [--dry-run]` en DbMigrator. Mapea Roles→Profiles, CreditLimit→CreditAccount+movimiento, CIIU→PartyCiiuActivity, CreditBlocked→PartyHold(Ventas). TaxRegimeCode se **analiza y reporta** (sin persistir — `FiscalData` es owned de Party, llega en PR-D). 6/6 integration tests. Mini-commit previo: `DefaultCurrencyId` nullable |
 | PR-D · Enlazar navegación + delegación al padre **+ reconciliar enum↔código Tabla Básica** | ⬜ Pendiente |
 | PR-E · Cutover de Catalog/Convenios | ⬜ Pendiente |
 | PR-F · Limpieza destructiva de columnas v1 **+ promover `Domain.V2.*` → `Domain.*`** | ⬜ Pendiente |
