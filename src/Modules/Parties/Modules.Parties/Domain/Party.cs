@@ -1,6 +1,7 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Domain.V2;
+using FSH.Modules.Parties.Domain.V2.Exceptions;
 using FSH.Modules.Parties.Domain.V2.Profiles;
 
 namespace FSH.Modules.Parties.Domain;
@@ -12,6 +13,13 @@ namespace FSH.Modules.Parties.Domain;
 /// </summary>
 public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
 {
+    /// <summary>
+    /// Jerarquía comercial (matriz → sucursal → contacto), patrón Odoo <c>parent_id</c> (PR-D3).
+    /// Eje ORTOGONAL a <c>TenantId</c> (R4): la jerarquía es del tercero, el tenant es el SaaS.
+    /// Permite delegar campos comerciales al padre (ver <see cref="ResolveCommercialEntity"/>).
+    /// </summary>
+    public Guid? ParentPartyId { get; private set; }
+
     // Identificación
     public string  IdentificationTypeCode { get; private set; } = default!;
     public string  IdentificationNumber   { get; private set; } = default!;
@@ -277,4 +285,59 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
         target.SetPrincipal(true);
         UpdatedAtUtc = DateTime.UtcNow;
     }
+
+    // ── Jerarquía (PR-D3): patrón de validación de ciclos REUTILIZABLE para otras jerarquías
+    //    del sistema (categorías de catálogo, centros de costo, etc.): el dominio valida en
+    //    memoria contra el conjunto de ids de ancestros que el caller carga con un recursive CTE
+    //    (una query, solo ids). El dominio no hace I/O; la carga es eficiente y acotada. ──
+
+    /// <summary>
+    /// Asigna el padre del tercero validando que NO se forme un ciclo. <paramref name="parentAncestorIds"/>
+    /// son los ids de los ancestros del padre propuesto (cargados por el caller vía recursive CTE);
+    /// si este tercero está entre ellos, o el padre es él mismo, la asignación crearía un ciclo y lanza.
+    /// </summary>
+    public void AssignParent(Guid parentId, IReadOnlySet<Guid> parentAncestorIds)
+    {
+        ArgumentNullException.ThrowIfNull(parentAncestorIds);
+        if (parentId == Guid.Empty) throw new ArgumentException("ParentId requerido.", nameof(parentId));
+        if (parentId == Id || parentAncestorIds.Contains(Id))
+        {
+            throw new PartyHierarchyCycleException(Id, parentId);
+        }
+        ParentPartyId = parentId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>Quita el padre (el tercero pasa a ser raíz de su jerarquía).</summary>
+    public void ClearParent()
+    {
+        ParentPartyId = null;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Resuelve la "entidad comercial" de la cual se leen los campos comerciales (FiscalData y, vía
+    /// su <c>CustomerProfile</c>, el CreditAccount) — patrón Odoo <c>commercial_partner_id</c>. La
+    /// entidad comercial es UNA unidad: los campos vienen todos de la matriz o todos del propio
+    /// tercero, no combinados. Devuelve <c>this</c> si tiene datos comerciales propios; si no, el
+    /// ancestro más cercano que los tenga; si ninguno, la matriz (último ancestro).
+    /// <paramref name="ancestorsNearestFirst"/> es la cadena de ancestros (padre, abuelo, …) ya cargada.
+    /// </summary>
+    public Party ResolveCommercialEntity(IReadOnlyList<Party> ancestorsNearestFirst)
+    {
+        ArgumentNullException.ThrowIfNull(ancestorsNearestFirst);
+        if (HasOwnCommercialData) return this;
+        foreach (var ancestor in ancestorsNearestFirst)
+        {
+            if (ancestor.HasOwnCommercialData) return ancestor;
+        }
+        return ancestorsNearestFirst.Count > 0 ? ancestorsNearestFirst[^1] : this;
+    }
+
+    /// <summary>
+    /// Criterio de "tiene datos comerciales propios" para la delegación. TODO(D5): refinar si
+    /// aparece un caso con crédito propio pero sin FiscalData (hoy se asume que la FiscalData es el
+    /// indicador de entidad comercial). Para M1 con jerarquías simples (matriz→sucursal→contacto) basta.
+    /// </summary>
+    private bool HasOwnCommercialData => FiscalData?.RegimenTributario is not null;
 }

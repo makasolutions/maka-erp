@@ -53,5 +53,11 @@ public sealed class PartiesDbContext : BaseDbContext
             .HasIndex("TenantId", nameof(Party.IdentificationTypeCode), nameof(Party.IdentificationNumber))
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");
+
+        // Jerarquía tenant-scoped (PR-D3, SPEC §3): "hijos de X en este tenant". Se define aquí
+        // (tras base) porque referencia el shadow TenantId. La self-FK además indexa ParentPartyId.
+        modelBuilder.Entity<Party>()
+            .HasIndex("TenantId", nameof(Party.ParentPartyId))
+            .HasDatabaseName("ix_parties_parent");
     }
 }

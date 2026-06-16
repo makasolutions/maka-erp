@@ -40,6 +40,10 @@ public sealed class PartiesModule : IModule
         // del DbMigrator (orquestación multi-tenant) y por los integration tests.
         builder.Services.AddScoped<Migration.PartiesV2BackfillService>();
 
+        // Jerarquía de terceros (PR-D3): carga ancestros (recursive CTE) para las validaciones
+        // de ciclos y la delegación comercial. Lo consumen las features de D5 y los integration tests.
+        builder.Services.AddScoped<Domain.PartyHierarchyService>();
+
         // Identity verification (NIT/cédula): local validation + swappable lookup provider.
         builder.Services.Configure<IdentityVerificationOptions>(
             builder.Configuration.GetSection("IdentityVerification"));

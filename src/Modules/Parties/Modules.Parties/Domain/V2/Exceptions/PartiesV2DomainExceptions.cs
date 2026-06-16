@@ -13,4 +13,15 @@ public sealed class InvalidHoldPeriodException(DateOnly inicio, DateOnly liberac
 /// <summary>Un movimiento de crédito viola una invariante (monto no positivo, asignación duplicada, etc.).</summary>
 public sealed class InvalidCreditMovementException(string message) : InvalidOperationException(message);
 
+/// <summary>
+/// Asignar el padre crearía un ciclo en la jerarquía de terceros (un Party no puede ser su propio
+/// ancestro, directa ni transitivamente). PR-D3.
+/// </summary>
+public sealed class PartyHierarchyCycleException(Guid partyId, Guid proposedParentId)
+    : InvalidOperationException($"Asignar el padre {proposedParentId} al tercero {partyId} crearía un ciclo en la jerarquía.")
+{
+    public Guid PartyId { get; } = partyId;
+    public Guid ProposedParentId { get; } = proposedParentId;
+}
+
 #pragma warning restore CA1032

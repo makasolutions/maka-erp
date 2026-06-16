@@ -64,6 +64,14 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         // CIIU: colección 1..N. FK + índice ya en PartyCiiuActivityConfiguration (+ ix_ciiu_principal).
         builder.HasMany(x => x.CiiuActivities).WithOne().HasForeignKey(c => c.PartyId).OnDelete(DeleteBehavior.Cascade);
 
+        // Self-FK jerarquía (PR-D3, patrón Odoo parent_id). Restrict: una matriz con hijos NO se
+        // puede HARD-deletear (protege la jerarquía; sin cascada que borre sucursales ni orfandad).
+        // TODO(D5): el soft-delete (IsDeleted) de una matriz NO toca a los hijos — quedarían apuntando
+        // a una matriz marcada como borrada. Refinar en las features de D5 (reparentar o bloquear el
+        // soft-delete de una matriz con hijos vivos). El índice (TenantId, ParentPartyId) se define en
+        // PartiesDbContext tras base.OnModelCreating (el shadow TenantId solo existe ahí).
+        builder.HasOne<Party>().WithMany().HasForeignKey(x => x.ParentPartyId).OnDelete(DeleteBehavior.Restrict);
+
         // ──────────────────────────────────────────────────────────────────────────────
         // PRIMER OwnsOne NULLABLE del repo (PR-D1) — patrón de referencia para owned VOs
         // OPCIONALES (lo copiará D4 para LegalRepresentative). FiscalData v2 (ejes fiscales
