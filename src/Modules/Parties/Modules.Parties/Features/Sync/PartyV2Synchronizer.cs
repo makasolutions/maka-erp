@@ -7,6 +7,7 @@ using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Domain.V2;
 using FSH.Modules.Parties.Domain.V2.Credit;
 using FSH.Modules.Parties.Domain.V2.Profiles;
+using FSH.Modules.Parties.Migration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -57,6 +58,72 @@ public sealed class PartyV2Synchronizer(
 
         await SyncCreditAsync(party, customerProfile, registradoPor, ct).ConfigureAwait(false);
         await SyncCreditBlockedAsync(party, registradoPor, ct).ConfigureAwait(false);
+
+        SyncFiscalData(party);
+        SyncCiiu(party);
+    }
+
+    // ── FiscalData + CIIU (D5c) ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// TaxRegimeCode v1 → ejes RegimenTributario + ResponsabilidadIVA del FiscalData (reusa
+    /// <see cref="TaxRegimeMapper"/>). DOBLE CANDADO para no pisar lo que v1 NO conoce:
+    /// (1) <c>record with</c> copia todos los demás campos (GranContribuyente, ResponsabilidadesFiscales,
+    /// FlagPEP…) y solo cambia los dos ejes; (2) <c>?? current</c> preserva un eje que el mapper no
+    /// derivó. Idempotente: solo asigna si algún eje cambió. Código no mapeable → deja FiscalData como
+    /// está + log (consistente con PR-C, sin throw). FiscalData es owned inline → la mutación la detecta
+    /// el DetectChanges del handler (no es entidad nueva).
+    /// </summary>
+    private void SyncFiscalData(Party party)
+    {
+        var mapping = TaxRegimeMapper.Map(party.TaxRegimeCode);
+        if (mapping.IsEmpty) return; // v1 sin código → nada que derivar
+
+        if (!mapping.Mapped)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.LogWarning("[dual-write] Party {PartyId}: TaxRegimeCode '{Code}' no mapea a régimen — FiscalData sin cambios.",
+                    party.Id, party.TaxRegimeCode);
+            }
+            return;
+        }
+
+        var current = party.FiscalData ?? FiscalData.Empty;
+        var newRegimen = mapping.Regimen ?? current.RegimenTributario;
+        var newIva = mapping.ResponsabilidadIVA ?? current.ResponsabilidadIVA;
+
+        if (newRegimen != current.RegimenTributario || newIva != current.ResponsabilidadIVA)
+        {
+            party.AssignFiscalData(current with { RegimenTributario = newRegimen, ResponsabilidadIVA = newIva });
+        }
+        // ejes sin cambio → no-op (idempotente)
+    }
+
+    /// <summary>
+    /// ActividadEconomicaCiiuCode (único v1) → la actividad PRINCIPAL en v2. El dual-write es dueño
+    /// SOLO de la principal derivada de v1; las CIIU no-principales (secundarias deliberadas de v2,
+    /// post-D) nunca se tocan. Al cambiar el código v1 se actualiza el código de la fila principal
+    /// IN PLACE (sin tocar IsPrincipal) → sin swap del flag que viole ix_ciiu_principal. v1 sin código
+    /// → no-op (no remueve). Requiere party.CiiuActivities cargado (Include en Update).
+    /// </summary>
+    private void SyncCiiu(Party party)
+    {
+        var desired = party.ActividadEconomicaCiiuCode?.Trim();
+        if (string.IsNullOrWhiteSpace(desired)) return;
+
+        var principal = party.CiiuActivities.FirstOrDefault(c => c.IsPrincipal);
+        if (principal is null)
+        {
+            var activity = PartyCiiuActivity.Create(party.Id, desired, isPrincipal: true);
+            db.PartyCiiuActivities.Add(activity); // Added explícito (sobrevive la danza del Update)
+            party.CiiuActivities.Add(activity);   // grafo en memoria coherente
+        }
+        else if (!string.Equals(principal.CiiuCode, desired, StringComparison.Ordinal))
+        {
+            principal.ChangeCode(desired); // UPDATE in place, sin tocar IsPrincipal
+        }
+        // principal.CiiuCode == desired → no-op (idempotente)
     }
 
     // ── Facetas (D5a) ──────────────────────────────────────────────────────────────

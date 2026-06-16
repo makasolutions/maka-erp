@@ -5,6 +5,7 @@ using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Contracts.v1.Parties.CreateParty;
 using FSH.Modules.Parties.Contracts.v1.Parties.UpdateParty;
 using FSH.Modules.Parties.Data;
+using FSH.Modules.Parties.Domain.V2;
 using FSH.Modules.Parties.Domain.V2.Credit;
 using Integration.Tests.Infrastructure;
 using Mediator;
@@ -35,17 +36,20 @@ public sealed class PartiesV2DualWriteTests
         return await action(scope.ServiceProvider);
     }
 
-    private Task<Guid> CreateAsync(string num, PartyRole roles, decimal? creditLimit = null, bool creditBlocked = false) =>
+    private Task<Guid> CreateAsync(string num, PartyRole roles, decimal? creditLimit = null, bool creditBlocked = false,
+        string? taxRegimeCode = null, string? ciiu = null) =>
         InScope(sp => sp.GetRequiredService<ICommandHandler<CreatePartyCommand, Guid>>()
             .Handle(new CreatePartyCommand("NIT", num, null, PartyKind.Juridica, $"Tercero {num}", roles,
-                CreditLimit: creditLimit, CreditBlocked: creditBlocked), default).AsTask());
+                TaxRegimeCode: taxRegimeCode, CreditLimit: creditLimit,
+                ActividadEconomicaCiiuCode: ciiu, CreditBlocked: creditBlocked), default).AsTask());
 
-    private Task<Guid> UpdateRolesAsync(Guid id, PartyRole roles, decimal? creditLimit = null, bool creditBlocked = false) =>
+    private Task<Guid> UpdateRolesAsync(Guid id, PartyRole roles, decimal? creditLimit = null, bool creditBlocked = false,
+        string? taxRegimeCode = null, string? ciiu = null) =>
         InScope(sp => sp.GetRequiredService<ICommandHandler<UpdatePartyCommand, Guid>>()
             .Handle(new UpdatePartyCommand(id, null, PartyKind.Juridica, "Tercero", roles,
-                null, null, null, null, null, PartyStatus.Active, LifecycleStage.Lead, 0,
+                null, null, null, taxRegimeCode, null, PartyStatus.Active, LifecycleStage.Lead, 0,
                 null, null, null, null, null, null, creditLimit, null, null, null,
-                CreditBlocked: creditBlocked), default).AsTask());
+                ActividadEconomicaCiiuCode: ciiu, CreditBlocked: creditBlocked), default).AsTask());
 
     private Task<(bool exists, decimal cupo, bool activo, int movimientos, int aumentos, int reducciones)> ReadCreditAsync(Guid partyId) =>
         InScope(async sp =>
@@ -218,6 +222,128 @@ public sealed class PartiesV2DualWriteTests
             var holds = await db.PartyHolds.Where(h => h.PartyId == id && h.HoldType == HoldType.Ventas).ToListAsync();
             holds.Count.ShouldBe(1);          // idempotente
             holds[0].EstaActivo.ShouldBeTrue();
+            return 0;
+        });
+    }
+
+    // ── FiscalData + CIIU (D5c) ────────────────────────────────────────────────────
+
+    private Task<FiscalData?> ReadFiscalAsync(Guid id) =>
+        InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            return (await db.Parties.SingleAsync(p => p.Id == id)).FiscalData;
+        });
+
+    [Fact]
+    public async Task Create_Mappable_TaxRegime_Populates_Fiscal_Axes()
+    {
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer,
+            taxRegimeCode: "REGIMEN_COMUN_RESPONSABLE_IVA");
+
+        var f = await ReadFiscalAsync(id);
+        f.ShouldNotBeNull();
+        f!.RegimenTributario.ShouldBe(RegimenTributario.Ordinario);
+        f.ResponsabilidadIVA.ShouldBe(ResponsabilidadIVA.Responsable);
+    }
+
+    [Fact]
+    public async Task Unmappable_TaxRegime_Leaves_Fiscal_Untouched()
+    {
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer,
+            taxRegimeCode: "CODIGO_INVENTADO_XYZ");
+
+        var f = await ReadFiscalAsync(id);
+        f?.RegimenTributario.ShouldBeNull(); // no se derivó nada
+    }
+
+    [Fact]
+    public async Task Update_TaxRegime_Updates_Axes_Preserving_Other_Fields()
+    {
+        // EL TEST IMPORTANTE: el dual-write deriva solo los ejes; NO debe pisar GranContribuyente
+        // (campo que v1 no conoce, poblado por la vía v2).
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer, taxRegimeCode: "SIMPLE");
+
+        // Pre-pueblo GranContribuyente=true + Regimen=Simple por la vía v2 (simula otra fuente).
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var p = await db.Parties.SingleAsync(x => x.Id == id);
+            p.AssignFiscalData(new FiscalData
+            {
+                RegimenTributario = RegimenTributario.Simple,
+                ResponsabilidadIVA = ResponsabilidadIVA.NoResponsable,
+                GranContribuyente = true,
+                ResponsabilidadesFiscales = ["O-13", "O-15"],
+            });
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        // Update cambia el régimen v1 a común → ejes nuevos, pero GranContribuyente + responsabilidades preservados.
+        await UpdateRolesAsync(id, PartyRole.Customer, taxRegimeCode: "REGIMEN_COMUN_RESPONSABLE_IVA");
+
+        var f = await ReadFiscalAsync(id);
+        f.ShouldNotBeNull();
+        f!.RegimenTributario.ShouldBe(RegimenTributario.Ordinario);   // eje actualizado
+        f.ResponsabilidadIVA.ShouldBe(ResponsabilidadIVA.Responsable); // eje actualizado
+        f.GranContribuyente.ShouldBeTrue();                            // PRESERVADO (v1 no lo conoce)
+        f.ResponsabilidadesFiscales.ShouldBe(new[] { "O-13", "O-15" }); // PRESERVADO
+    }
+
+    [Fact]
+    public async Task Update_Same_TaxRegime_Preserves_Fiscal()
+    {
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer, taxRegimeCode: "SIMPLE");
+        await UpdateRolesAsync(id, PartyRole.Customer, taxRegimeCode: "SIMPLE"); // mismo régimen → no-op
+
+        var f = await ReadFiscalAsync(id);
+        f!.RegimenTributario.ShouldBe(RegimenTributario.Simple);
+    }
+
+    [Fact]
+    public async Task Create_With_Ciiu_Creates_Principal_Activity()
+    {
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer, ciiu: "4791");
+
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var acts = await db.PartyCiiuActivities.Where(c => c.PartyId == id).ToListAsync();
+            acts.Count.ShouldBe(1);
+            acts[0].CiiuCode.ShouldBe("4791");
+            acts[0].IsPrincipal.ShouldBeTrue();
+            return 0;
+        });
+    }
+
+    [Fact]
+    public async Task Update_Ciiu_Updates_Code_In_Place()
+    {
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer, ciiu: "4791");
+        await UpdateRolesAsync(id, PartyRole.Customer, ciiu: "6201"); // cambia el código
+
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            var acts = await db.PartyCiiuActivities.Where(c => c.PartyId == id).ToListAsync();
+            acts.Count.ShouldBe(1);             // in-place: sigue siendo UNA actividad
+            acts[0].CiiuCode.ShouldBe("6201");  // código nuevo
+            acts[0].IsPrincipal.ShouldBeTrue(); // sin swap del flag → no violó ix_ciiu_principal
+            return 0;
+        });
+    }
+
+    [Fact]
+    public async Task Update_Same_Ciiu_NoOp()
+    {
+        var id = await CreateAsync($"d5-{Guid.NewGuid():N}"[..13], PartyRole.Customer, ciiu: "4791");
+        await UpdateRolesAsync(id, PartyRole.Customer, ciiu: "4791"); // mismo código
+
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<PartiesDbContext>();
+            (await db.PartyCiiuActivities.CountAsync(c => c.PartyId == id)).ShouldBe(1);
             return 0;
         });
     }

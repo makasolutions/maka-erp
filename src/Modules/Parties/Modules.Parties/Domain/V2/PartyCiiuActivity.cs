@@ -32,4 +32,15 @@ public sealed class PartyCiiuActivity : BaseEntity<Guid>
     // Invariante "exactamente una principal" movida al agregado Party (PR-D2): ver
     // Party.AddCiiuActivity / Party.SetPrincipalCiiu. SetPrincipal lo llama el agregado.
     internal void SetPrincipal(bool value) => IsPrincipal = value;
+
+    /// <summary>
+    /// Cambia el código CIIU en sitio (PR-D5c). Lo usa el dual-write para reflejar el cambio del
+    /// único código CIIU de v1 sobre la fila principal — sin tocar <see cref="IsPrincipal"/>, así
+    /// no hay swap del flag que viole el índice único parcial <c>ix_ciiu_principal</c>.
+    /// </summary>
+    internal void ChangeCode(string ciiuCode)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ciiuCode);
+        CiiuCode = ciiuCode.Trim();
+    }
 }

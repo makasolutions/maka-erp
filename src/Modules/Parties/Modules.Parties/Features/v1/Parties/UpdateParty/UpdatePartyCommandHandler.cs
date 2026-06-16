@@ -19,8 +19,9 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
 
         var party = await db.Parties
             .Include(p => p.Addresses).Include(p => p.Contacts).Include(p => p.Channels).Include(p => p.Team)
-            // Navs v2 (PR-D5a) cargadas para que el synchronizer diffee el estado actual.
+            // Navs v2 cargadas para que el synchronizer diffee el estado actual (D5a profiles, D5c CIIU).
             .Include(p => p.CustomerProfile).Include(p => p.SupplierProfile).Include(p => p.EmployeeProfile)
+            .Include(p => p.CiiuActivities)
             .FirstOrDefaultAsync(p => p.Id == command.Id && !p.IsDeleted, cancellationToken)
             .ConfigureAwait(false)
             ?? throw new CustomException("Tercero no encontrado.", Enumerable.Empty<string>(), HttpStatusCode.NotFound);
