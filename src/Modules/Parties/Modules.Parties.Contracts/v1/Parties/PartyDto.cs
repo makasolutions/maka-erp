@@ -17,7 +17,9 @@ public sealed record PartyDto(
     string?     Email,
     string?     City,
     Guid?       AssignedUserId,
-    DateTime    CreatedAtUtc);
+    DateTime    CreatedAtUtc,
+    // PR-D5d: resumen v2 aditivo (default null → v1 byte-idéntico). Cutover Catalog = PR-E.
+    PartyV2SummaryDto? V2 = null);
 
 /// <summary>Versión liviana para el PartyPicker (Orders/Cotizaciones/Billing).</summary>
 public sealed record PartyBriefDto(

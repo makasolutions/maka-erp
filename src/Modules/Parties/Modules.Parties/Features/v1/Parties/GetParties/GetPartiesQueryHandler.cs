@@ -55,7 +55,12 @@ public sealed class GetPartiesQueryHandler(PartiesDbContext db)
                 p.TradeName, p.Roles, p.Status, p.Stage, p.Email,
                 p.Addresses.Where(a => a.IsPrimary).Select(a => a.City).FirstOrDefault()
                     ?? p.Addresses.Select(a => a.City).FirstOrDefault(),
-                p.AssignedUserId, p.CreatedAtUtc))
+                p.AssignedUserId, p.CreatedAtUtc,
+                // PR-D5d: resumen v2 inline (cero joins nuevos): ejes fiscales (owned inline) + jerarquía.
+                new PartyV2SummaryDto(
+                    p.FiscalData == null ? null : p.FiscalData.RegimenTributario,
+                    p.FiscalData == null ? null : p.FiscalData.ResponsabilidadIVA,
+                    p.ParentPartyId)))
             .ToPagedResponseAsync(query, cancellationToken)
             .ConfigureAwait(false);
     }

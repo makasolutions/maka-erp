@@ -39,7 +39,9 @@ public sealed record PartyDetailDto(
     IReadOnlyList<PartyAddressDto>    Addresses,
     IReadOnlyList<PartyContactDto>    Contacts,
     IReadOnlyList<PartyChannelDto>    Channels,
-    IReadOnlyList<PartyTeamMemberDto> Team);
+    IReadOnlyList<PartyTeamMemberDto> Team,
+    // PR-D5d: exposición v2 aditiva (default null → v1 byte-idéntico). Cutover Catalog = PR-E.
+    PartyV2DetailDto? V2 = null);
 
 public sealed record PartyAddressDto(Guid Id, string Country, string? Department, string? City, string? Line,
     string? Barrio, string? Reference, decimal? Latitude, decimal? Longitude, bool IsPrimary, string? LabelCode,
