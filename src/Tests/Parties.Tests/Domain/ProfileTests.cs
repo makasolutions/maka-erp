@@ -42,8 +42,18 @@ public class ProfileTests
     }
 
     [Fact]
-    public void SupplierProfile_RequiresCurrency()
+    public void SupplierProfile_AllowsNullCurrency()
     {
-        Should.Throw<ArgumentException>(() => SupplierProfile.Create(Guid.CreateVersion7(), Guid.Empty));
+        // v1 no tiene catálogo de monedas con Guid; el backfill (PR-C) crea el perfil sin moneda.
+        // Guid.Empty se normaliza a null. Ver SPEC §6.2 (DefaultCurrencyId nullable).
+        var withoutCurrency = SupplierProfile.Create(Guid.CreateVersion7());
+        withoutCurrency.DefaultCurrencyId.ShouldBeNull();
+
+        var emptyNormalized = SupplierProfile.Create(Guid.CreateVersion7(), Guid.Empty);
+        emptyNormalized.DefaultCurrencyId.ShouldBeNull();
+
+        var currency = Guid.CreateVersion7();
+        var withCurrency = SupplierProfile.Create(Guid.CreateVersion7(), currency);
+        withCurrency.DefaultCurrencyId.ShouldBe(currency);
     }
 }

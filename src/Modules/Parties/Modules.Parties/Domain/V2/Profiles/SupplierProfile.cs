@@ -19,7 +19,12 @@ public sealed class SupplierProfile : BaseEntity<Guid>
 {
     public Guid PartyId { get; private set; }
     public Guid? ClassificationId { get; private set; }
-    public Guid DefaultCurrencyId { get; private set; }
+    /// <summary>
+    /// Moneda por defecto del proveedor. Nullable porque v1 no tiene un catálogo de monedas con
+    /// identificadores Guid; el backfill de PR-C la deja sin asignar y se poblará cuando exista
+    /// dicho catálogo. Ver SPEC sección 6.2.
+    /// </summary>
+    public Guid? DefaultCurrencyId { get; private set; }
     public PaymentTerms PaymentTerms { get; private set; } = PaymentTerms.None;
     public Guid? WithholdingRuleId { get; private set; }
     public Guid? DefaultPriceListId { get; private set; }
@@ -33,7 +38,7 @@ public sealed class SupplierProfile : BaseEntity<Guid>
 
     public static SupplierProfile Create(
         Guid partyId,
-        Guid defaultCurrencyId,
+        Guid? defaultCurrencyId = null,
         Guid? classificationId = null,
         PaymentTerms? paymentTerms = null,
         Guid? withholdingRuleId = null,
@@ -44,12 +49,12 @@ public sealed class SupplierProfile : BaseEntity<Guid>
         DateTimeOffset? now = null)
     {
         if (partyId == Guid.Empty) throw new ArgumentException("PartyId requerido.", nameof(partyId));
-        if (defaultCurrencyId == Guid.Empty) throw new ArgumentException("DefaultCurrencyId requerido.", nameof(defaultCurrencyId));
         return new SupplierProfile
         {
             Id = Guid.CreateVersion7(),
             PartyId = partyId,
-            DefaultCurrencyId = defaultCurrencyId,
+            // Guid.Empty se normaliza a null (sin catálogo de monedas aún — SPEC §6.2).
+            DefaultCurrencyId = defaultCurrencyId == Guid.Empty ? null : defaultCurrencyId,
             ClassificationId = classificationId,
             PaymentTerms = paymentTerms ?? PaymentTerms.None,
             WithholdingRuleId = withholdingRuleId,
