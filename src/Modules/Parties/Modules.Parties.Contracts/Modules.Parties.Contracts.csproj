@@ -4,7 +4,13 @@
 		<RootNamespace>FSH.Modules.Parties.Contracts</RootNamespace>
 		<AssemblyName>FSH.Modules.Parties.Contracts</AssemblyName>
 		<PackageId>FullStackHero.Modules.Parties.Contracts</PackageId>
-		<NoWarn>$(NoWarn);S2094</NoWarn>
+		<!-- Enums v2 (SPEC §13) son `: short` (mapean a smallint, §3) y 1-based intencionalmente
+		     (0 = sin asignar, estilo códigos DIAN). CA1028 (short→Int32) y CA1008 (miembro cero)
+		     no aplican a enums de almacenamiento con esa semántica. Precedente: NamingSeries DocStatus. -->
+		<!-- S1135: hay un TODO(PR-D) de reconciliación enum↔código de identificación pedido
+		     explícitamente (divergencia v1↔v2 documentada), y el miembro `HoldType.Todo` dispara
+		     el mismo regex como falso positivo. -->
+		<NoWarn>$(NoWarn);S2094;CA1028;CA1008;S1135</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

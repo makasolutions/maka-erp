@@ -4,7 +4,9 @@
 		<RootNamespace>FSH.Modules.Parties</RootNamespace>
 		<AssemblyName>FSH.Modules.Parties</AssemblyName>
 		<PackageId>FullStackHero.Modules.Parties</PackageId>
-		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1062;S1144;CA1873</NoWarn>
+		<!-- S1135: TODO(PR-D) de reconciliación v1↔v2 pedido explícitamente + falso positivo del
+		     miembro `HoldType.Todo` referenciado en doc-comments. -->
+		<NoWarn>$(NoWarn);CA1031;CA1812;CA1859;S3267;CA1308;CA1062;S1144;CA1873;S1135</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
