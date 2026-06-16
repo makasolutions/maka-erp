@@ -4,12 +4,13 @@ using FSH.Modules.Parties.Contracts.v1.Parties.UpdateParty;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Features;
+using FSH.Modules.Parties.Features.Sync;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace FSH.Modules.Parties.Features.v1.Parties.UpdateParty;
 
-public sealed class UpdatePartyCommandHandler(PartiesDbContext db)
+public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchronizer synchronizer)
     : ICommandHandler<UpdatePartyCommand, Guid>
 {
     public async ValueTask<Guid> Handle(UpdatePartyCommand command, CancellationToken cancellationToken)
@@ -18,6 +19,8 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db)
 
         var party = await db.Parties
             .Include(p => p.Addresses).Include(p => p.Contacts).Include(p => p.Channels).Include(p => p.Team)
+            // Navs v2 (PR-D5a) cargadas para que el synchronizer diffee el estado actual.
+            .Include(p => p.CustomerProfile).Include(p => p.SupplierProfile).Include(p => p.EmployeeProfile)
             .FirstOrDefaultAsync(p => p.Id == command.Id && !p.IsDeleted, cancellationToken)
             .ConfigureAwait(false)
             ?? throw new CustomException("Tercero no encontrado.", Enumerable.Empty<string>(), HttpStatusCode.NotFound);
@@ -39,6 +42,14 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db)
         party.ReplaceContacts(PartyMapping.ToContacts(command.Contacts));
         party.ReplaceChannels(PartyMapping.ToChannels(command.Channels));
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
+
+        // Dual-write v1→v2 (PR-D5a): mismo DbContext → mismo SaveChanges → misma transacción.
+        // Corre ANTES del DetectChanges de abajo: los profiles NUEVOS se agregan vía db.*.Add
+        // (estado Added explícito, sobrevive AutoDetectChangesEnabled=false); las (re)activaciones y
+        // desactivaciones mutan profiles ya rastreados (Include arriba) y el DetectChanges siguiente
+        // las marca Modified. Los profiles v2 NO están en las colecciones de MarkChildrenAdded (solo
+        // hijos v1), así que esa danza no los afecta.
+        synchronizer.SyncProfilesFromRoles(party);
 
         // En un grafo ya rastreado, EF trata los hijos NUEVOS (con GUID generado en
         // cliente) como filas existentes → genera UPDATE (PartyId 0→real) que afecta

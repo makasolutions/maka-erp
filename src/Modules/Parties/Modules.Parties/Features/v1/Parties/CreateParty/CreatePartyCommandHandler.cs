@@ -4,12 +4,13 @@ using FSH.Modules.Parties.Contracts.v1.Parties.CreateParty;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Features;
+using FSH.Modules.Parties.Features.Sync;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace FSH.Modules.Parties.Features.v1.Parties.CreateParty;
 
-public sealed class CreatePartyCommandHandler(PartiesDbContext db)
+public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchronizer synchronizer)
     : ICommandHandler<CreatePartyCommand, Guid>
 {
     public async ValueTask<Guid> Handle(CreatePartyCommand command, CancellationToken cancellationToken)
@@ -44,6 +45,11 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db)
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
 
         db.Parties.Add(party);
+
+        // Dual-write v1→v2 (PR-D5a): mismo DbContext → mismo SaveChanges → misma transacción.
+        // Tercero nuevo: navs v2 null → el synchronizer crea los profiles según Roles.
+        synchronizer.SyncProfilesFromRoles(party);
+
         try
         {
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
