@@ -1,6 +1,7 @@
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Domain.V2;
+using FSH.Modules.Parties.Domain.V2.Profiles;
 
 namespace FSH.Modules.Parties.Domain;
 
@@ -79,6 +80,20 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public ICollection<PartyContact>    Contacts  { get; private set; } = new List<PartyContact>();
     public ICollection<PartyChannel>    Channels  { get; private set; } = new List<PartyChannel>();
     public ICollection<PartyTeamMember> Team      { get; private set; } = new List<PartyTeamMember>();
+
+    /// <summary>
+    /// Facetas comerciales v2 (PR-D2). Navegaciones uno-a-cero-o-uno: un tercero tiene a lo sumo
+    /// una de cada faceta. De lectura por ahora (EF las puebla con Include); el dual-write llega en
+    /// D5. La cuenta de crédito no es navegación del tercero — se alcanza a través de la faceta cliente.
+    /// </summary>
+    public CustomerProfile? CustomerProfile { get; private set; }
+    public SupplierProfile? SupplierProfile { get; private set; }
+    public ContactProfile?  ContactProfile  { get; private set; }
+    public PartnerProfile?  PartnerProfile  { get; private set; }
+    public EmployeeProfile? EmployeeProfile { get; private set; }
+
+    /// <summary>Actividades CIIU del tercero (1..N, exactamente una principal — invariante del agregado, PR-D2).</summary>
+    public ICollection<PartyCiiuActivity> CiiuActivities { get; private set; } = new List<PartyCiiuActivity>();
 
     private Party() { }
 
@@ -232,5 +247,34 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     {
         Team.Clear();
         foreach (var m in items) Team.Add(m);
+    }
+
+    // ── CIIU: invariante "exactamente una principal" en el agregado (PR-D2, antes en el
+    //    helper transitorio CiiuActivities.SetPrincipal de PR-A). ──
+
+    /// <summary>Agrega una actividad CIIU. Si <paramref name="isPrincipal"/>, desmarca las demás.</summary>
+    public PartyCiiuActivity AddCiiuActivity(string ciiuCode, bool isPrincipal = false)
+    {
+        if (isPrincipal)
+        {
+            foreach (var a in CiiuActivities) a.SetPrincipal(false);
+        }
+        var activity = PartyCiiuActivity.Create(Id, ciiuCode, isPrincipal);
+        CiiuActivities.Add(activity);
+        UpdatedAtUtc = DateTime.UtcNow;
+        return activity;
+    }
+
+    /// <summary>
+    /// Marca una actividad como principal y desmarca las demás (mantiene exactamente una
+    /// principal). Lanza si el id no pertenece a la colección del tercero.
+    /// </summary>
+    public void SetPrincipalCiiu(Guid ciiuActivityId)
+    {
+        var target = CiiuActivities.FirstOrDefault(a => a.Id == ciiuActivityId)
+            ?? throw new ArgumentException("La actividad CIIU no pertenece a este tercero.", nameof(ciiuActivityId));
+        foreach (var a in CiiuActivities) a.SetPrincipal(false);
+        target.SetPrincipal(true);
+        UpdatedAtUtc = DateTime.UtcNow;
     }
 }

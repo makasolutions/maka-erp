@@ -1,4 +1,5 @@
 using FSH.Modules.Parties.Domain.V2.Credit;
+using FSH.Modules.Parties.Domain.V2.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,7 +22,14 @@ public sealed class CreditAccountConfiguration : IEntityTypeConfiguration<Credit
         builder.Property(x => x.CupoAsignado).HasPrecision(18, 2);
         builder.Property(x => x.SaldoDisponible).HasPrecision(18, 2);
 
-        builder.HasIndex(x => x.CustomerProfileId);
+        // FK a CustomerProfile con RESTRICT (PR-D2): un cliente con historial de crédito NO puede
+        // borrarse. Como Party→CustomerProfile es Cascade, esto bloquea transitivamente el borrado
+        // de un Party con CreditAccount — protege el log inmutable de movimientos (opción "b",
+        // más correcta que dejar el CreditAccount huérfano). La FK crea su índice sobre CustomerProfileId.
+        builder.HasOne<CustomerProfile>()
+            .WithMany()
+            .HasForeignKey(x => x.CustomerProfileId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Historial de movimientos (append-only). Backing field _movements.
         builder.HasMany(x => x.Movements)

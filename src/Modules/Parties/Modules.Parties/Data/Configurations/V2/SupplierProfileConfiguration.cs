@@ -13,7 +13,7 @@ public sealed class SupplierProfileConfiguration : IEntityTypeConfiguration<Supp
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.LeadTimeDays);
-        builder.HasIndex(x => x.PartyId);
+        // Índice ÚNICO sobre PartyId lo crea la relación one-to-one en PartyConfiguration (PR-D2).
 
         // ──────────────────────────────────────────────────────────────────────────────
         // PRIMER OwnsOne DEL REPO — patrón de referencia para owned VOs (precedente PR-D).

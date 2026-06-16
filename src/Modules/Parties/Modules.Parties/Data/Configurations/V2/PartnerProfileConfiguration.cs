@@ -14,7 +14,7 @@ public sealed class PartnerProfileConfiguration : IEntityTypeConfiguration<Partn
 
         builder.Property(x => x.SharePercentage).HasPrecision(5, 2);
         builder.Property(x => x.Status).HasMaxLength(64);
-        builder.HasIndex(x => x.PartyId);
+        // Índice ÚNICO sobre PartyId lo crea la relación one-to-one en PartyConfiguration (PR-D2).
 
         builder.Ignore(x => x.DomainEvents);
     }

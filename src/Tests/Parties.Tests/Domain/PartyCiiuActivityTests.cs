@@ -1,49 +1,50 @@
-using FSH.Modules.Parties.Domain.V2;
+using FSH.Modules.Parties.Contracts.Enums;
+using FSH.Modules.Parties.Domain;
 
 namespace Parties.Tests.Domain;
 
+/// <summary>
+/// PR-D2: la invariante "exactamente una principal" se movió del helper transitorio
+/// <c>CiiuActivities.SetPrincipal</c> (PR-A, removido) al agregado <see cref="Party"/>.
+/// </summary>
 public class PartyCiiuActivityTests
 {
-    [Fact]
-    public void SetPrincipal_UnmarksPrevious_LeavesExactlyOnePrincipal()
-    {
-        var partyId = Guid.CreateVersion7();
-        var a = PartyCiiuActivity.Create(partyId, "4651", isPrincipal: true);
-        var b = PartyCiiuActivity.Create(partyId, "4652");
-        var c = PartyCiiuActivity.Create(partyId, "4653");
-        var list = new List<PartyCiiuActivity> { a, b, c };
+    private static Party NewParty() =>
+        Party.Create("CC", "1234567", null, PartyKind.Natural, "Tercero CIIU", PartyRole.Customer);
 
-        CiiuActivities.SetPrincipal(list, b.Id);
+    [Fact]
+    public void SetPrincipalCiiu_UnmarksPrevious_LeavesExactlyOnePrincipal()
+    {
+        var party = NewParty();
+        var a = party.AddCiiuActivity("4651", isPrincipal: true);
+        var b = party.AddCiiuActivity("4652");
+        var c = party.AddCiiuActivity("4653");
+
+        party.SetPrincipalCiiu(b.Id);
 
         a.IsPrincipal.ShouldBeFalse();
         b.IsPrincipal.ShouldBeTrue();
         c.IsPrincipal.ShouldBeFalse();
-        list.Count(x => x.IsPrincipal).ShouldBe(1);
-        CiiuActivities.HasValidPrincipal(list).ShouldBeTrue();
+        party.CiiuActivities.Count(x => x.IsPrincipal).ShouldBe(1);
     }
 
     [Fact]
-    public void SetPrincipal_UnknownId_Throws()
+    public void SetPrincipalCiiu_UnknownId_Throws()
     {
-        var list = new List<PartyCiiuActivity> { PartyCiiuActivity.Create(Guid.CreateVersion7(), "4651") };
-        Should.Throw<ArgumentException>(() => CiiuActivities.SetPrincipal(list, Guid.CreateVersion7()));
+        var party = NewParty();
+        party.AddCiiuActivity("4651");
+        Should.Throw<ArgumentException>(() => party.SetPrincipalCiiu(Guid.CreateVersion7()));
     }
 
     [Fact]
-    public void HasValidPrincipal_EmptyCollection_IsTrue()
+    public void AddCiiuActivity_Principal_UnmarksPreviousPrincipal()
     {
-        CiiuActivities.HasValidPrincipal([]).ShouldBeTrue();
-    }
+        var party = NewParty();
+        var first = party.AddCiiuActivity("4651", isPrincipal: true);
+        var second = party.AddCiiuActivity("4652", isPrincipal: true);
 
-    [Fact]
-    public void HasValidPrincipal_TwoPrincipals_IsFalse()
-    {
-        var partyId = Guid.CreateVersion7();
-        var list = new List<PartyCiiuActivity>
-        {
-            PartyCiiuActivity.Create(partyId, "4651", isPrincipal: true),
-            PartyCiiuActivity.Create(partyId, "4652", isPrincipal: true),
-        };
-        CiiuActivities.HasValidPrincipal(list).ShouldBeFalse();
+        first.IsPrincipal.ShouldBeFalse();
+        second.IsPrincipal.ShouldBeTrue();
+        party.CiiuActivities.Count(x => x.IsPrincipal).ShouldBe(1);
     }
 }

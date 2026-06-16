@@ -14,7 +14,7 @@ public sealed class EmployeeProfileConfiguration : IEntityTypeConfiguration<Empl
 
         builder.Property(x => x.EmployeeCode).HasMaxLength(64);
         builder.Property(x => x.JobTitle).HasMaxLength(128);
-        builder.HasIndex(x => x.PartyId);
+        // Índice ÚNICO sobre PartyId lo crea la relación one-to-one en PartyConfiguration (PR-D2).
 
         builder.Ignore(x => x.DomainEvents);
     }

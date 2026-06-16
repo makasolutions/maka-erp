@@ -1,4 +1,5 @@
 using FSH.Modules.Parties.Domain;
+using FSH.Modules.Parties.Domain.V2.Profiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -51,6 +52,17 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.HasMany(x => x.Contacts).WithOne().HasForeignKey(c => c.PartyId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(x => x.Channels).WithOne().HasForeignKey(c => c.PartyId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(x => x.Team).WithOne().HasForeignKey(m => m.PartyId).OnDelete(DeleteBehavior.Cascade);
+
+        // ── Facetas v2 (PR-D2): one-to-one Party → Profile (0..1). EF crea un índice ÚNICO sobre
+        //    Profile.PartyId (lo exige la 1:0..1) y la FK. Cascade consistente con los hijos v1. ──
+        builder.HasOne(x => x.CustomerProfile).WithOne().HasForeignKey<CustomerProfile>(p => p.PartyId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.SupplierProfile).WithOne().HasForeignKey<SupplierProfile>(p => p.PartyId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.ContactProfile).WithOne().HasForeignKey<ContactProfile>(p => p.PartyId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.PartnerProfile).WithOne().HasForeignKey<PartnerProfile>(p => p.PartyId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.EmployeeProfile).WithOne().HasForeignKey<EmployeeProfile>(p => p.PartyId).OnDelete(DeleteBehavior.Cascade);
+
+        // CIIU: colección 1..N. FK + índice ya en PartyCiiuActivityConfiguration (+ ix_ciiu_principal).
+        builder.HasMany(x => x.CiiuActivities).WithOne().HasForeignKey(c => c.PartyId).OnDelete(DeleteBehavior.Cascade);
 
         // ──────────────────────────────────────────────────────────────────────────────
         // PRIMER OwnsOne NULLABLE del repo (PR-D1) — patrón de referencia para owned VOs

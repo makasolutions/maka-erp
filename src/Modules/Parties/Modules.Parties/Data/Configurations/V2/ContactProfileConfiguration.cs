@@ -14,7 +14,7 @@ public sealed class ContactProfileConfiguration : IEntityTypeConfiguration<Conta
 
         builder.Property(x => x.JobTitle).HasMaxLength(128);
         builder.Property(x => x.ContactFunction).HasConversion<short>(); // smallint (SPEC §13)
-        builder.HasIndex(x => x.PartyId);
+        // Índice ÚNICO sobre PartyId lo crea la relación one-to-one en PartyConfiguration (PR-D2).
 
         builder.Ignore(x => x.DomainEvents);
     }

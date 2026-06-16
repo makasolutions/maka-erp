@@ -3,6 +3,7 @@ using Finbuckle.MultiTenant.Abstractions;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Data;
+using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Domain.V2;
 using FSH.Modules.Parties.Domain.V2.Credit;
 using FSH.Modules.Parties.Domain.V2.Profiles;
@@ -36,11 +37,41 @@ public sealed class PartiesV2PersistenceTests
         await action(db);
     }
 
+    // PR-D2: con las FK Profile→Party / CIIU→Party / CreditAccount→CustomerProfile, las filas v2
+    // ya no pueden ser huérfanas. Estos helpers siembran las filas padre reales primero.
+    private async Task<Guid> SeedPartyAsync(AppTenantInfo tenant)
+    {
+        Guid id = Guid.Empty;
+        await WithTenant(tenant, async db =>
+        {
+            var party = Party.Create("NIT", $"seed-{Guid.NewGuid():N}"[..14], 1,
+                PartyKind.Juridica, "Seed Party", PartyRole.Customer);
+            db.Parties.Add(party);
+            await db.SaveChangesAsync();
+            id = party.Id;
+        });
+        return id;
+    }
+
+    private async Task<Guid> SeedCustomerProfileAsync(AppTenantInfo tenant, Guid partyId)
+    {
+        Guid id = Guid.Empty;
+        await WithTenant(tenant, async db =>
+        {
+            var profile = CustomerProfile.Create(partyId);
+            db.CustomerProfiles.Add(profile);
+            await db.SaveChangesAsync();
+            id = profile.Id;
+        });
+        return id;
+    }
+
     [Fact]
     public async Task CreditAccount_With_Movements_Persists_And_Reloads()
     {
         var root = Tenant(TestConstants.RootTenantId);
-        var profileId = Guid.CreateVersion7();
+        var partyId = await SeedPartyAsync(root);
+        var profileId = await SeedCustomerProfileAsync(root, partyId);
         Guid accountId = Guid.Empty;
 
         await WithTenant(root, async db =>
@@ -71,7 +102,7 @@ public sealed class PartiesV2PersistenceTests
     public async Task Ix_Ciiu_Principal_Prevents_Two_Principals_For_Same_Party()
     {
         var root = Tenant(TestConstants.RootTenantId);
-        var partyId = Guid.CreateVersion7();
+        var partyId = await SeedPartyAsync(root);
 
         await WithTenant(root, async db =>
         {
@@ -120,7 +151,7 @@ public sealed class PartiesV2PersistenceTests
     public async Task SupplierProfile_Owned_PaymentTerms_RoundTrips()
     {
         var root = Tenant(TestConstants.RootTenantId);
-        var partyId = Guid.CreateVersion7();
+        var partyId = await SeedPartyAsync(root);
         var currencyId = Guid.CreateVersion7();
         var formaPagoId = Guid.CreateVersion7();
         Guid profileId = Guid.Empty;
@@ -145,11 +176,80 @@ public sealed class PartiesV2PersistenceTests
     }
 
     [Fact]
+    public async Task Party_Navigates_To_Customer_And_Supplier_Profiles()
+    {
+        // PR-D2: navs one-to-one Party→Profiles. Insertamos Party + 2 facetas y navegamos vía Include.
+        var root = Tenant(TestConstants.RootTenantId);
+        Guid partyId = Guid.Empty;
+
+        await WithTenant(root, async db =>
+        {
+            var party = FSH.Modules.Parties.Domain.Party.Create(
+                "NIT", $"nav-{Guid.NewGuid():N}"[..14], 1, FSH.Modules.Parties.Contracts.Enums.PartyKind.Juridica,
+                "Tercero Navegable", FSH.Modules.Parties.Contracts.Enums.PartyRole.Customer | FSH.Modules.Parties.Contracts.Enums.PartyRole.Supplier);
+            db.Parties.Add(party);
+            await db.SaveChangesAsync();
+            partyId = party.Id;
+
+            db.CustomerProfiles.Add(CustomerProfile.Create(partyId));
+            db.SupplierProfiles.Add(SupplierProfile.Create(partyId));
+            await db.SaveChangesAsync();
+        });
+
+        await WithTenant(root, async db =>
+        {
+            var party = await db.Parties
+                .Include(p => p.CustomerProfile)
+                .Include(p => p.SupplierProfile)
+                .SingleAsync(p => p.Id == partyId);
+            party.CustomerProfile.ShouldNotBeNull();
+            party.SupplierProfile.ShouldNotBeNull();
+            party.SupplierProfile!.PartyId.ShouldBe(partyId);
+        });
+    }
+
+    [Fact]
+    public async Task CustomerProfile_With_CreditAccount_Cannot_Be_Hard_Deleted()
+    {
+        // PR-D2 (cascade verificación, opción "b"): FK Restrict CreditAccount→CustomerProfile.
+        // Un cliente con historial de crédito NO puede borrarse (protege el log de movimientos).
+        var root = Tenant(TestConstants.RootTenantId);
+        Guid profileId = Guid.Empty;
+
+        await WithTenant(root, async db =>
+        {
+            var party = FSH.Modules.Parties.Domain.Party.Create(
+                "NIT", $"del-{Guid.NewGuid():N}"[..14], 1, FSH.Modules.Parties.Contracts.Enums.PartyKind.Juridica,
+                "Cliente Con Crédito", FSH.Modules.Parties.Contracts.Enums.PartyRole.Customer);
+            db.Parties.Add(party);
+            await db.SaveChangesAsync();
+
+            var profile = CustomerProfile.Create(party.Id);
+            db.CustomerProfiles.Add(profile);
+            await db.SaveChangesAsync();
+            profileId = profile.Id;
+
+            db.CreditAccounts.Add(CreditAccount.Open(profileId, root.Id, 500_000m, "tester"));
+            await db.SaveChangesAsync();
+        });
+
+        await Should.ThrowAsync<DbUpdateException>(async () =>
+        {
+            await WithTenant(root, async db =>
+            {
+                var profile = await db.CustomerProfiles.SingleAsync(p => p.Id == profileId);
+                db.CustomerProfiles.Remove(profile);
+                await db.SaveChangesAsync(); // Restrict de CreditAccount bloquea
+            });
+        });
+    }
+
+    [Fact]
     public async Task New_Tables_Are_Tenant_Isolated()
     {
         var tenantA = Tenant($"iso-a-{Guid.NewGuid():N}"[..16]);
         var tenantB = Tenant($"iso-b-{Guid.NewGuid():N}"[..16]);
-        var partyA = Guid.CreateVersion7();
+        var partyA = await SeedPartyAsync(tenantA);
 
         await WithTenant(tenantA, async db =>
         {

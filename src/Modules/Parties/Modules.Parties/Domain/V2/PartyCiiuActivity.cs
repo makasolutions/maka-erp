@@ -29,36 +29,7 @@ public sealed class PartyCiiuActivity : BaseEntity<Guid>
         };
     }
 
+    // Invariante "exactamente una principal" movida al agregado Party (PR-D2): ver
+    // Party.AddCiiuActivity / Party.SetPrincipalCiiu. SetPrincipal lo llama el agregado.
     internal void SetPrincipal(bool value) => IsPrincipal = value;
-}
-
-/// <summary>
-/// Operaciones de dominio sobre la colección de actividades CIIU de un tercero.
-///
-/// PR-A: helper transitorio; la invariante "una sola principal" se mueve al agregado Party en PR-D
-/// cuando Party posea la colección. Aquí vive como helper porque Party no posee las CIIU todavía.
-/// </summary>
-public static class CiiuActivities
-{
-    /// <summary>
-    /// Marca como principal la actividad <paramref name="principalId"/> y desmarca las demás,
-    /// garantizando exactamente una principal. Lanza si el id no está en la colección.
-    /// </summary>
-    public static void SetPrincipal(IList<PartyCiiuActivity> activities, Guid principalId)
-    {
-        ArgumentNullException.ThrowIfNull(activities);
-        var target = activities.FirstOrDefault(a => a.Id == principalId)
-            ?? throw new ArgumentException("La actividad indicada no pertenece a la colección.", nameof(principalId));
-
-        foreach (var a in activities) a.SetPrincipal(false);
-        target.SetPrincipal(true);
-    }
-
-    /// <summary>True si la colección cumple la invariante: vacía, o exactamente una principal.</summary>
-    public static bool HasValidPrincipal(IReadOnlyCollection<PartyCiiuActivity> activities)
-    {
-        ArgumentNullException.ThrowIfNull(activities);
-        if (activities.Count == 0) return true;
-        return activities.Count(a => a.IsPrincipal) == 1;
-    }
 }
