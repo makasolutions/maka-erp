@@ -143,44 +143,6 @@ Para aislarlas haría falta el caso "no-Wolverine + factory + sin migración pre
 
 Impacto: PR-B de Parties materializó las 9 tablas v2 con migración limpia gracias a `PartiesDbContextFactory`. NamingSeries sigue con su migración diferida.
 
-### Actualización (jun 2026) — el MISMO bug en RUNTIME: 500 de login
-
-El patrón "Wolverine + resolución de servicios scoped fuera de scope" **nos mordió por segunda vez**,
-ahora en **runtime**. El login devolvía **500** (`api.identity.IssueJwtTokens`):
-`Cannot resolve scoped service 'IEnumerable<ISaveChangesInterceptor>' from root provider` — la MISMA
-excepción que en design-time, distinta superficie.
-
-**Causa raíz (idéntica familia):** el helper `AddDbContextWithWolverineIntegration` (WolverineFx
-6.8) registra las `DbContextOptions` con lifetime **SINGLETON**, así que el callback `(sp, options)`
-recibe el **root provider**. La línea `options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>())`
-—copiada de `AddHeroDbContext`, que usa `AddDbContext` con options **scoped** y por eso funciona—
-intenta resolver los interceptores scoped (`AuditableEntity`/`DomainEvents`) desde root y lanza.
-Estaba **idéntica en los 6 módulos** enrolados con Wolverine (Identity, Chat, Files, NamingSeries,
-Notifications, Webhooks) → bomba latente sistémica; Identity fue el primero en dispararla (login).
-
-**Fix:** quitar esa línea de los 6 callbacks. Con options singleton, EF Core **auto-descubre** los
-`ISaveChangesInterceptor` registrados en DI y los aplica **desde el scope del contexto** al crearlo
-(no en el build de las options) → los interceptores siguen funcionando (audit/domain-events
-verificados con los tests de integración de Webhooks/Notifications/Identity). WolverineFx 6.8 **no
-expone `optionsLifetime`** en estas sobrecargas, así que no se puede pedir options scoped directamente.
-
-**Por qué los tests no lo atrapaban (deuda de clase, no de este bug):** el host de tests + dev usan
-eventing **InMemory**; aunque registran el helper Wolverine, la ruta que dispara la resolución
-problemática no se ejercía igual. **Toda la familia de bugs "Wolverine + DI scoped" es invisible a
-la suite actual** (no corre la durabilidad Wolverine real). Es la lección que más importa: no es un
-bug puntual, es una **clase de fallos de runtime** que la suite no ve. Deuda: un smoke de login con
-el host corriendo Wolverine real.
-
-### Lección UNIFICADA (design-time + runtime)
-
-> Cualquier `DbContext` con integración Wolverine (`AddDbContextWithWolverineIntegration`) necesita:
-> (1) una **`IDesignTimeDbContextFactory`** propia (para que `dotnet ef` no caiga en la enumeración
-> envenenada — design-time), y (2) **NO resolver servicios scoped en el callback de options**
-> (porque son singleton/root — runtime). EF auto-aplica los interceptores DI desde el scope; no hay
-> que añadirlos a mano. La consolidación de los 6 callbacks idénticos en UN helper compartido
-> (`AddHeroDbContextWithWolverine`) es la forma de que el próximo módulo no recopie ninguno de los
-> dos defectos — pendiente (tocaría `BuildingBlocks`, §9).
-
 ## Riesgos
 
 1. 🟠 **Discovery de migraciones**: ver §Deuda conocida. Bloquea la primera migración del módulo. Mitigación: handcraft en PR2 o nuevo experimento.

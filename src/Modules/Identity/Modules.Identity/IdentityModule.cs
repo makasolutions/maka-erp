@@ -135,12 +135,7 @@ public class IdentityModule : IModule
             var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
             var dbConfig = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FSH.Framework.Shared.Persistence.DatabaseOptions>>().Value;
             options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
-            // NO resolver los ISaveChangesInterceptor (scoped) aquí: el helper de Wolverine registra
-            // las DbContextOptions como SINGLETON, así que `sp` es el ROOT provider y
-            // GetServices<ISaveChangesInterceptor>() lanza "Cannot resolve scoped service from root
-            // provider" (rompía el login). EF Core auto-descubre los interceptores registrados en DI
-            // (AuditableEntity/DomainEvents, AddScoped en PersistenceExtensions) y los aplica desde el
-            // SCOPE del contexto. (AddHeroDbContext sí los resuelve aquí porque sus options son scoped.)
+            options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
         }, wolverineDatabaseSchema: "identity");
         services.AddEventingCore(builder.Configuration);
         services.AddEventingForDbContext<IdentityDbContext>();
