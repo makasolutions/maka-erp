@@ -42,7 +42,7 @@ public sealed class PartiesModule : IModule
 
         // Dual-write v1→v2 (PR-D5): sincroniza el estado v2 de un tercero desde su v1 en los
         // handlers Create/Update (mismo DbContext, misma transacción).
-        builder.Services.AddScoped<Features.Sync.PartyV2Synchronizer>();
+        builder.Services.AddScoped<Sync.PartyV2Synchronizer>();
 
         // Identity verification (NIT/cédula): local validation + swappable lookup provider.
         builder.Services.Configure<IdentityVerificationOptions>(

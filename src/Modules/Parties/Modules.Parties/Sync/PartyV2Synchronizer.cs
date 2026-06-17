@@ -11,7 +11,7 @@ using FSH.Modules.Parties.Migration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace FSH.Modules.Parties.Features.Sync;
+namespace FSH.Modules.Parties.Sync;
 
 /// <summary>
 /// Escritura v2 (PR-D5 dual-write → PR-F1a escritura PRIMARIA): escribe el estado v2 de UN tercero

@@ -4,7 +4,7 @@ using FSH.Modules.Parties.Contracts.v1.Parties.UpdateParty;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
 using FSH.Modules.Parties.Features;
-using FSH.Modules.Parties.Features.Sync;
+using FSH.Modules.Parties.Sync;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 

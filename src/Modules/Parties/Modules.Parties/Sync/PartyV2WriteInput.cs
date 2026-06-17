@@ -1,7 +1,7 @@
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Contracts.v1.Parties;
 
-namespace FSH.Modules.Parties.Features.Sync;
+namespace FSH.Modules.Parties.Sync;
 
 /// <summary>
 /// Entrada de escritura v2 en lenguaje v1 (PR-F1a). Lleva EXACTAMENTE los valores que el
