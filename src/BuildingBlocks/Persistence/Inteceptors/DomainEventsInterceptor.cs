@@ -1,26 +1,35 @@
 ﻿using FSH.Framework.Core.Domain;
 using Mediator;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FSH.Framework.Persistence.Inteceptors;
 
 /// <summary>
 /// Entity Framework interceptor that automatically publishes domain events after saving changes.
+///
+/// SINGLETON (scope-safe): NO captura <c>IPublisher</c> (scoped) en el ctor — lo resuelve LAZY desde
+/// el scope ambiente en SaveChanges. Esto permite registrarlo singleton (root-resolvable), necesario
+/// porque los DbContext con Wolverine tienen options singleton y EF resuelve los interceptores desde
+/// el root provider. En HTTP usa el publisher del MISMO scope del request (tenant/user intactos);
+/// en background (jobs/seeders, sin HttpContext) usa un scope fresco — el tenant fluye por AsyncLocal
+/// (Finbuckle) y no hay current user en background (equivalente al scope del job).
 /// </summary>
 public sealed class DomainEventsInterceptor : SaveChangesInterceptor
 {
-    private readonly IPublisher _publisher;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<DomainEventsInterceptor> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DomainEventsInterceptor"/> class.
-    /// </summary>
-    /// <param name="publisher">The mediator publisher for publishing domain events.</param>
-    /// <param name="logger">Logger for tracking domain event publication.</param>
-    public DomainEventsInterceptor(IPublisher publisher, ILogger<DomainEventsInterceptor> logger)
+    public DomainEventsInterceptor(
+        IHttpContextAccessor httpContextAccessor,
+        IServiceScopeFactory scopeFactory,
+        ILogger<DomainEventsInterceptor> logger)
     {
-        _publisher = publisher;
+        _httpContextAccessor = httpContextAccessor;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -75,19 +84,42 @@ public sealed class DomainEventsInterceptor : SaveChangesInterceptor
             _logger.LogDebug("Publishing {Count} domain events...", domainEvents.Length);
         }
 
-        foreach (var domainEvent in domainEvents)
+        // Resolución LAZY del IPublisher desde el scope ambiente: el del request en HTTP (idéntico a
+        // hoy), o uno fresco en background (jobs/seeders sin HttpContext). El scope fresco se dispone
+        // al final, tras despachar todos los eventos.
+        IServiceScope? backgroundScope = null;
+        try
         {
-            try
+            var requestServices = _httpContextAccessor.HttpContext?.RequestServices;
+            IPublisher publisher;
+            if (requestServices is not null)
             {
-                await _publisher.Publish(domainEvent, cancellationToken).ConfigureAwait(false);
+                publisher = requestServices.GetRequiredService<IPublisher>();
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            else
             {
-                // Domain event handler failures must not roll back or fail the already-committed save.
-                // The event was collected after SaveChanges completed — the data is persisted.
-                // Handlers that need guaranteed delivery should use the outbox pattern.
-                _logger.LogError(ex, "Failed to publish domain event {EventType}", domainEvent.GetType().Name);
+                backgroundScope = _scopeFactory.CreateScope();
+                publisher = backgroundScope.ServiceProvider.GetRequiredService<IPublisher>();
             }
+
+            foreach (var domainEvent in domainEvents)
+            {
+                try
+                {
+                    await publisher.Publish(domainEvent, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Domain event handler failures must not roll back or fail the already-committed save.
+                    // The event was collected after SaveChanges completed — the data is persisted.
+                    // Handlers that need guaranteed delivery should use the outbox pattern.
+                    _logger.LogError(ex, "Failed to publish domain event {EventType}", domainEvent.GetType().Name);
+                }
+            }
+        }
+        finally
+        {
+            backgroundScope?.Dispose();
         }
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);

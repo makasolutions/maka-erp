@@ -1,8 +1,10 @@
 using FSH.Framework.Core.Context;
 using FSH.Framework.Core.Domain;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FSH.Framework.Persistence.Inteceptors;
 
@@ -10,17 +12,24 @@ namespace FSH.Framework.Persistence.Inteceptors;
 /// Interceptor that automatically populates audit metadata for entities implementing <see cref="IAuditableEntity"/>
 /// and handles soft delete for entities implementing <see cref="ISoftDeletable"/>.
 /// Uses an <see cref="AsyncLocal{T}"/> recursion guard to prevent StackOverflowException from nested SaveChanges calls.
+///
+/// SINGLETON (scope-safe): NO captura <c>ICurrentUser</c> (scoped) en el ctor — lo resuelve LAZY
+/// desde el scope del request (<c>IHttpContextAccessor.HttpContext.RequestServices</c>) en cada
+/// SaveChanges. Esto permite registrarlo singleton (root-resolvable), necesario porque los DbContext
+/// con Wolverine tienen options singleton y EF resuelve los interceptores desde el root provider.
+/// En HTTP devuelve el MISMO <c>CurrentUserService</c> que inicializó el middleware (userId idéntico);
+/// sin HttpContext (background/tests) → userId null, igual que hoy.
 /// </summary>
 public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesInterceptor
 {
-    private readonly ICurrentUser _currentUser;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly TimeProvider _timeProvider;
 
     private static readonly AsyncLocal<bool> _isSaving = new();
 
-    public AuditableEntitySaveChangesInterceptor(ICurrentUser currentUser, TimeProvider timeProvider)
+    public AuditableEntitySaveChangesInterceptor(IHttpContextAccessor httpContextAccessor, TimeProvider timeProvider)
     {
-        _currentUser = currentUser;
+        _httpContextAccessor = httpContextAccessor;
         _timeProvider = timeProvider;
     }
 
@@ -75,7 +84,10 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
     {
         if (context is null) return;
 
-        var userId = _currentUser.IsAuthenticated() ? _currentUser.GetUserId().ToString() : null;
+        // Resolución LAZY del usuario desde el scope del request (mismo CurrentUserService que el
+        // middleware inicializó). Sin HttpContext (background/tests) → null (igual que hoy).
+        var currentUser = _httpContextAccessor.HttpContext?.RequestServices.GetService<ICurrentUser>();
+        var userId = currentUser?.IsAuthenticated() == true ? currentUser.GetUserId().ToString() : null;
         var now = _timeProvider.GetUtcNow();
 
         foreach (var entry in context.ChangeTracker.Entries())

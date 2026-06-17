@@ -58,7 +58,11 @@ public class AuditingModule : IModule
         builder.Services.TryAddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<ChannelAuditPublisher>();
         builder.Services.AddSingleton<IAuditPublisher>(sp => sp.GetRequiredService<ChannelAuditPublisher>());
-        builder.Services.AddScoped<ISaveChangesInterceptor, AuditingSaveChangesInterceptor>();
+        // SINGLETON (no scoped): EF resuelve los ISaveChangesInterceptor desde el ROOT provider al
+        // construir las options singleton de los DbContext con Wolverine. Un interceptor scoped rompe
+        // esa resolución (Cannot resolve scoped from root → login 500). El interceptor es scope-safe:
+        // resuelve IAuditScope LAZY desde el scope ambiente en SaveChanges.
+        builder.Services.AddSingleton<ISaveChangesInterceptor, AuditingSaveChangesInterceptor>();
 
         builder.Services.AddSingleton<IAuditSink, SqlAuditSink>();
         builder.Services.AddSingleton<IAuditDlqSink, FileAuditDlqSink>();

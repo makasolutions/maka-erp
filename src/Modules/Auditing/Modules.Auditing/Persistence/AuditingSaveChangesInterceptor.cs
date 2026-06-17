@@ -1,28 +1,39 @@
 ﻿using FSH.Modules.Auditing.Contracts;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FSH.Modules.Auditing.Persistence;
 
 /// <summary>
 /// Captures EF Core entity changes at SaveChanges to produce an EntityChange event.
-/// Registered as Scoped so it can safely inject the ambient IAuditScope, which
-/// provides TenantId/UserId/UserName from the current HTTP or Hangfire execution context.
+///
+/// SINGLETON (scope-safe): NO captura <c>IAuditScope</c> (scoped) en el ctor — lo resuelve LAZY
+/// desde el scope ambiente en SaveChanges. Necesario porque los DbContext con Wolverine tienen
+/// options singleton y EF resuelve los interceptores desde el root provider (un interceptor scoped
+/// rompe esa resolución → era el 3.º que faltaba para el login 500). En HTTP usa el IAuditScope del
+/// request; en background (jobs Hangfire, sin HttpContext) usa un scope FRESCO — <c>HttpAuditScope</c>
+/// lee tenant/trace desde AsyncLocal (Finbuckle / Activity.Current, poblados por el FshJobActivator),
+/// que fluyen al scope fresco → el contexto de auditoría del job se preserva, idéntico a hoy.
 /// </summary>
 public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly IAuditPublisher _publisher;
     private readonly TimeProvider _timeProvider;
-    private readonly IAuditScope _auditScope;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public AuditingSaveChangesInterceptor(
         IAuditPublisher publisher,
         TimeProvider timeProvider,
-        IAuditScope auditScope)
+        IHttpContextAccessor httpContextAccessor,
+        IServiceScopeFactory scopeFactory)
     {
         _publisher = publisher;
         _timeProvider = timeProvider;
-        _auditScope = auditScope;
+        _httpContextAccessor = httpContextAccessor;
+        _scopeFactory = scopeFactory;
     }
 
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -46,9 +57,22 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
         if (entries.Length == 0) return result;
 
         var diffs = EntityDiffBuilder.Build(entries);
+        if (diffs.Count == 0) return result;
 
-        if (diffs.Count > 0)
+        // Resolución LAZY del IAuditScope desde el scope ambiente: el del request (HTTP) o uno fresco
+        // (background). HttpAuditScope lee tenant/trace desde AsyncLocal (Finbuckle/Activity), que
+        // fluye al scope fresco → el contexto del job se preserva (idéntico a hoy).
+        var requestServices = _httpContextAccessor.HttpContext?.RequestServices;
+        IServiceScope? backgroundScope = null;
+        try
         {
+            var auditScope = requestServices?.GetService<IAuditScope>();
+            if (auditScope is null)
+            {
+                backgroundScope = _scopeFactory.CreateScope();
+                auditScope = backgroundScope.ServiceProvider.GetRequiredService<IAuditScope>();
+            }
+
             foreach (var group in diffs.GroupBy(d => (d.DbContext, d.Schema, d.Table, d.EntityName, d.Key, d.Operation)))
             {
                 var payload = new EntityChangeEventPayload(
@@ -68,19 +92,23 @@ public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
                     receivedAtUtc: now,
                     eventType: AuditEventType.EntityChange,
                     severity: AuditSeverity.Information,
-                    tenantId: _auditScope.TenantId,
-                    userId: _auditScope.UserId,
-                    userName: _auditScope.UserName,
-                    traceId: _auditScope.TraceId,
-                    spanId: _auditScope.SpanId,
-                    correlationId: _auditScope.CorrelationId,
-                    requestId: _auditScope.RequestId,
+                    tenantId: auditScope.TenantId,
+                    userId: auditScope.UserId,
+                    userName: auditScope.UserName,
+                    traceId: auditScope.TraceId,
+                    spanId: auditScope.SpanId,
+                    correlationId: auditScope.CorrelationId,
+                    requestId: auditScope.RequestId,
                     source: ctx.GetType().Name,
                     tags: AuditTag.None,
                     payload: payload);
 
                 await _publisher.PublishAsync(env, cancellationToken);
             }
+        }
+        finally
+        {
+            backgroundScope?.Dispose();
         }
 
         return result;

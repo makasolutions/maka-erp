@@ -39,6 +39,15 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
     private const string MinioSecretKey = "minioadmin";
     private const string MinioBucket = "fsh-integration-test-uploads";
 
+    /// <summary>
+    /// Snapshot de los <see cref="ServiceDescriptor"/> del host compartido (capturado en
+    /// ConfigureServices, tras todas las registraciones de módulos). Permite a un guard test
+    /// inspeccionar lifetimes (p.ej. que ningún ISaveChangesInterceptor sea Scoped) SIN construir
+    /// un 2.º host — construir/disponer un 2.º WebApplicationFactory pisaría y dispondría el estático
+    /// global JobStorage.Current de Hangfire, rompiendo cada test posterior que cree tenants.
+    /// </summary>
+    public IReadOnlyList<ServiceDescriptor> CapturedServices { get; private set; } = [];
+
     private static readonly SemaphoreSlim _migrationLock = new(1, 1);
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("fsh_integration_tests")
@@ -266,6 +275,10 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
             // wires up LocalStorageService. Replace it with the S3 stack pointed at the MinIO
             // testcontainer here, after all module registrations have run.
             RewireStorageForS3(services);
+
+            // Snapshot final del collection (solo metadatos, sin provider) para el guard test de
+            // lifetimes — evita que el guard construya un 2.º host (ver doc de CapturedServices).
+            CapturedServices = services.ToList();
         });
     }
 

@@ -32,8 +32,15 @@ public static class PersistenceExtensions
             .ValidateOnStart();
         services.AddHostedService<DatabaseOptionsStartupLogger>();
         services.TryAddSingleton(TimeProvider.System);
-        services.AddScoped<ISaveChangesInterceptor, AuditableEntitySaveChangesInterceptor>();
-        services.AddScoped<ISaveChangesInterceptor, DomainEventsInterceptor>();
+        // SINGLETON (no scoped): los DbContext con integración Wolverine registran sus
+        // DbContextOptions como SINGLETON, así que EF resuelve los interceptores vía
+        // GetServices<ISaveChangesInterceptor>() desde el ROOT provider al construir las options.
+        // Si fueran scoped, eso lanza "Cannot resolve scoped service from root provider" (rompía el
+        // login). Los interceptores son scope-safe: resuelven sus deps scoped (ICurrentUser /
+        // IPublisher) LAZY desde el scope ambiente en SaveChanges, no en el ctor. El guard de
+        // recursión es static AsyncLocal → thread-safe como singleton.
+        services.AddSingleton<ISaveChangesInterceptor, AuditableEntitySaveChangesInterceptor>();
+        services.AddSingleton<ISaveChangesInterceptor, DomainEventsInterceptor>();
         return services;
     }
 
