@@ -1,4 +1,24 @@
 {
+  "address": {
+    "singular": "Dirección",
+    "label": "Etiqueta",
+    "line": "Dirección",
+    "barrio": "Barrio",
+    "reference": "Referencia",
+    "lat": "Latitud",
+    "lng": "Longitud",
+    "active": "Activa",
+    "primary": "Principal",
+    "save": "Guardar",
+    "add": "Agregar dirección",
+    "delete": "Eliminar",
+    "empty": "Sin direcciones registradas.",
+    "loading": "Cargando direcciones…",
+    "saved": "Dirección guardada",
+    "deleted": "Dirección eliminada",
+    "saveError": "No se pudo guardar la dirección",
+    "lineRequired": "La dirección es obligatoria."
+  },
   "relativeTime": {
     "justNow": "justo ahora",
     "secondsAgo": "hace {{count}}s",

@@ -8,7 +8,7 @@
  * data drawn from Tecnoimportaciones' product catalog.
  */
 import { toast } from "sonner";
-import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler, makaCurrencyColumn } from "@/components/maka";
+import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler, MakaAddressList, makaCurrencyColumn } from "@/components/maka";
 import type { KanbanColumn } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { P } from "@/auth/permissions";
@@ -385,9 +385,23 @@ export function MakaComponentsPage() {
           <MakaScheduler events={SCHEDULER_EVENTS} height="520px" />
         </div>
       </section>
+
+      <section className="space-y-3">
+        <SectionHeader
+          number="6"
+          title="MakaAddressList"
+          description="Control genérico polimórfico (PR-G1). CRUD autónomo de direcciones por owner (OwnerType + OwnerId). Montaje aislado de QA contra un owner sandbox."
+        />
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+          <MakaAddressList ownerType="DemoOwner" ownerId={DEMO_OWNER_ID} />
+        </div>
+      </section>
     </div>
   );
 }
+
+// Owner sandbox estable para el montaje aislado de QA del control genérico.
+const DEMO_OWNER_ID = "01900000-0000-7000-8000-000000000001";
 
 // ── Section header helper ─────────────────────────────────────────────────────
 

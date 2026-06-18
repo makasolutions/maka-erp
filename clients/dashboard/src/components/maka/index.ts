@@ -57,3 +57,6 @@ export type { MakaSchedulerProps } from "./MakaScheduler";
 
 export { MakaRichTextEditor } from "./MakaRichTextEditor";
 export type { MakaRichTextEditorProps } from "./MakaRichTextEditor";
+
+export { MakaAddressList } from "./MakaAddressList";
+export type { MakaAddressListProps } from "./MakaAddressList";

@@ -1,4 +1,24 @@
 {
+  "address": {
+    "singular": "Address",
+    "label": "Label",
+    "line": "Address",
+    "barrio": "Neighborhood",
+    "reference": "Reference",
+    "lat": "Latitude",
+    "lng": "Longitude",
+    "active": "Active",
+    "primary": "Primary",
+    "save": "Save",
+    "add": "Add address",
+    "delete": "Delete",
+    "empty": "No addresses registered.",
+    "loading": "Loading addresses…",
+    "saved": "Address saved",
+    "deleted": "Address deleted",
+    "saveError": "Could not save the address",
+    "lineRequired": "Address line is required."
+  },
   "relativeTime": {
     "justNow": "just now",
     "secondsAgo": "{{count}}s ago",

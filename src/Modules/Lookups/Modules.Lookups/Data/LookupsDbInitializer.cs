@@ -51,7 +51,9 @@ public sealed class LookupsDbInitializer(
 
         await SeedTableAsync("AddressLabel", "Etiqueta de dirección", 70,
             [("CASA", "Casa"), ("OFICINA", "Oficina"), ("EMPRESA", "Empresa"), ("SUCURSAL", "Sucursal"),
-             ("BODEGA", "Bodega"), ("OTRO", "Otro")], cancellationToken).ConfigureAwait(false);
+             ("BODEGA", "Bodega"), ("SEDE", "Sede"), ("OTRO", "Otro")], cancellationToken).ConfigureAwait(false);
+        // Patch aditivo (PR-G1): asegura SEDE aunque AddressLabel ya estuviera sembrada sin él.
+        await EnsureRecordAsync("AddressLabel", "SEDE", "Sede", cancellationToken).ConfigureAwait(false);
 
         await SeedTableAsync("ContactType", "Tipo de contacto", 80,
             [("PRINCIPAL", "Principal"), ("SECUNDARIO", "Secundario"), ("EMERGENCIA", "Emergencia")],
@@ -221,5 +223,23 @@ public sealed class LookupsDbInitializer(
         dbContext.BasicTables.Add(table);
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         logger.LogInformation("[Lookups] seeded global table {Code} ({Count} records)", code, records.Length);
+    }
+
+    /// <summary>Asegura un record en una tabla básica global ya existente (idempotente). Para
+    /// patches aditivos cuando la tabla se sembró antes de incluir el record.</summary>
+    private async Task EnsureRecordAsync(
+        string tableCode, string recordCode, string recordValue, CancellationToken cancellationToken)
+    {
+        var table = await dbContext.BasicTables
+            .IgnoreQueryFilters()
+            .Include(t => t.Records)
+            .FirstOrDefaultAsync(t => t.Code == tableCode && t.TenantId == null, cancellationToken)
+            .ConfigureAwait(false);
+        if (table is null || table.Records.Any(r => r.Code == recordCode)) return;
+
+        var nextSort = table.Records.Count == 0 ? 0 : table.Records.Max(r => r.SortOrder) + 10;
+        table.Records.Add(BasicRecord.Create(table.Id, recordCode, recordValue, tenantId: null, sortOrder: nextSort));
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        logger.LogInformation("[Lookups] ensured record {Record} in table {Table}", recordCode, tableCode);
     }
 }
