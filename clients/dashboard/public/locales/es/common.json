@@ -19,6 +19,24 @@
     "saveError": "No se pudo guardar la dirección",
     "lineRequired": "La dirección es obligatoria."
   },
+  "phone": {
+    "singular": "Teléfono",
+    "type": "Tipo",
+    "number": "Número",
+    "countryCode": "Indicativo",
+    "extension": "Extensión",
+    "active": "Activo",
+    "primary": "Principal",
+    "save": "Guardar",
+    "add": "Agregar teléfono",
+    "delete": "Eliminar",
+    "empty": "Sin teléfonos registrados.",
+    "loading": "Cargando teléfonos…",
+    "saved": "Teléfono guardado",
+    "deleted": "Teléfono eliminado",
+    "saveError": "No se pudo guardar el teléfono",
+    "numberRequired": "El número es obligatorio."
+  },
   "relativeTime": {
     "justNow": "justo ahora",
     "secondsAgo": "hace {{count}}s",

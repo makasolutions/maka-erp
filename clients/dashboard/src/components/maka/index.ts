@@ -60,3 +60,6 @@ export type { MakaRichTextEditorProps } from "./MakaRichTextEditor";
 
 export { MakaAddressList } from "./MakaAddressList";
 export type { MakaAddressListProps } from "./MakaAddressList";
+
+export { MakaPhoneList } from "./MakaPhoneList";
+export type { MakaPhoneListProps } from "./MakaPhoneList";

@@ -19,6 +19,24 @@
     "saveError": "Could not save the address",
     "lineRequired": "Address line is required."
   },
+  "phone": {
+    "singular": "Phone",
+    "type": "Type",
+    "number": "Number",
+    "countryCode": "Country code",
+    "extension": "Extension",
+    "active": "Active",
+    "primary": "Primary",
+    "save": "Save",
+    "add": "Add phone",
+    "delete": "Delete",
+    "empty": "No phones registered.",
+    "loading": "Loading phones…",
+    "saved": "Phone saved",
+    "deleted": "Phone deleted",
+    "saveError": "Could not save the phone",
+    "numberRequired": "Number is required."
+  },
   "relativeTime": {
     "justNow": "just now",
     "secondsAgo": "{{count}}s ago",

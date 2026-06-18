@@ -3,6 +3,7 @@ using System;
 using FSH.Modules.SharedRecords.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FSH.Starter.Migrations.PostgreSQL.SharedRecords
 {
     [DbContext(typeof(SharedRecordsDbContext))]
-    partial class SharedRecordsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618032001_SharedRecords_AddPhones")]
+    partial class SharedRecords_AddPhones
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

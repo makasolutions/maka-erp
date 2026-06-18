@@ -8,7 +8,7 @@
  * data drawn from Tecnoimportaciones' product catalog.
  */
 import { toast } from "sonner";
-import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler, MakaAddressList, makaCurrencyColumn } from "@/components/maka";
+import { MakaGrid, MakaChart, MakaKanban, MakaPivot, MakaScheduler, MakaAddressList, MakaPhoneList, makaCurrencyColumn } from "@/components/maka";
 import type { KanbanColumn } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { P } from "@/auth/permissions";
@@ -394,6 +394,17 @@ export function MakaComponentsPage() {
         />
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
           <MakaAddressList ownerType="DemoOwner" ownerId={DEMO_OWNER_ID} />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <SectionHeader
+          number="7"
+          title="MakaPhoneList"
+          description="Control genérico polimórfico (PR-G2). CRUD autónomo de teléfonos por owner (OwnerType + OwnerId). Montaje aislado de QA contra un owner sandbox."
+        />
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+          <MakaPhoneList ownerType="DemoOwner" ownerId={DEMO_OWNER_ID} />
         </div>
       </section>
     </div>

@@ -9,6 +9,11 @@ using FSH.Modules.SharedRecords.Features.v1.Addresses.DeleteAddress;
 using FSH.Modules.SharedRecords.Features.v1.Addresses.GetAddresses;
 using FSH.Modules.SharedRecords.Features.v1.Addresses.SetPrimaryAddress;
 using FSH.Modules.SharedRecords.Features.v1.Addresses.UpdateAddress;
+using FSH.Modules.SharedRecords.Features.v1.Phones.CreatePhone;
+using FSH.Modules.SharedRecords.Features.v1.Phones.DeletePhone;
+using FSH.Modules.SharedRecords.Features.v1.Phones.GetPhones;
+using FSH.Modules.SharedRecords.Features.v1.Phones.SetPrimaryPhone;
+using FSH.Modules.SharedRecords.Features.v1.Phones.UpdatePhone;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -61,5 +66,16 @@ public sealed class SharedRecordsModule : IModule
         group.MapUpdateAddressEndpoint();
         group.MapDeleteAddressEndpoint();
         group.MapSetPrimaryAddressEndpoint();
+
+        var phones = endpoints
+            .MapGroup("api/v{version:apiVersion}/phones")
+            .WithTags("Phones")
+            .WithApiVersionSet(versionSet);
+
+        phones.MapGetPhonesEndpoint();
+        phones.MapCreatePhoneEndpoint();
+        phones.MapUpdatePhoneEndpoint();
+        phones.MapDeletePhoneEndpoint();
+        phones.MapSetPrimaryPhoneEndpoint();
     }
 }

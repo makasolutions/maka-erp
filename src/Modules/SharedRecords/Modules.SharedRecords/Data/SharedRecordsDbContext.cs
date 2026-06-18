@@ -20,6 +20,7 @@ public sealed class SharedRecordsDbContext : BaseDbContext
         IHostEnvironment environment) : base(multiTenantContextAccessor, options, settings, environment) { }
 
     public DbSet<Address> Addresses => Set<Address>();
+    public DbSet<Phone> Phones => Set<Phone>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,12 @@ public sealed class SharedRecordsDbContext : BaseDbContext
             .HasIndex("TenantId", nameof(Address.OwnerType), nameof(Address.OwnerId))
             .IsUnique()
             .HasDatabaseName("ux_shared_addresses_primary_per_owner")
+            .HasFilter("\"IsPrimary\" = TRUE AND \"IsDeleted\" = FALSE");
+
+        modelBuilder.Entity<Phone>()
+            .HasIndex("TenantId", nameof(Phone.OwnerType), nameof(Phone.OwnerId))
+            .IsUnique()
+            .HasDatabaseName("ux_shared_phones_primary_per_owner")
             .HasFilter("\"IsPrimary\" = TRUE AND \"IsDeleted\" = FALSE");
     }
 }

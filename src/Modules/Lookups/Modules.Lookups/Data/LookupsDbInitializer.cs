@@ -55,6 +55,11 @@ public sealed class LookupsDbInitializer(
         // Patch aditivo (PR-G1): asegura SEDE aunque AddressLabel ya estuviera sembrada sin él.
         await EnsureRecordAsync("AddressLabel", "SEDE", "Sede", cancellationToken).ConfigureAwait(false);
 
+        // PR-G2: clasificación de teléfonos del control genérico PhoneList.
+        await SeedTableAsync("PhoneType", "Tipo de teléfono", 75,
+            [("FIJO", "Fijo"), ("CELULAR", "Celular"), ("FAX", "Fax"), ("WHATSAPP", "WhatsApp")],
+            cancellationToken).ConfigureAwait(false);
+
         await SeedTableAsync("ContactType", "Tipo de contacto", 80,
             [("PRINCIPAL", "Principal"), ("SECUNDARIO", "Secundario"), ("EMERGENCIA", "Emergencia")],
             cancellationToken).ConfigureAwait(false);

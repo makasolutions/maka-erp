@@ -16,9 +16,19 @@ public static class SharedRecordsPermissions
         public const string Manage = $"Permissions.{Resource}.Manage";
     }
 
+    public static class Phones
+    {
+        public const string Resource = "SharedRecords.Phones";
+
+        public const string View   = $"Permissions.{Resource}.View";
+        public const string Manage = $"Permissions.{Resource}.Manage";
+    }
+
     public static IReadOnlyList<FshPermission> All { get; } =
     [
         new("View Addresses",   ActionConstants.View, Addresses.Resource, IsBasic: true),
         new("Manage Addresses", "Manage",             Addresses.Resource),
+        new("View Phones",      ActionConstants.View, Phones.Resource, IsBasic: true),
+        new("Manage Phones",    "Manage",             Phones.Resource),
     ];
 }
