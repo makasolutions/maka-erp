@@ -13,12 +13,14 @@ using FSH.Modules.Webhooks.Features.v1.GetWebhookDeliveries;
 using FSH.Modules.Webhooks.Features.v1.GetWebhookSubscriptions;
 using FSH.Modules.Webhooks.Features.v1.TestWebhookSubscription;
 using FSH.Framework.Eventing.Abstractions;
+using FSH.Framework.Eventing.Serialization;
 using FSH.Modules.Webhooks.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 
@@ -42,6 +44,13 @@ public sealed class WebhooksModule : IModule
             options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
         }, wolverineDatabaseSchema: "webhooks");
         builder.Services.AddIntegrationEventPublisher<WebhookDbContext>();
+
+        // Fase 5 — re-hogar del IEventSerializer que consume WebhookFanoutHandler. Antes lo
+        // registraba AddEventingCore (bus legacy, en eliminación). TryAdd para coexistir con esa
+        // registración mientras el legacy siga presente (F5a) y para ser la única fuente una vez
+        // borrado (F5b). Es el único consumidor del serializer en los módulos.
+        builder.Services.TryAddSingleton<IEventSerializer, JsonEventSerializer>();
+
         builder.Services.AddScoped<IDbInitializer, WebhookDbInitializer>();
         builder.Services.AddScoped<IWebhookDeliveryService, WebhookDeliveryService>();
         builder.Services.AddScoped<IWebhookDispatcher, WebhookDispatcher>();
