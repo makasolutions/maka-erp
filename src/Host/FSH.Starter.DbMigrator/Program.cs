@@ -27,6 +27,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Wolverine;
+using Wolverine.Postgresql;
 
 // ─────────────────────────────────────────────────────────────────────────
 // FSH DbMigrator — one-shot console that brings every database in the
@@ -184,6 +186,36 @@ builder.AddHeroPlatform(o =>
 });
 
 builder.AddModules(moduleAssemblies);
+
+// ── BUG 2 fix (PR 1/2) — UseWolverine MÍNIMO en el host del migrador ─────────
+// Los módulos enrolan sus DbContexts con AddDbContextWithWolverineIntegration<T>,
+// que instala WolverineModelCustomizer. Ese customizer resuelve
+// Wolverine.RDBMS.DatabaseSettings al CONSTRUIR el modelo EF (primera vez que
+// se materializa cualquier DbContext enrolado, p.ej. en IdentityDbInitializer
+// .MigrateAsync). Sin un UseWolverine en ESTE host, DatabaseSettings no está en
+// el contenedor → InvalidOperationException → el migrador aborta ANTES del seed
+// (PhoneType / SEDE), forzando el parcheo manual (ef database update + inserts).
+//
+// Registramos el MÍNIMO que satisface al customizer y NADA más:
+//   - DisableConventionalDiscovery: el migrador no descubre ni corre handlers.
+//   - PersistMessagesWithPostgresql(cs, "identity"): registra DatabaseSettings
+//     (exactamente el servicio que el customizer pide). Mismo schema que el API.
+//   - DurabilityMode.MediatorOnly: sin agente de durabilidad ni transports, así
+//     host.StartAsync() (Program.cs más abajo, ANTES de que las migraciones creen
+//     el schema) NO hace I/O a las tablas wolverine_* — que en una DB fresca aún
+//     no existen. El DDL de esas tablas se queda en Step 2b (WolverineSchemaSetup,
+//     post-migraciones), único dueño del schema Wolverine.
+//   - SIN UseRabbitMq / publishers / listeners / middleware → cero broker.
+// Aditivo, local a este host. No toca BuildingBlocks ni el código de eventing.
+builder.UseWolverine(opts =>
+{
+    // Connection string DENTRO del callback (se materializa en Build()); ya
+    // validada fail-fast arriba. Misma fuente que el API y que Step 2b.
+    var wolverineConnectionString = builder.Configuration["DatabaseOptions:ConnectionString"]!;
+    opts.Discovery.DisableConventionalDiscovery();
+    opts.PersistMessagesWithPostgresql(wolverineConnectionString, "identity");
+    opts.Durability.Mode = DurabilityMode.MediatorOnly;
+});
 
 // The Multitenancy module's TenantProvisioningService depends on IJobService —
 // Hangfire's IJobService is only registered when EnableJobs is true, which we 
