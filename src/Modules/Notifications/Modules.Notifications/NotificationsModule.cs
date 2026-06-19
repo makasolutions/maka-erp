@@ -45,8 +45,9 @@ public sealed class NotificationsModule : IModule
         builder.Services.AddScoped<IDbInitializer, NotificationsDbInitializer>();
         builder.Services.AddValidatorsFromAssembly(typeof(NotificationsModule).Assembly);
 
-        // Subscribe to cross-module integration events handled by this assembly.
-        builder.Services.AddIntegrationEventHandlers(typeof(NotificationsModule).Assembly);
+        // Los handlers de integration events (MentionedInChannelIntegrationEventHandler) los
+        // descubre Wolverine vía Discovery.IncludeAssembly(Notifications) en el Host. Fase 5:
+        // se eliminó el registro DI legacy AddIntegrationEventHandlers (era para el bus propio).
 
         builder.Services.AddHealthChecks().AddDbContextCheck<NotificationsDbContext>(
             name: "db:notifications",

@@ -42,12 +42,13 @@ public sealed class MentionAndNotificationTests
         await AddMemberAsync(adminClient, channelId, alice.Id);
 
         await SendMessageAsync(adminClient, channelId, $"hey @{alice.UserName} take a look");
-        await _factory.DispatchOutboxAsync();  // dispatcher hosteado OFF en tests
 
-        // Verify a notification row was written for Alice via her own /notifications list endpoint.
+        // El evento MentionedInChannel se entrega ASYNC por el outbox durable de Wolverine
+        // (RabbitMQ Testcontainer) → el handler de Notifications persiste la notificación. No hay
+        // drain sincrónico: hacemos eventually-poll del inbox hasta que aparezca o se agote
+        // EventTimeout (poll async acotado, NO Thread.Sleep ni timeout inflado).
         using var aliceClient = await _auth.CreateAuthenticatedClientAsync(alice.Email, alice.Password);
-        var inbox = await ReadInboxAsync(aliceClient);
-        var mention = inbox.FirstOrDefault(n => n.Type == "chat.mention");
+        var mention = await WaitForMentionInInboxAsync(aliceClient, channelId, EventTimeout);
         mention.ShouldNotBeNull("Expected a chat.mention notification to land in Alice's inbox");
         mention!.Body.ShouldNotBeNullOrEmpty();
         mention.Body!.ShouldContain("take a look");
@@ -69,8 +70,8 @@ public sealed class MentionAndNotificationTests
         using var inbox = new EventInbox<NotificationPayload>(bobHub, "NotificationCreated");
 
         await SendMessageAsync(adminClient, channelId, $"@{bob.UserName} you up?");
-        await _factory.DispatchOutboxAsync();  // dispatcher hosteado OFF en tests
 
+        // Entrega async vía Wolverine; el EventInbox espera hasta EventTimeout el push SignalR.
         var received = await inbox.WaitForFirstAsync(p => p.Type == "chat.mention", EventTimeout);
         received.ShouldNotBeNull("Expected NotificationCreated to fire on Bob's hub connection");
         received!.Title.ShouldNotBeNullOrWhiteSpace();
@@ -93,6 +94,95 @@ public sealed class MentionAndNotificationTests
         var inbox = await ReadInboxAsync(adminClient);
         // There can be unrelated mentions in the same test factory's shared DB — filter by link.
         inbox.ShouldNotContain(n => n.Type == "chat.mention" && n.Link != null && n.Link.StartsWith($"/chat/{channelId}"));
+    }
+
+    [Fact]
+    public async Task Mention_In_SecondTenant_Should_Persist_To_That_Tenant_Not_Crossed()
+    {
+        // CAPA 3 / multitenant — el handler escribe la notificación en el tenant DEL EVENTO, no en
+        // root hardcodeado. Se prueba haciendo el flujo en un 2.º tenant: si el helper usara un
+        // tenant equivocado, el usuario del 2.º tenant NO vería su notificación (Finbuckle filter).
+        using var rootAdmin = await _auth.CreateRootAdminClientAsync();
+
+        var tnt2 = $"tnt2{Guid.NewGuid().ToString("N")[..8]}";
+        var tnt2AdminEmail = $"admin-{tnt2}@example.com";
+        await CreateTenantAsync(rootAdmin, tnt2, tnt2AdminEmail);
+        await WaitForProvisioningAsync(rootAdmin, tnt2);
+
+        using var tnt2Admin = await CreateTenantAdminClientWithRetryAsync(
+            tnt2AdminEmail, TestConstants.DefaultPassword, tnt2);
+
+        // Registrar a carol en tnt2 y mencionarla en un canal de tnt2.
+        var (carol, _, _) = await RegisterUserAsync(tnt2Admin, "carol", tnt2);
+        var channelId = await CreateChannelAsync(tnt2Admin, $"chan-{Guid.NewGuid().ToString("N")[..8]}");
+        await AddMemberAsync(tnt2Admin, channelId, carol.Id);
+        await SendMessageAsync(tnt2Admin, channelId, $"hola @{carol.UserName} mirá esto");
+
+        // carol (tnt2) DEBE ver su notificación → el handler escribió en tnt2 (el tenant del envelope).
+        using var carolClient = await _auth.CreateAuthenticatedClientAsync(carol.Email, carol.Password, tnt2);
+        var mention = await WaitForMentionInInboxAsync(carolClient, channelId, EventTimeout);
+        mention.ShouldNotBeNull("La notificación de mención debe caer en el tenant del envelope (tnt2)");
+        mention!.Link!.ShouldStartWith($"/chat/{channelId}");
+
+        // No cruzada: el admin de ROOT no ve la notificación de tnt2 (filtro de tenant Finbuckle).
+        var rootInbox = await ReadInboxAsync(rootAdmin);
+        rootInbox.ShouldNotContain(
+            n => n.Type == "chat.mention" && n.Link != null && n.Link.StartsWith($"/chat/{channelId}"),
+            "una mención de tnt2 NO debe aparecer en el inbox de root");
+    }
+
+    private async Task<HttpClient> CreateTenantAdminClientWithRetryAsync(
+        string email, string password, string tenant, int maxRetries = 30)
+    {
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                return await _auth.CreateAuthenticatedClientAsync(email, password, tenant);
+            }
+            catch (HttpRequestException) when (i < maxRetries - 1)
+            {
+                await Task.Delay(1000);
+            }
+        }
+        return await _auth.CreateAuthenticatedClientAsync(email, password, tenant);
+    }
+
+    private static async Task CreateTenantAsync(HttpClient rootClient, string tenantId, string adminEmail)
+    {
+        using var response = await rootClient.PostAsJsonAsync(TestConstants.TenantsBasePath, new
+        {
+            id = tenantId,
+            name = $"Tenant {tenantId}",
+            connectionString = (string?)null,
+            adminEmail,
+            adminPassword = TestConstants.DefaultPassword,
+            issuer = $"{tenantId}.issuer",
+        });
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.ShouldBe(System.Net.HttpStatusCode.Created, $"Create tenant failed: {body}");
+    }
+
+    private static async Task WaitForProvisioningAsync(HttpClient client, string tenantId, int maxRetries = 60)
+    {
+        for (int i = 0; i < maxRetries; i++)
+        {
+            using var statusResponse = await client.GetAsync($"{TestConstants.TenantsBasePath}/{tenantId}/provisioning");
+            if (statusResponse.IsSuccessStatusCode)
+            {
+                var content = await statusResponse.Content.ReadAsStringAsync();
+                if (content.Contains("Completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+                if (content.Contains("Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"Tenant {tenantId} provisioning failed: {content}");
+                }
+            }
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+        }
+        throw new InvalidOperationException($"Tenant {tenantId} provisioning did not complete in time");
     }
 
     // ─── helpers ─────────────────────────────────────────────────────
@@ -150,8 +240,37 @@ public sealed class MentionAndNotificationTests
         return await response.DeserializeAsync<IReadOnlyList<NotificationDto>>();
     }
 
+    /// <summary>
+    /// Eventually-poll del inbox del usuario hasta encontrar la notificación chat.mention del
+    /// canal indicado o agotar <paramref name="timeout"/>. La entrega del evento es async (outbox
+    /// Wolverine → RabbitMQ → handler de Notifications), así que el assert no puede ser de un solo
+    /// tiro. Poll async acotado (delay corto entre intentos), sin Thread.Sleep ni timeout inflado.
+    /// </summary>
+    private static async Task<NotificationDto?> WaitForMentionInInboxAsync(
+        HttpClient client, Guid channelId, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (true)
+        {
+            var inbox = await ReadInboxAsync(client);
+            var hit = inbox.FirstOrDefault(n =>
+                n.Type == "chat.mention"
+                && n.Link != null
+                && n.Link.StartsWith($"/chat/{channelId}", StringComparison.Ordinal));
+            if (hit is not null)
+            {
+                return hit;
+            }
+            if (DateTime.UtcNow >= deadline)
+            {
+                return null;
+            }
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+        }
+    }
+
     private async Task<(UserCredentials user, string accessToken, string refreshToken)> RegisterUserAsync(
-        HttpClient adminClient, string prefix)
+        HttpClient adminClient, string prefix, string tenant = "root")
     {
         var unique = Guid.NewGuid().ToString("N")[..8];
         var email = $"{prefix}-{unique}@example.com";
@@ -172,17 +291,17 @@ public sealed class MentionAndNotificationTests
 
         // Registered users land with EmailConfirmed=false and `/token/issue` rejects them with
         // 401 until they confirm. Bypass the email link in-process so the test can sign in.
-        await ConfirmEmailAsync(registered.UserId);
+        await ConfirmEmailAsync(registered.UserId, tenant);
 
-        var token = await _auth.GetTokenAsync(email, password);
+        var token = await _auth.GetTokenAsync(email, password, tenant);
         return (new UserCredentials(registered.UserId, userName, email, password), token.AccessToken, token.RefreshToken);
     }
 
-    private async Task ConfirmEmailAsync(string userId)
+    private async Task ConfirmEmailAsync(string userId, string tenantId = "root")
     {
         using var scope = _factory.Services.CreateScope();
         var tenantStore = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<AppTenantInfo>>();
-        var tenant = await tenantStore.GetAsync(TestConstants.RootTenantId);
+        var tenant = await tenantStore.GetAsync(tenantId);
         scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>().MultiTenantContext =
             new MultiTenantContext<AppTenantInfo>(tenant);
 

@@ -1,8 +1,10 @@
+using FSH.Framework.Persistence;
 using FSH.Framework.Web.Realtime;
 using FSH.Modules.Chat.Contracts.Events;
 using FSH.Modules.Notifications.Data;
 using FSH.Modules.Notifications.Domain;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FSH.Modules.Notifications.IntegrationEventHandlers;
@@ -22,13 +24,13 @@ public static class MentionedInChannelIntegrationEventHandler
 {
     public static async Task Handle(
         MentionedInChannelIntegrationEvent @event,
-        NotificationsDbContext db,
+        IServiceScopeFactory scopeFactory,
         IHubContext<AppHub> hub,
         ILogger<MentionedInChannelIntegrationEventHandlerLog> logger,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(@event);
-        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(scopeFactory);
         ArgumentNullException.ThrowIfNull(hub);
         ArgumentNullException.ThrowIfNull(logger);
 
@@ -57,8 +59,13 @@ public static class MentionedInChannelIntegrationEventHandler
                 authorUserId = @event.AuthorUserId,
             });
 
-        db.Notifications.Add(notification);
-        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        // CAPA 3 — escribir con el tenant del evento. NO usar un DbContext inyectado por parámetro:
+        // el frame EF-tx de Wolverine lo construye con tenant null (ver TenantScopedDbContext).
+        await using (var tenantDb = TenantScopedDbContext.Create<NotificationsDbContext>(scopeFactory, @event.TenantId))
+        {
+            tenantDb.Context.Notifications.Add(notification);
+            await tenantDb.Context.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
 
         await hub.Clients.Group($"user:{@event.MentionedUserId}")
             .SendAsync("NotificationCreated", new

@@ -2,6 +2,27 @@
 
 Read before publishing/handling cross-module events. `src/BuildingBlocks/Eventing/`.
 
+> ⚠️ **Fase 5 — el bus de eventos propio (legacy) fue ELIMINADO.** Wolverine es la ÚNICA vía de
+> integration events. Partes de este archivo (p.ej. la mención a `RabbitMqEventBus`/`InMemoryEventBus`
+> abajo) están desactualizadas y se reescribirán; las reglas vigentes son estas tres, **checklist
+> obligatoria al agregar un integration event handler nuevo**:
+>
+> 1. **Discovery (FOOTGUN silencioso):** la discovery por convención (`IncludeAssembly`) NO descubre
+>    los handlers en este setup (`DisableConventionalDiscovery` la neutraliza). Cada handler se
+>    registra a mano con `opts.Discovery.IncludeType(typeof(MiHandler))` en
+>    `FSH.Starter.Api/Program.cs`. Si lo olvidás, el handler NO corre y NO hay error de compilación.
+> 2. **Entrega LOCAL in-process:** los eventos se entregan por las *local durable queues* de Wolverine
+>    (respaldo Postgres), NO por RabbitMQ — es un monolito modular, publicador y handlers en el mismo
+>    proceso. NO usar `PublishMessage<T>().ToRabbitExchange(...)` salvo que un consumidor EXTERNO real
+>    (otro proceso) deba recibir el evento. Dev/test no necesitan broker.
+> 3. **Tenant (FOOTGUN silencioso):** un handler que ESCRIBE en una base tenant-aislada NO debe usar el
+>    DbContext inyectado por parámetro (el frame EF-tx lo construye con tenant null → `MultiTenantException`).
+>    Usar el helper centralizado `TenantScopedDbContext.Create<TContext>(IServiceScopeFactory, tenantId)`
+>    (`src/BuildingBlocks/Persistence/TenantScopedDbContext.cs`). Inyectar `IServiceScopeFactory` (NO
+>    `IServiceProvider` — Wolverine prohíbe service location en handlers). Ref:
+>    `MentionedInChannelIntegrationEventHandler`. Deuda estructural: puente accessor Finbuckle↔Wolverine
+>    (un lugar, automático) cuando haya varios handlers tenant-writing — migrar = cambiar el helper.
+
 ## Two tiers
 
 - **Domain events** (in-process, pre-commit) — inherit `DomainEvent` (record: `EventId`, `OccurredOnUtc`, `CorrelationId`, `TenantId`). Raised on aggregates (`IHasDomainEvents`).

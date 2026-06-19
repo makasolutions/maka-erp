@@ -139,13 +139,10 @@ public sealed class GenerateTokenCommandHandler
             TokenFingerprint: fingerprint,
             AccessTokenExpiresAtUtc: token.AccessTokenExpiresAt);
 
-        // ADR-0001/0005 — publicador 2/4 migrado a Wolverine.
-        // PublishAsync encola por la ruta del switch; SaveChangesAndFlushAsync committea
-        // la tx del DbContext + flushea el envelope a wolverine_outgoing_envelopes (ruta
-        // Wolverine) o persiste el OutboxMessages entity (ruta Legacy).
-        // TokenGeneratedLogHandler (consumer del bus propio) deja de recibir el evento
-        // hasta Fase 3, cuando los consumers migren al pipeline Wolverine. Sin impacto
-        // observable: ISecurityAudit.TokenIssuedAsync cubre observabilidad de tokens.
+        // ADR-0001/0005 — publica vía Wolverine (ruta única tras Fase 5).
+        // PublishAsync encola el envelope en el outbox EF; SaveChangesAndFlushAsync committea
+        // la tx del DbContext + flushea el envelope a wolverine_outgoing_envelopes.
+        // Observabilidad de tokens cubierta por ISecurityAudit.TokenIssuedAsync.
         await _integrationEventPublisher.PublishAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
         await _integrationEventPublisher.SaveChangesAndFlushAsync(cancellationToken).ConfigureAwait(false);
 

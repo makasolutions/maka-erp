@@ -38,7 +38,6 @@ public sealed class NamingSeriesModule : IModule
             options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
             options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
         }, wolverineDatabaseSchema: NamingSeriesDbContext.Schema);
-        builder.Services.AddEventingForDbContext<NamingSeriesDbContext>();
         builder.Services.AddIntegrationEventPublisher<NamingSeriesDbContext>();
 
         builder.Services.AddScoped<IDbInitializer, NamingSeriesDbInitializer>();

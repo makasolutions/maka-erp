@@ -1,6 +1,5 @@
 extern alias api;
 extern alias migrator;
-using FSH.Framework.Eventing.Outbox;
 using System.Reflection;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -26,10 +25,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Wolverine;
-using Wolverine.RabbitMQ;
 using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
-using Testcontainers.RabbitMq;
 
 namespace Integration.Tests.Infrastructure;
 
@@ -64,17 +61,12 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         .WithCleanUp(true)
         .Build();
 
-    // Fase 2 (ADR-0001/0005) — RabbitMQ activo en tests para validar el primer publicador
-    // real migrado (UserRegisteredIntegrationEvent → Wolverine outbox EF → RabbitMQ).
-    // El bus propio puede coexistir contra el mismo broker (exchanges distintos).
-    private readonly RabbitMqContainer _rabbitmq = new RabbitMqBuilder("rabbitmq:3.13-management-alpine")
-        .WithAutoRemove(true)
-        .WithCleanUp(true)
-        .Build();
+    // CAPA 2 — entrega local in-process: Wolverine ya NO usa RabbitMQ, así que el harness no
+    // levanta broker. La entrega de integration events se valida por las local durable queues.
 
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), _minio.StartAsync(), _rabbitmq.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), _minio.StartAsync());
         await CreateMinioBucketAsync();
 
         // Force host creation via the Server property (no leaked HttpClient)
@@ -99,7 +91,6 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
         await _minio.DisposeAsync();
-        await _rabbitmq.DisposeAsync();
     }
 
     /// <summary>The MinIO endpoint URL exposed to the host configuration; useful for tests that need to PUT bytes directly.</summary>
@@ -150,21 +141,9 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
                 ["JwtOptions:RefreshTokenDays"] = "7",
                 ["OriginOptions:OriginUrl"] = "http://localhost",
                 ["OpenTelemetryOptions:Enabled"] = "false",
-                ["EventingOptions:UseHostedServiceDispatcher"] = "false",
-                // Fase 2 (ADR-0001/0005) — provider RabbitMQ vía Testcontainer; routing del primer
-                // publicador real migrado activado para que el E2E valide la ruta Wolverine.
-                ["EventingOptions:Provider"] = "RabbitMQ",
-                ["EventingOptions:RabbitMQ:Host"] = _rabbitmq.Hostname,
-                ["EventingOptions:RabbitMQ:Port"] = _rabbitmq.GetMappedPublicPort(5672).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                ["EventingOptions:RabbitMQ:UserName"] = "guest",
-                ["EventingOptions:RabbitMQ:Password"] = "guest",
-                ["EventingOptions:RabbitMQ:VirtualHost"] = "/",
-                ["EventingOptions:RabbitMQ:ExchangeName"] = "maka.events.test",
-                ["EventingOptions:RabbitMQ:QueuePrefix"] = "maka.test",
-                ["EventingOptions:IntegrationEventRouting:UserRegisteredIntegrationEvent"] = "Wolverine",
-                ["EventingOptions:IntegrationEventRouting:TokenGeneratedIntegrationEvent"] = "Wolverine",
-                ["EventingOptions:IntegrationEventRouting:FileFinalizedIntegrationEvent"] = "Wolverine",
-                ["EventingOptions:IntegrationEventRouting:MentionedInChannelIntegrationEvent"] = "Wolverine",
+                // CAPA 2 — entrega local in-process; sin RabbitMQ. Provider queda como dato muerto
+                // (Wolverine ya no lo lee tras quitar UseRabbitMq); InMemory documenta "sin broker".
+                ["EventingOptions:Provider"] = "InMemory",
                 ["Serilog:MinimumLevel:Default"] = "Warning",
                 ["Serilog:MinimumLevel:Override:Microsoft.EntityFrameworkCore"] = "Fatal",
                 ["Serilog:MinimumLevel:Override:Npgsql"] = "Fatal",
@@ -202,28 +181,13 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
             services.ConfigureWolverine(opts =>
             {
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.Phase1SmokeMessageHandler));
-                // Fase 2 — consumers test-only de los publicadores reales migrados.
+                // Consumers test-only de los publicadores reales. CAPA 2: entrega LOCAL in-process
+                // — el evento publicado se rutea por la local durable queue a TODOS los handlers
+                // descubiertos para ese tipo (el handler real + estos consumers test-only). Ya no
+                // hace falta listener RabbitMQ: Wolverine los invoca localmente.
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.UserRegisteredE2EConsumer));
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.TokenGeneratedE2EConsumer));
                 opts.Discovery.IncludeType(typeof(Integration.Tests.Tests.Platform.FileFinalizedE2EConsumer));
-
-                // Listeners test-only: un queue + binding por cada exchange donde el API publica.
-                // Sin este binding, el envelope se publica al exchange pero ningún consumer lo
-                // recibe — el TrackedSession lo ve en Sent pero nunca en Received.
-                opts.UseRabbitMq()
-                    .BindExchange("maka.wolverine.identity.events", ExchangeType.Fanout)
-                    .ToQueue("maka.wolverine.identity.events.e2e-test");
-                opts.ListenToRabbitQueue("maka.wolverine.identity.events.e2e-test");
-
-                opts.UseRabbitMq()
-                    .BindExchange("maka.wolverine.files.events", ExchangeType.Fanout)
-                    .ToQueue("maka.wolverine.files.events.e2e-test");
-                opts.ListenToRabbitQueue("maka.wolverine.files.events.e2e-test");
-
-                opts.UseRabbitMq()
-                    .BindExchange("maka.wolverine.chat.events", ExchangeType.Fanout)
-                    .ToQueue("maka.wolverine.chat.events.e2e-test");
-                opts.ListenToRabbitQueue("maka.wolverine.chat.events.e2e-test");
             });
 
             // Singletons sink donde los consumers test-only graban para asertar.
@@ -234,13 +198,11 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
             // Remove hosted services that depend on infrastructure not available in tests or cause race conditions:
             // - RolePermissionSyncHostedService (queries identity schema before migrations run)
             // - Hangfire server + stale lock cleanup (we register our own InMemory server below)
-            // - OutboxDispatcherHostedService (queries OutboxMessages table before migrations run)
             var hostedServicesToRemove = services
                 .Where(d => d.ServiceType == typeof(IHostedService) &&
                     (d.ImplementationType?.Name == "RolePermissionSyncHostedService" ||
                      d.ImplementationType?.FullName?.Contains("Hangfire", StringComparison.Ordinal) == true ||
-                     d.ImplementationType?.Name == "HangfireStaleLockCleanupService" ||
-                     d.ImplementationType?.Name == "OutboxDispatcherHostedService"))
+                     d.ImplementationType?.Name == "HangfireStaleLockCleanupService"))
                 .ToList();
             foreach (var service in hostedServicesToRemove)
             {
@@ -404,18 +366,5 @@ public sealed class FshWebApplicationFactory : WebApplicationFactory<api::Progra
         }
 
         loadedField?.SetValue(null, false);
-    }
-
-    /// <summary>
-    /// Drena el Outbox de forma determinista. Los tests desactivan el
-    /// OutboxDispatcherHostedService (carrera con las migraciones al boot), así que
-    /// los integration events publicados vía IOutboxStore NO se entregan solos:
-    /// llamar esto después de la acción que publica y antes de asertar al consumidor.
-    /// </summary>
-    public async Task DispatchOutboxAsync(CancellationToken cancellationToken = default)
-    {
-        using var scope = Services.CreateScope();
-        var dispatcher = scope.ServiceProvider.GetRequiredService<OutboxDispatcher>();
-        await dispatcher.DispatchAsync(cancellationToken).ConfigureAwait(false);
     }
 }

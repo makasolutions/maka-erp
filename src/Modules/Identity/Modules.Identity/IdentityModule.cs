@@ -137,13 +137,9 @@ public class IdentityModule : IModule
             options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
             options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
         }, wolverineDatabaseSchema: "identity");
-        services.AddEventingCore(builder.Configuration);
-        services.AddEventingForDbContext<IdentityDbContext>();
-        // ADR-0005 — fachada de publicación con switch por evento (Wolverine vs bus propio).
         // El publicador de Identity inyecta IIntegrationEventPublisher<IdentityDbContext>
-        // y no conoce el bus subyacente.
+        // y publica vía el outbox transaccional de Wolverine (Fase 5: ruta única).
         services.AddIntegrationEventPublisher<IdentityDbContext>();
-        services.AddIntegrationEventHandlers(typeof(IdentityModule).Assembly);
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<IdentityDbContext>(
                 name: "db:identity",
@@ -212,9 +208,8 @@ public class IdentityModule : IModule
         group.MapGenerateTokenEndpoint().AllowAnonymous().RequireRateLimiting("auth");
         group.MapRefreshTokenEndpoint().AllowAnonymous().RequireRateLimiting("auth");
 
-        // NOTE: The outbox is already dispatched by OutboxDispatcherHostedService
-        // (every 10 seconds by default). A Hangfire recurring job here would be
-        // redundant and add unnecessary background DB + RabbitMQ load.
+        // NOTE: los integration events se entregan por el outbox durable de Wolverine
+        // (Fase 5: ruta única). No hace falta un job de despacho propio.
 
         // roles
         group.MapGetRolesEndpoint();

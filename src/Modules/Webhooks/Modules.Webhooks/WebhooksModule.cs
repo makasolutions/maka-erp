@@ -56,12 +56,12 @@ public sealed class WebhooksModule : IModule
         builder.Services.AddScoped<IWebhookDispatcher, WebhookDispatcher>();
         builder.Services.AddScoped<WebhookDispatchJob>();
 
-        // Open-generic integration-event bridge — every IIntegrationEvent the bus
-        // publishes is fanned out to matching tenant webhook subscriptions. Closed
-        // handler types are materialized per event type by DI.
-        builder.Services.AddScoped(
-            typeof(IIntegrationEventHandler<>),
-            typeof(WebhookFanoutHandler<>));
+        // WebhookFanoutHandler<T> hace fan-out de cada integration event a las suscripciones
+        // del tenant. Lo descubre WOLVERINE como closed-generic explícito por evento vía
+        // opts.Discovery.IncludeType<WebhookFanoutHandler<...>>() en el Host (Program.cs).
+        // Fase 5: se eliminó el registro DI open-generic IIntegrationEventHandler<> →
+        // WebhookFanoutHandler<> (era para el bus propio, que ya no existe). Wolverine
+        // construye el handler resolviendo sus dependencias de ctor del contenedor.
 
         builder.Services.AddHttpClient("Webhooks")
             .AddHeroResilience(builder.Configuration);

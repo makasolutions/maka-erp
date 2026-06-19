@@ -64,8 +64,6 @@ public sealed class ChatModule : IModule
             options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
             options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
         }, wolverineDatabaseSchema: "chat");
-        builder.Services.AddEventingCore(builder.Configuration);
-        builder.Services.AddEventingForDbContext<ChatDbContext>();
         builder.Services.AddIntegrationEventPublisher<ChatDbContext>();
         builder.Services.AddScoped<IDbInitializer, ChatDbInitializer>();
         builder.Services.AddValidatorsFromAssembly(typeof(ChatModule).Assembly);

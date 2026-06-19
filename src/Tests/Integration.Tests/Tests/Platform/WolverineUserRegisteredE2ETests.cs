@@ -77,7 +77,6 @@ public sealed class WolverineUserRegisteredE2ETests
 
         var tracked = await host.TrackActivity()
             .Timeout(TimeSpan.FromSeconds(30))
-            .IncludeExternalTransports()
             .ExecuteAndWaitAsync(action);
 
         // Aserto 1 — Wolverine vio el publish (envelope capturado por el tracker en outgoing).
@@ -86,13 +85,12 @@ public sealed class WolverineUserRegisteredE2ETests
         sent.TenantId.ShouldBe(TestConstants.RootTenantId,
             "INV-9 — TenantId del envelope debe venir del Finbuckle context del registro");
 
-        // Aserto 2 — el envelope fue RECIBIDO por el consumer test-only via RabbitMQ.
-        // Si llegó por queue local in-memory el destination scheme sería "local://"; al venir
-        // por RabbitMQ debe ser "rabbitmq://" (verificación de tránsito real).
+        // Aserto 2 — CAPA 2: el envelope fue RECIBIDO por el handler in-process via la local
+        // durable queue de Wolverine (sin round-trip RabbitMQ). El destination scheme es "local".
         var receivedEnvelope = tracked.Received.SingleEnvelope<UserRegisteredIntegrationEvent>();
         receivedEnvelope.ShouldNotBeNull("El consumer test-only debió recibir el evento");
-        receivedEnvelope.Destination?.Scheme.ShouldBe("rabbitmq",
-            "el evento debe transitar por RabbitMQ, no por queue local");
+        receivedEnvelope.Destination?.Scheme.ShouldBe("local",
+            "el evento se entrega in-process por la local durable queue, no por RabbitMQ");
 
         // Aserto 3 — el payload llegó intacto al consumer.
         collector.Received.Count.ShouldBe(1);

@@ -1,7 +1,5 @@
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.Identity.EntityFrameworkCore;
-using FSH.Framework.Eventing.Inbox;
-using FSH.Framework.Eventing.Outbox;
 using FSH.Framework.Persistence;
 using FSH.Framework.Shared.Multitenancy;
 using FSH.Framework.Shared.Persistence;
@@ -26,9 +24,6 @@ public class IdentityDbContext : MultiTenantIdentityDbContext<FshUser,
     private readonly DatabaseOptions _settings;
     private new AppTenantInfo TenantInfo { get; set; }
     private readonly IHostEnvironment _environment;
-    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
-
-    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
     public DbSet<PasswordHistory> PasswordHistories => Set<PasswordHistory>();
 
@@ -67,15 +62,11 @@ public class IdentityDbContext : MultiTenantIdentityDbContext<FshUser,
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(typeof(IdentityDbContext).Assembly);
 
-        builder.ApplyConfiguration(new OutboxMessageConfiguration(IdentityModuleConstants.SchemaName));
-        builder.ApplyConfiguration(new InboxMessageConfiguration(IdentityModuleConstants.SchemaName));
-
         // Default-on tenant isolation — any entity not marked IGlobalEntity gets
-        // IsMultiTenant() applied automatically. ImpersonationGrant, OutboxMessage,
-        // and InboxMessage opt out via IGlobalEntity. ASP.NET Identity tables
-        // (Users/Roles/Claims/etc.) are already marked IsMultiTenant in
-        // IdentityConfigurations.cs; the auto-apply detects that annotation and
-        // skips re-applying.
+        // IsMultiTenant() applied automatically. ImpersonationGrant opts out via
+        // IGlobalEntity. ASP.NET Identity tables (Users/Roles/Claims/etc.) are
+        // already marked IsMultiTenant in IdentityConfigurations.cs; the auto-apply
+        // detects that annotation and skips re-applying.
         builder.ApplyTenantIsolationByDefault();
     }
 

@@ -60,7 +60,6 @@ public sealed class WolverineTokenGeneratedE2ETests
 
         var tracked = await host.TrackActivity()
             .Timeout(TimeSpan.FromSeconds(30))
-            .IncludeExternalTransports()
             .ExecuteAndWaitAsync(action);
 
         // Aserto 1 — Wolverine vio el publish del envelope.
@@ -69,11 +68,11 @@ public sealed class WolverineTokenGeneratedE2ETests
         sent.TenantId.ShouldBe(TestConstants.RootTenantId,
             "INV-9 — TenantId del envelope debe venir del Finbuckle context del request");
 
-        // Aserto 2 — entrega por RabbitMQ (no por queue local).
+        // Aserto 2 — CAPA 2: entrega in-process por la local durable queue (sin RabbitMQ).
         var receivedEnvelope = tracked.Received.SingleEnvelope<TokenGeneratedIntegrationEvent>();
         receivedEnvelope.ShouldNotBeNull("El consumer test-only debió recibir el evento");
-        receivedEnvelope.Destination?.Scheme.ShouldBe("rabbitmq",
-            "el evento debe transitar por RabbitMQ, no por queue local");
+        receivedEnvelope.Destination?.Scheme.ShouldBe("local",
+            "el evento se entrega in-process por la local durable queue, no por RabbitMQ");
 
         // Aserto 3 — payload intacto en el consumer test-only.
         collector.Received.Count.ShouldBe(1);

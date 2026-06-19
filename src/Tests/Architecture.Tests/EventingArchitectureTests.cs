@@ -6,28 +6,29 @@ using Xunit;
 namespace Architecture.Tests;
 
 /// <summary>
-/// Blinda la doctrina Outbox-first (eventing.md + ADR-0001): la publicación de integration
-/// events va SIEMPRE por <c>IOutboxStore</c>; el tipo <c>IEventBus</c> queda reservado a
-/// BuildingBlocks (OutboxDispatcher + implementaciones InMemory/RabbitMq). Ningún tipo de un
-/// assembly de módulo puede depender de él — ni handler, ni service, ni registro.
+/// Doctrina de eventing tras la Fase 5 (eliminación del bus de eventos propio). La publicación
+/// de integration events va SIEMPRE por la fachada <c>IIntegrationEventPublisher&lt;TDbContext&gt;</c>,
+/// que rutea por el outbox transaccional y tenant-aware de Wolverine. Ningún módulo debe inyectar
+/// el bus global de Wolverine (<c>Wolverine.IMessageBus</c>) directamente: eso saltaría la fachada,
+/// el outbox transaccional y la propagación de TenantId (INV-9).
 ///
-/// La regla prohíbe el TIPO exacto, no el assembly: los módulos dependen legítimamente de
-/// <c>IIntegrationEvent</c>/<c>IIntegrationEventHandler&lt;T&gt;</c>, que viven en el mismo
-/// <c>Eventing.Abstractions</c>. El test de control positivo de abajo garantiza que ese uso
-/// legítimo no dispara falsos positivos (si alguien cambia el match a prefijo de namespace,
-/// el control lo delata).
+/// La regla prohíbe el TIPO exacto del bus global, no el assembly de Wolverine: los módulos
+/// dependen legítimamente de <c>IIntegrationEvent</c>/<c>IIntegrationEventHandler&lt;T&gt;</c>
+/// (Eventing.Abstractions). El control positivo de abajo garantiza que ese uso legítimo no
+/// dispara falsos positivos.
 /// </summary>
 public class EventingArchitectureTests
 {
-    private const string EventBusTypeFullName = "FSH.Framework.Eventing.Abstractions.IEventBus";
+    // El bus global de Wolverine — publicar por aquí evita la fachada + outbox transaccional.
+    private const string WolverineMessageBusTypeFullName = "Wolverine.IMessageBus";
 
     [Fact]
-    public void Modules_Should_Not_Depend_On_IEventBus_Publish_Via_Outbox_Instead()
+    public void Modules_Should_Not_Depend_On_Wolverine_MessageBus_Publish_Via_Facade_Instead()
     {
         var result = Types
             .InAssemblies(ModuleAssemblyDiscovery.GetModuleAssemblies())
             .ShouldNot()
-            .HaveDependencyOn(EventBusTypeFullName)
+            .HaveDependencyOn(WolverineMessageBusTypeFullName)
             .GetResult();
 
         var offenders = result.FailingTypeNames is null
@@ -35,8 +36,8 @@ public class EventingArchitectureTests
             : string.Join(", ", result.FailingTypeNames);
 
         result.IsSuccessful.ShouldBeTrue(
-            $"Estos tipos de módulo dependen de IEventBus (prohibido — publicar vía IOutboxStore, " +
-            $"ver eventing.md y ADR-0001): {offenders}");
+            $"Estos tipos de módulo dependen de Wolverine.IMessageBus (prohibido — publicar vía " +
+            $"IIntegrationEventPublisher<TDbContext>, que usa el outbox transaccional tenant-aware): {offenders}");
     }
 
     [Fact]
@@ -57,13 +58,13 @@ public class EventingArchitectureTests
             "Se esperaba al menos un IIntegrationEventHandler<T> en los módulos (uso legítimo de " +
             "Eventing.Abstractions que la regla principal NO debe marcar)");
 
-        // Y ninguno de esos consumidores legítimos depende del tipo prohibido.
+        // Y ninguno de esos consumidores legítimos depende del bus global prohibido.
         var consumerCheck = Types
             .InAssemblies(ModuleAssemblyDiscovery.GetModuleAssemblies())
             .That()
             .ImplementInterface(typeof(IIntegrationEventHandler<>))
             .ShouldNot()
-            .HaveDependencyOn(EventBusTypeFullName)
+            .HaveDependencyOn(WolverineMessageBusTypeFullName)
             .GetResult();
 
         consumerCheck.IsSuccessful.ShouldBeTrue();

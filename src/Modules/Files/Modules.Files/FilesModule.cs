@@ -62,9 +62,6 @@ public sealed class FilesModule : IModule
             options.ConfigureHeroDatabase(dbConfig.Provider, dbConfig.ConnectionString, dbConfig.MigrationsAssembly, env.IsDevelopment());
             options.AddInterceptors(sp.GetServices<Microsoft.EntityFrameworkCore.Diagnostics.ISaveChangesInterceptor>());
         }, wolverineDatabaseSchema: "files");
-        builder.Services.AddEventingCore(builder.Configuration);
-        builder.Services.AddEventingForDbContext<FilesDbContext>();
-        // ADR-0005 — fachada de publicación con switch por evento.
         builder.Services.AddIntegrationEventPublisher<FilesDbContext>();
         builder.Services.AddScoped<IDbInitializer, FilesDbInitializer>();
 

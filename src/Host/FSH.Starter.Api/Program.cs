@@ -73,9 +73,9 @@ builder.Services.AddMediator(o =>
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Wolverine v3 — Fase 1 (ADR-0001 / ADR-0004): wired EN PARALELO al bus propio,
-// SOLO para el módulo Identity. El bus propio (RabbitMqEventBus + IOutboxStore +
-// OutboxDispatcher) sigue 100% activo y operando para los 5 publicadores actuales.
+// Wolverine v3 (ADR-0001 / ADR-0004 / ADR-0005). Fase 5: el bus de eventos propio
+// (RabbitMqEventBus + IOutboxStore + OutboxDispatcher) fue ELIMINADO. Wolverine es
+// la ÚNICA vía de integration events (mensajería + outbox transaccional).
 //
 // Disciplina de convivencia con Mediator (no negociable):
 //   - Mediator source-gen sigue siendo el bus IN-PROCESS para comandos/queries.
@@ -94,21 +94,28 @@ builder.Host.UseWolverine(opts =>
     // apuntando al Postgres real en lugar del Testcontainer en los tests.
     var identityConnectionString =
         builder.Configuration["DatabaseOptions:ConnectionString"]
-        ?? throw new InvalidOperationException("DatabaseOptions:ConnectionString requerido para Wolverine (Fase 1).");
-    var rabbitMqOptions = builder.Configuration.GetSection("EventingOptions:RabbitMQ");
+        ?? throw new InvalidOperationException("DatabaseOptions:ConnectionString requerido para Wolverine.");
 
 
-    // Discovery selectivo: solo el assembly de Identity descubre handlers Wolverine
-    // en esta fase. Los demás módulos NO se escanean.
+    // Discovery EXPLÍCITA por tipo. La convención (IncludeAssembly) NO descubre estos handlers
+    // en este setup: DisableConventionalDiscovery neutraliza el matching por convención (probado
+    // con evidencia — "Searching assembly … found no handlers"), así que IncludeAssembly quedaba
+    // muerto. Cada handler de integration event se registra a mano acá.
+    //
+    // 🚩 FOOTGUN (no lo olvides): si agregás un integration event handler nuevo y NO lo registrás
+    // con IncludeType acá, Wolverine NO lo descubre → NO se ejecuta. Es un bug SILENCIOSO (no hay
+    // error de compilación; el evento se publica y nadie lo consume). SIEMPRE añadí su IncludeType.
     opts.Discovery.DisableConventionalDiscovery();
-    opts.Discovery.IncludeAssembly(typeof(FSH.Modules.Identity.IdentityModule).Assembly);
-    // Fase 3 — incluir Notifications para el handler MentionedInChannelIntegrationEventHandler.
-    opts.Discovery.IncludeAssembly(typeof(FSH.Modules.Notifications.NotificationsModule).Assembly);
 
-    // Fase 3 Paso 6 — WebhookFanoutHandler<T> es open-generic; Wolverine no descubre
-    // genéricos abiertos por convención. Registramos un closed-generic explícito por
-    // cada evento ya migrado a Wolverine. IMPORTANT: añadir aquí cuando un nuevo evento
-    // migre a Wolverine.
+    // Handlers de dominio (static handler classes — forma canónica Wolverine). Overload
+    // IncludeType(Type): el genérico IncludeType<T> no acepta clases static.
+    opts.Discovery.IncludeType(typeof(FSH.Modules.Identity.Events.UserRegisteredEmailHandler));
+    opts.Discovery.IncludeType(typeof(FSH.Modules.Identity.Events.TokenGeneratedLogHandler));
+    opts.Discovery.IncludeType(typeof(FSH.Modules.Notifications.IntegrationEventHandlers.MentionedInChannelIntegrationEventHandler));
+
+    // WebhookFanoutHandler<T> es open-generic; Wolverine no descubre genéricos abiertos por
+    // convención. Un closed-generic explícito por cada evento. IMPORTANT: añadir aquí cuando un
+    // nuevo evento deba disparar webhooks.
     opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Identity.Contracts.Events.UserRegisteredIntegrationEvent>>();
     opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>>();
     opts.Discovery.IncludeType<FSH.Modules.Webhooks.Services.WebhookFanoutHandler<FSH.Modules.Files.Contracts.Events.FileFinalizedIntegrationEvent>>();
@@ -139,6 +146,14 @@ builder.Host.UseWolverine(opts =>
     // llamada en la misma IServiceCollection — IdentityModule lo hace durante
     // AddModules(), que corre antes de builder.Build() que es cuando este callback
     // UseWolverine se materializa.
+    //
+    // CAPA 3 / C1 — ORDEN CRÍTICO: el middleware de tenant se registra ANTES de
+    // UseEntityFrameworkCoreTransactions adrede. El frame EF-tx construye el DbContext del
+    // handler al inicio del procesamiento; Finbuckle captura el TenantInfo en construcción.
+    // Si el tenant middleware corriera DESPUÉS, el DbContext se construiría con TenantInfo null
+    // → MultiTenantException al SaveChanges del handler que escribe (MentionedInChannel).
+    // Registrándolo antes, el tenant queda seteado antes de que el EF-tx construya el DbContext.
+    opts.UseTenantContextMiddleware();
     opts.UseEntityFrameworkCoreTransactions();
 
     // Durabilidad sobre TODAS las local queues — sin esto, bus.PublishAsync de un
@@ -149,54 +164,20 @@ builder.Host.UseWolverine(opts =>
     // identity.wolverine_outgoing_envelopes como parte del SaveChangesAsync.
     opts.Policies.UseDurableLocalQueues();
 
-    // INV-9 estructural (Fase 3) — middleware que restaura el Finbuckle ITenantInfo
-    // desde envelope.TenantId ANTES de ejecutar cada handler. Elimina el patrón
-    // manual que tenían WebhookFanoutHandler y MentionedInChannelHandler.
-    opts.UseTenantContextMiddleware();
+    // (UseTenantContextMiddleware se registra arriba, antes de UseEntityFrameworkCoreTransactions
+    // — ver CAPA 3 / C1.)
 
-    // Transporte RabbitMQ — alineado con la misma config que el bus propio:
-    // solo activo cuando EventingOptions:Provider == "RabbitMQ" (prod). En dev local
-    // (InMemory) y en tests (sin RabbitMQ levantado) Wolverine se queda con su
-    // transporte por defecto, igual que el bus propio. Si el handshake falla, sucede
-    // en el primer arranque prod-like — exactamente la clase de problema que esta
-    // fase quiere atrapar antes de Fase 2.
+    // CAPA 2 — entrega LOCAL in-process. Los integration events se entregan a sus handlers
+    // (descubiertos vía IncludeType arriba) por las local durable queues de Wolverine
+    // (respaldadas en Postgres: UseDurableLocalQueues + PersistMessagesWithPostgresql). NO hay
+    // routing a RabbitMQ: en un monolito modular el publicador y los handlers viven en el MISMO
+    // proceso; el round-trip por broker era latencia + dependencia de broker + flakiness inútiles
+    // (ningún consumidor externo consume estos exchanges — verificado por grep). Dev ya no
+    // necesita RabbitMQ para el eventing.
     //
-    // Wolverine usa el prefijo "wolverine.*" para sus colas/exchanges de control,
-    // así que NO colisiona con el exchange del bus propio ("fsh.events", RabbitMqOptions).
-    var eventingProvider = builder.Configuration["EventingOptions:Provider"];
-    if (string.Equals(eventingProvider, "RabbitMQ", StringComparison.OrdinalIgnoreCase))
-    {
-        opts.UseRabbitMq(factory =>
-        {
-            factory.HostName    = rabbitMqOptions["Host"]        ?? "localhost";
-            factory.Port        = int.TryParse(rabbitMqOptions["Port"], out var p) ? p : 5672;
-            factory.UserName    = rabbitMqOptions["UserName"]    ?? "guest";
-            factory.Password    = rabbitMqOptions["Password"]    ?? "guest";
-            factory.VirtualHost = rabbitMqOptions["VirtualHost"] ?? "/";
-        })
-        .EnableWolverineControlQueues()
-        .AutoProvision();
-
-        // Fase 2 (ADR-0001/0005) — routing del primer publicador real migrado.
-        // UserRegisteredIntegrationEvent va al exchange "maka.wolverine.identity.events"
-        // (distinguible del exchange del bus propio: "maka.events" / "fsh.events").
-        // El switch ADR-0005 vive en IntegrationEventPublisher<TDbContext>; el call site
-        // de Identity sigue siendo independiente del bus subyacente.
-        opts.PublishMessage<FSH.Modules.Identity.Contracts.Events.UserRegisteredIntegrationEvent>()
-            .ToRabbitExchange("maka.wolverine.identity.events");
-
-        // Publicador 2/4 (ADR-0001/0005). Mismo exchange que UserRegistered (mismo módulo).
-        opts.PublishMessage<FSH.Modules.Identity.Contracts.Events.TokenGeneratedIntegrationEvent>()
-            .ToRabbitExchange("maka.wolverine.identity.events");
-
-        // Publicador 4/4 (ADR-0001/0005). Módulo distinto a Identity → exchange propio.
-        opts.PublishMessage<FSH.Modules.Files.Contracts.Events.FileFinalizedIntegrationEvent>()
-            .ToRabbitExchange("maka.wolverine.files.events");
-
-        // Fase 3 — Chat publisher diferido de Fase 2. Exchange propio del módulo.
-        opts.PublishMessage<FSH.Modules.Chat.Contracts.Events.MentionedInChannelIntegrationEvent>()
-            .ToRabbitExchange("maka.wolverine.chat.events");
-    }
+    // 🔭 Si en el futuro un evento DEBE salir del proceso hacia un sistema EXTERNO real,
+    // reintroducir opts.UseRabbitMq(...) + opts.PublishMessage<TEvent>().ToRabbitExchange(...)
+    // SOLO para ese evento — reservar el broker para salida externa genuina.
 });
 
 var moduleAssemblies = new Assembly[]
