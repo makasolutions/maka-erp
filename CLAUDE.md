@@ -214,6 +214,12 @@ En `src/Host/FSH.Starter.Api/appsettings.Development.json` (este archivo está e
 
 > ⚠️ Verificar que `appsettings.Development.json` está en el `.gitignore`. Si no: agregar.
 
+> ⛔ **SUPERSEDED — Frontend obsoleto.** Los pasos de "Purga de MudBlazor" e "Instalar Syncfusion Blazor"
+> de esta Fase 0 describen un frontend **Blazor** que NO es el del proyecto. El frontend real es
+> **React 19 + Vite 7 + TS** en dos apps (`clients/admin` :5173 y `clients/dashboard` :5174), con
+> Syncfusion 33.x SOLO vía wrappers `Maka*` (ver §9 mapa de componentes y §18). No ejecutar PASO 0.5/0.6.
+> El setup real del frontend vive en los `clients/*` del repo, no aquí.
+
 ### PASO 0.5 — Purga total de MudBlazor ⚠️
 
 ```bash
@@ -326,7 +332,7 @@ dotnet run --project src/Host/FSH.Starter.AppHost
 ✅ Scalar UI accesible (el endpoint lo define FSH, típicamente /scalar o /api-docs)
 ✅ Log → "Connected to PostgreSQL"
 ✅ Log → "Redis connected"
-✅ Log → "MassTransit started" / "RabbitMQ connected"
+✅ Log → API inicia sin excepciones de eventing (Wolverine local; sin broker en dev)
 ✅ grep -r "MudBlazor" . → cero resultados
 ✅ http://localhost:15672 → RabbitMQ Management UI accesible
 ```
@@ -356,7 +362,7 @@ dotnet run --project src/Host/FSH.Starter.AppHost
 
 **RF-CAT-6** Importación masiva desde CSV con mapeo de columnas configurable.
 
-**RF-CAT-7** Sincronización bidireccional con WooCommerce vía REST API (stock, precios, disponibilidad). Evento de integración `ProductSyncedToWooCommerceEvent` vía MassTransit.
+**RF-CAT-7** Sincronización bidireccional con WooCommerce vía REST API (stock, precios, disponibilidad). Evento de integración `ProductSyncedToWooCommerceEvent` publicado por **Wolverine** (integration events cross-módulo; entrega local in-process + outbox durable Postgres). Ver `.agents/rules/eventing.md`.
 
 #### Módulo Inventory — Inventario Multibodega
 
@@ -559,9 +565,9 @@ dotnet run --project src/Host/FSH.Starter.AppHost
 
 **RF-AUTO-2** Triggers: nuevo lead, cambio de etapa pipeline, pedido pagado, stock bajo mínimo, garantía abierta, N días sin actividad del cliente, mensaje WhatsApp recibido.
 
-**RF-AUTO-3** Acciones: enviar WhatsApp (plantilla HSM), enviar email, crear tarea, cambiar estado, asignar lead, generar solicitud de compra, publicar Integration Event en RabbitMQ.
+**RF-AUTO-3** Acciones: enviar WhatsApp (plantilla HSM), enviar email, crear tarea, cambiar estado, asignar lead, generar solicitud de compra, publicar Integration Event vía **Wolverine** (entrega local in-process; RabbitMQ solo si un consumidor externo real debe recibirlo).
 
-**RF-AUTO-4** Implementación: Hangfire para jobs recurrentes, MassTransit Sagas para flujos con estado (ej. ciclo completo de importación).
+**RF-AUTO-4** Implementación: **Hangfire** para jobs recurrentes; **Wolverine** para flujos con estado / orquestación de eventos (ej. ciclo completo de importación).
 
 #### Módulo AI Services — Capa de Inteligencia Artificial
 
@@ -673,11 +679,10 @@ Seguridad:
 🚫 PROHIBIDO: Patrón Repository genérico (IRepository<T>)
    Solución: DbContext directo en los Handlers + Specification<T> del framework para queries complejas
 
-🚫 PROHIBIDO: MudBlazor en cualquier forma
-   Solución: Syncfusion Blazor exclusivamente
+🚫 PROHIBIDO: cualquier componente Blazor (MudBlazor, Syncfusion Blazor, .razor) — el frontend es React
+   Solución: React 19 + Syncfusion 33.x SOLO vía wrappers Maka* (ver mapa de componentes abajo)
 
-🚫 PROHIBIDO: MassTransit v9 (licencia comercial)
-   Solución: v8.5.7 Apache 2.0. Si v9 se requiere: escalar a Juan para decisión.
+🚫 PROHIBIDO: introducir MassTransit. El bus es Wolverine (MIT).
 
 🚫 PROHIBIDO: usar SignalR donde SSE es suficiente (y viceversa)
    Regla: flujo unidireccional → SSE. Flujo bidireccional/colaborativo → SignalR.
@@ -868,7 +873,7 @@ Por cada nueva feature:
    f) Handler en Features/v1/{Area}/{Feature}/
    g) Endpoint en Features/v1/{Area}/{Feature}/
    h) Integration Event (si aplica) + Consumer en módulo receptor
-   i) Componente Blazor/Syncfusion
+   i) Componente React (Syncfusion vía wrapper Maka* si es UI compleja)
    j) Test en Tests/{Modulo}.Tests/
 
 3. Commit granular por cada paso
@@ -898,8 +903,7 @@ test(inventory): add integration tests for stock transfer flow
 ⚠️  Un módulo quiere referenciar el runtime (no los Contracts) de otro módulo
 ⚠️  Una migración elimina o renombra una columna con datos existentes
 ⚠️  El Handler crece más de ~50 líneas → lógica que debe ir al dominio
-⚠️  Aparece alguna referencia a MudBlazor o SignalR o Swashbuckle
-⚠️  MassTransit sugiere actualizar a v9
+⚠️  Aparece alguna referencia a MudBlazor / componentes Blazor (.razor) o Swashbuckle
 ⚠️  Se va a enviar comunicación (WhatsApp, email, webhook) en producción
 ⚠️  Ambigüedad en una regla de negocio colombiana (impuesto, retención, garantía)
 ⚠️  Se necesita la Syncfusion license key y no está configurada
@@ -936,7 +940,7 @@ Claude API Key (Anthropic):     PENDIENTE (AI Copywriter + bot)
 ❌ Marketplace multi-vendor
 ❌ SignalR para casos de uso unidireccionales (usar SSE en su lugar — ver `.agents/rules/realtime.md`)
 ❌ Swashbuckle/Swagger (FSH usa Scalar)
-❌ MassTransit v9 (comercial)
+❌ MassTransit (cualquier versión) — el bus de eventos es Wolverine (MIT)
 ❌ MudBlazor (purgado)
 ❌ Realidad aumentada / 3D en productos
 ❌ Gestión de anuncios pagados (Google Ads, Meta Ads)

@@ -46,9 +46,9 @@ Backend in .NET 10 + two React 19 frontends (operator `clients/admin`, tenant `c
 | Multitenancy | Finbuckle 10.x |
 | Cache | Redis (HybridCache) |
 | Jobs | Hangfire + Hangfire.PostgreSql |
-| Events | MassTransit 8.5.7 + RabbitMQ (**v8 only — Apache 2.0; v9 is commercial**) |
-| Eventing (dev) | **InMemory** (default, no Docker dependency) |
-| Eventing (prod) | RabbitMQ (configure in appsettings.Production.json) |
+| Events | **Wolverine** (cross-module integration events; in-process local delivery + per-module durable outbox on Postgres). MassTransit **never existed** in the code. See `.agents/rules/eventing.md`. |
+| Eventing (dev) | **Wolverine local delivery** (in-process, Postgres-backed durable queues; no broker) |
+| Eventing (prod) | **Wolverine local delivery**; RabbitMQ only as outbound transport to real external processes |
 | Docs | OpenAPI + **Scalar** (NOT Swashbuckle) |
 | Hosting | .NET Aspire |
 | Testing | xUnit, Shouldly, NSubstitute, AutoFixture, NetArchTest, Testcontainers |
@@ -111,8 +111,8 @@ dotnet ef migrations add {Name} \
 9. **i18n is mandatory** — every user-visible string must use `t('namespace:key')`. Add the key to `es/` **first**, then `en/`. See `add-translation` skill.
 10. **Syncfusion wrappers are mandatory** — use `MakaGrid`, `MakaChart`, `MakaKanban`, `MakaPivot`, `MakaScheduler`. Never instantiate Syncfusion components directly.
 11. **CSS tokens, never hardcoded colors** — use `var(--color-text-primary)`, `var(--color-accent)`, etc. Syncfusion canvas components resolve via `getComputedStyle` on mount.
-12. **RabbitMQ = production only** — development uses `EventingOptions.Provider: "InMemory"` to avoid Docker network hangs.
-13. **MassTransit v8.5.7 only** — v9 is commercial. Do not upgrade.
+12. **RabbitMQ = outbound-only** — cross-module eventing uses Wolverine local delivery (in-process, Postgres-backed durable queues); RabbitMQ is configured only when a real external process must consume events. See `.agents/rules/eventing.md`.
+13. **Cross-module eventing = Wolverine (MIT)** — in-process local delivery + per-module durable outbox on Postgres. Do **not** introduce MassTransit (it never existed in this code). See `.agents/rules/eventing.md`.
 14. **Frontend: pass per-call data through `mutate(arg)`**, never via state the mutation callbacks close over (execute-time race).
 15. **GET handlers are read-only** — never write to the database in a query handler. Use the upsert pattern in the PUT handler instead.
 
