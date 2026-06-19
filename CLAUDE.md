@@ -51,7 +51,7 @@ Cuando el modelo actual no sea el óptimo: mostrar el banner de cambio (definido
 | **Equipo** | 14 personas — Bogotá y Medellín |
 | **Negocio** | Retail B2B/B2C audiovisual profesional + Maka Studios |
 | **Marcas clave** | Sony, DJI, Canon, Nikon, Blackmagic, Nanlite, Godox, DZOFilm (exclusivo Colombia) |
-| **ERP a reemplazar** | Effi / Efficommerce |
+| **ERP a reemplazar** | Effi / Efficommerce | Siigo | Mercatelly | Kommo | 
 | **E-commerce** | WooCommerce + Electro Theme (se mantiene; integración vía API) |
 
 ### Usuarios clave
