@@ -337,3 +337,51 @@ Cruzado con los campos de lead de Kommo/Mercately, **dónde vive cada dato**:
 - **[RECONCILIAR]** `LifecycleStage` en Party as-built (atributo macro, separado de embudos).
 - **[DISEÑO]** ganchos de merge/dedup y la separación `Conversation`/`Negociación` — no implementar tooling,
   pero **no contaminar** el contacto con esos datos.
+
+---
+
+## 10. Decisiones de reconciliación — APROBADAS por Juan (2026-06-19)
+
+> Estas decisiones cierran los `[RECONCILIAR]` de §1, §7, §8.6 y §9.5 contra el as-built verificado por
+> Claude Code. **Tienen prioridad** sobre cualquier afirmación previa de este SPEC que las contradiga.
+
+1. **Modelo de contacto (§1, §7.1):** **adelgazar `ContactProfile`** a atributos **globales** de la persona
+   (p. ej. `ResponsibleUserId`); **deprecar `PartyContact` v1**. Todo lo *por-empresa*
+   (`RelationshipType`/`ContactFunction`/`JobTitle`/`IsPrimary`/`IsCommercial`) vive **solo en
+   `PartyRelationship`**. Patrón HubSpot (contact owner global + labels por asociación).
+   - **Confirmación pendiente de Juan:** ¿algún tenant tiene contactos cargados, o es dev limpio? Si dev →
+     migración de datos = None.
+
+2. **`ContactFunction` / `JobTitle` / `RelationshipType` → Tabla Básica (§7.3):**
+   - `ContactFunction`: Tabla Básica **con códigos de sistema protegidos** — `FacturacionElectronica` y
+     `Comercial` quedan **seeded, no borrables ni renombrables** (la lógica de ruteo DIAN keya sobre el
+     `code` estable); el resto del catálogo es libre/ampliable.
+   - `JobTitle`: Lookup **"Cargos laborales"** — reusar el patrón de `PartyContact.PositionCode`, que **ya**
+     es Tabla Básica.
+   - **Acción adicional (PR-2):** actualizar `parties/SPEC.md` maestro §6.3/§13 (deja de fijar
+     `ContactFunction` como enum) y el **front v2** que hoy consume el enum.
+
+3. **`PartyChannel` omnicanal (§9.5): DIFERIDO a Mensajería (M2).** PR-3 (`ContactList`) usa `PartyChannel`
+   tal cual existe (`ChannelTypeCode` + `Value` + `Reference` + `IsPrimary`). **NO** agregar
+   `wa_id`/`ExternalId`/`ProfileName` ni VO de consentimiento ahora. La extensión futura se diseña
+   **aditiva** (gancho **[DISEÑO]**): no debe reabrir el contrato de `ContactList` cuando llegue M2.
+
+4. **`EmailFacturacion` (§8.1):** agregarlo a **`FiscalData`** (en PR-2). Hoy se reusa `Party.Email`; se
+   **separa** en un campo fiscal dedicado.
+
+5. **`IsPEP` (§8.1) → a nivel PERSONA**, no empresa ni relación:
+   - `IsPEP` (+ `PepType`/cargo opcional) en el **Party-persona** (identidad). Se marca **una vez**; todas
+     sus relaciones lo **heredan** (evita la inconsistencia de PEP-en-N-empresas).
+   - La relación rep-legal (`PartyRelationship` con `RelationshipType=RepresentanteLegal`) **expone/refleja**
+     el `IsPEP` de la persona para el compliance de esa empresa (no lo duplica como dato propio).
+   - **Deprecar `FiscalData.FlagPEP`** (empresa): "¿esta empresa tiene rep legal PEP?" se responde vía la
+     relación rep-legal → `persona.IsPEP`. **No borrar en caliente:** marcar como *deprecated* y migrar si
+     hay datos.
+
+6. **Editor de Custom Fields (§3, PR-1) — tipos de arranque:** `Text`, `Number`, `Currency`, `Date`,
+   `Checkbox`, `Select`, `MultiSelect`. (`EmailAddress`/`PhoneNumber` si son baratos; `Rating`,
+   `RecordReference`, `Timestamp` después.)
+
+7. **Orden de ejecución confirmado:** PR-1 (Custom Fields) → PR-2 (`PartyRelationship` + reconciliación
+   `ContactProfile`/`PartyContact` + `EmailFacturacion` + `IsPEP`) → PR-3 (`ContactList` + i18n). Cada PR
+   verificado contra el repo, con Plan Mode aprobado **antes** de escribir código.
