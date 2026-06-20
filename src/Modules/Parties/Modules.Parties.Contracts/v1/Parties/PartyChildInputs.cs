@@ -16,24 +16,8 @@ public sealed record PartyAddressInput(
     string? DepartmentCode = null,
     string? MunicipalityCode = null);
 
-public sealed record PartyContactInput(
-    string  Reference,
-    string? ContactTypeCode,
-    string? AreaCode,
-    string? IdentificationTypeCode,
-    string? IdentificationNumber,
-    string? FirstName,
-    string? LastName,
-    string? PositionCode,
-    string? ProfessionCode,
-    DateOnly? BirthDate,
-    string? GenderCode,
-    string? MaritalStatusCode,
-    string? Email,
-    string? Phone,
-    string? Cell,
-    bool    IsCommercial,
-    string? Notes);
+// PR-2: PartyContactInput ELIMINADO — los contactos persona↔empresa se capturan vía PartyRelationship
+// (ContactList, PR-3), no como hijos del comando de Party.
 
 public sealed record PartyChannelInput(
     string  ChannelTypeCode,

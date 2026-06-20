@@ -39,7 +39,6 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
             command.FirstName, command.LastName);
 
         party.ReplaceAddresses(PartyMapping.ToAddresses(command.Addresses));
-        party.ReplaceContacts(PartyMapping.ToContacts(command.Contacts));
         party.ReplaceChannels(PartyMapping.ToChannels(command.Channels));
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
 

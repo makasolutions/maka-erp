@@ -34,9 +34,10 @@ public sealed record PartyV2FiscalDto(
     bool                AgenteRetencionIVA,
     bool                AgenteRetencionICA,
     bool                ObligadoLlevarContabilidad,
-    bool                FlagPEP,
+    bool                FlagPEP,          // DEPRECADO (PR-2): PEP vive en Party.IsPEP. Ver DEPRECATIONS.md.
     string?             FormaJuridica,
-    IReadOnlyList<string> ResponsabilidadesFiscales);
+    IReadOnlyList<string> ResponsabilidadesFiscales,
+    string?             EmailFacturacion = null);  // PR-2: email DIAN dedicado
 
 public sealed record PartyV2LegalRepDto(
     string             Nombres,
@@ -64,11 +65,10 @@ public sealed record PartyV2SupplierProfileDto(
     int?   LeadTimeDays,
     bool   IsActive);
 
+/// <summary>Faceta contacto adelgazada (PR-2): solo atributos globales de la persona. Lo por-empresa
+/// (cargo/función/principal) vive en <c>PartyRelationship</c>.</summary>
 public sealed record PartyV2ContactProfileDto(
-    string?         JobTitle,
-    ContactFunction? ContactFunction,
-    bool            IsCommercialContact,
-    bool            IsPrimary);
+    Guid? ResponsibleUserId);
 
 public sealed record PartyV2PartnerProfileDto(
     decimal   SharePercentage,

@@ -47,7 +47,6 @@ public sealed class CreatePartyCommandValidator : AbstractValidator<CreatePartyC
             .WithMessage("El límite de crédito no puede superar $100.000.000.");
 
         RuleForEach(x => x.Addresses).SetValidator(new PartyAddressInputValidator());
-        RuleForEach(x => x.Contacts).SetValidator(new PartyContactInputValidator());
         RuleForEach(x => x.Channels).SetValidator(new PartyChannelInputValidator());
     }
 }

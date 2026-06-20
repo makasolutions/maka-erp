@@ -18,7 +18,7 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
         ArgumentNullException.ThrowIfNull(command);
 
         var party = await db.Parties
-            .Include(p => p.Addresses).Include(p => p.Contacts).Include(p => p.Channels).Include(p => p.Team)
+            .Include(p => p.Addresses).Include(p => p.Channels).Include(p => p.Team)
             // Navs v2 cargadas para que el synchronizer diffee el estado actual (D5a profiles, D5c CIIU).
             .Include(p => p.CustomerProfile).Include(p => p.SupplierProfile).Include(p => p.EmployeeProfile)
             .Include(p => p.CiiuActivities)
@@ -39,7 +39,6 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
             command.FirstName, command.LastName);
 
         party.ReplaceAddresses(PartyMapping.ToAddresses(command.Addresses));
-        party.ReplaceContacts(PartyMapping.ToContacts(command.Contacts));
         party.ReplaceChannels(PartyMapping.ToChannels(command.Channels));
         party.ReplaceTeam(PartyMapping.ToTeam(command.Team));
 
@@ -62,7 +61,6 @@ public sealed class UpdatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
         // durante el SaveChanges para que el DetectChanges final no revierta el estado.
         db.ChangeTracker.DetectChanges();
         MarkChildrenAdded(party.Addresses);
-        MarkChildrenAdded(party.Contacts);
         MarkChildrenAdded(party.Channels);
         MarkChildrenAdded(party.Team);
 

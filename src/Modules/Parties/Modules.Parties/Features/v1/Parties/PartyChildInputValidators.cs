@@ -23,32 +23,7 @@ public sealed class PartyAddressInputValidator : AbstractValidator<PartyAddressI
     }
 }
 
-public sealed class PartyContactInputValidator : AbstractValidator<PartyContactInput>
-{
-    public PartyContactInputValidator()
-    {
-        RuleFor(c => c.Email).NotEmpty().WithMessage("Cada persona de contacto requiere un correo.")
-            .EmailAddress().WithMessage("El correo de una persona de contacto no es válido.")
-            .MaximumLength(256);
-        RuleFor(c => c.Cell).NotEmpty().WithMessage("Cada persona de contacto requiere un celular.")
-            .MaximumLength(64)
-            .Must(FormValidationRules.IsValidPhone)
-            .WithMessage("El celular no es válido (10 dígitos iniciando en 3, o formato internacional +57…).");
-        RuleFor(c => c.Phone).Must(FormValidationRules.IsValidPhone)
-            .WithMessage("El teléfono no es válido.")
-            .When(c => !string.IsNullOrWhiteSpace(c.Phone));
-        RuleFor(c => c.FirstName).MaximumLength(FormValidationRules.NameMaxLength)
-            .Must(FormValidationRules.IsValidPersonName).WithMessage("Los nombres del contacto contienen caracteres no válidos.")
-            .When(c => !string.IsNullOrWhiteSpace(c.FirstName));
-        RuleFor(c => c.LastName).MaximumLength(FormValidationRules.NameMaxLength)
-            .Must(FormValidationRules.IsValidPersonName).WithMessage("Los apellidos del contacto contienen caracteres no válidos.")
-            .When(c => !string.IsNullOrWhiteSpace(c.LastName));
-        RuleFor(c => c).Must(c => FormValidationRules.BirthDateError(c.BirthDate) is null)
-            .WithMessage(c => FormValidationRules.BirthDateError(c.BirthDate))
-            .WithName(nameof(PartyContactInput.BirthDate))
-            .When(c => c.BirthDate.HasValue);
-    }
-}
+// PR-2: PartyContactInputValidator ELIMINADO (PartyContact migró a PartyRelationship).
 
 public sealed class PartyChannelInputValidator : AbstractValidator<PartyChannelInput>
 {

@@ -24,7 +24,6 @@ public sealed class PartiesDbContext : BaseDbContext
     // --- v1 (productivo, NO se toca) ---
     public DbSet<Party>           Parties   => Set<Party>();
     public DbSet<PartyAddress>    Addresses => Set<PartyAddress>();
-    public DbSet<PartyContact>    Contacts  => Set<PartyContact>();
     public DbSet<PartyChannel>    Channels  => Set<PartyChannel>();
     public DbSet<PartyTeamMember> TeamMembers => Set<PartyTeamMember>();
 

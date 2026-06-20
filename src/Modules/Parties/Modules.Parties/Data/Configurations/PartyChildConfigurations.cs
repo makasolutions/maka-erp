@@ -28,33 +28,7 @@ public sealed class PartyAddressConfiguration : IEntityTypeConfiguration<PartyAd
     }
 }
 
-public sealed class PartyContactConfiguration : IEntityTypeConfiguration<PartyContact>
-{
-    public void Configure(EntityTypeBuilder<PartyContact> builder)
-    {
-        ArgumentNullException.ThrowIfNull(builder);
-        builder.ToTable("PartyContacts");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Reference).IsRequired().HasMaxLength(128);
-        builder.Property(x => x.ContactTypeCode).HasMaxLength(64);
-        builder.Property(x => x.AreaCode).HasMaxLength(64);
-        builder.Property(x => x.IdentificationTypeCode).HasMaxLength(64);
-        builder.Property(x => x.IdentificationNumber).HasMaxLength(64);
-        builder.Property(x => x.FirstName).HasMaxLength(120);
-        builder.Property(x => x.LastName).HasMaxLength(120);
-        builder.Property(x => x.FullName).HasMaxLength(240);
-        builder.Property(x => x.PositionCode).HasMaxLength(64);
-        builder.Property(x => x.ProfessionCode).HasMaxLength(64);
-        builder.Property(x => x.GenderCode).HasMaxLength(64);
-        builder.Property(x => x.MaritalStatusCode).HasMaxLength(64);
-        builder.Property(x => x.Email).HasMaxLength(256);
-        builder.Property(x => x.Phone).HasMaxLength(64);
-        builder.Property(x => x.Cell).HasMaxLength(64);
-        builder.Property(x => x.Notes).HasMaxLength(512);
-        builder.HasIndex(x => x.PartyId);
-        builder.Ignore(x => x.DomainEvents);
-    }
-}
+// PR-2: PartyContactConfiguration ELIMINADA junto con la entidad PartyContact (migrada a PartyRelationship).
 
 public sealed class PartyChannelConfiguration : IEntityTypeConfiguration<PartyChannel>
 {

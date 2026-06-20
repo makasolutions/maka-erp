@@ -36,7 +36,6 @@ public sealed record CreatePartyCommand(
     string?     CreditDaysCode = null,
     bool        CreditBlocked = false,
     IReadOnlyList<PartyAddressInput>?    Addresses = null,
-    IReadOnlyList<PartyContactInput>?    Contacts = null,
     IReadOnlyList<PartyChannelInput>?    Channels = null,
     IReadOnlyList<PartyTeamMemberInput>? Team = null,
     // Ejes fiscales v2 autoritativos (alternativa al TaxRegimeCode legacy). Default null = legacy.

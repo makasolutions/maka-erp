@@ -50,58 +50,8 @@ public sealed class PartyAddress : BaseEntity<Guid>
     }
 }
 
-/// <summary>Persona de contacto dentro del tercero (cuentas B2B con varios contactos).</summary>
-public sealed class PartyContact : BaseEntity<Guid>
-{
-    public Guid    PartyId      { get; private set; }
-    public string  Reference    { get; private set; } = default!; // cargo/profesión libre (compat)
-    public string? ContactTypeCode { get; private set; }
-    public string? AreaCode        { get; private set; }
-    public string? IdentificationTypeCode { get; private set; }
-    public string? IdentificationNumber   { get; private set; }
-    public string? FirstName    { get; private set; }
-    public string? LastName     { get; private set; }
-    public string? FullName     { get; private set; }             // derivado (compat/listado)
-    public string? PositionCode { get; private set; }             // cargo (Tabla Básica)
-    public string? ProfessionCode { get; private set; }
-    public DateOnly? BirthDate  { get; private set; }
-    public string? GenderCode   { get; private set; }
-    public string? MaritalStatusCode { get; private set; }
-    public string? Email        { get; private set; }             // requerido en captura
-    public string? Phone        { get; private set; }
-    public string? Cell         { get; private set; }             // requerido en captura
-    public bool    IsCommercial { get; private set; }
-    public string? Notes        { get; private set; }
-
-    private PartyContact() { }
-
-    public static PartyContact Create(
-        string reference, string? contactTypeCode, string? areaCode, string? identificationTypeCode,
-        string? identificationNumber, string? firstName, string? lastName, string? positionCode,
-        string? professionCode, DateOnly? birthDate, string? genderCode, string? maritalStatusCode,
-        string? email, string? phone, string? cell, bool isCommercial, string? notes) => new()
-    {
-        Id = Guid.CreateVersion7(),
-        Reference = reference.Trim(),
-        ContactTypeCode = contactTypeCode?.Trim(),
-        AreaCode = areaCode?.Trim(),
-        IdentificationTypeCode = identificationTypeCode?.Trim(),
-        IdentificationNumber = identificationNumber?.Trim(),
-        FirstName = firstName?.Trim(),
-        LastName = lastName?.Trim(),
-        FullName = $"{firstName?.Trim()} {lastName?.Trim()}".Trim(),
-        PositionCode = positionCode?.Trim(),
-        ProfessionCode = professionCode?.Trim(),
-        BirthDate = birthDate,
-        GenderCode = genderCode?.Trim(),
-        MaritalStatusCode = maritalStatusCode?.Trim(),
-        Email = email?.Trim(),
-        Phone = phone?.Trim(),
-        Cell = cell?.Trim(),
-        IsCommercial = isCommercial,
-        Notes = notes?.Trim(),
-    };
-}
+// PR-2: `PartyContact` v1 (lista denormalizada de contactos) ELIMINADA. Los contactos persona↔empresa
+// viven ahora en `PartyRelationship` (M2M). Dev-limpio: borrado sin migración de datos.
 
 /// <summary>Canal de contacto tipado (teléfono, WhatsApp, redes…). ChannelTypeCode = Tabla Básica.</summary>
 public sealed class PartyChannel : BaseEntity<Guid>

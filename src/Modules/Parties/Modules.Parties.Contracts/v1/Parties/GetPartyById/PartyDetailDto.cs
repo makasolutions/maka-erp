@@ -37,7 +37,6 @@ public sealed record PartyDetailDto(
     bool        IsGlobalSupplier,
     DateTime    CreatedAtUtc,
     IReadOnlyList<PartyAddressDto>    Addresses,
-    IReadOnlyList<PartyContactDto>    Contacts,
     IReadOnlyList<PartyChannelDto>    Channels,
     IReadOnlyList<PartyTeamMemberDto> Team,
     // PR-D5d: exposición v2 aditiva (default null → v1 byte-idéntico). Cutover Catalog = PR-E.
@@ -47,10 +46,7 @@ public sealed record PartyAddressDto(Guid Id, string Country, string? Department
     string? Barrio, string? Reference, decimal? Latitude, decimal? Longitude, bool IsPrimary, string? LabelCode,
     string? DepartmentCode = null, string? MunicipalityCode = null, string? NormalizedLine = null);
 
-public sealed record PartyContactDto(Guid Id, string Reference, string? ContactTypeCode, string? AreaCode,
-    string? IdentificationTypeCode, string? IdentificationNumber, string? FirstName, string? LastName,
-    string? PositionCode, string? ProfessionCode, DateOnly? BirthDate, string? GenderCode, string? MaritalStatusCode,
-    string? Email, string? Phone, string? Cell, bool IsCommercial, string? Notes);
+// PR-2: PartyContactDto ELIMINADO (PartyContact migró a PartyRelationship).
 
 public sealed record PartyChannelDto(Guid Id, string ChannelTypeCode, string Value, string? Reference, bool IsPrimary);
 

@@ -33,10 +33,7 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
                 x.IsGlobalSupplier, x.CreatedAtUtc,
                 x.Addresses.Select(a => new PartyAddressDto(a.Id, a.Country, a.Department, a.City, a.Line, a.Barrio, a.Reference,
                     a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode, a.DepartmentCode, a.MunicipalityCode, a.NormalizedLine)).ToList(),
-                x.Contacts.Select(c => new PartyContactDto(c.Id, c.Reference, c.ContactTypeCode, c.AreaCode,
-                    c.IdentificationTypeCode, c.IdentificationNumber, c.FirstName, c.LastName, c.PositionCode,
-                    c.ProfessionCode, c.BirthDate, c.GenderCode, c.MaritalStatusCode, c.Email, c.Phone, c.Cell,
-                    c.IsCommercial, c.Notes)).ToList(),
+                // PR-2: la lista de Contacts v1 ya no existe (migró a PartyRelationship).
                 x.Channels.Select(c => new PartyChannelDto(c.Id, c.ChannelTypeCode, c.Value, c.Reference, c.IsPrimary)).ToList(),
                 x.Team.Select(m => new PartyTeamMemberDto(m.Id, m.UserId, m.Role)).ToList(),
                 new PartyV2DetailDto(
@@ -46,7 +43,8 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
                         x.FiscalData.GranContribuyente, x.FiscalData.Autorretenedor,
                         x.FiscalData.AgenteRetencionIVA, x.FiscalData.AgenteRetencionICA,
                         x.FiscalData.ObligadoLlevarContabilidad, x.FiscalData.FlagPEP,
-                        x.FiscalData.FormaJuridica, x.FiscalData.ResponsabilidadesFiscales),
+                        x.FiscalData.FormaJuridica, x.FiscalData.ResponsabilidadesFiscales,
+                        x.FiscalData.EmailFacturacion),
                     x.LegalRepresentative == null ? null : new PartyV2LegalRepDto(
                         x.LegalRepresentative.Nombres, x.LegalRepresentative.Apellidos,
                         x.LegalRepresentative.TipoIdentificacion, x.LegalRepresentative.NumeroIdentificacion,
@@ -61,8 +59,7 @@ public sealed class GetPartyByIdQueryHandler(PartiesDbContext db)
                         x.SupplierProfile.PaymentTerms.DiasCredito, x.SupplierProfile.IsDropshipping,
                         x.SupplierProfile.LeadTimeDays, x.SupplierProfile.IsActive),
                     x.ContactProfile == null ? null : new PartyV2ContactProfileDto(
-                        x.ContactProfile.JobTitle, x.ContactProfile.ContactFunction,
-                        x.ContactProfile.IsCommercialContact, x.ContactProfile.IsPrimary),
+                        x.ContactProfile.ResponsibleUserId),
                     x.PartnerProfile == null ? null : new PartyV2PartnerProfileDto(
                         x.PartnerProfile.SharePercentage, x.PartnerProfile.StartDate,
                         x.PartnerProfile.EndDate, x.PartnerProfile.Status),

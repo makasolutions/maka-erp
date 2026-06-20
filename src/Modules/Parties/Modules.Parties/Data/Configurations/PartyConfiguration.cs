@@ -49,7 +49,6 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.HasIndex(x => x.IsDeleted);
 
         builder.HasMany(x => x.Addresses).WithOne().HasForeignKey(a => a.PartyId).OnDelete(DeleteBehavior.Cascade);
-        builder.HasMany(x => x.Contacts).WithOne().HasForeignKey(c => c.PartyId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(x => x.Channels).WithOne().HasForeignKey(c => c.PartyId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(x => x.Team).WithOne().HasForeignKey(m => m.PartyId).OnDelete(DeleteBehavior.Cascade);
 

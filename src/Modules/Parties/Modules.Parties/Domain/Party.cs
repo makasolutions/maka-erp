@@ -101,7 +101,6 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public string?         DeletedBy    { get; private set; }
 
     public ICollection<PartyAddress>    Addresses { get; private set; } = new List<PartyAddress>();
-    public ICollection<PartyContact>    Contacts  { get; private set; } = new List<PartyContact>();
     public ICollection<PartyChannel>    Channels  { get; private set; } = new List<PartyChannel>();
     public ICollection<PartyTeamMember> Team      { get; private set; } = new List<PartyTeamMember>();
 
@@ -260,12 +259,6 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
                 first.Barrio, first.Reference, first.Latitude, first.Longitude, isPrimary: true, first.LabelCode);
         }
         foreach (var a in list) Addresses.Add(a);
-    }
-
-    public void ReplaceContacts(IEnumerable<PartyContact> items)
-    {
-        Contacts.Clear();
-        foreach (var c in items) Contacts.Add(c);
     }
 
     public void ReplaceChannels(IEnumerable<PartyChannel> items)

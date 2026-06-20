@@ -27,11 +27,7 @@ internal static class PartyMapping
             a.Barrio, a.Reference, a.Latitude, a.Longitude, a.IsPrimary, a.LabelCode,
             a.DepartmentCode, a.MunicipalityCode));
 
-    public static IEnumerable<PartyContact> ToContacts(IReadOnlyList<PartyContactInput>? items) =>
-        (items ?? []).Select(c => PartyContact.Create(c.Reference, c.ContactTypeCode, c.AreaCode,
-            c.IdentificationTypeCode, c.IdentificationNumber, c.FirstName, c.LastName, c.PositionCode,
-            c.ProfessionCode, c.BirthDate, c.GenderCode, c.MaritalStatusCode, c.Email, c.Phone, c.Cell,
-            c.IsCommercial, c.Notes));
+    // PR-2: ToContacts ELIMINADO (PartyContact migró a PartyRelationship — ver ContactList, PR-3).
 
     public static IEnumerable<PartyChannel> ToChannels(IReadOnlyList<PartyChannelInput>? items) =>
         (items ?? []).Select(c => PartyChannel.Create(c.ChannelTypeCode, c.Value, c.Reference, c.IsPrimary));
