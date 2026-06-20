@@ -19,7 +19,19 @@ public sealed record TenantThemeDto
     public LayoutDto Layout { get; init; } = new();
     public bool IsDefault { get; init; }
 
-    public static TenantThemeDto Default => new();
+    /// <summary>
+    /// Fallback devuelto cuando un tenant no tiene un <c>TenantTheme</c> propio. DEBE marcar
+    /// <see cref="IsDefault"/> = true (el front lo usa para NO aplicar branding inline y dejar que el
+    /// CSS <c>:root</c>/<c>.dark</c> gobierne — sin esto, dark mode quedaba claro en todas las
+    /// superficies para el tenant root). El <see cref="DarkPalette"/> usa el dark real
+    /// (<see cref="PaletteDto.DefaultDark"/>), no la paleta light que daba <c>new()</c>.
+    /// </summary>
+    public static TenantThemeDto Default => new()
+    {
+        LightPalette = PaletteDto.DefaultLight,
+        DarkPalette = PaletteDto.DefaultDark,
+        IsDefault = true,
+    };
 }
 
 [ImmutableObject(true)]
