@@ -1,11 +1,10 @@
 import type { TFunction } from "i18next";
-import type { PartyAddress, PartyContact } from "@/api/parties";
+import type { PartyAddress } from "@/api/parties";
 import type { PartyFormValue } from "@/components/party/PartyForm";
-import { isContactBlank } from "@/components/party/PartyForm";
-import { isEmail, isPhone, isUrl, isPersonName, isColombianAddress, isColombianId, isPastDate, ageInYears } from "./predicates";
+import { isEmail, isPhone, isUrl, isPersonName, isColombianAddress } from "./predicates";
 
-/** Edad mínima de una persona de contacto comercial (regla de negocio Maka, §17). */
-export const MIN_CONTACT_AGE = 15;
+// PR-2: la validación de contactos v1 se removió (contactos → PartyRelationship, ContactList en PR-3).
+// La edad mínima de contacto y la regla "empresa requiere ≥1 contacto" vuelven con ContactList.
 
 /**
  * Validadores de entidad (tercero/identidad). Las primitivas por tipo viven en
@@ -29,8 +28,7 @@ export const birthDateError = (iso: string | null | undefined, t: TFunction): st
 
 /**
  * Valida un tercero completo. Devuelve un mapa clave→mensaje. Claves de hijos
- * usan notación `addresses.{i}.{campo}` / `contacts.{i}.{campo}` (índice del
- * arreglo crudo, no del filtrado).
+ * usan notación `addresses.{i}.{campo}` (índice del arreglo crudo).
  */
 export function validateParty(v: PartyFormValue, t: TFunction): Record<string, string> {
   const e: Record<string, string> = {};
@@ -63,12 +61,6 @@ export function validateParty(v: PartyFormValue, t: TFunction): Record<string, s
     if ((a.latitude != null) !== (a.longitude != null)) e[`addresses.${i}.geo`] = t("validation.geoPair");
   });
 
-  validateAddressesAndContacts(v.addresses, v.contacts, e, t);
-
-  // Regla de negocio: una empresa (Jurídica) debe tener al menos un contacto (§17/§18).
-  if (v.kind === "Juridica" && !v.contacts.some((c) => !isContactBlank(c))) {
-    e.contacts = t("validation.contactRequiredForCompany");
-  }
   return e;
 }
 
@@ -80,10 +72,9 @@ export interface IdentityLike {
   lastName: string;
   email: string;
   addresses: PartyAddress[];
-  contacts: PartyContact[];
 }
 
-/** Valida la identidad de una persona natural (empleado): nombres, doc, contactos, direcciones. */
+/** Valida la identidad de una persona natural (empleado): nombres, doc, direcciones. */
 export function validateIdentity(v: IdentityLike, t: TFunction): Record<string, string> {
   const e: Record<string, string> = {};
 
@@ -99,13 +90,12 @@ export function validateIdentity(v: IdentityLike, t: TFunction): Record<string, 
 
   if (v.email.trim() && !isEmail(v.email)) e.email = t("validation.emailInvalid");
 
-  validateAddressesAndContacts(v.addresses, v.contacts, e, t);
+  validateAddresses(v.addresses, e, t);
   return e;
 }
 
-function validateAddressesAndContacts(
+function validateAddresses(
   addresses: PartyAddress[],
-  contacts: PartyContact[],
   e: Record<string, string>,
   t: TFunction,
 ): void {
@@ -117,35 +107,5 @@ function validateAddressesAndContacts(
     if (a.latitude != null && (a.latitude < -90 || a.latitude > 90)) e[`addresses.${i}.latitude`] = t("validation.latRange");
     if (a.longitude != null && (a.longitude < -180 || a.longitude > 180)) e[`addresses.${i}.longitude`] = t("validation.lngRange");
     if ((a.latitude != null) !== (a.longitude != null)) e[`addresses.${i}.geo`] = t("validation.geoPair");
-  });
-
-  contacts.forEach((c, i) => {
-    if (isContactBlank(c)) return;
-    const key = (f: string) => `contacts.${i}.${f}`;
-
-    // Nombres
-    if ((c.firstName ?? "").trim().length > 50) e[key("firstName")] = t("validation.nameMax");
-    else if (!isPersonName(c.firstName)) e[key("firstName")] = t("validation.nameChars");
-    if ((c.lastName ?? "").trim().length > 50) e[key("lastName")] = t("validation.nameMax");
-    else if (!isPersonName(c.lastName)) e[key("lastName")] = t("validation.nameChars");
-
-    // Identificación según tipo (no letras en numéricos, regex por tipo)
-    if ((c.identificationNumber ?? "").trim() && !isColombianId(c.identificationNumber, c.identificationTypeCode))
-      e[key("identificationNumber")] = t("validation.idInvalid");
-
-    // Fecha de nacimiento: pasada + edad mínima de contacto
-    if ((c.birthDate ?? "").trim()) {
-      if (!isPastDate(c.birthDate)) e[key("birthDate")] = t("validation.birthFuture");
-      else {
-        const age = ageInYears(c.birthDate);
-        if (age != null && age < MIN_CONTACT_AGE) e[key("birthDate")] = t("validation.minAge", { n: MIN_CONTACT_AGE });
-      }
-    }
-
-    // Canales requeridos
-    if (!(c.email ?? "").trim()) e[key("email")] = t("validation.required");
-    else if (!isEmail(c.email)) e[key("email")] = t("validation.emailInvalid");
-    if (!(c.cell ?? "").trim()) e[key("cell")] = t("validation.required");
-    else if (!isPhone(c.cell)) e[key("cell")] = t("validation.phoneInvalid");
   });
 }

@@ -63,13 +63,8 @@ export type PartyAddress = {
   isPrimary: boolean; labelCode?: string | null;
   departmentCode?: string | null; municipalityCode?: string | null; normalizedLine?: string | null;
 };
-export type PartyContact = {
-  id?: string; reference: string; contactTypeCode?: string | null; areaCode?: string | null;
-  identificationTypeCode?: string | null; identificationNumber?: string | null;
-  firstName?: string | null; lastName?: string | null; positionCode?: string | null; professionCode?: string | null;
-  birthDate?: string | null; genderCode?: string | null; maritalStatusCode?: string | null;
-  email?: string | null; phone?: string | null; cell?: string | null; isCommercial: boolean; notes?: string | null;
-};
+// PR-2: PartyContact (contactos v1) ELIMINADO — los contactos persona↔empresa son PartyRelationship
+// (M2M), gestionados por ContactList (PR-3), no como hijos del comando de Party.
 export type PartyChannel = {
   id?: string; channelTypeCode: string; value: string; reference?: string | null; isPrimary: boolean;
 };
@@ -109,7 +104,6 @@ export type PartyDetailDto = {
   branchId?: string | null;
   isGlobalSupplier: boolean;
   addresses: PartyAddress[];
-  contacts: PartyContact[];
   channels: PartyChannel[];
   team: PartyTeamMember[];
   /** Sub-objeto v2 anidado (el backend lo expone; el front consume solo `fiscal` por ahora). */
@@ -178,7 +172,6 @@ export type PartyWriteInput = {
   notes?: string | null;
   branchId?: string | null;
   addresses: PartyAddress[];
-  contacts: PartyContact[];
   channels: PartyChannel[];
   team: PartyTeamMember[];
   /** Ejes fiscales v2 autoritativos (el backend los prefiere sobre taxRegimeCode). */

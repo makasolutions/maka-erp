@@ -16,9 +16,8 @@ import type { ColumnModel } from "@syncfusion/ej2-react-grids";
 import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
 import { AddressEditor } from "@/components/party/AddressEditor";
 import { ChannelEditor } from "@/components/party/ChannelEditor";
-import { ContactEditor } from "@/components/party/ContactEditor";
 import { EmployeeInfoEditor, validateEmployee } from "@/components/hr/EmployeeInfoEditor";
-import { emptyAddress, emptyContact, isContactBlank } from "@/components/party/PartyForm";
+import { emptyAddress } from "@/components/party/PartyForm";
 import { validateIdentity } from "@/lib/validation/forms";
 import { nitVerificationDigit } from "@/lib/nit";
 import { describe, fieldErrors, formatMoney } from "@/lib/list-helpers";
@@ -26,7 +25,7 @@ import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 import {
   createParty, getPartyById, updateParty,
-  type PartyAddress, type PartyChannel, type PartyContact, type PartyWriteInput,
+  type PartyAddress, type PartyChannel, type PartyWriteInput,
 } from "@/api/parties";
 import {
   createEmployee, deleteEmployee, emptyEmployeeData, getEmployeeByPartyId, getEmployees,
@@ -49,14 +48,13 @@ type IdentityForm = {
   lastName: string;
   email: string;
   addresses: PartyAddress[];
-  contacts: PartyContact[];
   channels: PartyChannel[];
 };
 
 function emptyIdentity(): IdentityForm {
   return {
     identificationTypeCode: "CC", identificationNumber: "", verificationDigit: null,
-    firstName: "", lastName: "", email: "", addresses: [emptyAddress()], contacts: [emptyContact()], channels: [],
+    firstName: "", lastName: "", email: "", addresses: [emptyAddress()], channels: [],
   };
 }
 
@@ -71,8 +69,7 @@ function identityToPartyInput(v: IdentityForm): PartyWriteInput {
     status: "Active", stage: "Customer", leadScore: 0, sourceCode: null, marketingType: null,
     birthDate: null, genderCode: null, maritalStatusCode: null,
     hasCredit: false, creditLimit: null, creditDaysCode: null, creditBlocked: false, creditCurrency: null,
-    notes: null, branchId: null, addresses: v.addresses,
-    contacts: v.contacts.filter((c) => !isContactBlank(c)), channels: v.channels, team: [],
+    notes: null, branchId: null, addresses: v.addresses, channels: v.channels, team: [],
   };
 }
 
@@ -141,7 +138,7 @@ export function EmpleadosPage() {
   );
 }
 
-type TabId = "id" | "contacts" | "employee";
+type TabId = "id" | "employee";
 
 function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose: () => void }) {
   const { t } = useTranslation("hr");
@@ -181,7 +178,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
       setIdentity({
         identificationTypeCode: d.identificationTypeCode, identificationNumber: d.identificationNumber,
         verificationDigit: d.verificationDigit ?? null, firstName: d.firstName ?? "", lastName: d.lastName ?? "",
-        email: d.email ?? "", addresses: d.addresses, contacts: d.contacts, channels: d.channels,
+        email: d.email ?? "", addresses: d.addresses, channels: d.channels,
       });
     }
     if (empQ.data) { setEmp(empQ.data.data); setEmployeeId(empQ.data.id); }
@@ -236,7 +233,6 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "id", label: tp("parties.tabs.identity") },
-    { id: "contacts", label: tp("parties.tabs.contacts") },
     { id: "employee", label: t("employee.tab") },
   ];
 
@@ -311,9 +307,7 @@ function EmpleadoEditorDialog({ state, onClose }: { state: EditorState; onClose:
                 </div>
               )}
 
-              {tab === "contacts" && (
-                <ContactEditor value={identity.contacts} onChange={(c) => setId({ contacts: c })} errors={ce} />
-              )}
+              {/* PR-2: tab de Contactos v1 removido (vuelve como ContactList en PR-3). */}
 
               {tab === "employee" && (
                 <EmployeeInfoEditor value={emp} onChange={setEmp} errors={empErrs} />

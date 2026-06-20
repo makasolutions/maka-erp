@@ -11,7 +11,6 @@ import { BasicRecordSelect } from "@/components/lookups/BasicRecordSelect";
 import { MultiRecordSelect } from "@/components/lookups/MultiRecordSelect";
 import { AddressEditor } from "./AddressEditor";
 import { ChannelEditor } from "./ChannelEditor";
-import { ContactEditor } from "./ContactEditor";
 import { PartyPriceListsTab } from "./PartyPriceListsTab";
 import { SupplierCatalogTab } from "./SupplierCatalogTab";
 import { nitVerificationDigit } from "@/lib/nit";
@@ -19,7 +18,7 @@ import { validateParty } from "@/lib/validation/forms";
 import { formatMoney } from "@/lib/list-helpers";
 import { toast } from "sonner";
 import {
-  rolesToApi, verifyIdentification, type LifecycleStage, type PartyAddress, type PartyChannel, type PartyContact,
+  rolesToApi, verifyIdentification, type LifecycleStage, type PartyAddress, type PartyChannel,
   type PartyDetailDto, type PartyKind, type PartyRoles, type PartyStatus, type PartyWriteInput,
   type RegimenTributario, type ResponsabilidadIVA,
 } from "@/api/parties";
@@ -52,7 +51,6 @@ export type PartyFormValue = {
   isGlobalSupplier: boolean;
   notes: string;
   addresses: PartyAddress[];
-  contacts: PartyContact[];
   channels: PartyChannel[];
 };
 
@@ -63,21 +61,14 @@ export function emptyPartyForm(): PartyFormValue {
     regimenTributario: null, responsabilidadIVA: null, responsabilidadesFiscales: [], actividadEconomicaCiiuCode: null,
     status: "Active", stage: "Lead", leadScore: 0, sourceCode: null,
     hasCredit: false, creditLimit: null, creditDaysCode: "30", creditBlocked: false, isGlobalSupplier: false,
-    notes: "", addresses: [emptyAddress()], contacts: [emptyContact()], channels: [],
+    notes: "", addresses: [emptyAddress()], channels: [],
   };
 }
 
 export function emptyAddress(isPrimary = true): PartyAddress {
   return { country: "Colombia", isPrimary, department: null, city: null, line: "", labelCode: null };
 }
-export function emptyContact(): PartyContact {
-  return { reference: "", isCommercial: false };
-}
-/** A contact with no identifying data at all — dropped before submit. */
-export function isContactBlank(c: PartyContact): boolean {
-  return ![c.reference, c.firstName, c.lastName, c.email, c.cell, c.identificationNumber]
-    .some((x) => (x ?? "").trim().length > 0);
-}
+// PR-2: emptyContact/isContactBlank ELIMINADOS (contactos v1 → PartyRelationship, ContactList en PR-3).
 
 function rolesHas(roles: PartyRoles, r: string) { return roles.includes(r); }
 
@@ -96,7 +87,7 @@ export function partyFormFromDetail(d: PartyDetailDto): PartyFormValue {
     status: d.status, stage: d.stage, leadScore: d.leadScore, sourceCode: d.sourceCode ?? null,
     hasCredit: d.hasCredit, creditLimit: d.creditLimit ?? null, creditDaysCode: d.creditDaysCode ?? null,
     creditBlocked: d.creditBlocked, isGlobalSupplier: d.isGlobalSupplier, notes: d.notes ?? "",
-    addresses: d.addresses, contacts: d.contacts, channels: d.channels,
+    addresses: d.addresses, channels: d.channels,
   };
 }
 
@@ -120,11 +111,11 @@ export function partyFormToInput(v: PartyFormValue): PartyWriteInput {
     birthDate: null, genderCode: null, maritalStatusCode: null,
     hasCredit: v.hasCredit, creditLimit: v.creditLimit, creditDaysCode: v.creditDaysCode, creditBlocked: v.creditBlocked,
     creditCurrency: null, notes: v.notes.trim() || null, branchId: null,
-    addresses: v.addresses, contacts: v.contacts.filter((c) => !isContactBlank(c)), channels: v.channels, team: [],
+    addresses: v.addresses, channels: v.channels, team: [],
   };
 }
 
-type TabId = "id" | "contacts" | "crm" | "finance" | "tax" | "prices" | "supplier";
+type TabId = "id" | "crm" | "finance" | "tax" | "prices" | "supplier";
 
 export interface PartyFormProps {
   value: PartyFormValue;
@@ -142,7 +133,6 @@ export interface PartyFormProps {
 /** Maps a backend validation key (e.g. "Contacts[0].Email") to the tab that owns it. */
 function tabForErrorKey(key: string): TabId {
   const k = key.toLowerCase();
-  if (k.startsWith("contact")) return "contacts";
   if (k.startsWith("creditlimit") || k.startsWith("creditdays") || k.includes("credit")) return "finance";
   if (k.startsWith("taxregime") || k.startsWith("fiscal") || k.includes("ciiu") || k.includes("actividad")) return "tax";
   if (k.startsWith("leadscore") || k.startsWith("source") || k.startsWith("stage") || k.startsWith("status")) return "crm";
@@ -187,7 +177,6 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "id", label: t("parties.tabs.identity") },
-    { id: "contacts", label: t("parties.tabs.contacts") },
     { id: "crm", label: t("parties.tabs.crm") },
     { id: "finance", label: t("parties.tabs.finance") },
     { id: "tax", label: t("parties.tabs.tax") },
@@ -299,12 +288,10 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
         </div>
       )}
 
-      {/* Tab 2 — Contactos */}
-      {tab === "contacts" && (
-        <ContactEditor value={v.contacts} onChange={(c) => set({ contacts: c })} disabled={disabled} errors={ce} />
-      )}
+      {/* PR-2: el tab de Contactos v1 se removió. Los contactos persona↔empresa vuelven como
+          ContactList (M2M) en PR-3. */}
 
-      {/* Tab 3 — CRM */}
+      {/* Tab — CRM */}
       {tab === "crm" && (
         <FormGrid>
           <Field id="p-status" span={4} label={t("parties.fields.status")}>
