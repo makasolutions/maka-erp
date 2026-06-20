@@ -25,7 +25,7 @@ import {
 import { Combobox, EntityStatusBadge, Field, FormActions, FormGrid } from "@/components/list";
 import { MakaGridClient } from "@/components/maka";
 import type { ColumnModel } from "@syncfusion/ej2-react-grids";
-import { describe, slugify } from "@/lib/list-helpers";
+import { describe } from "@/lib/list-helpers";
 import { usePerm } from "@/auth/permission-guard";
 import { P } from "@/auth/permissions";
 
@@ -34,6 +34,21 @@ const FIELD_TYPES: CustomFieldType[] = [
 ];
 const ENTITY_TYPES: CustomFieldEntityType[] = ["Party", "PartyRelationship"];
 const isChoice = (t: CustomFieldType) => t === "Select" || t === "MultiSelect";
+
+/** Espejo del backend `CustomFieldDefinition.NormalizeSlug`: minúsculas, sin acentos,
+ *  no-alfanuméricos → `_`, sin `_` repetidos ni en bordes, máx 64. Debe coincidir con el
+ *  backend para que el preview y el chequeo de unicidad en front (ajuste D) sean válidos. */
+function normalizeSlug(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 64)
+    .replace(/^_+|_+$/g, "");
+}
 
 type EditorState =
   | { mode: "closed" }
@@ -191,7 +206,7 @@ function CustomFieldEditorDialog({
   }, [isOpen, def]);
 
   const effectiveSlug = useMemo(
-    () => slugify(slugTouched && slug ? slug : title),
+    () => normalizeSlug(slugTouched && slug ? slug : title),
     [slug, slugTouched, title],
   );
 
