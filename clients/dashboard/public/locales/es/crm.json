@@ -223,7 +223,7 @@
     "title": "Terceros",
     "singular": "tercero",
     "description": "Clientes y proveedores en un solo registro, con datos fiscales DIAN.",
-    "formDesc": "Datos del tercero, direcciones, canales y personas de contacto.",
+    "formDesc": "Datos del tercero, direcciones y canales.",
     "deleteConfirm": "¿Eliminar el tercero \"{{name}}\"? Esta acción se puede revertir desde la papelera.",
     "actions": {
       "create": "Nuevo tercero",

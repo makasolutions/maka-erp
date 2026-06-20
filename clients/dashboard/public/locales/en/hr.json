@@ -2,7 +2,7 @@
   "title": "Employees",
   "singular": "employee",
   "description": "Labor and payroll information of personnel.",
-  "formDesc": "Employee data: identification, contacts and labor information.",
+  "formDesc": "Employee data: identification and labor information.",
   "deleteConfirm": "Delete this employee record? This action can be reverted from the trash.",
   "actions": {
     "create": "New employee",

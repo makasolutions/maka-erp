@@ -209,7 +209,7 @@
     "title": "Third parties",
     "singular": "party",
     "description": "Customers and suppliers in a single record, with DIAN fiscal data.",
-    "formDesc": "Party details, addresses, channels and contact people.",
+    "formDesc": "Party details, addresses and channels.",
     "deleteConfirm": "Delete the party \"{{name}}\"? This can be reverted from the trash.",
     "actions": {
       "create": "New party",

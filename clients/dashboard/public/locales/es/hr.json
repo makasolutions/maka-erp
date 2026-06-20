@@ -2,7 +2,7 @@
   "title": "Empleados",
   "singular": "empleado",
   "description": "Información laboral y de nómina del personal.",
-  "formDesc": "Datos del empleado: identificación, contactos e información laboral.",
+  "formDesc": "Datos del empleado: identificación e información laboral.",
   "deleteConfirm": "¿Eliminar la información de empleado? Esta acción se puede revertir desde la papelera.",
   "actions": {
     "create": "Nuevo empleado",
