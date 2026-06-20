@@ -30,6 +30,10 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.Property(x => x.Notes).HasMaxLength(1000);
         builder.Property(x => x.DeletedBy).HasMaxLength(64);
 
+        // Custom fields (scope Party) — JSONB tipado (PR-1, patrón Catalog.Product.Specs). El esquema
+        // vive en CustomFieldDefinition; aquí solo los valores keyados por ApiSlug. Default null.
+        builder.Property(x => x.CustomFields).HasColumnType("jsonb");
+
         builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.Stage).HasConversion<string>().HasMaxLength(16);

@@ -39,6 +39,9 @@ public sealed class PartiesDbContext : BaseDbContext
     public DbSet<PartyHold>         PartyHolds         => Set<PartyHold>();
     public DbSet<PartyCiiuActivity> PartyCiiuActivities => Set<PartyCiiuActivity>();
 
+    // --- PR-1: subsistema de custom fields (tenant-scoped) ---
+    public DbSet<Domain.CustomFields.CustomFieldDefinition> CustomFieldDefinitions => Set<Domain.CustomFields.CustomFieldDefinition>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -58,5 +61,15 @@ public sealed class PartiesDbContext : BaseDbContext
         modelBuilder.Entity<Party>()
             .HasIndex("TenantId", nameof(Party.ParentPartyId))
             .HasDatabaseName("ix_parties_parent");
+
+        // PR-1 custom fields: slug único por (tenant, scope) entre las definiciones ACTIVAS. Mismo
+        // patrón de índice parcial que ix_ciiu_principal/identificación; el shadow TenantId solo
+        // existe tras base. La unicidad de IsUnique de VALORES (sobre jsonb) queda DIFERIDA [DISEÑO].
+        modelBuilder.Entity<Domain.CustomFields.CustomFieldDefinition>()
+            .HasIndex("TenantId", nameof(Domain.CustomFields.CustomFieldDefinition.EntityType),
+                nameof(Domain.CustomFields.CustomFieldDefinition.ApiSlug))
+            .IsUnique()
+            .HasFilter("\"Activo\" = TRUE")
+            .HasDatabaseName("ix_customfielddef_slug");
     }
 }

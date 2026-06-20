@@ -14,6 +14,10 @@ using FSH.Modules.Parties.Features.v1.Parties.SetGlobalSupplier;
 using FSH.Modules.Parties.Features.v1.Parties.UpdateParty;
 using FSH.Modules.Parties.Contracts.v1.Verification;
 using FSH.Modules.Parties.Features.v1.Verification;
+using FSH.Modules.Parties.Features.v1.CustomFields.CreateCustomFieldDefinition;
+using FSH.Modules.Parties.Features.v1.CustomFields.UpdateCustomFieldDefinition;
+using FSH.Modules.Parties.Features.v1.CustomFields.DeactivateCustomFieldDefinition;
+using FSH.Modules.Parties.Features.v1.CustomFields.GetCustomFieldDefinitions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -94,5 +98,11 @@ public sealed class PartiesModule : IModule
         group.MapRestorePartyEndpoint();
         group.MapVerifyIdentificationEndpoint();
         group.MapSetGlobalSupplierEndpoint();
+
+        // PR-1: custom fields (definir = admin / ver = básico). Sin .RequireAuthorization() en el group.
+        group.MapGetCustomFieldDefinitionsEndpoint();
+        group.MapCreateCustomFieldDefinitionEndpoint();
+        group.MapUpdateCustomFieldDefinitionEndpoint();
+        group.MapDeleteCustomFieldDefinitionEndpoint();
     }
 }

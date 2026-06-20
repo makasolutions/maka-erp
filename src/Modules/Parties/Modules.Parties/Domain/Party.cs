@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FSH.Framework.Core.Domain;
 using FSH.Modules.Parties.Contracts.Enums;
 using FSH.Modules.Parties.Domain;
@@ -75,6 +76,14 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
 
     public string? Notes    { get; private set; }
     public Guid?   BranchId { get; private set; }
+
+    /// <summary>
+    /// Valores de custom fields con scope <c>Party</c> (PR-1, SPEC §3.3) — JSONB keyado por
+    /// <c>CustomFieldDefinition.ApiSlug</c>. El ESQUEMA vive en las definiciones; aquí solo los
+    /// valores. Null = sin valores. La validación (tipo + completitud gobernada) la hace el caller
+    /// con <c>CustomFieldValues</c> (el cableado de escritura llega en PR-3).
+    /// </summary>
+    public JsonDocument? CustomFields { get; private set; }
 
     public DateTime  CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
@@ -204,6 +213,15 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public void SetGlobalSupplier(bool isGlobalSupplier)
     {
         IsGlobalSupplier = isGlobalSupplier;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>Reemplaza los valores de custom fields (scope Party). La validación contra las
+    /// definiciones activas (tipo + completitud gobernada) la realiza el caller con
+    /// <c>CustomFieldValues</c> antes de invocar esto. PR-1 (cableado de escritura: PR-3).</summary>
+    public void SetCustomFields(JsonDocument? values)
+    {
+        CustomFields = values;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
