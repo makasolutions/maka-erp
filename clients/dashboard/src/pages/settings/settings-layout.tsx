@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Globe,
   KeyRound,
+  ListChecks,
   Package,
   Palette,
   Settings as SettingsIcon,
@@ -30,6 +31,7 @@ const TAB_DEFS: TabDef[] = [
   { to: "/settings/api-keys", labelKey: "sections.apiKeys", hintKey: "tabs.apiKeysHint", icon: KeyRound },
   { to: "/settings/localization", labelKey: "sections.localization", hintKey: "tabs.localizationHint", icon: Globe },
   { to: "/settings/catalog", labelKey: "sections.catalog", hintKey: "tabs.catalogHint", icon: Package },
+  { to: "/settings/custom-fields", labelKey: "sections.customFields", hintKey: "tabs.customFieldsHint", icon: ListChecks },
 ];
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");

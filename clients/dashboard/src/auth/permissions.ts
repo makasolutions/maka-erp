@@ -35,6 +35,10 @@ export const P = {
     update:  "Permissions.Parties.Parties.Update",
     delete:  "Permissions.Parties.Parties.Delete",
     restore: "Permissions.Parties.Parties.Restore",
+    customFields: {
+      define: "Permissions.Parties.CustomFields.Define",
+      view:   "Permissions.Parties.CustomFields.View",
+    },
   },
   // ── HR (Empleados) ──────────────────────────────────────────────────────────
   hr: {

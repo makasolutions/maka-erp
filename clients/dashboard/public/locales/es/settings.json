@@ -9,7 +9,8 @@
     "tenant": "Tenant",
     "billing": "Facturación",
     "localization": "Localización",
-    "catalog": "Catálogo"
+    "catalog": "Catálogo",
+    "customFields": "Campos personalizados"
   },
   "profile": {
     "title": "Perfil",
@@ -264,7 +265,8 @@
     "notificationsHint": "Cómo nos comunicamos contigo",
     "apiKeysHint": "Tokens de acceso personal",
     "localizationHint": "Fecha, hora, moneda e idioma",
-    "catalogHint": "Impuestos y clases de envío"
+    "catalogHint": "Impuestos y clases de envío",
+    "customFieldsHint": "Campos a medida para terceros"
   },
   "localization": {
     "title": "Localización",

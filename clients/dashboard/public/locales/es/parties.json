@@ -1,0 +1,75 @@
+{
+  "customFields": {
+    "title": "Campos personalizados",
+    "description": "Definí campos a medida para terceros y sus relaciones.",
+    "singular": "campo",
+    "scopeLabel": "Aplica a",
+    "scope": {
+      "Party": "Tercero",
+      "PartyRelationship": "Relación"
+    },
+    "types": {
+      "Text": "Texto",
+      "Number": "Número",
+      "Currency": "Moneda",
+      "Date": "Fecha",
+      "Checkbox": "Casilla",
+      "Select": "Selección",
+      "MultiSelect": "Selección múltiple",
+      "EmailAddress": "Correo",
+      "PhoneNumber": "Teléfono"
+    },
+    "actions": {
+      "create": "Nuevo campo",
+      "add": "Crear campo",
+      "edit": "Editar campo",
+      "delete": "Desactivar campo"
+    },
+    "fields": {
+      "entityType": "Aplica a",
+      "title": "Título",
+      "slug": "Slug (API)",
+      "type": "Tipo",
+      "description": "Descripción",
+      "required": "Obligatorio",
+      "unique": "Único",
+      "options": "Opciones",
+      "optionValue": "Valor",
+      "optionLabel": "Etiqueta",
+      "optionColor": "Color",
+      "active": "Activo"
+    },
+    "hints": {
+      "slug": "Identificador estable; se genera del título y no cambia luego.",
+      "required": "No bloquea crear; se exige al completar el registro.",
+      "unique": "Marca la intención; la unicidad estricta se aplicará más adelante.",
+      "options": "Una opción por fila: valor estable + etiqueta visible + color."
+    },
+    "placeholders": {
+      "title": "Ej. Nivel de riesgo",
+      "slug": "nivel_de_riesgo",
+      "optionValue": "valor",
+      "optionLabel": "Etiqueta"
+    },
+    "addOption": "Agregar opción",
+    "slugTaken": "Ya existe un campo activo con ese slug para ese alcance.",
+    "slugInvalid": "El slug no puede quedar vacío.",
+    "optionsRequired": "Los campos de selección requieren al menos una opción.",
+    "createDesc": "Definí un nuevo campo personalizado.",
+    "editDesc": "Editás «{{name}}».",
+    "deleteDesc": "¿Desactivar «{{name}}»? Los valores ya guardados no se borran.",
+    "empty": "Aún no hay campos personalizados.",
+    "filterScope": "Alcance",
+    "kpi": {
+      "total": "Total",
+      "party": "De tercero",
+      "relationship": "De relación"
+    }
+  },
+  "validation": {
+    "required": "Este campo es obligatorio.",
+    "number": "Ingresá un número válido.",
+    "email": "Correo inválido.",
+    "option": "El valor no está entre las opciones permitidas."
+  }
+}

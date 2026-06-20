@@ -9,7 +9,8 @@
     "tenant": "Tenant",
     "billing": "Billing",
     "localization": "Localization",
-    "catalog": "Catalog"
+    "catalog": "Catalog",
+    "customFields": "Custom fields"
   },
   "profile": {
     "title": "Profile",
@@ -264,7 +265,8 @@
     "notificationsHint": "How we reach you",
     "apiKeysHint": "Personal access tokens",
     "localizationHint": "Date, time, currency and language",
-    "catalogHint": "Taxes and shipping classes"
+    "catalogHint": "Taxes and shipping classes",
+    "customFieldsHint": "Tailored fields for parties"
   },
   "localization": {
     "title": "Localization",

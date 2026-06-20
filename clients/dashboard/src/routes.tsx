@@ -56,6 +56,7 @@ const AttributeCoveragePage = lazyNamed(() => import("@/pages/catalog/attribute-
 const ProductFormPage = lazyNamed(() => import("@/pages/catalog/product-form"), "ProductFormPage");
 const ProductSheetPage = lazyNamed(() => import("@/pages/catalog/product-sheet"), "ProductSheetPage");
 const CatalogSettings = lazyNamed(() => import("@/pages/settings/catalog"), "CatalogSettings");
+const CustomFieldsSettings = lazyNamed(() => import("@/pages/settings/custom-fields"), "CustomFieldsSettings");
 const PublicProductPage = lazyNamed(() => import("@/pages/catalog/public-product"), "PublicProductPage");
 const ProductDetailPage = lazyNamed(
   () => import("@/pages/catalog/product-detail"),
@@ -327,6 +328,7 @@ export const router = createBrowserRouter([
               { path: "api-keys", element: withSuspense(<ApiKeysSettings />) },
               { path: "localization", element: withSuspense(<LocalizationSettings />) },
               { path: "catalog", element: withSuspense(<CatalogSettings />) },
+              { path: "custom-fields", element: withSuspense(<CustomFieldsSettings />) },
             ],
           },
         ],

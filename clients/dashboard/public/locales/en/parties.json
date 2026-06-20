@@ -1,0 +1,75 @@
+{
+  "customFields": {
+    "title": "Custom fields",
+    "description": "Define tailored fields for parties and their relationships.",
+    "singular": "field",
+    "scopeLabel": "Applies to",
+    "scope": {
+      "Party": "Party",
+      "PartyRelationship": "Relationship"
+    },
+    "types": {
+      "Text": "Text",
+      "Number": "Number",
+      "Currency": "Currency",
+      "Date": "Date",
+      "Checkbox": "Checkbox",
+      "Select": "Select",
+      "MultiSelect": "Multi-select",
+      "EmailAddress": "Email",
+      "PhoneNumber": "Phone"
+    },
+    "actions": {
+      "create": "New field",
+      "add": "Create field",
+      "edit": "Edit field",
+      "delete": "Deactivate field"
+    },
+    "fields": {
+      "entityType": "Applies to",
+      "title": "Title",
+      "slug": "Slug (API)",
+      "type": "Type",
+      "description": "Description",
+      "required": "Required",
+      "unique": "Unique",
+      "options": "Options",
+      "optionValue": "Value",
+      "optionLabel": "Label",
+      "optionColor": "Color",
+      "active": "Active"
+    },
+    "hints": {
+      "slug": "Stable identifier; derived from the title and never changes afterwards.",
+      "required": "Does not block creation; enforced when completing the record.",
+      "unique": "Records the intent; strict uniqueness will be enforced later.",
+      "options": "One option per row: stable value + visible label + color."
+    },
+    "placeholders": {
+      "title": "e.g. Risk level",
+      "slug": "risk_level",
+      "optionValue": "value",
+      "optionLabel": "Label"
+    },
+    "addOption": "Add option",
+    "slugTaken": "An active field with that slug already exists for this scope.",
+    "slugInvalid": "The slug cannot be empty.",
+    "optionsRequired": "Select fields require at least one option.",
+    "createDesc": "Define a new custom field.",
+    "editDesc": "Editing “{{name}}”.",
+    "deleteDesc": "Deactivate “{{name}}”? Already-saved values are not deleted.",
+    "empty": "No custom fields yet.",
+    "filterScope": "Scope",
+    "kpi": {
+      "total": "Total",
+      "party": "On party",
+      "relationship": "On relationship"
+    }
+  },
+  "validation": {
+    "required": "This field is required.",
+    "number": "Enter a valid number.",
+    "email": "Invalid email.",
+    "option": "The value is not among the allowed options."
+  }
+}
