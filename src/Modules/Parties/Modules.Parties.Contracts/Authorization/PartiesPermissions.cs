@@ -29,6 +29,15 @@ public static class PartiesPermissions
         public const string View   = $"Permissions.{Resource}.View";
     }
 
+    /// <summary>Vínculos M2M persona↔empresa (PR-2). <c>View</c> = listar (básico); <c>Manage</c> =
+    /// crear/editar/principal/baja.</summary>
+    public static class Relationships
+    {
+        public const string Resource = "Parties.Relationships";
+        public const string View   = $"Permissions.{Resource}.View";
+        public const string Manage = $"Permissions.{Resource}.Manage";
+    }
+
     public static IReadOnlyList<FshPermission> All { get; } =
     [
         new("View Parties",    ActionConstants.View,   Parties.Resource, IsBasic: true),
@@ -39,5 +48,8 @@ public static class PartiesPermissions
 
         new("View Custom Fields",   ActionConstants.View, CustomFields.Resource, IsBasic: true),
         new("Define Custom Fields", "Define",             CustomFields.Resource),
+
+        new("View Party Relationships",   ActionConstants.View, Relationships.Resource, IsBasic: true),
+        new("Manage Party Relationships", "Manage",             Relationships.Resource),
     ];
 }

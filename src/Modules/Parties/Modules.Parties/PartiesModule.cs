@@ -18,6 +18,11 @@ using FSH.Modules.Parties.Features.v1.CustomFields.CreateCustomFieldDefinition;
 using FSH.Modules.Parties.Features.v1.CustomFields.UpdateCustomFieldDefinition;
 using FSH.Modules.Parties.Features.v1.CustomFields.DeactivateCustomFieldDefinition;
 using FSH.Modules.Parties.Features.v1.CustomFields.GetCustomFieldDefinitions;
+using FSH.Modules.Parties.Features.v1.Relationships.CreatePartyRelationship;
+using FSH.Modules.Parties.Features.v1.Relationships.UpdatePartyRelationship;
+using FSH.Modules.Parties.Features.v1.Relationships.SetPrimaryPartyRelationship;
+using FSH.Modules.Parties.Features.v1.Relationships.DeletePartyRelationship;
+using FSH.Modules.Parties.Features.v1.Relationships.GetPartyRelationships;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -104,5 +109,12 @@ public sealed class PartiesModule : IModule
         group.MapCreateCustomFieldDefinitionEndpoint();
         group.MapUpdateCustomFieldDefinitionEndpoint();
         group.MapDeleteCustomFieldDefinitionEndpoint();
+
+        // PR-2: vínculos M2M persona↔empresa (View=básico / Manage). Sin .RequireAuthorization() en el group.
+        group.MapGetPartyRelationshipsEndpoint();
+        group.MapCreatePartyRelationshipEndpoint();
+        group.MapUpdatePartyRelationshipEndpoint();
+        group.MapSetPrimaryPartyRelationshipEndpoint();
+        group.MapDeletePartyRelationshipEndpoint();
     }
 }
