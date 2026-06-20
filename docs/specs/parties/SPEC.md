@@ -240,6 +240,13 @@ Solo configuración de la **faceta cliente**. El crédito vive en `CreditAccount
 
 ### 6.3 `ContactProfile` — persona de contacto B2B
 
+> ⛔ **SUPERSEDED (PR-2, 2026-06-19).** El contacto persona↔empresa pasó a un modelo **M2M
+> `PartyRelationship`** (ver `SPEC-contactlist.md`). `ContactProfile` quedó **adelgazado** a atributos
+> globales (`PartyId` + `ResponsibleUserId`); `JobTitle`/`ContactFunction`/`IsCommercialContact`/`IsPrimary`
+> **se eliminaron** (viven en `PartyRelationship`, como **códigos de Tabla Básica**, no enum). El enum
+> `ContactFunction` (§13) **fue borrado**: ahora es la Tabla Básica `ContactFunction` con
+> `FACTURACION_ELECTRONICA`/`COMERCIAL` protegidos. La tabla de abajo es el estado v2 pre-PR-2.
+
 La relación con la empresa madre es `Party.ParentPartyId`, NO un campo del perfil (R4).
 
 | Campo | Tipo | Notas |
