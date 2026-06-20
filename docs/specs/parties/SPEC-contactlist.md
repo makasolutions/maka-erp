@@ -349,8 +349,10 @@ Cruzado con los campos de lead de Kommo/Mercately, **dónde vive cada dato**:
    (p. ej. `ResponsibleUserId`); **deprecar `PartyContact` v1**. Todo lo *por-empresa*
    (`RelationshipType`/`ContactFunction`/`JobTitle`/`IsPrimary`/`IsCommercial`) vive **solo en
    `PartyRelationship`**. Patrón HubSpot (contact owner global + labels por asociación).
-   - **Confirmación pendiente de Juan:** ¿algún tenant tiene contactos cargados, o es dev limpio? Si dev →
-     migración de datos = None.
+   - **CONFIRMADO por Juan (2026-06-19): dev limpio, ningún dato importa.** Deprecar
+     `ContactProfile`/`PartyContact` en PR-2 es **borrado trivial — SIN migración de datos**. La
+     migración de PR-2 puede `DropTable` esas entidades directamente (no hay backfill ni copia a
+     `PartyRelationship`).
 
 2. **`ContactFunction` / `JobTitle` / `RelationshipType` → Tabla Básica (§7.3):**
    - `ContactFunction`: Tabla Básica **con códigos de sistema protegidos** — `FacturacionElectronica` y
