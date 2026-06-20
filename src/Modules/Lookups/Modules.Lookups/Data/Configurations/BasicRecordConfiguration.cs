@@ -16,6 +16,8 @@ public sealed class BasicRecordConfiguration : IEntityTypeConfiguration<BasicRec
         builder.Property(x => x.Code).IsRequired().HasMaxLength(64);
         builder.Property(x => x.Value).IsRequired().HasMaxLength(256);
 
+        builder.Property(x => x.IsProtected).HasDefaultValue(false);
+
         builder.HasIndex(x => x.BasicTableId);
         // Código único por tabla.
         builder.HasIndex(x => new { x.BasicTableId, x.Code }).IsUnique();

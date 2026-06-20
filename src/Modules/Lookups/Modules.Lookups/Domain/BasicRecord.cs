@@ -19,6 +19,13 @@ public sealed class BasicRecord : BaseEntity<Guid>, IGlobalEntity
     public int     SortOrder    { get; private set; }
     public bool    IsActive     { get; private set; }
 
+    /// <summary>
+    /// Código de sistema: NO se puede ELIMINAR (ni siquiera root). El <see cref="Code"/> ya es inmutable
+    /// (<see cref="Update"/> no lo toca), así que la lógica que keya sobre el code (p. ej. ruteo DIAN sobre
+    /// <c>ContactFunction.FACTURACION_ELECTRONICA</c>) queda a salvo. PR-2.
+    /// </summary>
+    public bool    IsProtected  { get; private set; }
+
     public DateTime  CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
 
@@ -30,7 +37,8 @@ public sealed class BasicRecord : BaseEntity<Guid>, IGlobalEntity
         string value,
         string? tenantId,
         int sortOrder = 0,
-        bool isActive = true)
+        bool isActive = true,
+        bool isProtected = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
@@ -44,6 +52,7 @@ public sealed class BasicRecord : BaseEntity<Guid>, IGlobalEntity
             TenantId     = tenantId,
             SortOrder    = sortOrder,
             IsActive     = isActive,
+            IsProtected  = isProtected,
             CreatedAtUtc = DateTime.UtcNow,
         };
     }

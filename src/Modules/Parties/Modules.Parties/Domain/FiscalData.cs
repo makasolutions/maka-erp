@@ -22,6 +22,21 @@ public sealed record FiscalData
     public bool AgenteRetencionIVA { get; init; }
     public bool AgenteRetencionICA { get; init; }
     public bool ObligadoLlevarContabilidad { get; init; }
+
+    /// <summary>
+    /// Email de facturación electrónica (DIAN). El adquiriente fiscal es la empresa-Party; este correo lo
+    /// consume DIAN al emitir (separado del <c>Party.Email</c> genérico). PR-2.
+    /// </summary>
+    public string? EmailFacturacion { get; init; }
+
+    /// <summary>
+    /// PEP a nivel empresa. DEPRECADO (PR-2): el PEP es atributo de PERSONA natural — vive en
+    /// <c>Party.IsPEP</c>; "¿esta empresa tiene rep. legal PEP?" se responde vía la relación rep-legal →
+    /// <c>persona.IsPEP</c>. No se borra la columna acá para no romper el VO owned.
+    /// TODO(mantenimiento): eliminar la columna <c>FiscalData_FlagPEP</c> en un PR de limpieza futuro
+    /// (deuda rastreable — ver SPEC-contactlist §10.5, DEPRECATIONS.md y el reporte de PR-2). No usar en
+    /// código nuevo: el PEP vigente es <c>Party.IsPEP</c>.
+    /// </summary>
     public bool FlagPEP { get; init; }
 
     /// <summary>VO vacío (tercero sin datos fiscales capturados todavía).</summary>

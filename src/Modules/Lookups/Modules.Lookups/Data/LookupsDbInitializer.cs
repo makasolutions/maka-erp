@@ -69,6 +69,24 @@ public sealed class LookupsDbInitializer(
              ("COMPRAS", "Compras"), ("GERENCIA", "Gerencia"), ("LOGISTICA", "Logística"),
              ("TESORERIA", "Tesorería")], cancellationToken).ConfigureAwait(false);
 
+        // PR-2: tipo de vínculo persona↔empresa (PartyRelationship.RelationshipTypeCode).
+        await SeedTableAsync("RelationshipType", "Tipo de relación", 92,
+            [("EMPLEADO", "Empleado"), ("CONTACTO_EXTERNO", "Contacto externo"),
+             ("REPRESENTANTE_LEGAL", "Representante legal"), ("SOCIO", "Socio")],
+            cancellationToken).ConfigureAwait(false);
+
+        // PR-2: función operativa del contacto (PartyRelationship.ContactFunctionCode). FACTURACION_ELECTRONICA
+        // y COMERCIAL son códigos de SISTEMA (protegidos: el ruteo DIAN keya sobre el code estable). El resto
+        // es ampliable por el operador. Patrón Ingram Micro.
+        await SeedProtectedTableAsync("ContactFunction", "Función del contacto (DIAN)", 94,
+            [("FACTURACION_ELECTRONICA", "Facturación electrónica", true),
+             ("CUENTAS_POR_PAGAR", "Cuentas por pagar", false),
+             ("FINANCIERO", "Financiero", false),
+             ("COMERCIAL", "Comercial", true),
+             ("TI", "TI", false),
+             ("GERENCIA", "Gerencia", false),
+             ("OPERATIVO", "Operativo", false)], cancellationToken).ConfigureAwait(false);
+
         await SeedTableAsync("Position", "Cargo", 100,
             [("GERENTE", "Gerente"), ("DIRECTOR", "Director"), ("JEFE", "Jefe"), ("COORDINADOR", "Coordinador"),
              ("ANALISTA", "Analista"), ("ASESOR", "Asesor comercial"), ("AUXILIAR", "Auxiliar"),
@@ -228,6 +246,29 @@ public sealed class LookupsDbInitializer(
         dbContext.BasicTables.Add(table);
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         logger.LogInformation("[Lookups] seeded global table {Code} ({Count} records)", code, records.Length);
+    }
+
+    /// <summary>Como <see cref="SeedTableAsync"/> pero con códigos de sistema protegidos (no borrables). PR-2.</summary>
+    private async Task SeedProtectedTableAsync(
+        string code, string name, int sortOrder,
+        (string Code, string Value, bool Protected)[] records, CancellationToken cancellationToken)
+    {
+        bool exists = await dbContext.BasicTables
+            .IgnoreQueryFilters()
+            .AnyAsync(t => t.Code == code && t.TenantId == null, cancellationToken)
+            .ConfigureAwait(false);
+        if (exists) return;
+
+        var table = BasicTable.Create(code, name, isGlobal: true, tenantId: null,
+            isManageable: true, sortOrder: sortOrder, visibleInMenu: false);
+
+        int i = 0;
+        foreach (var (rc, rv, prot) in records)
+            table.Records.Add(BasicRecord.Create(table.Id, rc, rv, tenantId: null, sortOrder: i++ * 10, isProtected: prot));
+
+        dbContext.BasicTables.Add(table);
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        logger.LogInformation("[Lookups] seeded global table {Code} ({Count} records, with protected)", code, records.Length);
     }
 
     /// <summary>Asegura un record en una tabla básica global ya existente (idempotente). Para

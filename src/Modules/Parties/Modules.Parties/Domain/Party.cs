@@ -71,6 +71,14 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public string?   GenderCode       { get; private set; }
     public string?   MaritalStatusCode { get; private set; }
 
+    /// <summary>
+    /// Persona Expuesta Políticamente (compliance) — atributo de PERSONA natural (PR-2). Se marca UNA vez
+    /// en la identidad; las relaciones (p. ej. rep. legal de una empresa) lo EXPONEN, no lo duplican.
+    /// Reemplaza el <c>FiscalData.FlagPEP</c> (deprecado, era a nivel empresa).
+    /// </summary>
+    public bool      IsPEP            { get; private set; }
+    public string?   PepType          { get; private set; }   // tipo/cargo PEP (opcional)
+
     // Financiera v1 (HasCredit/CreditLimit/CreditDaysCode/CreditBlocked/CreditCurrency) REMOVIDA en
     // PR-F1b → vive en CreditAccount + PartyHold(Ventas). El DTO la reconstruye desde ahí.
 
@@ -222,6 +230,15 @@ public sealed class Party : AggregateRoot<Guid>, ISoftDeletable
     public void SetCustomFields(JsonDocument? values)
     {
         CustomFields = values;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>Marca/desmarca la persona como PEP (compliance, PR-2). El <paramref name="pepType"/> es
+    /// opcional; se ignora si <paramref name="isPep"/> es false.</summary>
+    public void SetPep(bool isPep, string? pepType = null)
+    {
+        IsPEP = isPep;
+        PepType = isPep ? pepType?.Trim() : null;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

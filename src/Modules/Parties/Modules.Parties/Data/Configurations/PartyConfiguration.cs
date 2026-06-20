@@ -27,6 +27,7 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.Property(x => x.MarketingType).HasMaxLength(64);
         builder.Property(x => x.GenderCode).HasMaxLength(64);
         builder.Property(x => x.MaritalStatusCode).HasMaxLength(64);
+        builder.Property(x => x.PepType).HasMaxLength(128);  // PR-2: PEP a nivel persona
         builder.Property(x => x.Notes).HasMaxLength(1000);
         builder.Property(x => x.DeletedBy).HasMaxLength(64);
 
@@ -105,6 +106,9 @@ public sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
             fd.Property(p => p.AgenteRetencionIVA).HasColumnName("FiscalData_AgenteRetencionIVA");
             fd.Property(p => p.AgenteRetencionICA).HasColumnName("FiscalData_AgenteRetencionICA");
             fd.Property(p => p.ObligadoLlevarContabilidad).HasColumnName("FiscalData_ObligadoLlevarContabilidad");
+            fd.Property(p => p.EmailFacturacion).HasColumnName("FiscalData_EmailFacturacion").HasMaxLength(256);
+            // FlagPEP: DEPRECADO (PR-2) — PEP vive en Party.IsPEP. Columna conservada para no romper el VO
+            // owned; eliminar en PR de mantenimiento futuro (ver DEPRECATIONS.md).
             fd.Property(p => p.FlagPEP).HasColumnName("FiscalData_FlagPEP");
             fd.Property(p => p.ResponsabilidadesFiscales)
                 .HasConversion(dianCodesConverter, dianCodesComparer)

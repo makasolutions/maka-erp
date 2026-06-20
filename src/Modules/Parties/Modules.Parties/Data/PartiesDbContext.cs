@@ -42,6 +42,9 @@ public sealed class PartiesDbContext : BaseDbContext
     // --- PR-1: subsistema de custom fields (tenant-scoped) ---
     public DbSet<Domain.CustomFields.CustomFieldDefinition> CustomFieldDefinitions => Set<Domain.CustomFields.CustomFieldDefinition>();
 
+    // --- PR-2: vínculo M2M persona↔empresa (tenant-scoped) ---
+    public DbSet<Domain.Relationships.PartyRelationship> PartyRelationships => Set<Domain.Relationships.PartyRelationship>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -71,5 +74,13 @@ public sealed class PartiesDbContext : BaseDbContext
             .IsUnique()
             .HasFilter("\"Activo\" = TRUE")
             .HasDatabaseName("ix_customfielddef_slug");
+
+        // PR-2: un contacto principal ACTIVO por empresa (TargetPartyId) en el tenant. Patrón
+        // ix_ciiu_principal; el shadow TenantId solo existe tras base.
+        modelBuilder.Entity<Domain.Relationships.PartyRelationship>()
+            .HasIndex("TenantId", nameof(Domain.Relationships.PartyRelationship.TargetPartyId))
+            .IsUnique()
+            .HasFilter("\"IsActive\" = TRUE AND \"IsPrimary\" = TRUE")
+            .HasDatabaseName("ix_partyrel_primary");
     }
 }
