@@ -387,3 +387,31 @@ Cruzado con los campos de lead de Kommo/Mercately, **dónde vive cada dato**:
 7. **Orden de ejecución confirmado:** PR-1 (Custom Fields) → PR-2 (`PartyRelationship` + reconciliación
    `ContactProfile`/`PartyContact` + `EmailFacturacion` + `IsPEP`) → PR-3 (`ContactList` + i18n). Cada PR
    verificado contra el repo, con Plan Mode aprobado **antes** de escribir código.
+
+---
+
+## Estado de implementación — PR-3 ✅ (junio 2026)
+
+PR-3 cierra el **modelo M2M + la UI base** de contactos (la siguiente fase de diseño UX —campos
+requeridos como canal obligatorio, usabilidad y más listas— NO es parte de PR-3).
+
+**Decisión de alcance (Opción B):** los contactos se capturan **también durante la creación** del tercero
+(Jurídica). En creación se **acumulan en memoria** y se persisten **atómicamente** junto con la empresa
+(un solo `SaveChanges`/transacción); en edición se gestionan **live** contra los endpoints. La persona
+nueva también se **difiere al submit** (referencia discriminada `SourcePartyId | NewPerson` + helper de
+dominio **resolver-o-crear**, con dedup por identificación) → **cero huérfanos**.
+
+**Backend** (sin entidades nuevas; consume PR-2): `GetPartyRelationshipsBySource` (dirección B) +
+endpoint `GET /parties/relationships/by-source`; `PartyRelationshipDto` enriquecido (canal principal,
+`SourceIsPEP`, `CustomFieldsJson`); `Kind` en `GetParties`; custom fields cableados en Create/Update
+relación; `CreateParty` acepta `Relationships` (creación atómica). **Sin migración** (la columna
+`CustomFields` jsonb y la tabla `PartyRelationships` ya existían en la migración de PR-2).
+
+**Frontend:** `api/relationships.ts`, `ContactPicker` (buscar-o-crear), `ContactList` (modos buffer/live +
+banner de completitud gobernada §8.1), tab "Contactos" en `PartyForm` (creación buffer / edición live;
+Natural-edición → vista persona→empresas). i18n ES+EN.
+
+**Gate de pruebas (7/7 verde):** unit dominio (Parties.Tests) · integration Testcontainers (by-target,
+by-source, reuse-no-duplica, persona nueva, **atomicidad/rollback**, **paridad buffer↔live del principal
+único**, aislamiento tenant, custom fields) · Architecture/NetArchTest · RBAC/403 · sin migración
+(justificado) · i18n ES+EN · frontend `npm build` 0 TS + runtime Light/Dark.
