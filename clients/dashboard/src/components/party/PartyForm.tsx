@@ -13,6 +13,7 @@ import { AddressEditor } from "./AddressEditor";
 import { ChannelEditor } from "./ChannelEditor";
 import { PartyPriceListsTab } from "./PartyPriceListsTab";
 import { SupplierCatalogTab } from "./SupplierCatalogTab";
+import { ContactList, PersonCompaniesList, type BufferContact } from "./ContactList";
 import { nitVerificationDigit } from "@/lib/nit";
 import { validateParty } from "@/lib/validation/forms";
 import { formatMoney } from "@/lib/list-helpers";
@@ -52,6 +53,9 @@ export type PartyFormValue = {
   notes: string;
   addresses: PartyAddress[];
   channels: PartyChannel[];
+  /** PR-3 (Opción B): contactos acumulados en memoria durante la creación (Jurídica). En edición
+   *  la lista se gestiona live y este buffer queda vacío. */
+  contacts: BufferContact[];
 };
 
 export function emptyPartyForm(): PartyFormValue {
@@ -61,7 +65,7 @@ export function emptyPartyForm(): PartyFormValue {
     regimenTributario: null, responsabilidadIVA: null, responsabilidadesFiscales: [], actividadEconomicaCiiuCode: null,
     status: "Active", stage: "Lead", leadScore: 0, sourceCode: null,
     hasCredit: false, creditLimit: null, creditDaysCode: "30", creditBlocked: false, isGlobalSupplier: false,
-    notes: "", addresses: [emptyAddress()], channels: [],
+    notes: "", addresses: [emptyAddress()], channels: [], contacts: [],
   };
 }
 
@@ -87,7 +91,7 @@ export function partyFormFromDetail(d: PartyDetailDto): PartyFormValue {
     status: d.status, stage: d.stage, leadScore: d.leadScore, sourceCode: d.sourceCode ?? null,
     hasCredit: d.hasCredit, creditLimit: d.creditLimit ?? null, creditDaysCode: d.creditDaysCode ?? null,
     creditBlocked: d.creditBlocked, isGlobalSupplier: d.isGlobalSupplier, notes: d.notes ?? "",
-    addresses: d.addresses, channels: d.channels,
+    addresses: d.addresses, channels: d.channels, contacts: [],
   };
 }
 
@@ -112,10 +116,17 @@ export function partyFormToInput(v: PartyFormValue): PartyWriteInput {
     hasCredit: v.hasCredit, creditLimit: v.creditLimit, creditDaysCode: v.creditDaysCode, creditBlocked: v.creditBlocked,
     creditCurrency: null, notes: v.notes.trim() || null, branchId: null,
     addresses: v.addresses, channels: v.channels, team: [],
+    // PR-3: contactos en memoria → líneas de relación (solo se usan al CREAR; updateParty las descarta).
+    relationships: v.contacts.map((c) => ({
+      sourcePartyId: c.sourcePartyId ?? null, newPerson: c.newPerson ?? null,
+      relationshipTypeCode: c.relationshipTypeCode, contactFunctionCode: c.contactFunctionCode ?? null,
+      jobTitleCode: c.jobTitleCode ?? null, isPrimary: c.isPrimary,
+      startDate: c.startDate ?? null, endDate: c.endDate ?? null, customFields: c.customFields ?? null,
+    })),
   };
 }
 
-type TabId = "id" | "crm" | "finance" | "tax" | "prices" | "supplier";
+type TabId = "id" | "crm" | "finance" | "tax" | "prices" | "supplier" | "contacts";
 
 export interface PartyFormProps {
   value: PartyFormValue;
@@ -175,8 +186,13 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
   const debe = 0; // placeholder hasta CxC/CxP
   const cupo = (v.creditLimit ?? 0) - debe;
 
+  // Contactos (M2M): visible para Jurídica (buffer en creación / live en edición) y para Natural solo
+  // en edición (vista persona→empresas, dirección B). Natural en creación no tiene relaciones aún.
+  const showContacts = v.kind === "Juridica" || !!partyId;
+
   const tabs: { id: TabId; label: string }[] = [
     { id: "id", label: t("parties.tabs.identity") },
+    ...(showContacts ? [{ id: "contacts" as TabId, label: t("parties.tabs.contacts") }] : []),
     { id: "crm", label: t("parties.tabs.crm") },
     { id: "finance", label: t("parties.tabs.finance") },
     { id: "tax", label: t("parties.tabs.tax") },
@@ -288,8 +304,19 @@ export function PartyForm({ value: v, onChange, isCreate, disabled, partyId, err
         </div>
       )}
 
-      {/* PR-2: el tab de Contactos v1 se removió. Los contactos persona↔empresa vuelven como
-          ContactList (M2M) en PR-3. */}
+      {/* Tab — Contactos (M2M, PR-3). Jurídica: editable (buffer en creación, live en edición).
+          Natural en edición: vista de solo lectura persona→empresas. */}
+      {tab === "contacts" && (
+        <div className="space-y-2">
+          {v.kind === "Juridica" ? (
+            partyId
+              ? <ContactList mode="live" companyId={partyId} disabled={disabled} />
+              : <ContactList mode="buffer" value={v.contacts} onChange={(c) => set({ contacts: c })} disabled={disabled} />
+          ) : partyId ? (
+            <PersonCompaniesList personId={partyId} />
+          ) : null}
+        </div>
+      )}
 
       {/* Tab — CRM */}
       {tab === "crm" && (

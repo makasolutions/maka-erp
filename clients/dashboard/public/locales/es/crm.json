@@ -399,6 +399,36 @@
       "gender": "Género",
       "maritalStatus": "Estado civil",
       "channelRequired": "Correo y celular son obligatorios."
+    },
+    "contacts": {
+      "yes": "Sí",
+      "no": "No",
+      "add": "Agregar contacto",
+      "edit": "Editar contacto",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "makePrimary": "Marcar principal",
+      "existing": "Existente",
+      "newPerson": "Persona nueva",
+      "searchPerson": "Buscar persona…",
+      "errPerson": "Seleccione o cree una persona.",
+      "errType": "El tipo de relación es obligatorio.",
+      "isPEP": "Esta persona es PEP (políticamente expuesta).",
+      "noCompanies": "No está vinculada a ninguna empresa.",
+      "cols": {
+        "type": "Tipo",
+        "function": "Función",
+        "channel": "Canal",
+        "primary": "Principal",
+        "start": "Fecha de inicio",
+        "end": "Fecha de fin"
+      }
+    },
+    "completeness": {
+      "title": "Sugerido para una empresa completa:",
+      "repLegal": "≥1 Representante legal",
+      "comercial": "≥1 Contacto comercial",
+      "facturacion": "≥1 Contacto de facturación"
     }
   }
 }

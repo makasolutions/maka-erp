@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api-client";
 import type { PagedResponse } from "@/api/catalog";
+import type { PartyRelationshipLineInput } from "@/api/relationships";
 
 export type PartyKind = "Natural" | "Juridica";
 export type PartyStatus = "Active" | "Inactive" | "Prospect";
@@ -112,6 +113,7 @@ export type PartyDetailDto = {
 
 export type SearchPartiesParams = {
   search?: string;
+  kind?: PartyKind | null;
   role?: "Customer" | "Supplier" | null;
   status?: PartyStatus | null;
   stage?: LifecycleStage | null;
@@ -124,6 +126,7 @@ export type SearchPartiesParams = {
 export function searchParties(params: SearchPartiesParams = {}): Promise<PagedResponse<PartyDto>> {
   const q = new URLSearchParams();
   if (params.search) q.set("search", params.search);
+  if (params.kind) q.set("kind", params.kind);
   if (params.role) q.set("role", params.role);
   if (params.status) q.set("status", params.status);
   if (params.stage) q.set("stage", params.stage);
@@ -176,6 +179,9 @@ export type PartyWriteInput = {
   team: PartyTeamMember[];
   /** Ejes fiscales v2 autoritativos (el backend los prefiere sobre taxRegimeCode). */
   fiscalAxes?: PartyFiscalAxesInput;
+  /** PR-3 (Opción B): contactos acumulados en el wizard, persistidos atómicamente al CREAR.
+   *  Solo aplica en createParty; en edición los contactos se gestionan live (no se envía acá). */
+  relationships?: PartyRelationshipLineInput[];
 };
 
 export function createParty(input: PartyWriteInput): Promise<string> {
@@ -183,9 +189,10 @@ export function createParty(input: PartyWriteInput): Promise<string> {
 }
 
 export async function updateParty(id: string, input: PartyWriteInput): Promise<void> {
-  // identificationType/number are immutable on update; the command omits them.
-  const { identificationTypeCode: _t, identificationNumber: _n, ...rest } = input;
-  void _t; void _n;
+  // identificationType/number are immutable on update; the command omits them. Relationships are
+  // managed live in edit mode (not part of the UpdateParty command), so they are stripped here.
+  const { identificationTypeCode: _t, identificationNumber: _n, relationships: _r, ...rest } = input;
+  void _t; void _n; void _r;
   await apiFetch<void>(`/api/v1/parties/${encodeURIComponent(id)}`, {
     method: "PUT", body: JSON.stringify({ id, ...rest }),
   });

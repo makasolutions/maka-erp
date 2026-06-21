@@ -385,6 +385,36 @@
       "gender": "Gender",
       "maritalStatus": "Marital status",
       "channelRequired": "Email and mobile are required."
+    },
+    "contacts": {
+      "yes": "Yes",
+      "no": "No",
+      "add": "Add contact",
+      "edit": "Edit contact",
+      "cancel": "Cancel",
+      "save": "Save",
+      "makePrimary": "Set as primary",
+      "existing": "Existing",
+      "newPerson": "New person",
+      "searchPerson": "Search person…",
+      "errPerson": "Select or create a person.",
+      "errType": "The relationship type is required.",
+      "isPEP": "This person is a PEP (politically exposed).",
+      "noCompanies": "Not linked to any company.",
+      "cols": {
+        "type": "Type",
+        "function": "Function",
+        "channel": "Channel",
+        "primary": "Primary",
+        "start": "Start date",
+        "end": "End date"
+      }
+    },
+    "completeness": {
+      "title": "Suggested for a complete company:",
+      "repLegal": "≥1 Legal representative",
+      "comercial": "≥1 Commercial contact",
+      "facturacion": "≥1 Billing contact"
     }
   }
 }

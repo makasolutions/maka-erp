@@ -39,6 +39,10 @@ export const P = {
       define: "Permissions.Parties.CustomFields.Define",
       view:   "Permissions.Parties.CustomFields.View",
     },
+    relationships: {
+      view:   "Permissions.Parties.Relationships.View",
+      manage: "Permissions.Parties.Relationships.Manage",
+    },
   },
   // ── HR (Empleados) ──────────────────────────────────────────────────────────
   hr: {
