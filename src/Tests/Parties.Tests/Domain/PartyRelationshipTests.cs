@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FSH.Modules.Parties.Domain.Relationships;
 
 namespace Parties.Tests.Domain;
@@ -68,5 +69,18 @@ public class PartyRelationshipTests
         var r = PartyRelationship.Create(Persona, EmpresaA, "EMPLEADO");
         Should.Throw<ArgumentException>(() =>
             r.Update("EMPLEADO", null, null, new DateOnly(2026, 6, 1), new DateOnly(2026, 5, 1)));
+    }
+
+    [Fact]
+    public void SetCustomFields_RoundTrips_AndClears()
+    {
+        var r = PartyRelationship.Create(Persona, EmpresaA, "EMPLEADO");
+        r.CustomFields.ShouldBeNull();
+
+        r.SetCustomFields(JsonDocument.Parse("""{ "antiguedad": 3 }"""));
+        r.CustomFields!.RootElement.GetProperty("antiguedad").GetInt32().ShouldBe(3);
+
+        r.SetCustomFields(null);
+        r.CustomFields.ShouldBeNull();
     }
 }

@@ -27,15 +27,26 @@ public sealed class GetPartyRelationshipsQueryHandler(PartiesDbContext db)
         var q = db.PartyRelationships.AsNoTracking().Where(r => r.TargetPartyId == query.TargetPartyId);
         if (!query.IncludeInactive) q = q.Where(r => r.IsActive);
 
-        // Nombre de la persona resuelto en el backend (evita N+1 en el front). Principal primero.
-        return await q
+        // Datos de la persona-Source resueltos en el backend (sin N+1 en el front). Principal primero.
+        var rows = await q
             .OrderByDescending(r => r.IsPrimary).ThenBy(r => r.StartDate)
-            .Select(r => new PartyRelationshipDto(
+            .Select(r => new
+            {
                 r.Id, r.SourcePartyId,
-                db.Parties.Where(p => p.Id == r.SourcePartyId).Select(p => p.LegalName).FirstOrDefault(),
+                SourceName = db.Parties.Where(p => p.Id == r.SourcePartyId).Select(p => p.LegalName).FirstOrDefault(),
+                SourceChannel = db.Parties.Where(p => p.Id == r.SourcePartyId)
+                    .SelectMany(p => p.Channels).OrderByDescending(c => c.IsPrimary).Select(c => c.Value).FirstOrDefault(),
+                SourceIsPEP = db.Parties.Where(p => p.Id == r.SourcePartyId).Select(p => p.IsPEP).FirstOrDefault(),
                 r.TargetPartyId, r.RelationshipTypeCode, r.ContactFunctionCode, r.JobTitleCode,
-                r.IsPrimary, r.IsActive, r.StartDate, r.EndDate))
+                r.IsPrimary, r.IsActive, r.StartDate, r.EndDate, r.CustomFields,
+            })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return rows.Select(x => new PartyRelationshipDto(
+            x.Id, x.SourcePartyId, x.SourceName, x.SourceChannel, x.SourceIsPEP,
+            x.TargetPartyId, x.RelationshipTypeCode, x.ContactFunctionCode, x.JobTitleCode,
+            x.IsPrimary, x.IsActive, x.StartDate, x.EndDate,
+            x.CustomFields == null ? null : x.CustomFields.RootElement.GetRawText())).ToList();
     }
 }
 

@@ -23,6 +23,7 @@ using FSH.Modules.Parties.Features.v1.Relationships.UpdatePartyRelationship;
 using FSH.Modules.Parties.Features.v1.Relationships.SetPrimaryPartyRelationship;
 using FSH.Modules.Parties.Features.v1.Relationships.DeletePartyRelationship;
 using FSH.Modules.Parties.Features.v1.Relationships.GetPartyRelationships;
+using FSH.Modules.Parties.Features.v1.Relationships.GetPartyRelationshipsBySource;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -112,6 +113,7 @@ public sealed class PartiesModule : IModule
 
         // PR-2: vínculos M2M persona↔empresa (View=básico / Manage). Sin .RequireAuthorization() en el group.
         group.MapGetPartyRelationshipsEndpoint();
+        group.MapGetPartyRelationshipsBySourceEndpoint();
         group.MapCreatePartyRelationshipEndpoint();
         group.MapUpdatePartyRelationshipEndpoint();
         group.MapSetPrimaryPartyRelationshipEndpoint();

@@ -3,7 +3,10 @@ using FSH.Framework.Core.Exceptions;
 using FSH.Modules.Parties.Contracts.v1.Parties.CreateParty;
 using FSH.Modules.Parties.Data;
 using FSH.Modules.Parties.Domain;
+using FSH.Modules.Parties.Domain.CustomFields;
+using FSH.Modules.Parties.Domain.Relationships;
 using FSH.Modules.Parties.Features;
+using FSH.Modules.Parties.Features.v1.Relationships;
 using FSH.Modules.Parties.Sync;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +56,10 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
             command.FiscalAxes);
         await synchronizer.SyncAsync(party, v2Input, cancellationToken).ConfigureAwait(false);
 
+        // PR-3 (Opción B): contactos acumulados en el wizard → se persisten en la MISMA transacción que
+        // la empresa (un solo SaveChanges). Cero huérfanos: la persona nueva se crea acá, no antes.
+        await AddRelationshipsAsync(party.Id, command, cancellationToken).ConfigureAwait(false);
+
         try
         {
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -66,5 +73,61 @@ public sealed class CreatePartyCommandHandler(PartiesDbContext db, PartyV2Synchr
                 Enumerable.Empty<string>(), HttpStatusCode.Conflict);
         }
         return party.Id;
+    }
+
+    /// <summary>Crea los <see cref="PartyRelationship"/> de la creación atómica (Opción B). Valida el
+    /// invariante "1 principal por empresa" entre las líneas (espejo de la lógica en memoria del front)
+    /// y deduplica personas nuevas dentro del mismo lote por identificación. No llama SaveChanges: se
+    /// persiste con la empresa.</summary>
+    private async Task AddRelationshipsAsync(Guid companyId, CreatePartyCommand command, CancellationToken ct)
+    {
+        if (command.Relationships is not { Count: > 0 } lines) return;
+
+        if (lines.Count(l => l.IsPrimary) > 1)
+            throw new CustomException("Solo un contacto puede ser el principal de la empresa.",
+                Enumerable.Empty<string>(), HttpStatusCode.BadRequest);
+
+        // Dedup de personas NUEVAS dentro del lote (aún no persistidas, no las ve la query AsNoTracking).
+        var newPersonInBatch = new Dictionary<string, Guid>(StringComparer.Ordinal);
+
+        foreach (var line in lines)
+        {
+            Guid sourceId;
+            if (line.SourcePartyId is { } sid && sid != Guid.Empty)
+            {
+                sourceId = await RelationshipWriteSupport
+                    .ResolveOrCreatePersonAsync(db, sid, null, ct).ConfigureAwait(false);
+            }
+            else if (line.NewPerson is { } np)
+            {
+                string key = $"{np.IdentificationTypeCode.Trim()}|{np.IdentificationNumber.Trim()}";
+                if (!newPersonInBatch.TryGetValue(key, out sourceId))
+                {
+                    sourceId = await RelationshipWriteSupport
+                        .ResolveOrCreatePersonAsync(db, null, np, ct).ConfigureAwait(false);
+                    newPersonInBatch[key] = sourceId;
+                }
+            }
+            else
+            {
+                throw new CustomException("Cada contacto requiere una persona (existente o nueva).",
+                    Enumerable.Empty<string>(), HttpStatusCode.BadRequest);
+            }
+
+            if (sourceId == companyId)
+                throw new CustomException("Una persona no puede vincularse a sí misma.",
+                    Enumerable.Empty<string>(), HttpStatusCode.BadRequest);
+
+            var customFields = await RelationshipWriteSupport
+                .BuildCustomFieldsAsync(db, line.CustomFields, CustomFieldCompletenessMode.Minimal, ct)
+                .ConfigureAwait(false);
+
+            var rel = PartyRelationship.Create(
+                sourceId, companyId, line.RelationshipTypeCode,
+                line.ContactFunctionCode, line.JobTitleCode, line.IsPrimary,
+                line.StartDate, line.EndDate);
+            rel.SetCustomFields(customFields);
+            db.PartyRelationships.Add(rel);
+        }
     }
 }

@@ -5,6 +5,7 @@ using FSH.Framework.Shared.Identity.Authorization;
 using FSH.Modules.Parties.Contracts.Authorization;
 using FSH.Modules.Parties.Contracts.v1.Relationships;
 using FSH.Modules.Parties.Data;
+using FSH.Modules.Parties.Domain.CustomFields;
 using Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -38,6 +39,12 @@ public sealed class UpdatePartyRelationshipCommandHandler(PartiesDbContext db)
 
         relationship.Update(command.RelationshipTypeCode, command.ContactFunctionCode, command.JobTitleCode,
             command.StartDate, command.EndDate);
+
+        // Custom fields (scope PartyRelationship): al editar la relación se revalida/persiste el JSONB.
+        var customFields = await RelationshipWriteSupport
+            .BuildCustomFieldsAsync(db, command.CustomFields, CustomFieldCompletenessMode.Minimal, cancellationToken)
+            .ConfigureAwait(false);
+        relationship.SetCustomFields(customFields);
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return Unit.Value;

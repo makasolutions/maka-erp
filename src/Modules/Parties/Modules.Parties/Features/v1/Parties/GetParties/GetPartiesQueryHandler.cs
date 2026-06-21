@@ -26,6 +26,8 @@ public sealed class GetPartiesQueryHandler(PartiesDbContext db)
                 (p.TradeName != null && EF.Functions.ILike(p.TradeName, pat)));
         }
 
+        if (query.Kind.HasValue) parties = parties.Where(p => p.Kind == query.Kind.Value);
+
         // PR-F1a: el filtro por rol pasa a leer la faceta v2 activa (no la columna Roles v1).
         if (query.Role.HasValue && query.Role.Value != Contracts.Enums.PartyRole.None)
         {

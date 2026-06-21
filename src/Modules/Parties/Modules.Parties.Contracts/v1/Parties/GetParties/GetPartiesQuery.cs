@@ -11,6 +11,7 @@ public sealed record GetPartiesQuery : IPagedQuery, IQuery<PagedResponse<PartyDt
     public int?            PageSize   { get; set; } = 50;
     public string?         Sort       { get; set; }
     public string?         Search     { get; set; }   // LegalName / IdentificationNumber / TradeName
+    public PartyKind?      Kind       { get; set; }   // PR-3: filtra Natural/Juridica (autocomplete contactos = personas)
     public PartyRole?      Role       { get; set; }   // filtra por bit (Customer/Supplier)
     public PartyStatus?    Status     { get; set; }
     public LifecycleStage? Stage      { get; set; }
